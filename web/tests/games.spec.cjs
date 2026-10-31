@@ -175,3 +175,52 @@ test("Pumpkin King offers Coward Mode with ten HP and separate scores", async ({
   await coward.click();
   await expect(page.locator("#metric")).toHaveText("10 / 10");
 });
+
+test("every boss difficulty shows player HP with the full play area in view", async ({ page }, testInfo) => {
+  await page.setViewportSize(testInfo.project.name === "mobile"
+    ? { width: 393, height: 727 } : { width: 1280, height: 720 });
+  for (const [mode, difficulty, hp] of [
+    ["boss", "mean", 3], ["boss", "cruel", 3],
+    ["boss", "nightmare", 3], ["boss", "impossible", 5],
+    ["pumpkin", "phase2", 5], ["pumpkin", "coward", 10],
+  ]) {
+    await page.locator(`[data-game="${mode}"]`).click();
+    await page.locator(`[data-difficulty="${difficulty}"]`).click();
+    await expect(page.locator("#player-health-value")).toHaveText(`${hp} / ${hp}`);
+    await expect(page.locator("#arena")).toBeInViewport({ ratio: 1 });
+    await expect(page.locator("#player-health")).toBeInViewport({ ratio: 1 });
+    await expect(page.locator("#exit")).toBeInViewport({ ratio: 1 });
+    if (testInfo.project.name === "mobile")
+      await expect(page.locator("#touch-controls")).toBeInViewport({ ratio: 1 });
+    await page.locator("#pause").click();
+    await expect(page.locator("#player-health")).toBeVisible();
+    await page.locator("#exit").click();
+    await expect(page.locator("#player-health")).toBeHidden();
+  }
+});
+
+test("boss play area fits after resizing and HP display tracks damage and healing", async ({ page }, testInfo) => {
+  await page.locator('[data-game="pumpkin"]').click();
+  await page.locator('[data-difficulty="coward"]').click();
+  await page.locator("#pause").click();
+  for (const size of [{ width: 1366, height: 768 }, { width: 1024, height: 600 },
+    { width: 390, height: 640 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(size);
+    await expect(page.locator("#arena")).toBeInViewport({ ratio: 1 });
+    await expect(page.locator("#exit")).toBeInViewport({ ratio: 1 });
+    if (testInfo.project.name === "mobile")
+      await expect(page.locator("#touch-controls")).toBeInViewport({ ratio: 1 });
+    const ratio = await page.locator("#game-canvas").evaluate(canvas =>
+      canvas.getBoundingClientRect().width / canvas.getBoundingClientRect().height);
+    expect(ratio).toBeCloseTo(680 / 560, 2);
+    await expect(page.locator("#overlay-action")).toBeInViewport({ ratio: 1 });
+    await page.screenshot({ path: testInfo.outputPath(`fit-${size.width}-${size.height}.png`) });
+  }
+  // Feed damage/healing snapshots through the real renderer without advancing combat.
+  await page.evaluate(() => { active = false; snapshot.lives = 1; render(); });
+  await expect(page.locator("#player-health-value")).toHaveText("1 / 10");
+  await expect(page.locator("#player-health")).toHaveAttribute("data-low", "true");
+  await page.evaluate(() => { snapshot.lives = 10; render(); });
+  await expect(page.locator("#player-health-value")).toHaveText("10 / 10");
+  await expect(page.locator("#player-health")).toHaveAttribute("data-low", "false");
+});

@@ -125,6 +125,13 @@
             >
           </div>
           <div class="arena" id="arena" tabindex="0" aria-label="Game area">
+            <div id="player-health" class="player-health" role="status" hidden>
+              <span>Your HP</span>
+              <strong id="player-health-value">—</strong>
+              <div class="health-track" aria-hidden="true">
+                <span id="player-health-fill"></span>
+              </div>
+            </div>
             <div id="welcome" class="welcome">
               <span id="welcome-art" aria-hidden="true">A _ C</span>
               <h3 id="welcome-title">Every letter counts.</h3>

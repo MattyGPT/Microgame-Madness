@@ -195,6 +195,24 @@ function setLocked(value) {
     button.disabled = value || !ready;
   });
 }
+function fitArcade() {
+  if ($("game-canvas").hidden) return;
+  const heading = document.querySelector(".game-heading");
+  const footer = document.querySelector(".game-footer");
+  const headingMargin = parseFloat(getComputedStyle(heading).marginBottom);
+  const chromeHeight = heading.offsetHeight + headingMargin + footer.offsetHeight
+    + $("touch-controls").offsetHeight + $("player-health").offsetHeight + 28;
+  const viewportHeight = window.visualViewport?.height ?? innerHeight;
+  $("arena").style.setProperty("--player-health-height", `${$("player-health").offsetHeight}px`);
+  const height = Math.max(1, viewportHeight - chromeHeight);
+  const width = Math.min($("arena").clientWidth - 2, height * 680 / 560);
+  $("game-canvas").style.width = `${width}px`;
+  $("game-canvas").style.height = `${width * 560 / 680}px`;
+}
+function showGameArea() {
+  fitArcade();
+  document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
+}
 function selectGame(mode) {
   if (loadFailed) return;
   if (active && selected === "keyboard") saveRound();
@@ -203,6 +221,8 @@ function selectGame(mode) {
   clearKeys();
   selected = mode;
   selectedDifficulty = null;
+  $("arena").classList.remove("arcade");
+  $("player-health").hidden = true;
   const config = modes[mode];
   document.documentElement.style.setProperty("--accent", config.accent);
   document.querySelectorAll("[data-game]").forEach((button) => {
@@ -282,6 +302,7 @@ function startGame(difficulty) {
   $("hangman-game").hidden = selected !== "hangman";
   $("keyboard-game").hidden = selected !== "keyboard";
   const arcade = ["dodge", "boss", "pumpkin"].includes(selected);
+  $("arena").classList.toggle("arcade", arcade);
   $("game-canvas").hidden = !arcade;
   $("touch-controls").hidden =
     !arcade || !matchMedia("(pointer: coarse)").matches;
@@ -289,6 +310,7 @@ function startGame(difficulty) {
   $("touch-counter").hidden = selected !== "pumpkin";
   setLocked(true);
   render();
+  showGameArea();
   if (selected === "keyboard" && matchMedia("(pointer: coarse)").matches)
     $("typing-input").focus();
   else $("arena").focus({ preventScroll: true });
@@ -302,6 +324,15 @@ function showOverlay(title, copy, button, kicker) {
 }
 function render() {
   const s = snapshot;
+  const hasHealth = selected === "boss" || selected === "pumpkin";
+  $("player-health").hidden = !hasHealth;
+  if (hasHealth) {
+    const health = `${s.lives} / ${s.max_lives}`;
+    if ($("player-health-value").textContent !== health)
+      $("player-health-value").textContent = health;
+    $("player-health-fill").style.width = `${100 * s.lives / s.max_lives}%`;
+    $("player-health").dataset.low = String(s.lives <= s.max_lives / 3);
+  }
   $("score").textContent = s.score;
   $("pause").hidden = !s.can_pause || s.over;
   $("pause").textContent = s.paused ? "Resume · D" : "Pause · D";
@@ -497,7 +528,10 @@ for (const letter of "abcdefghijklmnopqrstuvwxyz") {
 document
   .querySelectorAll("[data-game]")
   .forEach(
-    (button) => (button.onclick = () => selectGame(button.dataset.game)),
+    (button) => (button.onclick = () => {
+      selectGame(button.dataset.game);
+      showGameArea();
+    }),
   );
 $("player").oninput = showScores;
 $("exit").onclick = exitGame;
@@ -506,7 +540,8 @@ $("overlay-action").onclick = () => {
   if (snapshot?.paused) pause();
   else {
     selectGame(selected);
-    $("difficulty-choices").querySelector("button").focus();
+    $("difficulty-choices").querySelector("button").focus({ preventScroll: true });
+    showGameArea();
   }
 };
 const arrowMap = {
@@ -665,4 +700,12 @@ if (!storageAvailable)
   $("storage-note").textContent =
     "Storage is unavailable. Scores last for this visit only.";
 requestAnimationFrame(frame);
+const gameLayout = new ResizeObserver(() => fitArcade());
+for (const selector of [".game-heading", ".game-footer", "#touch-controls", "#player-health"])
+  gameLayout.observe(document.querySelector(selector));
+function resizeGameArea() {
+  if (!$("game-canvas").hidden) showGameArea();
+}
+window.addEventListener("resize", resizeGameArea);
+window.visualViewport?.addEventListener("resize", resizeGameArea);
 initialize();
