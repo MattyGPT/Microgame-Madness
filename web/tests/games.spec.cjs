@@ -516,3 +516,80 @@ test('Domination rewards a no-damage Mean win and restores the unlocked frame sh
   await page.reload();
   await expect(page.locator('#profile-score')).toHaveText('80');
 });
+
+test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and visibility", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await expect(page.locator("#sound")).toHaveAttribute("aria-pressed", "true");
+  expect(await page.evaluate(() => typeof audioContext)).toBe("undefined");
+  await page.locator('[data-game="pumpkin"]').click();
+  await expect.poll(() => page.evaluate(() => audioContext.state)).toBe("running");
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe("arcade");
+  await page.evaluate(() => {
+    window.musicProbe = audioContext.createAnalyser();
+    audioMaster.connect(window.musicProbe);
+  });
+  const level = () => page.evaluate(() => {
+    const samples = new Float32Array(window.musicProbe.fftSize);
+    window.musicProbe.getFloatTimeDomainData(samples);
+    return Math.sqrt(samples.reduce((sum, sample) => sum + sample * sample, 0) / samples.length);
+  });
+  await expect.poll(level).toBeGreaterThan(.001);
+  for (const mode of ["phase2", "coward", "baby", "come_on"]) {
+    await page.locator(`[data-difficulty="${mode}"]`).click();
+    expect(await page.evaluate(() => musicPlayer.theme)).toBe("pumpkin");
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+    expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(true);
+    await page.locator("#pause").click();
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+    expect(await page.evaluate(() => musicPlayer.offset)).toBeGreaterThan(0);
+    await page.locator("#overlay-action").click();
+    expect(await page.evaluate(() => musicPlayer.current.offset)).toBeGreaterThan(0);
+    await page.locator("#sound").click();
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+    await expect.poll(level).toBe(0);
+    await page.locator("#sound").click();
+    await expect.poll(level).toBeGreaterThan(.001);
+    expect(await page.evaluate(() => musicPlayer.theme)).toBe("pumpkin");
+    await page.locator("#exit").click();
+    expect(await page.evaluate(() => musicPlayer.theme)).toBe("arcade");
+  }
+  // Losing the fight returns to the arcade score, without leaving two loops.
+  await page.locator('[data-difficulty="phase2"]').click();
+  await page.keyboard.down("ArrowUp");
+  await expect(page.locator("#overlay")).toBeVisible();
+  await page.keyboard.up("ArrowUp");
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe("arcade");
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  // Simulate the browser visibility event: hidden tabs are silent.
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await page.evaluate(() => {
+    delete document.hidden;
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(level).toBeGreaterThan(.001);
+  await page.locator('[data-game="hangman"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe("arcade");
+  expect(errors).toEqual([]);
+});
+
+test("games remain playable when browser audio is unavailable", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.AudioContext = class { constructor() { throw new Error("Audio disabled"); } };
+  });
+  await page.reload();
+  await expect(page.locator("#runtime-status")).toContainText("All games ready");
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator("#sound")).toHaveText("Sound unavailable");
+  await expect(page.locator("#hangman-game")).toBeVisible();
+  await page.getByRole("button", { name: "Guess A", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Guess A", exact: true })).toBeDisabled();
+  expect(errors).toEqual([]);
+});

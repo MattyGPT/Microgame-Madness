@@ -393,6 +393,7 @@ function selectGame(mode) {
           : "Your HP";
   setLocked(false);
   showScores();
+  syncMusic();
 }
 function startGame(difficulty) {
   if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
@@ -523,6 +524,7 @@ function render() {
       "PAUSED",
     );
   else $("overlay").hidden = true;
+  syncMusic();
 }
 const ctx = $("game-canvas").getContext("2d");
 function draw(s) {
@@ -613,6 +615,7 @@ function fail(error) {
   loadFailed = true;
   active = false;
   ready = false;
+  syncMusic();
   clearKeys();
   setLocked(false);
   $("runtime-status").textContent =
@@ -737,6 +740,7 @@ document.addEventListener("visibilitychange", () => {
     clearKeys();
     if (active && snapshot?.can_pause && !snapshot.paused) pause();
   }
+  syncMusic();
 });
 $("typing-input").addEventListener("input", (event) => {
   for (const char of event.target.value) type(char);
@@ -759,24 +763,48 @@ document.querySelectorAll("[data-key]").forEach((button) => {
 });
 let soundOn = true;
 let audioContext;
+let audioMaster;
+let musicPlayer;
 $("sound").onclick = () => {
   soundOn = !soundOn;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
+  if (audioMaster) {
+    audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
+    audioMaster.gain.linearRampToValueAtTime(soundOn ? 1 : 0, audioContext.currentTime + .02);
+  }
+  syncMusic();
   initializeAudio();
 };
+function syncMusic() {
+  if (!musicPlayer) return;
+  musicPlayer.setState({
+    theme: active && selected === "pumpkin" ? "pumpkin" : "arcade",
+    playing: soundOn && !document.hidden && !snapshot?.paused && !loadFailed,
+  });
+}
 function initializeAudio() {
   if (!soundOn) return;
   try {
-    // Start or resume audio during the player's click to begin a game or unmute.
-    audioContext ??= new AudioContext();
-    audioContext.resume().catch(() => {});
+    // Browsers unlock sound on a click/key press. Keep one context and one loop.
+    if (!audioContext) {
+      audioContext = new AudioContext();
+      audioMaster = audioContext.createGain();
+      audioMaster.connect(audioContext.destination);
+      musicPlayer = new ArcadeMusic.Player(audioContext, audioMaster);
+    }
+    audioContext.resume().then(syncMusic).catch(() => {});
+    syncMusic();
   } catch {
     soundOn = false;
     $("sound").textContent = "Sound unavailable";
     $("sound").setAttribute("aria-pressed", "false");
   }
 }
+document.addEventListener("click", initializeAudio);
+document.addEventListener("keydown", event => {
+  if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) initializeAudio();
+});
 function playSound(event) {
   if (!soundOn || !audioContext) return;
   const oscillator = audioContext.createOscillator(),
@@ -788,7 +816,8 @@ function playSound(event) {
   gain.gain.setValueAtTime(0.18, now);
   gain.gain.exponentialRampToValueAtTime(0.003, now + 0.35);
   oscillator.connect(gain);
-  gain.connect(audioContext.destination);
+  gain.connect(audioMaster);
+  oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   oscillator.start(now);
   oscillator.stop(now + 0.36);
 }
