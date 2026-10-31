@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 43);
+  assert.equal(catalog.length, 45);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -171,4 +171,46 @@ test('existing progress and medals migrate without losing points or repeating aw
   assert.ok(earned.includes('hangman_50'));
   assert.ok(earned.includes('dodge_120'));
   assert.equal(new Tracker(tracker.data).visit().changed, false);
+});
+
+test('Gerson Boom requires 360 seconds in one run and awards diamond points only once', () => {
+  const tracker = new Tracker();
+  tracker.visit();
+  tracker.start('dodge', 'easy');
+  const run = elapsed => tracker.observe({ mode: 'dodge', difficulty: 'easy', elapsed });
+  run(359);
+  assert.equal(tracker.data.unlocked.dodge_360, undefined);
+  tracker.start('dodge', 'easy');
+  run(1); // 359 + 1 across separate games is not a 360-second run.
+  assert.equal(tracker.data.unlocked.dodge_360, undefined);
+  const before = tracker.score;
+  assert.deepEqual(ids(run(360)), ['dodge_360']);
+  assert.equal(tracker.score - before, 810);
+  assert.equal(run(360).changed, false);
+  assert.equal(new Tracker(tracker.data).score, tracker.score);
+});
+
+test('Domination requires an undamaged Mean victory, not healing or another difficulty', () => {
+  const tracker = new Tracker();
+  for (const damage_taken of [undefined, 1]) {
+    finish(tracker, 'boss', 'mean', { damage_taken, lives: 3, max_lives: 3 });
+    assert.equal(tracker.data.unlocked.boss_mean_flawless, undefined);
+  }
+  finish(tracker, 'boss', 'cruel', { damage_taken: 0 });
+  assert.equal(tracker.data.unlocked.boss_mean_flawless, undefined);
+  tracker.start('boss', 'mean');
+  tracker.observe({ mode: 'boss', difficulty: 'mean', over: true, won: false, damage_taken: 0 });
+  assert.equal(tracker.data.unlocked.boss_mean_flawless, undefined);
+  const before = tracker.score;
+  assert.deepEqual(ids(finish(tracker, 'boss', 'mean', { damage_taken: 0 })), ['boss_mean_flawless']);
+  assert.equal(tracker.score - before, 30);
+  assert.ok(!ids(finish(tracker, 'boss', 'mean', { damage_taken: 0 })).includes('boss_mean_flawless'));
+});
+
+test('Walking Dictionary and Speed of Type remain gold for existing and new profiles', () => {
+  for (const id of ['hangman_25', 'typing_20']) {
+    assert.equal(catalog.find(item => item.id === id).tier, 'gold');
+    const tracker = new Tracker({ unlocked: { [id]: '2026-10-31' } });
+    assert.equal(tracker.score, 90);
+  }
 });

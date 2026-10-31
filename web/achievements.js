@@ -54,6 +54,8 @@ const Achievements = (() => {
   add("typing_50", "Beyond the Speed Limit", "diamond", "Key Rush", "Complete 50 rounds in one Key Rush game.", "typingBest", 50);
   add("dodge_merciless_120", "Merciless Marathon", "diamond", "Turtle Dodge", "Survive 120 seconds in one Merciless game.", "mercilessBest", 120);
   add("boss_flawless", "Untouchable Champion", "diamond", "Boss Crush", "Defeat the Impossible boss without taking a single hit. Healing does not erase damage.", "bossFlawless");
+  add("dodge_360", "Gerson Boom", "diamond", "Turtle Dodge", "Survive 360 seconds in one Turtle Dodge game.", "dodgeBest", 360);
+  add("boss_mean_flawless", "Domination!", "silver", "Boss Crush", "Defeat the Mean boss without taking any damage. Healing does not erase damage.", "meanFlawless");
   const statNames = new Set(catalog.map(item => item.stat));
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
@@ -117,6 +119,7 @@ const Achievements = (() => {
           if (s.damage_taken === 0) {
             if (s.mode === "pumpkin") stats.pumpkinFlawless = 1;
             else if (s.difficulty === "impossible") stats.bossFlawless = 1;
+            else if (s.difficulty === "mean") stats.meanFlawless = 1;
           }
           const key = `${s.mode}_${s.difficulty}`;
           if (statNames.has(key)) stats[key] = 1;

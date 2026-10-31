@@ -200,14 +200,59 @@ class KingTests(unittest.TestCase):
         self.assertFalse(game.shots)
 
     def test_slam_damage_and_center_safe_for_both(self):
-        for side, x, expected in (("left", -150, 0), ("right", 150, 0),
+        for side, x, expected in (("left", -150, 4), ("right", 150, 4),
                                    ("left", 150, 5), ("right", -150, 5),
-                                   ("left", 0, 0), ("right", 0, 0),
-                                   ("both", 0, 5), ("both", -150, 0), ("both", 150, 0)):
+                                   ("left", 0, 4), ("right", 0, 4),
+                                   ("both", 0, 5), ("both", -150, 4), ("both", 150, 4)):
             game = self.game("slam", side)
             game.x = x
             game.update(0.05, set())
             self.assertEqual(game.lives, expected, (side, x))
+
+    def test_arm_lift_smash_costs_one_hp_in_every_mode(self):
+        for mode, hp in PUMPKIN_DIFFICULTIES.items():
+            for side, x in (("left", -150), ("right", 150), ("both", -150)):
+                for intro_done in (False, True):
+                    game = create_game(mode)
+                    game.intro_done = intro_done
+                    game.x = x
+                    game.stage = Stage("raise", .5, side)
+                    game.stage_age = .45
+                    game.queue = deque([Stage("slam", .15, side), Stage("slam_rest", 1)])
+                    game.update(.04, set())
+                    self.assertEqual(game.lives, hp)  # Raising is a warning.
+                    game.update(.2, set())
+                    self.assertTrue(game.alive)
+                    self.assertEqual(game.lives, hp - 1, (mode, side, intro_done))
+                    self.assertEqual(game.damage_taken, 1)
+                    self.assertIsNone(game.death_message)
+
+    def test_roar_then_fire_costs_one_hp_in_every_mode(self):
+        for mode, hp in PUMPKIN_DIFFICULTIES.items():
+            game = create_game(mode)
+            game.stage = Stage("roar", .3)
+            game.queue = deque([Stage("fire", .65), Stage("break", 100)])
+            game.update(.29, set())
+            self.assertEqual(game.lives, hp)
+            game.update(.2, set())
+            self.assertEqual(game.lives, hp - 1)
+            self.assertTrue(game.alive)
+            self.assertEqual(game.damage_taken, 1)
+
+    def test_running_into_head_or_hands_is_lethal_during_attacks_in_every_mode(self):
+        for mode, hp in PUMPKIN_DIFFICULTIES.items():
+            for attack in ("break", "raise", "slam", "roar"):
+                for x, y in ((0, 60), (-245, -30), (245, -30)):
+                    game = create_game(mode)
+                    game.intro_done = True
+                    game.stage = Stage(attack, 100, "left")
+                    game.x, game.y = x, y
+                    game.invulnerable = 99  # Attack immunity never protects contact.
+                    self.assertFalse(game.touches_king())
+                    game.update(.4, {"Up"})
+                    self.assertEqual(game.lives, 0, (mode, attack, x))
+                    self.assertFalse(game.alive)
+                    self.assertEqual(game.damage_taken, hp)
 
     def test_raised_arm_is_warning_and_fire_hurts_center(self):
         game = self.game("raise", "left")
@@ -375,8 +420,6 @@ class KingTests(unittest.TestCase):
             self.assertEqual(game.queue[-1], Stage("break", ATTACK_BREAK))
         game.begin_attack(0)
         game.invulnerable = 1000
-        # Isolate attack scheduling from the now-lethal physical slam contact.
-        game.touches_king = lambda: False
         seen = set()
         max_objects = 0
         for _ in range(6000):

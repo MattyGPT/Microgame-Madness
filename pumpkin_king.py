@@ -223,13 +223,13 @@ class PumpkinKing(BossCrush):
                        shoulder_y - 92 + lift + (finger % 2) * 8, 10, 42)
 
     def contact_rectangles(self):
+        # Only the physical head, arms and hands are lethal on contact.
+        # Slam/fire attack areas are handled separately as ordinary damage.
         yield self.body_rectangle
         for side in ("left", "right"):
             for x, y, width, height, _ in self.arm_segments(side):
                 yield x, y, width, height
             yield from self.hand_rectangles(side)
-        if self.stage.name == "slam":
-            yield from self.hazard_rectangles()
 
     def touches_king(self):
         return any(hits_player(self.x, self.y, *rect) for rect in self.contact_rectangles())
