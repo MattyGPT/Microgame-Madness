@@ -10,7 +10,8 @@ from dodge_model import PLAYER_LEFT, PLAYER_RIGHT, PLAYER_BOTTOM, PLAYER_TOP
 
 MODE = "phase2"
 COWARD_MODE = "coward"
-PUMPKIN_DIFFICULTIES = {MODE: 5, COWARD_MODE: 10}
+BABY_MODE = "baby"
+PUMPKIN_DIFFICULTIES = {MODE: 5, COWARD_MODE: 10, BABY_MODE: 15}
 KING_WIDTH, KING_HEIGHT = 100, 80
 SLAM_ORDER = ("left", "right", "left", "right", "right", "both")
 RAISE_TIME, SLAM_TIME, SLAM_REST = 0.5, 0.15, 0.15  # 0.8s between impacts.

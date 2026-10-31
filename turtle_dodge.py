@@ -11,7 +11,7 @@ from dodge_model import BLOCK_SIZE, CELL, DIFFICULTIES, DodgeGame, PLAYER_POLYGO
 from boss_crush import (BOSS_DIFFICULTIES, BOSS_WIDTH, BOSS_HEIGHT,
                         HEAL_SIZE, SHOT_WIDTH, SHOT_HEIGHT, BossCrush)
 from scores import SCORE_FILE, ScoreError, load_scores, save_score
-from pumpkin_king import MODE as PHASE_TWO, COWARD_MODE, PUMPKIN_DIFFICULTIES, PumpkinKing
+from pumpkin_king import MODE as PHASE_TWO, COWARD_MODE, BABY_MODE, PUMPKIN_DIFFICULTIES, PumpkinKing
 
 DODGE_SCORE_FILE = SCORE_FILE.with_name("turtle_scores.json")
 CANVAS_WIDTH, CANVAS_HEIGHT = 680, 660
@@ -63,13 +63,16 @@ def start_turtle_dodge():
     print("Boss Crush: dodge bullet patterns and shoot the boss with F")
     print("Impossible Phase 2: THE PUMPKIN KING — transformation, six attacks, E to counter")
     print("Coward Mode: THE PUMPKIN KING — 10 HP instead of 5")
-    difficulty = input("Choose easy / normal / hard / merciless / boss / phase2 / coward: ").strip().lower()
-    while difficulty not in (*DIFFICULTIES, "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode"):
-        difficulty = input("Please choose easy, normal, hard, merciless, boss, phase2, or coward: ").strip().lower()
+    print("Baby Mode: THE PUMPKIN KING — 15 HP")
+    difficulty = input("Choose easy / normal / hard / merciless / boss / phase2 / coward / baby: ").strip().lower()
+    while difficulty not in (*DIFFICULTIES, "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode"):
+        difficulty = input("Please choose easy, normal, hard, merciless, boss, phase2, coward, or baby: ").strip().lower()
     if difficulty == "impossible phase 2":
         difficulty = PHASE_TWO
     if difficulty == "coward mode":
         difficulty = COWARD_MODE
+    if difficulty == "baby mode":
+        difficulty = BABY_MODE
     if difficulty in ("boss", "boss crush"):
         print("Mean: fans and aimed bursts\nCruel: faster volleys plus rings\nNightmare: dense, fast patterns\nImpossible: bone walls, spirals, blue/orange attacks, and the toughest boss")
         difficulty = input("Choose mean / cruel / nightmare / impossible: ").strip().lower()
@@ -98,7 +101,10 @@ class TurtleDodge:
         self.turtle = turtle
         self.player_name = player
         self.root = tkinter.Tk()
-        mode = "Coward Mode" if difficulty == COWARD_MODE else "Impossible Phase 2" if difficulty == PHASE_TWO else "Boss Crush" if difficulty in BOSS_DIFFICULTIES else "Turtle Dodge"
+        if difficulty in PUMPKIN_DIFFICULTIES:
+            mode = {PHASE_TWO: "Impossible Phase 2", COWARD_MODE: "Coward Mode", BABY_MODE: "Baby Mode"}[difficulty]
+        else:
+            mode = "Boss Crush" if difficulty in BOSS_DIFFICULTIES else "Turtle Dodge"
         self.root.title(f"{mode} — {difficulty.title()}")
         self.root.geometry(f"{CANVAS_WIDTH}x{CANVAS_HEIGHT}")
         self.root.minsize(CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -396,7 +402,7 @@ def main():
     try:
         difficulty = sys.argv[2] if len(sys.argv) > 2 else "easy"
         if difficulty not in (*DIFFICULTIES, *BOSS_DIFFICULTIES, *PUMPKIN_DIFFICULTIES):
-            print("Unknown difficulty. Choose easy, normal, hard, merciless, mean, cruel, nightmare, impossible, phase2, or coward.")
+            print("Unknown difficulty. Choose easy, normal, hard, merciless, mean, cruel, nightmare, impossible, phase2, coward, or baby.")
             return 1
         app = TurtleDodge(turtle, sys.argv[1] if len(sys.argv) > 1 else "Player", difficulty)
         app.root.mainloop()
