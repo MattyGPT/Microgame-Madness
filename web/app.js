@@ -72,7 +72,7 @@ const modes = {
     category: "05 / THE FINAL BOSS",
     art: "◈",
     heading: "An audience with the king.",
-    copy: "Survive six attacks. Touching the King’s body or arms kills instantly.",
+    copy: "Touching the King’s body or arms kills instantly. Smashes and mouth fire deal 1 HP.",
     accent: "#f8b36b",
     controls: "Arrows move · F shoots after intro · E counters · D pauses",
     difficulties: {

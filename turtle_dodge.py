@@ -169,7 +169,7 @@ class TurtleDodge:
             if difficulty == "impossible":
                 instructions += "\nBLUE: stay still • ORANGE: move\nWhite bullets and bones always hurt"
             if difficulty in PUMPKIN_DIFFICULTIES:
-                instructions = f"ARROWS move • F shoots after the intro\nTap E just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n{self.game.max_lives} HP • Green + heals • D pauses\nBody, arms and slams kill instantly!"
+                instructions = f"ARROWS move • F shoots after the intro\nTap E just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n{self.game.max_lives} HP • Green + heals • D pauses\nHead/arm contact kills • Smashes deal 1 HP"
         self.set_message(f"{mode.upper()}: {difficulty.upper()}\n\n{instructions}\n\nSPACE to start")
         for key in ("Left", "Right", "Up", "Down", "f", "F", "e", "E"):
             self.screen.onkeypress(lambda k=key: self.keys.add(k.lower() if len(k) == 1 else k), key)

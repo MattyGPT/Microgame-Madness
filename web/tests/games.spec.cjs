@@ -266,12 +266,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(43);
+  await expect(page.locator('.achievement-card')).toHaveCount(45);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(42);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(44);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -335,20 +335,23 @@ test("achievements remain usable when browser storage is blocked", async ({ page
   await expect(page.locator('[data-achievement="play_hangman"]')).toContainText('Unlocked');
 });
 
-test("Pumpkin King contact kills a 23-HP player and restart restores health", async ({ page }) => {
+test("Pumpkin King contact kills in every mode and restart restores health", async ({ page }) => {
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator('#welcome-copy')).toContainText('body or arms kills instantly');
-  await page.locator('[data-difficulty="come_on"]').click();
-  await expect(page.locator('#player-health-value')).toHaveText('23 / 23');
-  // Move into the actual Python boss, rather than injecting a death snapshot.
-  await page.keyboard.down('ArrowUp');
-  await expect(page.locator('#overlay-title')).toHaveText('One more try?');
-  await page.keyboard.up('ArrowUp');
-  await expect(page.locator('#player-health-value')).toHaveText('0 / 23');
-  await expect(page.locator('#overlay-copy')).toContainText('His body and arms kill instantly');
+  for (const [mode, hp] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
+    await page.locator(`[data-difficulty="${mode}"]`).click();
+    await expect(page.locator('#player-health-value')).toHaveText(`${hp} / ${hp}`);
+    // Move into the actual Python boss, rather than injecting a death snapshot.
+    await page.keyboard.down('ArrowUp');
+    await expect(page.locator('#overlay')).toBeVisible();
+    await expect(page.locator('#overlay-title')).toHaveText('One more try?');
+    await page.keyboard.up('ArrowUp');
+    await expect(page.locator('#player-health-value')).toHaveText(`0 / ${hp}`);
+    await expect(page.locator('#overlay-copy')).toContainText('His body and arms kill instantly');
+    await page.locator('#overlay-action').click();
+  }
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats);
   expect(progress.pumpkinWins).toBe(0);
-  await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="come_on"]').click();
   await expect(page.locator('#player-health-value')).toHaveText('23 / 23');
 });
@@ -420,7 +423,8 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
     const style = await card.evaluate(el => {
       const cs = getComputedStyle(el);
       return { background: cs.backgroundImage, color: cs.getPropertyValue('--medal'), shape: cs.clipPath,
-        thickness: cs.paddingTop, shine: cs.animationName, sparkle: getComputedStyle(el, '::before').animationName };
+        thickness: cs.paddingTop, shine: cs.animationName, sparkle: getComputedStyle(el, '::before').animationName,
+        blend: cs.backgroundBlendMode, sparkleFilter: getComputedStyle(el, '::before').filter };
     });
     expect(style.background).toContain('linear-gradient');
     expect(style.color.trim()).not.toBe('');
@@ -428,6 +432,8 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
     expect(style.shape.startsWith('polygon(')).toBe(['crystal', 'diamond'].includes(tier));
     expect(style.shine).toBe('medal-shine');
     expect(style.sparkle).toBe('medal-sparkle');
+    expect(style.blend).toBe(id === 'welcome' ? 'normal' : 'multiply');
+    expect(style.sparkleFilter).toBe(id === 'welcome' ? 'none' : 'brightness(0.65)');
     await card.screenshot({ path: testInfo.outputPath(`medal-${tier}.png`) });
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -436,4 +442,77 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
   const card = page.locator('[data-achievement="pumpkin_flawless"]');
   expect(await card.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await card.evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('none');
+});
+
+test('Pumpkin King arm-lift smashes and roar fire deal one HP in every mode', async ({ page }) => {
+  let attack = 'slam';
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const setup = 'self.game = PumpkinKing(difficulty=difficulty)\n            from pumpkin_king import Stage\n            from collections import deque\n            self.game.intro_done = True\n'
+      + (attack === 'slam'
+        ? '            self.game.x = -150\n            self.game.stage = Stage("raise", .1, "left")\n            self.game.queue = deque([Stage("slam", .15, "left"), Stage("break", 100)])'
+        : '            self.game.stage = Stage("roar", .1)\n            self.game.queue = deque([Stage("fire", .3), Stage("break", 100)])');
+    await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', setup) });
+  });
+  for (attack of ['slam', 'fire']) {
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await page.locator('[data-game="pumpkin"]').click();
+    for (const [mode, hp] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
+      await page.locator(`[data-difficulty="${mode}"]`).click();
+      await expect(page.locator('#player-health-value')).toHaveText(`${hp - 1} / ${hp}`);
+      await expect(page.locator('#overlay')).toBeHidden();
+      await page.locator('#pause').click();
+      await expect(page.locator('#overlay-title')).toHaveText('Take a breather.');
+      await page.locator('#exit').click();
+    }
+  }
+});
+
+test('Gerson Boom unlocks at 360 seconds with 810 points and survives reload', async ({ page }) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace('self.game = DodgeGame(difficulty=difficulty)',
+      'self.game = DodgeGame(difficulty=difficulty)\n            self.game.elapsed = 359.95\n            self.game.spawn_in = 1000') });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="dodge"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator('#profile-score')).toHaveText('1230');
+  await page.locator('#pause').click();
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="dodge_360"]');
+  await expect(card).toContainText('Gerson Boom');
+  await expect(card).toContainText('diamond · +810 points');
+  await expect(card).toContainText('Unlocked');
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('1230');
+});
+
+test('Domination rewards a no-damage Mean win and restores the unlocked frame shine', async ({ page }, testInfo) => {
+  let wounded = true;
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const setup = 'self.game = BossCrush(difficulty)\n            from boss_crush import Projectile\n'
+      + (wounded ? '            self.game.hurt()\n' : '')
+      + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+    await route.fulfill({ response, body: (await response.text()).replace('self.game = BossCrush(difficulty)', setup) });
+  });
+  for (const score of [50, 80]) {
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await page.locator('[data-game="boss"]').click();
+    await page.locator('[data-difficulty="mean"]').click();
+    await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+    await expect(page.locator('#profile-score')).toHaveText(String(score));
+    await page.locator('#achievements-tab').click();
+    const card = page.locator('[data-achievement="boss_mean_flawless"]');
+    await expect(card).toContainText(wounded ? 'Locked' : 'Unlocked');
+    expect(await card.evaluate(el => getComputedStyle(el).backgroundBlendMode)).toBe(wounded ? 'multiply' : 'normal');
+    await card.screenshot({ path: testInfo.outputPath(wounded ? 'locked-silver.png' : 'unlocked-silver.png') });
+    wounded = false;
+  }
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('80');
 });
