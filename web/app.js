@@ -76,6 +76,10 @@ const modes = {
     accent: "#f8b36b",
     controls: "Arrows move · F shoots after intro · E counters · D pauses",
     difficulties: {
+      baby: [
+        "Baby Mode",
+        "15 HP. Blue: stay still. Orange: move. Tap E just before magenta fingers hit.",
+      ],
       coward: [
         "Coward Mode",
         "10 HP. Blue: stay still. Orange: move. Tap E just before magenta fingers hit.",

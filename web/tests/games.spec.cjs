@@ -150,18 +150,19 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
 });
 
-test("Pumpkin King offers Coward Mode with ten HP and separate scores", async ({ page }) => {
+test("Pumpkin King offers three HP choices with separate scores", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("microgame-madness.v1", JSON.stringify({
     player: "Mode Tester",
     scores: {
       "pumpkin:coward": [{ player: "Mode Tester", score: 123 }],
       "pumpkin:phase2": [{ player: "Mode Tester", score: 456 }],
+      "pumpkin:baby": [{ player: "Mode Tester", score: 789 }],
     },
   })));
   await page.reload();
   await expect(page.locator("#runtime-status")).toContainText("All games ready");
   await page.locator('[data-game="pumpkin"]').click();
-  await expect(page.locator("#difficulty-choices button")).toHaveCount(2);
+  await expect(page.locator("#difficulty-choices button")).toHaveCount(3);
   const coward = page.getByRole("button", { name: /^Coward Mode/ });
   await expect(coward).toContainText("10 HP");
   await coward.click();
@@ -174,6 +175,16 @@ test("Pumpkin King offers Coward Mode with ten HP and separate scores", async ({
   await page.locator("#exit").click();
   await coward.click();
   await expect(page.locator("#metric")).toHaveText("10 / 10");
+  await page.locator("#exit").click();
+  const baby = page.getByRole("button", { name: /^Baby Mode/ });
+  await expect(baby).toContainText("15 HP");
+  await baby.click();
+  await expect(page.locator("#metric")).toHaveText("15 / 15");
+  await expect(page.locator("#player-health-value")).toHaveText("15 / 15");
+  await expect(page.locator("#best")).toHaveText("789");
+  await page.locator("#exit").click();
+  await baby.click();
+  await expect(page.locator("#player-health-value")).toHaveText("15 / 15");
 });
 
 test("every boss difficulty shows player HP with the full play area in view", async ({ page }, testInfo) => {
@@ -183,6 +194,7 @@ test("every boss difficulty shows player HP with the full play area in view", as
     ["boss", "mean", 3], ["boss", "cruel", 3],
     ["boss", "nightmare", 3], ["boss", "impossible", 5],
     ["pumpkin", "phase2", 5], ["pumpkin", "coward", 10],
+    ["pumpkin", "baby", 15],
   ]) {
     await page.locator(`[data-game="${mode}"]`).click();
     await page.locator(`[data-difficulty="${difficulty}"]`).click();

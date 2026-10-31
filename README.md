@@ -6,7 +6,7 @@ Five games, two ways to play: a Python desktop/terminal collection and a browser
 - **Key Rush / Timed Keyboard Challenge:** type increasingly difficult sequences before time runs out.
 - **Turtle Dodge:** survive falling blocks across four difficulty levels.
 - **Boss Crush:** dodge and shoot through four boss difficulties.
-- **The Pumpkin King:** survive a transformation and six attacks, including a timed counter move. Choose Coward Mode for 10 HP or Impossible Phase 2 for 5 HP; each has separate high scores.
+- **The Pumpkin King:** survive a transformation and six attacks, including a timed counter move. Choose Baby Mode for 15 HP, Coward Mode for 10 HP, or Impossible Phase 2 for 5 HP; each has separate high scores.
 
 ## Play the Python version
 
