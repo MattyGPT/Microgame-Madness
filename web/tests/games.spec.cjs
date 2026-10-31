@@ -153,19 +153,20 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
 });
 
-test("Pumpkin King offers three HP choices with separate scores", async ({ page }) => {
+test("Pumpkin King offers four HP choices with separate scores", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("microgame-madness.v1", JSON.stringify({
     player: "Mode Tester",
     scores: {
       "pumpkin:coward": [{ player: "Mode Tester", score: 123 }],
       "pumpkin:phase2": [{ player: "Mode Tester", score: 456 }],
       "pumpkin:baby": [{ player: "Mode Tester", score: 789 }],
+      "pumpkin:come_on": [{ player: "Mode Tester", score: 923 }],
     },
   })));
   await page.reload();
   await expect(page.locator("#runtime-status")).toContainText("All games ready");
   await page.locator('[data-game="pumpkin"]').click();
-  await expect(page.locator("#difficulty-choices button")).toHaveCount(3);
+  await expect(page.locator("#difficulty-choices button")).toHaveCount(4);
   const coward = page.getByRole("button", { name: /^Coward Mode/ });
   await expect(coward).toContainText("10 HP");
   await coward.click();
@@ -188,6 +189,16 @@ test("Pumpkin King offers three HP choices with separate scores", async ({ page 
   await page.locator("#exit").click();
   await baby.click();
   await expect(page.locator("#player-health-value")).toHaveText("15 / 15");
+  await page.locator("#exit").click();
+  const comeOn = page.getByRole("button", { name: /^Come On, Are You Really That Bad at the Game/ });
+  await expect(comeOn).toContainText("23 HP");
+  await comeOn.click();
+  await expect(page.locator("#player-health-value")).toHaveText("23 / 23");
+  await expect(page.locator("#metric")).toHaveText("23 / 23");
+  await expect(page.locator("#best")).toHaveText("923");
+  await page.locator("#exit").click();
+  await comeOn.click();
+  await expect(page.locator("#player-health-value")).toHaveText("23 / 23");
 });
 
 test("every boss difficulty shows player HP with the full play area in view", async ({ page }, testInfo) => {
@@ -197,7 +208,7 @@ test("every boss difficulty shows player HP with the full play area in view", as
     ["boss", "mean", 3], ["boss", "cruel", 3],
     ["boss", "nightmare", 3], ["boss", "impossible", 5],
     ["pumpkin", "phase2", 5], ["pumpkin", "coward", 10],
-    ["pumpkin", "baby", 15],
+    ["pumpkin", "baby", 15], ["pumpkin", "come_on", 23],
   ]) {
     await page.locator(`[data-game="${mode}"]`).click();
     await page.locator(`[data-difficulty="${difficulty}"]`).click();
@@ -322,4 +333,22 @@ test("achievements remain usable when browser storage is blocked", async ({ page
   await expect(page.locator('#storage-note')).toContainText('Scores and achievements last for this visit only');
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="play_hangman"]')).toContainText('Unlocked');
+});
+
+test("Pumpkin King contact kills a 23-HP player and restart restores health", async ({ page }) => {
+  await page.locator('[data-game="pumpkin"]').click();
+  await expect(page.locator('#welcome-copy')).toContainText('body or arms kills instantly');
+  await page.locator('[data-difficulty="come_on"]').click();
+  await expect(page.locator('#player-health-value')).toHaveText('23 / 23');
+  // Move into the actual Python boss, rather than injecting a death snapshot.
+  await page.keyboard.down('ArrowUp');
+  await expect(page.locator('#overlay-title')).toHaveText('One more try?');
+  await page.keyboard.up('ArrowUp');
+  await expect(page.locator('#player-health-value')).toHaveText('0 / 23');
+  await expect(page.locator('#overlay-copy')).toContainText('His body and arms kill instantly');
+  const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats);
+  expect(progress.pumpkinWins).toBe(0);
+  await page.locator('#overlay-action').click();
+  await page.locator('[data-difficulty="come_on"]').click();
+  await expect(page.locator('#player-health-value')).toHaveText('23 / 23');
 });

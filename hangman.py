@@ -5,7 +5,7 @@ from hangman_model import DIFFICULTY, HANGMAN_PICS, HangmanGame, hangman_picture
 
 from scores import ScoreError, load_scores, save_score
 from keyboard_challenge import KEYBOARD_SCORE_FILE, start_keyboard_challenge
-from turtle_dodge import BOSS_DIFFICULTIES, DIFFICULTIES, PHASE_TWO, COWARD_MODE, BABY_MODE, dodge_score_file, start_turtle_dodge
+from turtle_dodge import BOSS_DIFFICULTIES, DIFFICULTIES, PHASE_TWO, COWARD_MODE, BABY_MODE, COME_ON_MODE, COME_ON_NAME, dodge_score_file, start_turtle_dodge
 
 try:
     from colorama import Fore, init
@@ -111,6 +111,7 @@ def main_menu():
             show_scores(dodge_score_file(PHASE_TWO), "IMPOSSIBLE PHASE 2: THE PUMPKIN KING")
             show_scores(dodge_score_file(COWARD_MODE), "COWARD MODE: THE PUMPKIN KING")
             show_scores(dodge_score_file(BABY_MODE), "BABY MODE: THE PUMPKIN KING")
+            show_scores(dodge_score_file(COME_ON_MODE), f"{COME_ON_NAME.upper()}: THE PUMPKIN KING")
         else:
             print(Fore.RED + "Invalid choice.")
 

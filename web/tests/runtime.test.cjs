@@ -28,13 +28,14 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     ["pumpkin", "phase2"],
     ["pumpkin", "coward"],
     ["pumpkin", "baby"],
+    ["pumpkin", "come_on"],
   ]) {
     let state = JSON.parse(
       handle(JSON.stringify({ action: "start", mode, difficulty, now: 0 })),
     );
     assert.equal(state.mode, mode);
     if (mode === "pumpkin") {
-      const hp = { phase2: 5, coward: 10, baby: 15 }[difficulty];
+      const hp = { phase2: 5, coward: 10, baby: 15, come_on: 23 }[difficulty];
       assert.equal(state.lives, hp);
       assert.equal(state.max_lives, hp);
     }

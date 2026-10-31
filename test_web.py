@@ -79,6 +79,22 @@ class BrowserAdapterTests(unittest.TestCase):
         self.start("dodge", "merciless")
         self.assertFalse(self.session.dispatch({"action": "pause"})["paused"])
 
+    def test_pumpkin_arm_contact_reports_death_and_correct_max_hp(self):
+        for mode, hp in PUMPKIN_DIFFICULTIES.items():
+            self.start("pumpkin", mode)
+            game = self.session.game
+            game.begin_attack(0)
+            game.x, game.y = list(game.hand_rectangles("left"))[0][:2]
+            game.invulnerable = 20
+            result = self.session.dispatch({"action": "tick", "dt": .01, "keys": ["e"]})
+            self.assertTrue(result["over"])
+            self.assertFalse(result["won"])
+            self.assertEqual((result["lives"], result["max_lives"]), (0, hp))
+            self.assertIn("arms kill instantly", result["death_message"])
+            restarted = self.start("pumpkin", mode)
+            self.assertEqual((restarted["lives"], restarted["max_lives"]), (hp, hp))
+            self.assertIsNone(restarted["death_message"])
+
     def test_keyboard_progress_and_late_input(self):
         self.start("keyboard", "progressive")
         word = self.session.game.sequence

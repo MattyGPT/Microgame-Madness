@@ -7,7 +7,8 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from boss_crush import Projectile, HealingPickup
-from pumpkin_king import (MODE, COWARD_MODE, BABY_MODE, PumpkinKing, Stage, Finger, Ring, SLAM_ORDER,
+from pumpkin_king import (MODE, COWARD_MODE, BABY_MODE, COME_ON_MODE, COME_ON_NAME,
+                          PUMPKIN_DIFFICULTIES, PumpkinKing, Stage, Finger, Ring, SLAM_ORDER,
                           ATTACK_BREAK, COLOR_BREAK, COUNTER_WINDOW, slam_stages,
                           EYE_FLASH_PERIOD, EYE_FLASH_ON, EYE_FLASH_GAP,
                           RING_SEGMENTS, RING_THICKNESS)
@@ -74,9 +75,89 @@ class KingTests(unittest.TestCase):
             start_turtle_dodge()
         self.assertEqual(run.call_args.args[0][-2:], ["Ada", MODE])
 
+    def test_23_hp_mode_healing_damage_restart_and_separate_scores(self):
+        game = create_game(COME_ON_MODE)
+        self.assertEqual((game.lives, game.max_lives, game.config.player_hp), (23, 23, 23))
+        self.assertEqual(len({dodge_score_file(mode) for mode in PUMPKIN_DIFFICULTIES}), 4)
+        for hp, expected in ((15, 16), (22, 23), (23, 23)):
+            game.lives = hp
+            game.healing_pickups = [HealingPickup(game.x, game.y, 9)]
+            game.update_healing(0.01)
+            self.assertEqual(game.lives, expected)
+        for remaining in range(22, -1, -1):
+            game.invulnerable = 0
+            game.hurt()
+            self.assertEqual(game.lives, remaining)
+            self.assertEqual(game.alive, remaining > 0)
+        restarted = create_game(game.difficulty)
+        self.assertEqual((restarted.lives, restarted.max_lives, restarted.stage.name), (23, 23, "shell"))
+
+    def test_body_arms_and_hands_kill_instantly_in_every_mode(self):
+        for mode in PUMPKIN_DIFFICULTIES:
+            for part in ("body", "left_arm", "right_arm", "left_hand", "right_hand"):
+                with self.subTest(mode=mode, part=part):
+                    game = create_game(mode)
+                    game.intro_done = True
+                    game.stage = Stage("break", 100)
+                    if part == "body":
+                        game.x, game.y = game.boss_x, game.boss_y
+                    else:
+                        side, kind = part.split("_")
+                        pieces = list(game.arm_segments(side) if kind == "arm" else game.hand_rectangles(side))
+                        game.x, game.y = pieces[len(pieces)//2][:2]
+                    game.invulnerable = 99
+                    game.hp = 5
+                    game.shots = [Projectile(game.boss_x, game.boss_y, 0, 520)]
+                    game.healing_pickups = [HealingPickup(game.x, game.y)]
+                    game.update(0.01, {"e", "f"})
+                    self.assertEqual(game.lives, 0)
+                    self.assertFalse(game.alive)
+                    self.assertFalse(game.won)
+                    self.assertEqual(game.hp, 5)  # Contact wins over a killing shot or heal.
+                    self.assertIn("kill instantly", game.death_message)
+
+    def test_only_visible_intro_arms_are_lethal_and_shell_is_lethal(self):
+        game = PumpkinKing()
+        game.x, game.y = 0, 219
+        game.update(0.01, set())
+        self.assertFalse(game.alive)
+        game = PumpkinKing()
+        game.stage = Stage("left_burst", 1)
+        game.stage_age = 0.5
+        self.assertEqual(len(list(game.arm_segments("left"))), 12)
+        self.assertEqual(list(game.arm_segments("right")), [])
+        self.assertEqual(list(game.hand_rectangles("left")), [])
+        game.x, game.y = 200, 190
+        game.update(0.01, set())
+        self.assertTrue(game.alive)  # No invisible right arm.
+        game.x, game.y = list(game.arm_segments("left"))[5][:2]
+        game.update(0.01, set())
+        self.assertFalse(game.alive)
+
+    def test_raised_arm_and_near_misses_use_actual_shapes(self):
+        for x, y in ((0, 60), (-150, 65), (150, 65)):
+            game = self.game()
+            game.x, game.y = x, y
+            game.update(0.01, set())
+            self.assertTrue(game.alive)
+        game = self.game("raise", "left")
+        game.stage_age = 0.5
+        game.x, game.y = list(game.arm_segments("left"))[15][:2]
+        game.update(0.01, set())
+        self.assertFalse(game.alive)
+
+    def test_moving_into_a_hand_kills_even_on_a_slow_frame(self):
+        game = self.game()
+        game.x, game.y = 245, -30
+        self.assertFalse(game.touches_king())
+        game.update(0.25, {"Up"})
+        self.assertEqual(game.lives, 0)
+        self.assertFalse(game.alive)
+
     def test_easier_modes_menu_launch(self):
         for choice, mode in (("coward", COWARD_MODE), ("Coward Mode", COWARD_MODE),
-                             ("baby", BABY_MODE), ("Baby Mode", BABY_MODE)):
+                             ("baby", BABY_MODE), ("Baby Mode", BABY_MODE),
+                             ("come_on", COME_ON_MODE), (COME_ON_NAME, COME_ON_MODE)):
             with patch("builtins.input", side_effect=[choice, "Ada"]), patch("turtle_dodge.subprocess.run") as run, redirect_stdout(io.StringIO()):
                 run.return_value.returncode = 0
                 start_turtle_dodge()
@@ -105,10 +186,10 @@ class KingTests(unittest.TestCase):
         self.assertFalse(game.shots)
 
     def test_slam_damage_and_center_safe_for_both(self):
-        for side, x, expected in (("left", -150, 4), ("right", 150, 4),
+        for side, x, expected in (("left", -150, 0), ("right", 150, 0),
                                    ("left", 150, 5), ("right", -150, 5),
-                                   ("left", 0, 4), ("right", 0, 4),
-                                   ("both", 0, 5), ("both", -150, 4), ("both", 150, 4)):
+                                   ("left", 0, 0), ("right", 0, 0),
+                                   ("both", 0, 5), ("both", -150, 0), ("both", 150, 0)):
             game = self.game("slam", side)
             game.x = x
             game.update(0.05, set())
@@ -280,6 +361,8 @@ class KingTests(unittest.TestCase):
             self.assertEqual(game.queue[-1], Stage("break", ATTACK_BREAK))
         game.begin_attack(0)
         game.invulnerable = 1000
+        # Isolate attack scheduling from the now-lethal physical slam contact.
+        game.touches_king = lambda: False
         seen = set()
         max_objects = 0
         for _ in range(6000):
