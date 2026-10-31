@@ -373,6 +373,7 @@ h1 em {
 }
 .game-main {
   min-width: 0;
+  scroll-margin-top: 12px;
 }
 .game-heading {
   display: flex;
@@ -407,8 +408,48 @@ h1 em {
   background-size: 22px 22px;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.arena.arcade {
+  min-height: 0;
+}
+.player-health {
+  position: relative;
+  z-index: 3;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #191f21;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.player-health strong {
+  color: var(--lime);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.health-track {
+  height: 8px;
+  max-width: 240px;
+  flex: 1;
+  overflow: hidden;
+  background: #35403b;
+  border-radius: 4px;
+}
+#player-health-fill {
+  display: block;
+  height: 100%;
+  background: var(--lime);
+}
+.player-health[data-low="true"] strong {
+  color: #ff9494;
+}
+.player-health[data-low="true"] #player-health-fill {
+  background: #ff9494;
 }
 .welcome {
   text-align: center;
@@ -745,6 +786,9 @@ select:disabled {
 .overlay .primary-button {
   margin-top: 15px;
 }
+.arena.arcade .overlay {
+  top: var(--player-health-height, 0px);
+}
 .touch-controls {
   display: flex;
   justify-content: space-between;
@@ -1002,6 +1046,55 @@ select:disabled {
   }
   .overlay h3 {
     font-size: 27px;
+  }
+}
+@media (max-height: 500px) {
+  .game-heading {
+    margin-bottom: 8px;
+  }
+  .game-heading .eyebrow {
+    display: none;
+  }
+  .game-heading h2 {
+    font-size: 22px;
+  }
+  .game-footer {
+    min-height: 40px;
+    padding: 4px 0;
+    font-size: 10px;
+  }
+  .player-health {
+    padding: 6px 12px;
+  }
+  .touch-controls {
+    padding: 6px 0;
+  }
+  .touch-controls button {
+    padding: 8px;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .dpad {
+    grid-template-columns: repeat(4, 44px);
+  }
+  .dpad button:first-child,
+  .dpad button:nth-child(2) {
+    grid-column: auto;
+  }
+  .overlay {
+    padding: 12px;
+  }
+  .overlay h3 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .overlay p {
+    margin: 6px 0;
+    font-size: 12px;
+  }
+  .overlay .primary-button {
+    margin-top: 8px;
+    padding: 10px 20px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
