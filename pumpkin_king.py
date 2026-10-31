@@ -21,6 +21,7 @@ EYE_FLASH_PERIOD = EYE_FLASH_ON + EYE_FLASH_GAP
 COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
 RING_SEGMENTS, RING_THICKNESS = 160, 12
+RING_FALL_SPEED, RING_GAP = 145, 48
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
                 "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS")
 
@@ -198,7 +199,8 @@ class PumpkinKing(BossCrush):
                         self.rng.choice(("blue", "orange")))
             ring.y = self.top + ring.vertical_radius + RING_THICKNESS/2
             self.rings.append(ring)
-            return 1.4
+            # Let the full outline pass, plus a clear gap, before the next ring.
+            return (2*ring.vertical_radius + RING_THICKNESS + RING_GAP)/RING_FALL_SPEED
         if name == "fingers":
             side = -1 if self.volley % 2 == 0 else 1
             self.bullets.append(Finger(side * 265, 95, -side * 140, -90,
@@ -328,7 +330,7 @@ class PumpkinKing(BossCrush):
             self.bullets = bullets
             rings = []
             for ring in self.rings:
-                ring.y -= 145*step
+                ring.y -= RING_FALL_SPEED*step
                 ring.angle += 0.55*step
                 for x, y, width, height, rule in ring.pieces():
                     danger = rule == "normal" or rule == "blue" and moving or rule == "orange" and not moving
