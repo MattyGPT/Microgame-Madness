@@ -20,6 +20,7 @@ EYE_FLASH_GAP = 0.2
 EYE_FLASH_PERIOD = EYE_FLASH_ON + EYE_FLASH_GAP
 COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
+RING_SEGMENTS, RING_THICKNESS = 160, 12
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
                 "MAGENTA FINGERS — tap C at impact", "CHAOS", "ROYAL SLAMS")
 
@@ -42,15 +43,20 @@ class Ring:
     y: float
     angle: float
     rule: str
-    radius: float = 68
+    radius: float = 280
+    vertical_radius: float = 220
 
     def pieces(self):
-        # One quarter of each otherwise white ring follows a color rule.
-        for i in range(48):
-            angle = self.angle + math.tau * i / 48
+        # Opposite colored quarters rotate around a nearly arena-sized ellipse.
+        opposite = "orange" if self.rule == "blue" else "blue"
+        quarter = RING_SEGMENTS // 4
+        for i in range(RING_SEGMENTS):
+            angle = self.angle + math.tau * i / RING_SEGMENTS
+            side = ((i + quarter // 2) // quarter) % 4
+            rule = self.rule if side == 0 else opposite if side == 2 else "normal"
             yield (self.x + math.cos(angle) * self.radius,
-                   self.y + math.sin(angle) * self.radius,
-                   9, 9, self.rule if i < 12 else "normal")
+                   self.y + math.sin(angle) * self.vertical_radius,
+                   RING_THICKNESS, RING_THICKNESS, rule)
 
 
 def slam_stages():
@@ -188,8 +194,10 @@ class PumpkinKing(BossCrush):
             self.volley += 1
             return 1.05
         if name == "rings":
-            self.rings.append(Ring(self.rng.uniform(-180, 180), 305, self.rng.uniform(0, math.tau),
-                                   self.rng.choice(("blue", "orange"))))
+            ring = Ring((self.left+self.right)/2, 0, self.rng.uniform(0, math.tau),
+                        self.rng.choice(("blue", "orange")))
+            ring.y = self.top + ring.vertical_radius + RING_THICKNESS/2
+            self.rings.append(ring)
             return 1.4
         if name == "fingers":
             side = -1 if self.volley % 2 == 0 else 1
@@ -326,7 +334,7 @@ class PumpkinKing(BossCrush):
                     danger = rule == "normal" or rule == "blue" and moving or rule == "orange" and not moving
                     if danger and hits_player(self.x, self.y, x, y, width, height):
                         self.hurt()
-                if ring.y+ring.radius > self.bottom:
+                if ring.y+ring.vertical_radius+RING_THICKNESS/2 > self.bottom:
                     rings.append(ring)
             self.rings = rings
             self.update_healing(step)
