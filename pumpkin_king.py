@@ -1,4 +1,4 @@
-"""Impossible Phase 2: deterministic combat timing, independent of graphics."""
+"""Pumpkin King difficulties with deterministic combat, independent of graphics."""
 
 from collections import deque
 from dataclasses import dataclass
@@ -9,6 +9,8 @@ from boss_crush import (BossCrush, BossDifficulty, Projectile, HealingPickup,
 from dodge_model import PLAYER_LEFT, PLAYER_RIGHT, PLAYER_BOTTOM, PLAYER_TOP
 
 MODE = "phase2"
+COWARD_MODE = "coward"
+PUMPKIN_DIFFICULTIES = {MODE: 5, COWARD_MODE: 10}
 KING_WIDTH, KING_HEIGHT = 100, 80
 SLAM_ORDER = ("left", "right", "left", "right", "right", "both")
 RAISE_TIME, SLAM_TIME, SLAM_REST = 0.5, 0.15, 0.15  # 0.8s between impacts.
@@ -69,12 +71,13 @@ def slam_stages():
 
 
 class PumpkinKing(BossCrush):
-    def __init__(self, rng=None):
+    def __init__(self, rng=None, difficulty=MODE):
         super().__init__("impossible", rng)
-        self.difficulty = MODE
-        self.config = BossDifficulty(1400, 220, 0.3, 14, 0, "#fff2bd", player_hp=5)
+        self.difficulty = difficulty
+        self.config = BossDifficulty(1400, 220, 0.3, 14, 0, "#fff2bd",
+                                     player_hp=PUMPKIN_DIFFICULTIES[difficulty])
         self.hp = 1400
-        self.max_lives = self.lives = 5
+        self.max_lives = self.lives = self.config.player_hp
         self.boss_x, self.boss_y = 0.0, 130.0
         self.heal_in = HEAL_EVERY
         self.rings = []
@@ -232,7 +235,7 @@ class PumpkinKing(BossCrush):
             if pickup.remaining <= 1e-9:
                 continue
             if hits_player(self.x, self.y, pickup.x, pickup.y, 16, 16):
-                self.lives = min(5, self.lives + 1)
+                self.lives = min(self.max_lives, self.lives + 1)
             else:
                 kept.append(pickup)
         self.healing_pickups = kept

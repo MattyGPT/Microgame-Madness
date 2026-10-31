@@ -80,7 +80,7 @@ class BrowserGame:
         elif mode == "boss":
             self.game = BossCrush(difficulty)
         elif mode == "pumpkin":
-            self.game = PumpkinKing()
+            self.game = PumpkinKing(difficulty=difficulty)
         else:
             raise ValueError("Unknown game")
 
