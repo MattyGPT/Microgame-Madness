@@ -11,7 +11,9 @@ from dodge_model import PLAYER_LEFT, PLAYER_RIGHT, PLAYER_BOTTOM, PLAYER_TOP
 MODE = "phase2"
 COWARD_MODE = "coward"
 BABY_MODE = "baby"
-PUMPKIN_DIFFICULTIES = {MODE: 5, COWARD_MODE: 10, BABY_MODE: 15}
+COME_ON_MODE = "come_on"
+COME_ON_NAME = "Come On, Are You Really That Bad at the Game?"
+PUMPKIN_DIFFICULTIES = {MODE: 5, COWARD_MODE: 10, BABY_MODE: 15, COME_ON_MODE: 23}
 KING_WIDTH, KING_HEIGHT = 100, 80
 SLAM_ORDER = ("left", "right", "left", "right", "right", "both")
 RAISE_TIME, SLAM_TIME, SLAM_REST = 0.5, 0.15, 0.15  # 0.8s between impacts.
@@ -182,6 +184,56 @@ class PumpkinKing(BossCrush):
             return [(-150 if self.stage.side == "left" else 150, 0, 300, 480)]
         return []
 
+    @property
+    def body_rectangle(self):
+        if not self.transformed:
+            return (0, 219, 72, 42)
+        return (self.boss_x, self.boss_y, KING_WIDTH, KING_HEIGHT)
+
+    def arm_pose(self, side):
+        """Shared visible arm pose for drawing and lethal contact detection."""
+        name = self.stage.name
+        progress = min(1, self.stage_age / self.stage.duration)
+        hidden = name in ("shell", "glow") or side == "right" and name == "left_burst"
+        extent = 0 if hidden else progress if name == f"{side}_burst" else 1
+        shoulder_y = self.boss_y if self.transformed else 219
+        if name == "shatter":
+            shoulder_y = 219 + (self.boss_y - 219) * progress
+        raised = name == "raise" and self.stage.side in (side, "both")
+        lift = 45 * min(1, self.stage_age / RAISE_TIME) if raised else 0
+        return extent, shoulder_y, lift
+
+    def arm_segments(self, side):
+        extent, shoulder_y, lift = self.arm_pose(side)
+        sign = -1 if side == "left" else 1
+        for i in range(24):
+            progress = (i + 0.5) / 24
+            if progress > extent:
+                break
+            x = self.boss_x + sign * (45 + progress * 242)
+            y = shoulder_y + 10 - progress * 65 + math.sin(progress * math.pi) * 18 + lift * progress
+            yield (x, y, 14, 40 + progress * 20, progress)
+
+    def hand_rectangles(self, side):
+        extent, shoulder_y, lift = self.arm_pose(side)
+        if extent >= 0.95:
+            sign = -1 if side == "left" else 1
+            for finger in range(4):
+                yield (self.boss_x + sign * (245 + finger * 12),
+                       shoulder_y - 92 + lift + (finger % 2) * 8, 10, 42)
+
+    def contact_rectangles(self):
+        yield self.body_rectangle
+        for side in ("left", "right"):
+            for x, y, width, height, _ in self.arm_segments(side):
+                yield x, y, width, height
+            yield from self.hand_rectangles(side)
+        if self.stage.name == "slam":
+            yield from self.hazard_rectangles()
+
+    def touches_king(self):
+        return any(hits_player(self.x, self.y, *rect) for rect in self.contact_rectangles())
+
     def _spawn(self):
         name = self.stage.name
         if name in ("color", "color_gap"):
@@ -278,6 +330,14 @@ class PumpkinKing(BossCrush):
                 self._next_stage()
                 self.stage_age = extra
 
+            # Physical contact bypasses damage immunity, counters and all HP
+            # settings. Resolve it before healing or a potentially winning shot.
+            if self.touches_king():
+                self.lives = 0
+                self.alive = False
+                self.death_message = "You touched the Pumpkin King! His body and arms kill instantly."
+                return
+
             if self.stage.name in ("bones", "rings", "fingers", "chaos", "color", "color_gap"):
                 self.spawn_in -= step
                 if self.spawn_in <= 0:
@@ -287,9 +347,6 @@ class PumpkinKing(BossCrush):
             for rectangle in self.hazard_rectangles():
                 if hits_player(self.x, self.y, *rectangle):
                     self.hurt()
-            if self.transformed and hits_player(self.x, self.y, self.boss_x, self.boss_y, KING_WIDTH, KING_HEIGHT):
-                self.hurt()
-
             self.fire_in = max(0, self.fire_in-step)
             if self.intro_done and "f" in keys and self.fire_in <= 0:
                 self.shots.append(Projectile(self.x, self.y+PLAYER_TOP+6, 0, 520))

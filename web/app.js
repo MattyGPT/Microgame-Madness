@@ -72,10 +72,14 @@ const modes = {
     category: "05 / THE FINAL BOSS",
     art: "◈",
     heading: "An audience with the king.",
-    copy: "Survive the awakening. Learn six attacks. Claim the crown.",
+    copy: "Survive six attacks. Touching the King’s body or arms kills instantly.",
     accent: "#f8b36b",
     controls: "Arrows move · F shoots after intro · E counters · D pauses",
     difficulties: {
+      come_on: [
+        "Come On, Are You Really That Bad at the Game?",
+        "23 HP. Body and arm contact still kills instantly. E counters magenta fingers.",
+      ],
       baby: [
         "Baby Mode",
         "15 HP. Blue: stay still. Orange: move. Tap E just before magenta fingers hit.",
@@ -491,7 +495,7 @@ function render() {
     saveRound();
     $("pause").hidden = true;
     let title = s.won ? "You did it!" : "One more try?";
-    let copy = `Score: ${s.score}. Your personal best is saved.`;
+    let copy = s.death_message || `Score: ${s.score}. Your personal best is saved.`;
     if (selected === "hangman")
       copy = `The word was ${s.word.replaceAll(" ", "")}. Score: ${s.score}.`;
     if (selected === "keyboard") {

@@ -97,32 +97,17 @@ class KingView:
     def text(self, x, y, text, color, size=18):
         return self.item("text", (x, -y), text=text, fill=color, font=("Arial", size, "bold"), anchor="center")
 
-    def _arm(self, game, side, extent):
-        if extent <= 0:
-            return
+    def _arm(self, game, side):
         t = game.elapsed
-        raised = game.stage.name == "raise" and game.stage.side in (side, "both")
-        sign = -1 if side == "left" else 1
-        shoulder_y = 219 if not game.transformed else 130
-        if game.stage.name == "shatter":
-            shoulder_y = 219-89*min(1, game.stage_age/game.stage.duration)
-        lift = 45 * min(1, game.stage_age/0.5) if raised else 0
-        for i in range(24):
-            progress = (i+0.5)/24
-            if progress > extent:
-                break
-            x = sign*(45+progress*242)
-            y = shoulder_y+10 - progress*65 + math.sin(progress*math.pi)*18 + lift*progress
+        for x, y, width, height, progress in game.arm_segments(side):
             hue = (0.08 + progress*0.12 + math.sin(t*2+progress*5)*0.08) % 1
             prism = colorsys.hsv_to_rgb((t*0.15+progress*0.8) % 1, 0.7, 1)
             color = '#'+''.join(f'{int(c*255):02x}' for c in colorsys.hsv_to_rgb(hue, 0.85, 1))
             edge = '#'+''.join(f'{int(c*255):02x}' for c in prism)
-            self.rect(x, y, 14, 40+progress*20, edge)
-            self.rect(x, y, 14, 29+progress*14, color)
-        if extent >= 0.95:
-            for finger in range(4):
-                x = sign*(245+finger*12)
-                self.rect(x, shoulder_y-92+lift+(finger%2)*8, 10, 42, "#ff42de" if game.stage.name == "fingers" else "#ffc14d")
+            self.rect(x, y, width, height, edge)
+            self.rect(x, y, width, 29+progress*14, color)
+        for rectangle in game.hand_rectangles(side):
+            self.rect(*rectangle, "#ff42de" if game.stage.name == "fingers" else "#ffc14d")
 
     def _face(self, x, y, scale, shell, glow, t):
         if shell:
@@ -162,17 +147,16 @@ class KingView:
         self.canvas.tag_lower(background)
         name = game.stage.name
         progress = min(1, game.stage_age/game.stage.duration)
-        left = 0 if name in ("shell", "glow") else progress if name == "left_burst" else 1
-        right = 0 if name in ("shell", "glow", "left_burst") else progress if name == "right_burst" else 1
         if not game.won:
-            self._arm(game, "left", left)
-            self._arm(game, "right", right)
+            self._arm(game, "left")
+            self._arm(game, "right")
+            body_x, body_y, _, _ = game.body_rectangle
             if name in ("shell", "glow", "left_burst", "right_burst") and not game.intro_done:
                 glow = "#111827" if name == "shell" else mix("#111827", "#ffef42", progress if name == "glow" else 1)
-                self._face(0, 219, 1, True, glow, game.elapsed)
+                self._face(body_x, body_y, 1, True, glow, game.elapsed)
             else:
                 glow = COLORS.get(game.eye_rule, "#fff351" if game.hit_flash > 0 else "#38201c")
-                self._face(0, 130, 1.65, False, glow, game.elapsed)
+                self._face(body_x, body_y, 1.65, False, glow, game.elapsed)
                 if name == "shatter" and not game.intro_done:
                     for i in range(22):
                         angle = i*2.399

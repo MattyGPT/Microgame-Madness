@@ -6,12 +6,13 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+import textwrap
 
 from dodge_model import BLOCK_SIZE, CELL, DIFFICULTIES, DodgeGame, PLAYER_POLYGON
 from boss_crush import (BOSS_DIFFICULTIES, BOSS_WIDTH, BOSS_HEIGHT,
                         HEAL_SIZE, SHOT_WIDTH, SHOT_HEIGHT, BossCrush)
 from scores import SCORE_FILE, ScoreError, load_scores, save_score
-from pumpkin_king import MODE as PHASE_TWO, COWARD_MODE, BABY_MODE, PUMPKIN_DIFFICULTIES, PumpkinKing
+from pumpkin_king import MODE as PHASE_TWO, COWARD_MODE, BABY_MODE, COME_ON_MODE, COME_ON_NAME, PUMPKIN_DIFFICULTIES, PumpkinKing
 
 DODGE_SCORE_FILE = SCORE_FILE.with_name("turtle_scores.json")
 CANVAS_WIDTH, CANVAS_HEIGHT = 680, 660
@@ -64,13 +65,16 @@ def start_turtle_dodge():
     print("Impossible Phase 2: THE PUMPKIN KING — transformation, six attacks, E to counter")
     print("Coward Mode: THE PUMPKIN KING — 10 HP instead of 5")
     print("Baby Mode: THE PUMPKIN KING — 15 HP")
-    difficulty = input("Choose easy / normal / hard / merciless / boss / phase2 / coward / baby: ").strip().lower()
-    while difficulty not in (*DIFFICULTIES, "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode"):
-        difficulty = input("Please choose easy, normal, hard, merciless, boss, phase2, coward, or baby: ").strip().lower()
+    print(f"{COME_ON_NAME} — 23 HP (enter come_on)")
+    difficulty = input("Choose easy / normal / hard / merciless / boss / phase2 / coward / baby / come_on: ").strip().lower()
+    while difficulty not in (*DIFFICULTIES, "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode", COME_ON_NAME.lower()):
+        difficulty = input("Please choose easy, normal, hard, merciless, boss, phase2, coward, baby, or come_on: ").strip().lower()
     if difficulty == "impossible phase 2":
         difficulty = PHASE_TWO
     if difficulty == "coward mode":
         difficulty = COWARD_MODE
+    if difficulty == COME_ON_NAME.lower():
+        difficulty = COME_ON_MODE
     if difficulty == "baby mode":
         difficulty = BABY_MODE
     if difficulty in ("boss", "boss crush"):
@@ -102,7 +106,7 @@ class TurtleDodge:
         self.player_name = player
         self.root = tkinter.Tk()
         if difficulty in PUMPKIN_DIFFICULTIES:
-            mode = {PHASE_TWO: "Impossible Phase 2", COWARD_MODE: "Coward Mode", BABY_MODE: "Baby Mode"}[difficulty]
+            mode = {PHASE_TWO: "Impossible Phase 2", COWARD_MODE: "Coward Mode", BABY_MODE: "Baby Mode", COME_ON_MODE: COME_ON_NAME}[difficulty]
         else:
             mode = "Boss Crush" if difficulty in BOSS_DIFFICULTIES else "Turtle Dodge"
         self.root.title(f"{mode} — {difficulty.title()}")
@@ -165,7 +169,7 @@ class TurtleDodge:
             if difficulty == "impossible":
                 instructions += "\nBLUE: stay still • ORANGE: move\nWhite bullets and bones always hurt"
             if difficulty in PUMPKIN_DIFFICULTIES:
-                instructions = f"ARROWS move • F shoots after the intro\nTap E just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n{self.game.max_lives} HP • Green + heals • D pauses\nThe opening fire and slams deal damage!"
+                instructions = f"ARROWS move • F shoots after the intro\nTap E just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n{self.game.max_lives} HP • Green + heals • D pauses\nBody, arms and slams kill instantly!"
         self.set_message(f"{mode.upper()}: {difficulty.upper()}\n\n{instructions}\n\nSPACE to start")
         for key in ("Left", "Right", "Up", "Down", "f", "F", "e", "E"):
             self.screen.onkeypress(lambda k=key: self.keys.add(k.lower() if len(k) == 1 else k), key)
@@ -190,7 +194,8 @@ class TurtleDodge:
         self.message.clear()
         self.message.color("#ffffff")
         self.message.goto(0, -50)
-        self.message.write(text, align="center", font=("Arial", 18, "bold"))
+        wrapped = "\n".join(textwrap.fill(line, width=50) for line in text.split("\n"))
+        self.message.write(wrapped, align="center", font=("Arial", 18, "bold"))
 
     def space(self):
         if self.state in ("playing", "countdown"):
@@ -402,7 +407,7 @@ def main():
     try:
         difficulty = sys.argv[2] if len(sys.argv) > 2 else "easy"
         if difficulty not in (*DIFFICULTIES, *BOSS_DIFFICULTIES, *PUMPKIN_DIFFICULTIES):
-            print("Unknown difficulty. Choose easy, normal, hard, merciless, mean, cruel, nightmare, impossible, phase2, coward, or baby.")
+            print("Unknown difficulty. Choose easy, normal, hard, merciless, mean, cruel, nightmare, impossible, phase2, coward, baby, or come_on.")
             return 1
         app = TurtleDodge(turtle, sys.argv[1] if len(sys.argv) > 1 else "Player", difficulty)
         app.root.mainloop()
