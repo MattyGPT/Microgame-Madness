@@ -15,7 +15,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(restored.visit().changed, false);
   assert.equal(restored.score, 10);
-  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90 });
+  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810 });
   for (const raw of [null, [], 'bad', { stats: { hangmanWins: -1, typingBest: Infinity }, unlocked: { welcome: 'bad', fake: '2026-01-01' } }]) {
     const clean = new Tracker(raw);
     assert.equal(clean.score, 0);
@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 30);
+  assert.equal(catalog.length, 43);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -95,4 +95,80 @@ test('boss victories respect the selected mode and sampler requires all five gam
   assert.deepEqual(ids(tracker.start('dodge', 'easy')), ['play_dodge', 'sampler']);
   tracker.start('hangman', 'hard');
   assert.equal(tracker.observe({ mode: 'boss', difficulty: 'impossible', won: true, over: true }).changed, false);
+});
+
+test('King of Suffering requires a real zero-damage win in every mode, even after healing', () => {
+  for (const difficulty of ['phase2', 'coward', 'baby', 'come_on']) {
+    const tracker = new Tracker();
+    for (const damage_taken of [undefined, 1, 5]) {
+      const result = finish(tracker, 'pumpkin', difficulty, { damage_taken, lives: 23, max_lives: 23 });
+      assert.ok(!ids(result).includes('pumpkin_flawless'));
+    }
+    tracker.start('pumpkin', difficulty);
+    tracker.observe({ mode: 'pumpkin', difficulty, damage_taken: 0, over: true, won: false });
+    assert.equal(tracker.data.unlocked.pumpkin_flawless, undefined);
+    const before = tracker.score;
+    assert.deepEqual(ids(finish(tracker, 'pumpkin', difficulty, { damage_taken: 0 })), ['pumpkin_flawless']);
+    assert.equal(tracker.score - before, 810);
+    const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.ok(!ids(finish(restored, 'pumpkin', difficulty, { damage_taken: 0 })).includes('pumpkin_flawless'));
+  }
+});
+
+test('Close One and the 120-second awards require evidence at their thresholds', () => {
+  const tracker = new Tracker();
+  tracker.start('dodge', 'easy');
+  const observe = (elapsed, near_misses = 0, difficulty = 'easy') => tracker.observe({ mode: 'dodge', difficulty, elapsed, near_misses });
+  observe(119);
+  assert.equal(tracker.data.unlocked.dodge_120, undefined);
+  assert.equal(tracker.data.unlocked.dodge_close, undefined);
+  const before = tracker.score;
+  assert.deepEqual(ids(observe(120, 1)), ['dodge_close', 'dodge_120']);
+  assert.equal(tracker.score - before, 300);
+  assert.equal(observe(120, 1).changed, false);
+  tracker.start('dodge', 'merciless');
+  observe(119, 0, 'merciless');
+  assert.equal(tracker.data.unlocked.dodge_merciless_120, undefined);
+  assert.deepEqual(ids(observe(120, 0, 'merciless')), ['dodge_merciless_120']);
+});
+
+test('every additional crystal and diamond challenge unlocks exactly at its threshold', () => {
+  for (const [id, stat, threshold] of [
+    ['hangman_50', 'hangmanWins', 50], ['hangman_100', 'hangmanWins', 100],
+    ['hangman_hard_10', 'hardWins', 10], ['hangman_perfect_25', 'perfectWins', 25],
+    ['typing_30', 'typingBest', 30], ['typing_50', 'typingBest', 50],
+    ['boss_10', 'bossWins', 10], ['pumpkin_10', 'pumpkinWins', 10],
+  ]) {
+    const tracker = new Tracker({ stats: { [stat]: threshold - 1 } });
+    tracker.visit();
+    assert.equal(tracker.data.unlocked[id], undefined);
+    let result;
+    if (stat === 'typingBest') {
+      tracker.start('keyboard', 'progressive');
+      result = tracker.observe({ mode: 'keyboard', difficulty: 'progressive', score: threshold });
+    } else {
+      const mode = stat === 'bossWins' ? 'boss' : stat === 'pumpkinWins' ? 'pumpkin' : 'hangman';
+      const difficulty = mode === 'boss' ? 'mean' : mode === 'pumpkin' ? 'baby' : 'hard';
+      result = finish(tracker, mode, difficulty, { mistakes: 0, damage_taken: 1 });
+    }
+    assert.ok(ids(result).includes(id), id);
+    assert.ok(new Tracker(tracker.data).data.unlocked[id]);
+  }
+  const tracker = new Tracker();
+  finish(tracker, 'boss', 'mean', { damage_taken: 0 });
+  finish(tracker, 'boss', 'impossible', { damage_taken: 1 });
+  assert.equal(tracker.data.unlocked.boss_flawless, undefined);
+  assert.deepEqual(ids(finish(tracker, 'boss', 'impossible', { damage_taken: 0 })), ['boss_flawless']);
+});
+
+test('existing progress and medals migrate without losing points or repeating awards', () => {
+  const tracker = new Tracker({ stats: { visits: 1, hangmanWins: 50, dodgeBest: 120 },
+    unlocked: { welcome: '2026-10-31', hangman_win: '2026-10-31' } });
+  assert.equal(tracker.score, 40);
+  const earned = ids(tracker.visit());
+  assert.ok(!earned.includes('welcome'));
+  assert.ok(!earned.includes('hangman_win'));
+  assert.ok(earned.includes('hangman_50'));
+  assert.ok(earned.includes('dodge_120'));
+  assert.equal(new Tracker(tracker.data).visit().changed, false);
 });

@@ -13,6 +13,43 @@ from turtle_dodge import DODGE_SCORE_FILE, TurtleDodge, dodge_score_file, start_
 
 
 class DodgeTests(unittest.TestCase):
+    def test_close_call_requires_safe_escape_and_counts_each_block_once(self):
+        for dt in (1 / 60, .05, .25):
+            game = self.game()
+            game.x, game.y = 0, 0
+            block = Block(25, 65, ((0, 0),), "red")
+            game.blocks = [block]
+            game.update(.25, set())
+            self.assertEqual(game.near_misses, 0)  # Approaching is not escaping.
+            for _ in range(round(1 / dt)):
+                game.update(dt, set())
+            self.assertTrue(game.alive)
+            self.assertEqual(game.near_misses, 1)
+            block.y = 65  # Re-encountering the same object cannot farm rewards.
+            game.update(1, set())
+            self.assertEqual(game.near_misses, 1)
+            self.assertEqual(DodgeGame().near_misses, 0)
+
+    def test_distant_blocks_and_collisions_are_not_close_calls(self):
+        for x, survives in ((0, False), (20, False), (40, True)):
+            game = self.game()
+            game.x, game.y = 0, 0
+            game.blocks = [Block(x, 65, ((0, 0),), "red")]
+            game.update(1, set())
+            self.assertEqual(game.alive, survives)
+            self.assertEqual(game.near_misses, 0)
+
+    def test_close_approach_followed_by_collision_has_no_reward(self):
+        game = self.game()
+        game.x, game.y = 0, 0
+        block = Block(25, 0, ((0, 0),), "red", speed_multiplier=0)
+        game.blocks = [block]
+        game.update(.01, set())
+        self.assertTrue(block.near_player)
+        game.update(.05, {"Right"})
+        self.assertFalse(game.alive)
+        self.assertEqual(game.near_misses, 0)
+
     def game(self):
         game = DodgeGame(random.Random(42))
         game.spawn_in = 1000

@@ -1104,9 +1104,11 @@ select:disabled {
 }
 
 /* Achievement medals use the same tier colors in the collection and toast. */
-[data-tier="bronze"] { --medal: #e6ac7c; }
-[data-tier="silver"] { --medal: #cedcea; }
-[data-tier="gold"] { --medal: #ffdb75; }
+[data-tier="bronze"] { --medal: #e6ac7c; --metal-dark: #6d351d; --metal-light: #ffe0be; }
+[data-tier="silver"] { --medal: #cedcea; --metal-dark: #566477; --metal-light: #ffffff; }
+[data-tier="gold"] { --medal: #ffdb75; --metal-dark: #946018; --metal-light: #fff6ca; }
+[data-tier="crystal"] { --medal: #d8a6ff; --prism-a: #a34ff0; --prism-b: #74e9ef; --prism-c: #f6b5ff; }
+[data-tier="diamond"] { --medal: #a9f4ff; --prism-a: #51a5ff; --prism-b: #eeebff; --prism-c: #7bffe0; }
 .profile-summary { margin-top: 22px; }
 #profile-score { color: var(--lime); font-size: 28px; }
 #achievement-count, .achievement-legend, #achievement-empty {
@@ -1136,13 +1138,61 @@ select:disabled {
   margin: 10px -5px;
 }
 .achievement-card {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: 9px;
-  padding: 14px;
-  margin-bottom: 10px;
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 18px;
+  padding: 4px;
+  margin-bottom: 14px;
+  background: linear-gradient(125deg, var(--metal-dark), var(--medal) 18%,
+    var(--metal-light) 27%, var(--medal) 33%, var(--metal-dark) 47%,
+    var(--medal) 65%, var(--metal-light) 73%, var(--metal-dark));
+  background-size: 300% 300%;
+  box-shadow: 0 3px 12px #0006;
+  animation: medal-shine 9s ease-in-out infinite alternate paused;
 }
-.achievement-card.earned { border-color: var(--medal); }
+.achievement-content {
+  position: relative;
+  border-radius: 14px;
+  padding: 16px 14px;
+  background: linear-gradient(145deg, #252c30, #151a1d 65%);
+  box-shadow: inset 0 1px 1px #fff3, inset 0 -1px 2px #0009;
+}
+.achievement-card.earned .achievement-content { background: linear-gradient(145deg, #303936, #171e20 70%); }
+.achievement-card:is([data-tier="crystal"], [data-tier="diamond"]) {
+  --gem-shape: polygon(22px 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 22px 100%, 0 50%);
+  border-radius: 0;
+  padding: 2px;
+  clip-path: var(--gem-shape);
+  background-image: linear-gradient(120deg, var(--prism-a), var(--medal) 15%,
+    var(--prism-b) 27%, #fff 32%, var(--prism-c) 40%, var(--prism-a) 56%,
+    var(--medal) 70%, #fff 77%, var(--prism-b) 85%, var(--prism-a));
+}
+.achievement-card:is([data-tier="crystal"], [data-tier="diamond"]) .achievement-content {
+  border-radius: 0;
+  clip-path: polygon(21px 0, calc(100% - 21px) 0, 100% 50%, calc(100% - 21px) 100%, 21px 100%, 0 50%);
+  padding: 22px 26px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--medal) 12%, #171d24), #141b22 65%);
+}
+.achievement-card::before, .achievement-card::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(#fff 15%, var(--medal) 65%);
+  clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0 50%, 39% 38%);
+  animation: medal-sparkle 5s ease-in-out infinite paused;
+}
+.achievement-card::before { top: -3px; right: 29px; }
+.achievement-card::after { bottom: -3px; left: 29px; animation-delay: -2.5s; }
+.achievement-card.in-view, .achievement-card.in-view::before, .achievement-card.in-view::after { animation-play-state: running; }
+@keyframes medal-shine { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+@keyframes medal-sparkle { 0%, 100% { opacity: .35; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) {
+  .achievement-card, .achievement-card::before, .achievement-card::after { animation: none; }
+}
 .achievement-tier { color: var(--medal); text-transform: uppercase; font-size: 9px; letter-spacing: .6px; }
 .achievement-card h4 { font: 500 16px/1.35 "Space Grotesk", sans-serif; margin: 9px 0; }
 .achievement-card p { color: var(--muted); font-size: 11px; line-height: 1.6; margin: 0 0 12px; }

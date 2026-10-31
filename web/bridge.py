@@ -130,6 +130,8 @@ class BrowserGame:
             result.update(over=not game.alive or getattr(game, "won", False),
                           won=getattr(game, "won", False), score=game.score,
                           death_message=getattr(game, "death_message", None),
+                          damage_taken=getattr(game, "damage_taken", None),
+                          near_misses=getattr(game, "near_misses", 0),
                           elapsed=int(game.elapsed), can_pause=game.rules.can_pause,
                           bounds=[game.left, game.right, game.bottom, game.top],
                           label=getattr(game, "pattern_label", "Dodge the blocks. Stay in the game."),

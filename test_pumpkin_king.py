@@ -16,6 +16,19 @@ from turtle_dodge import create_game, dodge_score_file, start_turtle_dodge
 
 
 class KingTests(unittest.TestCase):
+    def test_damage_history_survives_healing_and_resets_on_restart(self):
+        for mode in PUMPKIN_DIFFICULTIES:
+            game = create_game(mode)
+            self.assertEqual(game.damage_taken, 0)
+            game.hurt()
+            game.hurt()  # Immunity blocks this attempt; only one hit landed.
+            self.assertEqual(game.damage_taken, 1)
+            game.healing_pickups = [HealingPickup(game.x, game.y)]
+            game.update_healing(.01)
+            self.assertEqual(game.lives, game.max_lives)
+            self.assertEqual(game.damage_taken, 1)
+            self.assertEqual(create_game(mode).damage_taken, 0)
+
     def game(self, stage="break", side=""):
         game = PumpkinKing(random.Random(42))
         game.intro_done = True
@@ -111,6 +124,7 @@ class KingTests(unittest.TestCase):
                     game.healing_pickups = [HealingPickup(game.x, game.y)]
                     game.update(0.01, {"e", "f"})
                     self.assertEqual(game.lives, 0)
+                    self.assertEqual(game.damage_taken, game.max_lives)
                     self.assertFalse(game.alive)
                     self.assertFalse(game.won)
                     self.assertEqual(game.hp, 5)  # Contact wins over a killing shot or heal.

@@ -197,6 +197,9 @@ function updateAchievements(result) {
   if ($("achievement-toast").hidden) showAchievementToast();
 }
 function initializeAchievements() {
+  const visibleCards = new IntersectionObserver(entries => {
+    for (const entry of entries) entry.target.classList.toggle("in-view", entry.isIntersecting);
+  }, { root: $("achievements-list") });
   for (const item of Achievements.catalog) {
     const card = document.createElement("article");
     card.className = "achievement-card";
@@ -214,9 +217,13 @@ function initializeAchievements() {
     progress.setAttribute("aria-label", item.title);
     const state = document.createElement("small");
     state.className = "achievement-state";
-    card.append(tier, title, description, progress, state);
+    const content = document.createElement("div");
+    content.className = "achievement-content";
+    content.append(tier, title, description, progress, state);
+    card.append(content);
     achievementCards.set(item.id, card);
     $("achievements-list").append(card);
+    visibleCards.observe(card);
   }
   const tabs = [$("scores-tab"), $("achievements-tab")];
   function selectTab(tab) {

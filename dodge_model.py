@@ -6,6 +6,7 @@ import random
 
 CELL = 28
 BLOCK_SIZE = CELL * 0.94
+NEAR_MISS_MARGIN = 6
 LEFT, RIGHT, BOTTOM, TOP = -300, 300, -240, 240
 # The same north-facing outline is used for drawing and collision detection.
 PLAYER_POLYGON = (
@@ -63,6 +64,8 @@ class Block:
     speed_multiplier: float = 1.0
     sway_phase: float = 0.0
     sway_amplitude: float = 0.0
+    near_player: bool = False
+    near_miss_awarded: bool = False
 
     def centers(self):
         return [(self.x + x * CELL, self.y + y * CELL) for x, y in self.cells]
@@ -89,8 +92,8 @@ def polygon_touches_rectangle(polygon, left, right, bottom, top):
     return bool(polygon)
 
 
-def touches_block(x, y, block):
-    half = BLOCK_SIZE / 2
+def touches_block(x, y, block, margin=0):
+    half = BLOCK_SIZE / 2 + margin
     for bx, by in block.centers():
         left, right = bx - x - half, bx - x + half
         bottom, top = by - y - half, by - y + half
@@ -110,6 +113,7 @@ class DodgeGame:
         self.x, self.y = 0.0, self.bottom + 50.0
         self.elapsed = 0.0
         self.dodged = 0
+        self.near_misses = 0
         self.blocks = []
         self.alive = True
         self.spawn_in = 0.7 * self.rules.spawn_scale
@@ -166,6 +170,7 @@ class DodgeGame:
             if self.spawn_in <= 0:
                 self.spawn()
                 self.spawn_in += self.spawn_interval
+            escaped = []
             for block in self.blocks:
                 block.y -= self.speed * block.speed_multiplier * step
                 if block.sway_amplitude:
@@ -176,6 +181,18 @@ class DodgeGame:
                     block.x = max(self.left + CELL / 2, min(self.right - CELL / 2 - width, block.x))
                 if touches_block(self.x, self.y, block):
                     self.alive = False
+                elif not block.near_miss_awarded:
+                    if touches_block(self.x, self.y, block, NEAR_MISS_MARGIN):
+                        block.near_player = True
+                    elif block.near_player:
+                        escaped.append(block)
+            # An approach alone is not a near miss. Reward a safe escape, once
+            # per block, only after every collision in this substep is checked.
+            if not self.alive:
+                return
+            for block in escaped:
+                block.near_miss_awarded = True
+                self.near_misses += 1
             remaining = []
             for block in self.blocks:
                 if max(y for x, y in block.centers()) + CELL / 2 < self.bottom:

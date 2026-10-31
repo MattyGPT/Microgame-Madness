@@ -97,6 +97,7 @@ class BossCrush:
         self.hit_flash = 0.0
         self.max_lives = self.config.player_hp
         self.lives = self.max_lives
+        self.damage_taken = 0
         self.alive, self.won = True, False
         self.death_message = None
         self.elapsed = 0.0
@@ -208,6 +209,7 @@ class BossCrush:
 
     def hurt(self):
         if self.invulnerable <= 0:
+            self.damage_taken += 1
             self.lives -= 1
             self.invulnerable = 1.25
             self.alive = self.lives > 0
@@ -299,6 +301,7 @@ class BossCrush:
             moving = abs(self.x - old_x) > 1e-9 or abs(self.y - old_y) > 1e-9
             self.move_boss(step)
             if hits_player(self.x, self.y, self.boss_x, self.boss_y, BOSS_WIDTH, BOSS_HEIGHT):
+                self.damage_taken += self.lives
                 self.lives = 0
                 self.alive = False
                 self.death_message = "CRUSHED BY THE BOSS!\nToo close for comfort."
