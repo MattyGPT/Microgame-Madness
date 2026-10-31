@@ -156,6 +156,24 @@ class KingTests(unittest.TestCase):
                         dangerous = (rule == "blue" and moving) or (rule == "orange" and not moving)
                         self.assertEqual(game.lives, 4 if dangerous else 5)
 
+    def test_falling_rings_stay_separated_at_different_frame_rates(self):
+        for seed in (7, 42):
+            for dt in (1/60, 0.05, 0.25):
+                with self.subTest(seed=seed, dt=dt):
+                    game = PumpkinKing(random.Random(seed))
+                    game.begin_attack(2)
+                    game.invulnerable = 100
+                    peak_rings = 0
+                    for _ in range(round(8/dt)):
+                        game.update(dt, set())
+                        rings = sorted(game.rings, key=lambda ring: ring.y)
+                        peak_rings = max(peak_rings, len(rings))
+                        for lower, upper in zip(rings, rings[1:]):
+                            lower_top = max(y+height/2 for x, y, width, height, rule in lower.pieces())
+                            upper_bottom = min(y-height/2 for x, y, width, height, rule in upper.pieces())
+                            self.assertGreaterEqual(upper_bottom-lower_top, 40)
+                    self.assertGreaterEqual(peak_rings, 2)
+
     def test_rings_remain_until_the_last_visible_edge_leaves(self):
         game = self.game("rings")
         ring = Ring(0, game.bottom-220-RING_THICKNESS/2+2, 0, "blue")
