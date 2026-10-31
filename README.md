@@ -20,7 +20,7 @@ Use Python 3.10 or newer (automated checks use 3.12). No third-party Python pack
 
 The keyboard challenge requires an interactive Linux or macOS terminal. Graphical modes require a desktop session and Python's Tkinter/Tcl/Tk support. Install the Tk package for your operating system and Python installation if needed. A machine-local `.runtime/` Tcl/Tk installation is supported but is not tracked in Git. Pumpkin King sound uses `paplay` when available.
 
-Controls: letters for Hangman; type the displayed sequence for Key Rush; arrow keys to move in arcade modes, F to shoot, C to counter in Pumpkin King, D to pause where allowed, Space to start/restart, and Escape to exit. Scores are stored in local JSON files excluded from Git.
+Controls: letters for Hangman; type the displayed sequence for Key Rush; arrow keys to move in arcade modes, F to shoot, E to counter in Pumpkin King, D to pause where allowed, Space to start/restart, and Escape to exit. Scores are stored in local JSON files excluded from Git.
 
 ## Play the web version locally
 

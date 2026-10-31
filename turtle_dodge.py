@@ -61,7 +61,7 @@ def start_turtle_dodge():
     print("Hard: much faster yellow blocks that sway left and right")
     print("Merciless: faster red blocks, more spawns, smaller arena, deadly edges, NO PAUSE")
     print("Boss Crush: dodge bullet patterns and shoot the boss with F")
-    print("Impossible Phase 2: THE PUMPKIN KING — transformation, six attacks, C to counter")
+    print("Impossible Phase 2: THE PUMPKIN KING — transformation, six attacks, E to counter")
     difficulty = input("Choose easy / normal / hard / merciless / boss / phase2: ").strip().lower()
     while difficulty not in (*DIFFICULTIES, "boss", "boss crush", PHASE_TWO, "impossible phase 2"):
         difficulty = input("Please choose easy, normal, hard, merciless, boss, or phase2: ").strip().lower()
@@ -156,9 +156,9 @@ class TurtleDodge:
             if difficulty == "impossible":
                 instructions += "\nBLUE: stay still • ORANGE: move\nWhite bullets and bones always hurt"
             if difficulty == PHASE_TWO:
-                instructions = "ARROWS move • F shoots after the intro\nTap C just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n5 HP • Green + heals • D pauses\nThe opening fire and slams deal damage!"
+                instructions = "ARROWS move • F shoots after the intro\nTap E just before magenta fingers hit\nBLUE: still • ORANGE: move • WHITE: dodge\n5 HP • Green + heals • D pauses\nThe opening fire and slams deal damage!"
         self.set_message(f"{mode.upper()}: {difficulty.upper()}\n\n{instructions}\n\nSPACE to start")
-        for key in ("Left", "Right", "Up", "Down", "f", "F", "c", "C"):
+        for key in ("Left", "Right", "Up", "Down", "f", "F", "e", "E"):
             self.screen.onkeypress(lambda k=key: self.keys.add(k.lower() if len(k) == 1 else k), key)
             self.screen.onkeyrelease(lambda k=key: self.keys.discard(k.lower() if len(k) == 1 else k), key)
         self.screen.onkeypress(self.space, "space")
@@ -365,7 +365,7 @@ class TurtleDodge:
             if boss_mode:
                 controls = "ARROWS move  •  F shoot  •  D pause/resume  •  ESC menu"
             if isinstance(self.game, PumpkinKing):
-                controls = "ARROWS move • F shoot • C counter • D pause • ESC menu"
+                controls = "ARROWS move • F shoot • E counter • D pause • ESC menu"
             self.hud.write(self.notice or controls, align="center", font=("Arial", 12, "normal"))
             if boss_mode and self.game.difficulty == "impossible":
                 self.hud.goto(0, -308)

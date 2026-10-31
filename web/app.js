@@ -74,11 +74,11 @@ const modes = {
     heading: "An audience with the king.",
     copy: "Survive the awakening. Learn six attacks. Claim the crown.",
     accent: "#f8b36b",
-    controls: "Arrows move · F shoots after intro · C counters · D pauses",
+    controls: "Arrows move · F shoots after intro · E counters · D pauses",
     difficulties: {
       phase2: [
         "Impossible Phase 2",
-        "5 HP. Blue: stay still. Orange: move. Tap C just before magenta fingers hit.",
+        "5 HP. Blue: stay still. Orange: move. Tap E just before magenta fingers hit.",
       ],
     },
   },
@@ -556,7 +556,7 @@ window.addEventListener("keydown", (event) => {
       return;
     }
     const key = arrowMap[event.key] || event.key.toLowerCase();
-    if (["Up", "Down", "Left", "Right", "f", "c"].includes(key)) {
+    if (["Up", "Down", "Left", "Right", "f", "e"].includes(key)) {
       event.preventDefault();
       keys.add(key);
     }
