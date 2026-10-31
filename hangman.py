@@ -1,7 +1,7 @@
 """A terminal Hangman game. Run with: python3 hangman.py."""
 
 import random
-import string
+from hangman_model import DIFFICULTY, HANGMAN_PICS, HangmanGame, hangman_picture
 
 from scores import ScoreError, load_scores, save_score
 from keyboard_challenge import KEYBOARD_SCORE_FILE, start_keyboard_challenge
@@ -16,76 +16,32 @@ else:
     init(autoreset=True)
 
 
-HANGMAN_PICS = (
-    " +---+\n     |\n     |\n     |\n    ===",
-    " +---+\n O   |\n     |\n     |\n    ===",
-    " +---+\n O   |\n |   |\n     |\n    ===",
-    " +---+\n O   |\n/|   |\n     |\n    ===",
-    " +---+\n O   |\n/|\\  |\n     |\n    ===",
-    " +---+\n O   |\n/|\\  |\n/    |\n    ===",
-    " +---+\n O   |\n/|\\  |\n/ \\  |\n    ===",
-)
-
-DIFFICULTY = {
-    "easy": {"words": ["cat", "tree", "book", "dog", "sun"], "max_attempts": 10},
-    "medium": {
-        "words": ["python", "castle", "planet", "rocket", "winter"],
-        "max_attempts": 7,
-    },
-    "hard": {
-        "words": ["asynchronous", "philosophy", "xylophone", "microscope", "algorithm"],
-        "max_attempts": 5,
-    },
-}
-
-
-def hangman_picture(mistakes, max_attempts):
-    """Spread the six drawing stages across the difficulty's mistake limit."""
-    stage = min(mistakes * (len(HANGMAN_PICS) - 1) // max_attempts, len(HANGMAN_PICS) - 1)
-    return HANGMAN_PICS[stage]
-
-
 def play_hangman(word, max_attempts):
     """Return remaining attempts on a win, zero on a loss, or None when quit."""
-    word = word.strip().lower()
-    if not word or any(letter not in string.ascii_lowercase for letter in word):
-        raise ValueError("The word must contain only English letters.")
-    if type(max_attempts) is not int or max_attempts < 1:
-        raise ValueError("max_attempts must be a positive integer.")
-
-    guessed = set()
-    mistakes = 0
-    while mistakes < max_attempts:
-        print(Fore.YELLOW + hangman_picture(mistakes, max_attempts))
-        print(Fore.CYAN + "Word: " + " ".join(c if c in guessed else "_" for c in word))
-        print(f"Attempts left: {max_attempts - mistakes}")
-        print("Guessed: " + (" ".join(sorted(guessed)) or "none"))
+    game = HangmanGame(word, max_attempts)
+    while not game.over:
+        print(Fore.YELLOW + hangman_picture(game.mistakes, max_attempts))
+        print(Fore.CYAN + "Word: " + " ".join(c if c in game.guessed else "_" for c in game.word))
+        print(f"Attempts left: {max_attempts - game.mistakes}")
+        print("Guessed: " + (" ".join(sorted(game.guessed)) or "none"))
         guess = input(Fore.GREEN + "Guess a letter (or type quit to return to menu): ").strip().lower()
-
         if guess in ("quit", "exit"):
             print(Fore.YELLOW + "Round ended. Returning to the menu.")
             return None
-
-        if len(guess) != 1 or guess not in string.ascii_lowercase:
+        result = game.guess(guess)
+        if result == "invalid":
             print(Fore.RED + "Please enter a single English letter.")
-            continue
-        if guess in guessed:
+        elif result == "repeated":
             print(Fore.RED + "You already guessed that!")
-            continue
-
-        guessed.add(guess)
-        if guess in word:
+        elif result == "correct":
             print(Fore.BLUE + "Correct!")
-        else:
-            mistakes += 1
+        elif result == "wrong":
             print(Fore.RED + "Wrong guess!")
-
-        if set(word) <= guessed:
-            print(Fore.GREEN + f"You win! The word was: {word}")
-            return max_attempts - mistakes
-
+        if game.won:
+            print(Fore.GREEN + f"You win! The word was: {game.word}")
+            return game.score
     print(Fore.RED + HANGMAN_PICS[-1])
-    print(Fore.RED + f"You lost! The word was: {word}")
+    print(Fore.RED + f"You lost! The word was: {game.word}")
     return 0
 
 

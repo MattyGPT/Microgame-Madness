@@ -2,33 +2,15 @@
 
 from contextlib import contextmanager
 import os
-import random
+import random  # Re-exported for callers that patch the original random source.
 import select
-import string
 import sys
 import time
 
+from keyboard_model import KeyboardRound, make_round
 from scores import SCORE_FILE, ScoreError, save_score
 
 KEYBOARD_SCORE_FILE = SCORE_FILE.with_name("keyboard_scores.json")
-
-
-def make_round(level):
-    """Increase length, add new key types, and gradually reduce the time limit."""
-    if level < 1:
-        raise ValueError("Level must be positive.")
-    alphabet = "asdfjkl"
-    if level >= 3:
-        alphabet = string.ascii_lowercase
-    if level >= 5:
-        alphabet += string.digits
-    if level >= 7:
-        alphabet += string.ascii_uppercase
-    if level >= 9:
-        alphabet += "!@#$%&*?+-="
-    length = min(level + 2, 24)
-    seconds = max(4.0, 8.0 - (level - 1) * 0.25)
-    return "".join(random.choice(alphabet) for _ in range(length)), seconds
 
 
 @contextmanager
@@ -68,30 +50,17 @@ def show_progress(sequence, matched, seconds, mistakes):
 
 def play_round(sequence, seconds, read_key, render=show_progress, clock=time.monotonic):
     """Return completed, timeout, or quit. Wrong keys subtract half a second."""
-    deadline = clock() + seconds
-    matched = mistakes = 0
+    game = KeyboardRound(sequence, seconds, clock())
     while True:
-        remaining = max(0.0, deadline - clock())
-        render(sequence, matched, remaining, mistakes)
-        if remaining <= 0:
-            return "timeout"
-        key = read_key(min(0.05, remaining))
-        # A key arriving after the deadline must not complete the round.
-        if clock() >= deadline:
-            render(sequence, matched, 0.0, mistakes)
-            return "timeout"
-        if key is None:
-            continue
-        if key == "\x1b":
-            return "quit"
-        if key == sequence[matched]:
-            matched += 1
-            if matched == len(sequence):
-                render(sequence, matched, max(0.0, deadline - clock()), mistakes)
-                return "completed"
-        else:
-            mistakes += 1
-            deadline -= 0.5
+        now = clock()
+        render(sequence, game.matched, game.remaining(now), game.mistakes)
+        if game.feed(None, now):
+            return game.result
+        key = read_key(min(0.05, game.remaining(now)))
+        now = clock()
+        if game.feed(key, now):
+            render(sequence, game.matched, game.remaining(now), game.mistakes)
+            return game.result
 
 
 def start_keyboard_challenge():

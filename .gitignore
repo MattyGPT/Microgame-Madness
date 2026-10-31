@@ -21,3 +21,9 @@ scores.json.tmp
 .env.*
 .DS_Store
 *.swp
+
+# Generated browser distribution and local test tooling
+dist/
+node_modules/
+test-results/
+playwright-report/
