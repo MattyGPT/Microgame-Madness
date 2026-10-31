@@ -43,10 +43,12 @@ test("home fits the viewport and Hangman scores survive reload", async ({
   await page.locator("#player").fill("Browser Tester");
   await page.locator("#start").click();
   await page.getByRole("button", { name: "Guess Z", exact: true }).click();
-  await expect(page.locator("#metric")).toHaveText("9"); // Easy words never contain Z.
   await expect(
     page.getByRole("button", { name: "Guess Z", exact: true }),
   ).toBeDisabled();
+  // Expanded dictionaries include Z words, so a correct guess keeps all attempts.
+  const revealedZ = (await page.locator("#word").innerText()).includes("z");
+  await expect(page.locator("#metric")).toHaveText(revealedZ ? "10" : "9");
   // Complete a round through the public alphabet UI; either outcome saves a score.
   for (const letter of "abcdefghijklmnopqrstuvwxy") {
     if (await page.locator("#overlay").isVisible()) break;
