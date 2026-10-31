@@ -15,9 +15,11 @@
       src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
       defer
     ></script>
+    <script src="./achievements.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
+    <div id="achievement-toast" class="achievement-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     <header class="topbar">
       <a class="brand" href="./"
         ><span class="brand-icon" aria-hidden="true">m<span>m</span></span
@@ -225,24 +227,45 @@
               autocomplete="nickname"
             />
           </div>
-          <div class="score-panel">
-            <p class="eyebrow">THIS ROUND</p>
-            <div class="score-row">
-              <span id="metric-label">Guesses left</span
-              ><strong id="metric">—</strong>
+          <section class="profile-summary" aria-label="Achievement profile">
+            <div class="score-row"><span>Profile score</span><strong id="profile-score">0</strong></div>
+            <p id="achievement-count">0 achievements unlocked</p>
+          </section>
+          <div class="profile-tabs" role="tablist" aria-label="Profile">
+            <button id="scores-tab" role="tab" aria-selected="true" aria-controls="scores-panel">Scores</button>
+            <button id="achievements-tab" role="tab" aria-selected="false" aria-controls="achievements-panel" tabindex="-1">Achievements</button>
+          </div>
+          <div id="scores-panel" role="tabpanel" aria-labelledby="scores-tab">
+            <div class="score-panel">
+              <p class="eyebrow">THIS ROUND</p>
+              <div class="score-row">
+                <span id="metric-label">Guesses left</span
+                ><strong id="metric">—</strong>
+              </div>
+              <div class="score-row">
+                <span>Score</span><strong id="score">0</strong>
+              </div>
+              <div class="score-row best-row">
+                <span>Your best</span><strong id="best">—</strong>
+              </div>
             </div>
-            <div class="score-row">
-              <span>Score</span><strong id="score">0</strong>
-            </div>
-            <div class="score-row best-row">
-              <span>Your best</span><strong id="best">—</strong>
+            <div class="leaderboard">
+              <h3>Local legends <span>↗</span></h3>
+              <ol id="scores-list"></ol>
             </div>
           </div>
-          <div class="leaderboard">
-            <h3>Local legends <span>↗</span></h3>
-            <ol id="scores-list"></ol>
-            <p id="storage-note">High scores stay in this browser.</p>
-          </div>
+          <section id="achievements-panel" role="tabpanel" aria-labelledby="achievements-tab" hidden>
+            <p class="achievement-legend">Bronze +10 · Silver +30 · Gold +90</p>
+            <label for="achievement-filter">Show achievements</label>
+            <select id="achievement-filter">
+              <option value="all">All achievements</option>
+              <option value="earned">Unlocked</option>
+              <option value="locked">Locked</option>
+            </select>
+            <div id="achievements-list" tabindex="0" aria-label="Achievement collection"></div>
+            <p id="achievement-empty" hidden>No achievements in this view yet.</p>
+          </section>
+          <p id="storage-note">Scores and achievements stay in this browser. Changing your name keeps your achievement profile.</p>
           <p class="sidebar-note">
             <span>✳</span> Easy to start.<br />Hard to call it a day.
           </p>

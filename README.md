@@ -33,6 +33,13 @@ Open **http://localhost:8000** in a modern browser. Use an HTTP server rather th
 
 The web interface provides game selection, desktop keyboard input, touch controls, and local high scores. Choose a game, then click a difficulty in the play area to start each round. Play again returns to the difficulty choices; resuming a paused game keeps the current round. Selecting a game brings the play area into view, and arcade games resize to fit the available screen height with their controls. Boss fights show your current/max HP and a health bar above the arena, including while paused. Key Rush is the web name for the timed keyboard challenge. Scores are per browser and device; they do not sync with the Python version. If browser storage is blocked, scores last only for the current visit. Browser audio starts enabled and can be toggled off; it supplies synthesized Pumpkin King cues and does not run the desktop audio player.
 
+The browser also has **30 achievements**. A first visit unlocks **Welcome to Microgame Madness!** automatically. Open the **Achievements** subtab beside Scores to browse requirements, progress, and unlocked medals. New awards appear at the top left and fade away; simultaneous awards appear one at a time. Bronze medals add **10 profile points**, silver **30**, and gold **90**, once per achievement. Profile points are separate from game scores.
+
+Hangman awards include **Hang in There!** for starting a game, **Good Game** for a win, **You've Got the Hang of It!!** for a hard win, **Word Wizard** for 5 wins, and **Professional Prodigy** for 10 wins. Additional achievements reward perfect guesses, typing rounds, survival times, playing every game, and boss victories in specific modes. Wins accumulate across visits; typing and survival milestones require a single run. Existing high scores are preserved; achievement progress starts with this update because old scores do not record completed games.
+
+Achievements belong to one local browser profile. Changing the player nickname keeps that profile; clearing browser storage removes its progress. If storage is blocked, achievements work for the current visit only.
+
+
 ## Maintain both versions
 
 Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is generated from the canonical source files.
@@ -48,6 +55,7 @@ Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is 
 | `hangman.py`, `keyboard_challenge.py`, `turtle_dodge.py` | Desktop/terminal input and presentation |
 | `scores.py` | Desktop score persistence |
 | `web/bridge.py` | Browser session adapter and Canvas drawing commands |
+| `web/achievements.js` | Achievement catalog, progress rules, and profile points |
 | `web/app.js`, `web/index.html`, `web/style.css` | Web input, Canvas presentation, browser scores, layout |
 | `scripts/build_web.py` | Allowlisted packaging of the web interface and shared Python sources |
 
@@ -73,7 +81,7 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-`npm test` runs the packaged Python modules in the actual Pyodide WebAssembly runtime. Playwright exercises the interface in desktop and mobile Chromium, including each game, scores across reloads, pause controls, layout width, and loading errors. Browser tests serve the exact pinned Pyodide npm distribution locally instead of depending on CDN uptime. CI also installs Chromium's system dependencies.
+`npm test` checks achievement thresholds, persistence, and duplicate prevention, and runs the packaged Python modules in the actual Pyodide WebAssembly runtime. Playwright exercises the interface in desktop and mobile Chromium, including each game, scores across reloads, pause controls, layout width, and loading errors. Browser tests serve the exact pinned Pyodide npm distribution locally instead of depending on CDN uptime. CI also installs Chromium's system dependencies.
 
 Pull requests run these checks automatically. The publish workflow reruns them on `main` before deployment.
 

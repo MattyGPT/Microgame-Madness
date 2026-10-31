@@ -133,6 +133,9 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   await page.keyboard.press("Escape");
   await expect(page.locator("#game-canvas")).toBeHidden();
   await expect(page.locator("#difficulty-choices")).toBeVisible();
+  const achievements = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.unlocked);
+  for (const id of ['play_keyboard', 'typing_1', 'play_dodge', 'play_boss', 'play_pumpkin'])
+    expect(achievements[id]).toBeTruthy();
   expect(errors).toEqual([]);
 });
 
@@ -235,4 +238,88 @@ test("boss play area fits after resizing and HP display tracks damage and healin
   await page.evaluate(() => { snapshot.lives = 10; render(); });
   await expect(page.locator("#player-health-value")).toHaveText("10 / 10");
   await expect(page.locator("#player-health")).toHaveAttribute("data-low", "false");
+});
+
+test("welcome achievement fades, persists once, and collection tabs work", async ({ page }, testInfo) => {
+  await page.evaluate(() => localStorage.removeItem('microgame-madness.v1'));
+  await page.reload();
+  const toast = page.locator('#achievement-toast');
+  await expect(toast).toContainText('Welcome to Microgame Madness!');
+  await expect(toast).toContainText('bronze achievement · +10 points');
+  const box = await toast.boundingBox();
+  expect(box.x).toBeLessThan(20);
+  expect(box.y).toBeLessThan(20);
+  await page.screenshot({ path: testInfo.outputPath('welcome-achievement.png') });
+  await expect(page.locator('#profile-score')).toHaveText('10');
+  await expect(toast).toBeHidden({ timeout: 7000 });
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('#achievements-panel')).toBeVisible();
+  await expect(page.locator('#scores-panel')).toBeHidden();
+  await expect(page.locator('.achievement-card')).toHaveCount(30);
+  await page.locator('#achievement-filter').selectOption('earned');
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
+  await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
+  await page.locator('#achievement-filter').selectOption('locked');
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(29);
+  await page.locator('#achievements-tab').press('ArrowLeft');
+  await expect(page.locator('#scores-tab')).toBeFocused();
+  await expect(page.locator('#scores-panel')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('10');
+  await expect(toast).toBeHidden();
+});
+
+test("real Hangman wins award the requested medals once and persist across reloads", async ({ page }, testInfo) => {
+  // Fix only the random word so guesses still run through the real Python game.
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace('random.choice(rules["words"])', '"cat"') });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  for (let round = 0; round < 10; round++) {
+    await page.locator(`[data-difficulty="${round === 1 ? 'hard' : 'easy'}"]`).click();
+    if (round === 0) {
+      await expect(page.locator('#profile-score')).toHaveText('20');
+      await page.getByRole('button', { name: 'Guess Z', exact: true }).click();
+    }
+    for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
+    await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+    if (round === 0) await expect(page.locator('#profile-score')).toHaveText('50');
+    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('110');
+    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('200');
+    await page.locator('#overlay-action').click();
+  }
+  await expect(page.locator('#profile-score')).toHaveText('290');
+  await page.locator('#achievements-tab').click();
+  await page.locator('#achievement-filter').selectOption('earned');
+  for (const id of ['play_hangman', 'hangman_win', 'hangman_hard', 'hangman_5', 'hangman_10'])
+    await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');
+  await expect(page.locator('[data-achievement="hangman_10"]')).toContainText('Professional Prodigy');
+  await page.locator('#achievements-panel').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('achievement-collection.png') });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('290');
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('[data-achievement="hangman_25"]')).toContainText('10 / 25');
+  await page.locator('#scores-tab').click();
+  await page.locator('#player').fill('New nickname');
+  await page.locator('[data-difficulty="hard"]').click();
+  await page.locator('#exit').click();
+  await expect(page.locator('#profile-score')).toHaveText('290');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.hangmanWins)).toBe(10);
+});
+
+test("achievements remain usable when browser storage is blocked", async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => { throw new DOMException('Blocked', 'SecurityError'); };
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator('#profile-score')).toHaveText('20');
+  await expect(page.locator('#storage-note')).toContainText('Scores and achievements last for this visit only');
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('[data-achievement="play_hangman"]')).toContainText('Unlocked');
 });
