@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101315">
+  <meta name="description" content="Five little games. One more try. Play Microgame Madness in your browser.">
+  <title>Microgame Madness — Play a little. Lose track of time.</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-icon" aria-hidden="true">m<span>m</span></span><span>MICROGAME<br>MADNESS<span class="brand-dot">®</span></span></a><span class="edition">THE SMALL GAME COLLECTION <span>VOL. 01</span></span><button id="sound" class="quiet-button" aria-pressed="false">Sound off</button></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow"><span class="live-dot"></span> BIG FUN. SMALL GAMES.</p><h1>Just one<br>more <em>round.</em></h1><p class="intro-copy">A little brainwork. A little chaos.<br>Pick your game and beat your best.</p></div><div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="spark s1">✦</span><span class="spark s2">+</span><div class="pixel-face"><i></i><i></i><b></b></div><span class="art-label">INSERT FREE TIME ↙</span></div></section>
+    <div class="section-heading"><h2>Choose your microgame <span>05</span></h2><p>No downloads. Just play.</p></div>
+    <nav class="game-grid" aria-label="Games">
+      <button class="game-card selected" data-game="hangman" aria-pressed="true" style="--accent:#c6f783"><span class="card-top">01 <span>WORDPLAY</span></span><span class="card-art word-art" aria-hidden="true">A<span>?</span>Z</span><span class="card-title">Hangman <span>↗</span></span><span class="card-description">A word worth guessing.</span></button>
+      <button class="game-card" data-game="keyboard" aria-pressed="false" style="--accent:#b9a5f5"><span class="card-top">02 <span>QUICK THINKING</span></span><span class="card-art keys-art" aria-hidden="true"><i>A</i><i>S</i><i>D</i></span><span class="card-title">Key Rush <span>↗</span></span><span class="card-description">Fingers, meet the clock.</span></button>
+      <button class="game-card" data-game="dodge" aria-pressed="false" style="--accent:#88dce7"><span class="card-top">03 <span>SURVIVAL</span></span><span class="card-art blocks-art" aria-hidden="true">▟ <span>▚</span></span><span class="card-title">Turtle Dodge <span>↗</span></span><span class="card-description">Small turtle. Big problems.</span></button>
+      <button class="game-card" data-game="boss" aria-pressed="false" style="--accent:#f29d9e"><span class="card-top">04 <span>BOSS BATTLE</span></span><span class="card-art boss-art" aria-hidden="true">▰<span>▪ ▪</span></span><span class="card-title">Boss Crush <span>↗</span></span><span class="card-description">Dodge. Shoot. Repeat.</span></button>
+      <button class="game-card" data-game="pumpkin" aria-pressed="false" style="--accent:#f8b36b"><span class="card-top">05 <span>THE FINAL BOSS</span></span><span class="card-art pumpkin-art" aria-hidden="true">◈</span><span class="card-title">Pumpkin King <span>↗</span></span><span class="card-description">Long live your reflexes.</span></button>
+    </nav>
+    <section class="play-section" aria-labelledby="game-title">
+      <div class="game-main"><div class="game-heading"><div><p id="game-category" class="eyebrow">01 / WORDPLAY</p><h2 id="game-title">Hangman</h2></div><span id="runtime-status" role="status">Warming up the arcade…</span></div>
+        <div class="arena" id="arena" tabindex="0" aria-label="Game area">
+          <div id="welcome" class="welcome"><span id="welcome-art" aria-hidden="true">A _ C</span><h3 id="welcome-title">Every letter counts.</h3><p id="welcome-copy">Find the hidden word before your guesses run out.</p><button id="start" class="primary-button" disabled>Loading games…</button><p class="small-hint">Choose your difficulty on the right.</p></div>
+          <div id="hangman-game" class="hangman-game" hidden><pre id="hangman-picture" aria-hidden="true"></pre><p id="word" class="word" aria-label="Word"></p><p id="guess-feedback" role="status"></p><div id="alphabet" class="alphabet" aria-label="Guess a letter"></div></div>
+          <div id="keyboard-game" class="keyboard-game" hidden><p class="eyebrow" id="typing-level">ROUND 1</p><p class="type-caption">Type the sequence. No Enter needed.</p><div id="sequence" class="sequence" aria-label="Sequence to type"></div><label class="typing-mobile-label">Tap to type <input id="typing-input" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Type the displayed sequence"></label><p id="typing-feedback"></p><div class="timer-track"><div id="timer-bar"></div></div></div>
+          <canvas id="game-canvas" width="680" height="560" aria-label="Arcade game. Arrow keys move, F shoots, C counters." hidden></canvas>
+          <div id="overlay" class="overlay" hidden><p id="overlay-kicker" class="eyebrow">TAKE A BREATHER</p><h3 id="overlay-title">Paused</h3><p id="overlay-copy"></p><button id="overlay-action" class="primary-button">Resume game</button></div>
+        </div>
+        <div class="game-footer"><span id="game-instruction">Your keyboard works here, too.</span><div><button id="pause" class="quiet-button" hidden>Pause · D</button><button id="exit" class="quiet-button" hidden>End round · Esc</button></div></div>
+        <div id="touch-controls" class="touch-controls" hidden><div class="dpad"><button data-key="Up" aria-label="Move up">↑</button><button data-key="Left" aria-label="Move left">←</button><button data-key="Down" aria-label="Move down">↓</button><button data-key="Right" aria-label="Move right">→</button></div><div><button data-key="f" id="touch-fire">Fire</button><button data-key="c" id="touch-counter">Counter</button></div></div>
+      </div>
+      <aside class="sidebar"><div class="setup"><h3>Make it your game</h3><label for="player">PLAYER NAME</label><input id="player" maxlength="24" value="Player" autocomplete="nickname"><label for="difficulty">DIFFICULTY</label><select id="difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select><p id="difficulty-note">10 wrong guesses. A friendly start.</p></div><div class="score-panel"><p class="eyebrow">THIS ROUND</p><div class="score-row"><span id="metric-label">Guesses left</span><strong id="metric">—</strong></div><div class="score-row"><span>Score</span><strong id="score">0</strong></div><div class="score-row best-row"><span>Your best</span><strong id="best">—</strong></div></div><div class="leaderboard"><h3>Local legends <span>↗</span></h3><ol id="scores-list"></ol><p id="storage-note">High scores stay in this browser.</p></div><p class="sidebar-note"><span>✳</span> Easy to start.<br>Hard to call it a day.</p></aside>
+    </section>
+  </main>
+  <footer class="site-footer"><span>MICROGAME MADNESS</span><p>Made for the joy of one more try.</p><span>5 GAMES / ENDLESS REMATCHES</span></footer>
+</body>
+</html>
