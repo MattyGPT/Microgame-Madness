@@ -84,7 +84,9 @@ const modes = {
   },
 };
 let selected = "hangman";
+let selectedDifficulty = null;
 let ready = false;
+let loadFailed = false;
 let active = false;
 let snapshot = null;
 let handle = null;
@@ -122,9 +124,10 @@ function persist() {
       "Storage is unavailable. Scores last for this visit only.";
 }
 function scoreKey() {
-  return `${selected}:${$("difficulty").value}`;
+  return `${selected}:${selectedDifficulty}`;
 }
 function rankings() {
+  if (!selectedDifficulty) return [];
   const entries = saved.scores[scoreKey()];
   if (!Array.isArray(entries)) return [];
   return entries.filter(
@@ -145,7 +148,9 @@ function showScores() {
   $("scores-list").replaceChildren();
   if (!scores.length) {
     const row = document.createElement("li");
-    row.textContent = "Your name could be first.";
+    row.textContent = selectedDifficulty
+      ? "Your name could be first."
+      : "Choose a difficulty to see high scores.";
     $("scores-list").append(row);
   }
   scores.slice(0, 5).forEach((entry, index) => {
@@ -182,14 +187,18 @@ function clearKeys() {
 }
 function setLocked(value) {
   $("player").disabled = value;
-  $("difficulty").disabled = value;
+  document.querySelectorAll("[data-difficulty]").forEach((button) => {
+    button.disabled = value || !ready;
+  });
 }
 function selectGame(mode) {
+  if (loadFailed) return;
   if (active && selected === "keyboard") saveRound();
   active = false;
   snapshot = null;
   clearKeys();
   selected = mode;
+  selectedDifficulty = null;
   const config = modes[mode];
   document.documentElement.style.setProperty("--accent", config.accent);
   document.querySelectorAll("[data-game]").forEach((button) => {
@@ -203,10 +212,19 @@ function selectGame(mode) {
   $("welcome-title").textContent = config.heading;
   $("welcome-copy").textContent = config.copy;
   $("game-instruction").textContent = config.controls;
-  $("difficulty").replaceChildren(
-    ...Object.entries(config.difficulties).map(
-      ([value, [label]]) => new Option(label, value),
-    ),
+  $("difficulty-choices").replaceChildren(
+    ...Object.entries(config.difficulties).map(([value, [label, description]]) => {
+      const button = document.createElement("button");
+      button.className = "difficulty-choice";
+      button.dataset.difficulty = value;
+      const title = document.createElement("strong");
+      title.textContent = label;
+      const detail = document.createElement("span");
+      detail.textContent = description;
+      button.append(title, detail);
+      button.onclick = () => startGame(value);
+      return button;
+    }),
   );
   [
     "hangman-game",
@@ -229,26 +247,24 @@ function selectGame(mode) {
           ? "Survived"
           : "Your HP";
   setLocked(false);
-  updateDifficulty();
-}
-function updateDifficulty() {
-  $("difficulty-note").textContent =
-    modes[selected].difficulties[$("difficulty").value][1];
   showScores();
 }
-function startGame() {
-  if (!ready) return;
+function startGame(difficulty) {
+  if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
+    return;
+  selectedDifficulty = difficulty;
   initializeAudio();
   currentPlayer = $("player").value.trim() || "Player";
   $("player").value = currentPlayer;
   saved.player = currentPlayer;
   persist();
+  showScores();
   roundSaved = false;
   clearKeys();
   try {
     snapshot = send("start", {
       mode: selected,
-      difficulty: $("difficulty").value,
+      difficulty: selectedDifficulty,
     });
   } catch (error) {
     fail(error);
@@ -436,15 +452,13 @@ function exitGame() {
 }
 function fail(error) {
   console.error(error);
+  loadFailed = true;
   active = false;
   ready = false;
   clearKeys();
   setLocked(false);
   $("runtime-status").textContent =
     "Unable to load games. Check your connection and reload.";
-  $("start").textContent = "Reload arcade";
-  $("start").disabled = false;
-  $("start").onclick = () => location.reload();
   showOverlay(
     "The arcade needs a restart.",
     "Check your internet connection, then reload to try again.",
@@ -481,12 +495,16 @@ document
   .forEach(
     (button) => (button.onclick = () => selectGame(button.dataset.game)),
   );
-$("difficulty").onchange = updateDifficulty;
 $("player").oninput = showScores;
-$("start").onclick = startGame;
 $("exit").onclick = exitGame;
 $("pause").onclick = pause;
-$("overlay-action").onclick = () => (snapshot?.paused ? pause() : startGame());
+$("overlay-action").onclick = () => {
+  if (snapshot?.paused) pause();
+  else {
+    selectGame(selected);
+    $("difficulty-choices").querySelector("button").focus();
+  }
+};
 const arrowMap = {
   ArrowUp: "Up",
   ArrowDown: "Down",
@@ -527,7 +545,8 @@ window.addEventListener("keydown", (event) => {
       event.target.tagName !== "BUTTON"
     ) {
       event.preventDefault();
-      startGame();
+      selectGame(selected);
+      $("difficulty-choices").querySelector("button").focus();
       return;
     }
     if (!active) return;
@@ -632,8 +651,7 @@ async function initialize() {
     handle = pyodide.globals.get("handle");
     ready = true;
     $("runtime-status").textContent = "● All games ready";
-    $("start").disabled = false;
-    $("start").textContent = "Let’s play ↗";
+    setLocked(false);
   } catch (error) {
     fail(error);
   }

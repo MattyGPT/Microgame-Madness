@@ -131,10 +131,13 @@
               <p id="welcome-copy">
                 Find the hidden word before your guesses run out.
               </p>
-              <button id="start" class="primary-button" disabled>
-                Loading games…
-              </button>
-              <p class="small-hint">Pick a difficulty, then jump in.</p>
+              <h4 id="difficulty-title">Choose a difficulty to play</h4>
+              <div
+                id="difficulty-choices"
+                class="difficulty-choices"
+                role="group"
+                aria-labelledby="difficulty-title"
+              ></div>
             </div>
             <div id="hangman-game" class="hangman-game" hidden>
               <pre id="hangman-picture" aria-hidden="true"></pre>
@@ -213,13 +216,7 @@
               maxlength="24"
               value="Player"
               autocomplete="nickname"
-            /><label for="difficulty">DIFFICULTY</label
-            ><select id="difficulty">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-            <p id="difficulty-note">10 wrong guesses. A friendly start.</p>
+            />
           </div>
           <div class="score-panel">
             <p class="eyebrow">THIS ROUND</p>

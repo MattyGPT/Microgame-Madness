@@ -412,7 +412,9 @@ h1 em {
 }
 .welcome {
   text-align: center;
-  padding: 50px 24px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 640px;
 }
 .welcome > span {
   font:
@@ -451,10 +453,39 @@ h1 em {
 .primary-button:hover {
   filter: brightness(1.08);
 }
-.welcome .small-hint {
-  font-size: 10px;
-  margin-top: 18px;
-  color: #8c9690;
+.welcome h4 {
+  margin: 26px 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.difficulty-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  text-align: left;
+}
+.difficulty-choice {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--panel);
+  text-align: left;
+}
+.difficulty-choice:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #22292b;
+}
+.difficulty-choice strong {
+  display: block;
+  color: var(--accent);
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+.difficulty-choice span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 .game-footer {
   display: flex;
