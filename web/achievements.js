@@ -3,7 +3,7 @@
 // This model is shared by the browser UI and Node tests. Only completed wins
 // count toward victory milestones; leaving a round never counts as a win.
 const Achievements = (() => {
-  const points = { bronze: 10, silver: 30, gold: 90 };
+  const points = { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810 };
   const games = ["hangman", "keyboard", "dodge", "boss", "pumpkin"];
   const catalog = [];
   function add(id, title, tier, group, description, stat, target = 1) {
@@ -41,6 +41,19 @@ const Achievements = (() => {
   add("pumpkin_coward", "Braver Than You Think", "gold", "Pumpkin King", "Defeat the Pumpkin King in Coward Mode.", "pumpkin_coward");
   add("pumpkin_phase2", "Long Live the New King", "gold", "Pumpkin King", "Defeat the Pumpkin King in Impossible Phase 2.", "pumpkin_phase2");
   add("pumpkin_3", "Crown Collector", "gold", "Pumpkin King", "Defeat the Pumpkin King 3 times in any mode.", "pumpkinWins", 3);
+  add("dodge_close", "Close One", "silver", "Turtle Dodge", "Pass close to a block, then move clear without touching it.", "closeCalls");
+  add("dodge_120", "I'm Still Standing!", "crystal", "Turtle Dodge", "Survive 120 seconds in one Turtle Dodge game.", "dodgeBest", 120);
+  add("pumpkin_flawless", "King of Suffering", "diamond", "Pumpkin King", "Defeat the Pumpkin King in any mode without taking a single hit. Healing does not erase damage.", "pumpkinFlawless");
+  add("hangman_50", "Lexicon Legend", "crystal", "Hangman", "Win 50 Hangman games.", "hangmanWins", 50);
+  add("hangman_hard_10", "Hard-Earned Words", "crystal", "Hangman", "Win 10 hard Hangman games.", "hardWins", 10);
+  add("typing_30", "Keys to the Kingdom", "crystal", "Key Rush", "Complete 30 rounds in one Key Rush game.", "typingBest", 30);
+  add("boss_10", "Boss Rush Royalty", "crystal", "Boss Crush", "Win 10 Boss Crush games.", "bossWins", 10);
+  add("pumpkin_10", "Pumpkin Carver", "crystal", "Pumpkin King", "Defeat the Pumpkin King 10 times in any mode.", "pumpkinWins", 10);
+  add("hangman_100", "Master of Every Letter", "diamond", "Hangman", "Win 100 Hangman games.", "hangmanWins", 100);
+  add("hangman_perfect_25", "Flawless Vocabulary", "diamond", "Hangman", "Win 25 Hangman games without a wrong guess.", "perfectWins", 25);
+  add("typing_50", "Beyond the Speed Limit", "diamond", "Key Rush", "Complete 50 rounds in one Key Rush game.", "typingBest", 50);
+  add("dodge_merciless_120", "Merciless Marathon", "diamond", "Turtle Dodge", "Survive 120 seconds in one Merciless game.", "mercilessBest", 120);
+  add("boss_flawless", "Untouchable Champion", "diamond", "Boss Crush", "Defeat the Impossible boss without taking a single hit. Healing does not erase damage.", "bossFlawless");
   const statNames = new Set(catalog.map(item => item.stat));
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
@@ -88,6 +101,7 @@ const Achievements = (() => {
       return this.update(stats => {
         if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
+          stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));
           stats.dodgeBest = Math.max(stats.dodgeBest, count(s.elapsed));
           if (s.difficulty === "merciless") stats.mercilessBest = Math.max(stats.mercilessBest, count(s.elapsed));
         }
@@ -100,6 +114,10 @@ const Achievements = (() => {
           if (s.mistakes === 0) stats.perfectWins++;
         } else if (s.mode === "boss" || s.mode === "pumpkin") {
           stats[`${s.mode}Wins`]++;
+          if (s.damage_taken === 0) {
+            if (s.mode === "pumpkin") stats.pumpkinFlawless = 1;
+            else if (s.difficulty === "impossible") stats.bossFlawless = 1;
+          }
           const key = `${s.mode}_${s.difficulty}`;
           if (statNames.has(key)) stats[key] = 1;
         }

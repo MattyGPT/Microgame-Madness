@@ -10,6 +10,18 @@ from turtle_dodge import create_game, dodge_score_file, start_turtle_dodge
 
 
 class BossTests(unittest.TestCase):
+    def test_damage_history_is_not_erased_by_healing_or_immunity(self):
+        game = BossCrush("impossible")
+        self.assertEqual(game.damage_taken, 0)
+        game.hurt()
+        game.hurt()
+        self.assertEqual(game.damage_taken, 1)
+        game.healing_pickups = [HealingPickup(game.x, game.y)]
+        game.update_healing(.01)
+        self.assertEqual(game.lives, game.max_lives)
+        self.assertEqual(game.damage_taken, 1)
+        self.assertEqual(BossCrush("impossible").damage_taken, 0)
+
     def game(self, difficulty="mean"):
         game = BossCrush(difficulty)
         game.attack_in = 1000

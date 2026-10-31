@@ -49,6 +49,32 @@ class BrowserAdapterTests(unittest.TestCase):
     def start(self, mode, difficulty="easy"):
         return self.session.dispatch({"action": "start", "mode": mode, "difficulty": difficulty, "now": 0})
 
+    def test_achievement_evidence_reports_real_damage_and_close_calls(self):
+        from dodge_model import Block
+        from boss_crush import HealingPickup, Projectile
+        self.start("dodge")
+        game = self.session.game
+        game.x, game.y = 0, 0
+        game.spawn_in = 1000
+        game.blocks = [Block(25, 65, ((0, 0),), "red")]
+        for _ in range(30):
+            result = self.session.dispatch({"action": "tick", "dt": .05})
+        self.assertEqual(result["near_misses"], 1)
+        for wounded in (True, False):
+            self.start("pumpkin", "baby")
+            game = self.session.game
+            game.begin_attack(0)
+            if wounded:
+                game.hurt()
+                game.healing_pickups = [HealingPickup(game.x, game.y)]
+                game.update_healing(.01)
+            game.hp = 5
+            game.shots = [Projectile(game.boss_x, game.boss_y, 0, 520)]
+            result = self.session.dispatch({"action": "tick", "dt": .01})
+            self.assertTrue(result["won"])
+            self.assertEqual(result["lives"], result["max_lives"])
+            self.assertEqual(result["damage_taken"], int(wounded))
+
     def test_every_arcade_difficulty_matches_desktop_model_replay(self):
         cases = [("dodge", key, DodgeGame(difficulty=key, rng=random.Random(12))) for key in DIFFICULTIES]
         cases += [("boss", key, BossCrush(key, rng=random.Random(12))) for key in BOSS_DIFFICULTIES]

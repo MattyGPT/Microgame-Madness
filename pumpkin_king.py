@@ -275,6 +275,7 @@ class PumpkinKing(BossCrush):
 
     def hurt(self):
         if self.invulnerable <= 0:
+            self.damage_taken += 1
             self.lives = max(0, self.lives - 1)
             self.invulnerable = 0.65
             self.alive = self.lives > 0
@@ -333,6 +334,7 @@ class PumpkinKing(BossCrush):
             # Physical contact bypasses damage immunity, counters and all HP
             # settings. Resolve it before healing or a potentially winning shot.
             if self.touches_king():
+                self.damage_taken += self.lives
                 self.lives = 0
                 self.alive = False
                 self.death_message = "You touched the Pumpkin King! His body and arms kill instantly."

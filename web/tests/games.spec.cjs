@@ -266,12 +266,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(30);
+  await expect(page.locator('.achievement-card')).toHaveCount(43);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(29);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(42);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -351,4 +351,89 @@ test("Pumpkin King contact kills a 23-HP player and restart restores health", as
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="come_on"]').click();
   await expect(page.locator('#player-health-value')).toHaveText('23 / 23');
+});
+
+test('real Turtle Dodge evidence unlocks Close One and the crystal survival reward', async ({ page }) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    let body = await response.text();
+    body = body.replace('from dodge_model import DodgeGame', 'from dodge_model import Block, DodgeGame');
+    body = body.replace('self.game = DodgeGame(difficulty=difficulty)',
+      'self.game = DodgeGame(difficulty=difficulty)\n            self.game.x, self.game.y = 0, 0\n            self.game.elapsed = 119.95\n            self.game.spawn_in = 1000\n            self.game.blocks = [Block(25, 65, ((0, 0),), "red")]');
+    await route.fulfill({ response, body });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="dodge"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator('#profile-score')).toHaveText('450');
+  await page.locator('#pause').click();
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('[data-achievement="dodge_close"]')).toContainText('Unlocked');
+  await expect(page.locator('[data-achievement="dodge_120"]')).toContainText("I'm Still Standing!");
+  await expect(page.locator('[data-achievement="dodge_120"]')).toContainText('crystal · +270 points');
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('450');
+});
+
+test('King of Suffering rejects a healed win and awards 810 for a true no-hit win', async ({ page }) => {
+  let wounded = true;
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const preparation = 'self.game = PumpkinKing(difficulty=difficulty)\n            from boss_crush import Projectile, HealingPickup\n            self.game.begin_attack(0)\n'
+      + (wounded ? '            self.game.hurt()\n            self.game.healing_pickups = [HealingPickup(self.game.x, self.game.y)]\n            self.game.update_healing(.01)\n' : '')
+      + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+    await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', preparation) });
+  });
+  async function win() {
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await page.locator('[data-game="pumpkin"]').click();
+    await page.locator('[data-difficulty="baby"]').click();
+    await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+    await expect(page.locator('#player-health-value')).toHaveText('15 / 15');
+    await page.locator('#achievements-tab').click();
+  }
+  await win();
+  await expect(page.locator('[data-achievement="pumpkin_flawless"]')).toContainText('Locked');
+  await expect(page.locator('#profile-score')).toHaveText('50');
+  wounded = false;
+  await win();
+  await expect(page.locator('[data-achievement="pumpkin_flawless"]')).toContainText('Unlocked');
+  await expect(page.locator('#profile-score')).toHaveText('860');
+  // Queued notifications keep the new tier and its reward as well.
+  while (!(await page.locator('#achievement-toast').innerText()).includes('King of Suffering'))
+    await page.getByRole('button', { name: 'Dismiss achievement notification' }).click();
+  await expect(page.locator('#achievement-toast')).toContainText('diamond achievement · +810 points');
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('860');
+});
+
+test('all five medal tiers have readable colored frames and reduced-motion support', async ({ page }, testInfo) => {
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('.achievement-legend')).toContainText('Crystal +270 · Diamond +810');
+  for (const [tier, id] of [['bronze', 'welcome'], ['silver', 'hangman_win'], ['gold', 'hangman_5'],
+    ['crystal', 'dodge_120'], ['diamond', 'pumpkin_flawless']]) {
+    const card = page.locator(`[data-achievement="${id}"]`);
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toHaveClass(/in-view/);
+    const style = await card.evaluate(el => {
+      const cs = getComputedStyle(el);
+      return { background: cs.backgroundImage, color: cs.getPropertyValue('--medal'), shape: cs.clipPath,
+        thickness: cs.paddingTop, shine: cs.animationName, sparkle: getComputedStyle(el, '::before').animationName };
+    });
+    expect(style.background).toContain('linear-gradient');
+    expect(style.color.trim()).not.toBe('');
+    expect(style.thickness).toBe(['crystal', 'diamond'].includes(tier) ? '2px' : '4px');
+    expect(style.shape.startsWith('polygon(')).toBe(['crystal', 'diamond'].includes(tier));
+    expect(style.shine).toBe('medal-shine');
+    expect(style.sparkle).toBe('medal-sparkle');
+    await card.screenshot({ path: testInfo.outputPath(`medal-${tier}.png`) });
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('diamond-collection.png') });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const card = page.locator('[data-achievement="pumpkin_flawless"]');
+  expect(await card.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  expect(await card.evaluate(el => getComputedStyle(el, '::before').animationName)).toBe('none');
 });
