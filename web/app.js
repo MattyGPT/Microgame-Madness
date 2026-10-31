@@ -622,8 +622,8 @@ function playSound(event) {
   oscillator.type = "sawtooth";
   oscillator.frequency.setValueAtTime(event === "slam" ? 65 : 95, now);
   oscillator.frequency.exponentialRampToValueAtTime(30, now + 0.3);
-  gain.gain.setValueAtTime(0.06, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+  gain.gain.setValueAtTime(0.18, now);
+  gain.gain.exponentialRampToValueAtTime(0.003, now + 0.35);
   oscillator.connect(gain);
   gain.connect(audioContext.destination);
   oscillator.start(now);
