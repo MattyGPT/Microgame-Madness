@@ -1,0 +1,23 @@
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Machine-local Tcl/Tk runtime
+.runtime/
+
+# Personal high scores generated while playing
+scores.json
+*_scores.json
+scores.json.tmp
+*_scores.json.tmp
+
+# Local environment and editor files
+.env
+.env.*
+.DS_Store
+*.swp
