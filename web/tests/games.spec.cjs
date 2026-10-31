@@ -149,3 +149,29 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
   await expect(page.locator("#overlay-action")).toBeVisible();
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
 });
+
+test("Pumpkin King offers Coward Mode with ten HP and separate scores", async ({ page }) => {
+  await page.evaluate(() => localStorage.setItem("microgame-madness.v1", JSON.stringify({
+    player: "Mode Tester",
+    scores: {
+      "pumpkin:coward": [{ player: "Mode Tester", score: 123 }],
+      "pumpkin:phase2": [{ player: "Mode Tester", score: 456 }],
+    },
+  })));
+  await page.reload();
+  await expect(page.locator("#runtime-status")).toContainText("All games ready");
+  await page.locator('[data-game="pumpkin"]').click();
+  await expect(page.locator("#difficulty-choices button")).toHaveCount(2);
+  const coward = page.getByRole("button", { name: /^Coward Mode/ });
+  await expect(coward).toContainText("10 HP");
+  await coward.click();
+  await expect(page.locator("#metric")).toHaveText("10 / 10");
+  await expect(page.locator("#best")).toHaveText("123");
+  await page.locator("#exit").click();
+  await page.locator('[data-difficulty="phase2"]').click();
+  await expect(page.locator("#metric")).toHaveText("5 / 5");
+  await expect(page.locator("#best")).toHaveText("456");
+  await page.locator("#exit").click();
+  await coward.click();
+  await expect(page.locator("#metric")).toHaveText("10 / 10");
+});

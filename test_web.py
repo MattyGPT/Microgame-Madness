@@ -8,7 +8,7 @@ from hangman_model import HangmanGame
 from keyboard_model import KeyboardRound
 from dodge_model import DodgeGame, DIFFICULTIES
 from boss_crush import BossCrush, BOSS_DIFFICULTIES
-from pumpkin_king import PumpkinKing
+from pumpkin_king import PumpkinKing, PUMPKIN_DIFFICULTIES
 from web.bridge import BrowserGame
 from scripts.build_web import build, OUTPUT, PYTHON_SOURCES
 
@@ -52,7 +52,7 @@ class BrowserAdapterTests(unittest.TestCase):
     def test_every_arcade_difficulty_matches_desktop_model_replay(self):
         cases = [("dodge", key, DodgeGame(difficulty=key, rng=random.Random(12))) for key in DIFFICULTIES]
         cases += [("boss", key, BossCrush(key, rng=random.Random(12))) for key in BOSS_DIFFICULTIES]
-        cases += [("pumpkin", "phase2", PumpkinKing(rng=random.Random(12)))]
+        cases += [("pumpkin", key, PumpkinKing(rng=random.Random(12), difficulty=key)) for key in PUMPKIN_DIFFICULTIES]
         for mode, difficulty, desktop in cases:
             with self.subTest(mode=mode, difficulty=difficulty):
                 self.start(mode, difficulty)
@@ -63,6 +63,10 @@ class BrowserAdapterTests(unittest.TestCase):
                     result = self.session.dispatch({"action": "tick", "dt": 1/60, "keys": keys, "now": frame/60})
                     self.assertAlmostEqual(self.session.game.x, desktop.x)
                     self.assertEqual(result["score"], desktop.score)
+                    if mode == "pumpkin":
+                        self.assertEqual(result["difficulty"], desktop.difficulty)
+                        self.assertEqual(result["lives"], desktop.lives)
+                        self.assertEqual(result["max_lives"], desktop.max_lives)
                     self.assertEqual(result["over"], not desktop.alive or getattr(desktop, "won", False))
                     json.dumps(result)
 

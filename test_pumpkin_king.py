@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from boss_crush import Projectile, HealingPickup
-from pumpkin_king import (MODE, PumpkinKing, Stage, Finger, Ring, SLAM_ORDER,
+from pumpkin_king import (MODE, COWARD_MODE, PumpkinKing, Stage, Finger, Ring, SLAM_ORDER,
                           ATTACK_BREAK, COLOR_BREAK, COUNTER_WINDOW, slam_stages,
                           EYE_FLASH_PERIOD, EYE_FLASH_ON, EYE_FLASH_GAP,
                           RING_SEGMENTS, RING_THICKNESS)
@@ -27,12 +27,42 @@ class KingTests(unittest.TestCase):
         game = create_game(MODE)
         self.assertEqual((game.lives, game.max_lives, game.hp), (5, 5, 1400))
         self.assertNotEqual(dodge_score_file(MODE), dodge_score_file("impossible"))
+        coward = create_game(COWARD_MODE)
+        self.assertEqual((coward.lives, coward.max_lives, coward.hp), (10, 10, 1400))
+        self.assertEqual(coward.config.player_hp, 10)
+        self.assertNotEqual(dodge_score_file(COWARD_MODE), dodge_score_file(MODE))
+
+    def test_coward_mode_survives_nine_hits_and_restarts_with_ten_hp(self):
+        game = create_game(COWARD_MODE)
+        for remaining in range(9, -1, -1):
+            game.invulnerable = 0
+            game.hurt()
+            self.assertEqual(game.lives, remaining)
+            self.assertEqual(game.alive, remaining > 0)
+        restarted = create_game(game.difficulty)
+        self.assertEqual((restarted.lives, restarted.max_lives, restarted.stage.name), (10, 10, "shell"))
+
+    def test_coward_mode_heals_above_five_and_caps_at_ten(self):
+        game = create_game(COWARD_MODE)
+        for hp, expected in ((5, 6), (8, 9), (9, 10), (10, 10)):
+            game.lives = hp
+            game.healing_pickups = [HealingPickup(game.x, game.y, 9)]
+            game.update_healing(0.01)
+            self.assertEqual(game.lives, expected)
+            self.assertEqual(game.healing_pickups, [])
 
     def test_menu_launch(self):
         with patch("builtins.input", side_effect=["impossible phase 2", "Ada"]), patch("turtle_dodge.subprocess.run") as run, redirect_stdout(io.StringIO()):
             run.return_value.returncode = 0
             start_turtle_dodge()
         self.assertEqual(run.call_args.args[0][-2:], ["Ada", MODE])
+
+    def test_coward_mode_menu_launch(self):
+        for choice in ("coward", "Coward Mode"):
+            with patch("builtins.input", side_effect=[choice, "Ada"]), patch("turtle_dodge.subprocess.run") as run, redirect_stdout(io.StringIO()):
+                run.return_value.returncode = 0
+                start_turtle_dodge()
+            self.assertEqual(run.call_args.args[0][-2:], ["Ada", COWARD_MODE])
 
     def test_intro_transformation_and_exact_slam_order(self):
         game = PumpkinKing()
