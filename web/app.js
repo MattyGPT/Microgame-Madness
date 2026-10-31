@@ -238,6 +238,7 @@ function updateDifficulty() {
 }
 function startGame() {
   if (!ready) return;
+  initializeAudio();
   currentPlayer = $("player").value.trim() || "Player";
   $("player").value = currentPlayer;
   saved.player = currentPlayer;
@@ -574,23 +575,26 @@ document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
 });
-let soundOn = false;
+let soundOn = true;
 let audioContext;
 $("sound").onclick = () => {
   soundOn = !soundOn;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
-  if (soundOn) {
-    try {
-      audioContext ??= new AudioContext();
-      audioContext.resume().catch(() => {});
-    } catch {
-      soundOn = false;
-      $("sound").textContent = "Sound unavailable";
-      $("sound").setAttribute("aria-pressed", "false");
-    }
-  }
+  initializeAudio();
 };
+function initializeAudio() {
+  if (!soundOn) return;
+  try {
+    // Start or resume audio during the player's click to begin a game or unmute.
+    audioContext ??= new AudioContext();
+    audioContext.resume().catch(() => {});
+  } catch {
+    soundOn = false;
+    $("sound").textContent = "Sound unavailable";
+    $("sound").setAttribute("aria-pressed", "false");
+  }
+}
 function playSound(event) {
   if (!soundOn || !audioContext) return;
   const oscillator = audioContext.createOscillator(),
