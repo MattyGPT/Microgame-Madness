@@ -820,12 +820,7 @@ select:disabled {
     font-size: 12px;
   }
   .hero-art {
-    width: 160px;
-    height: 200px;
-    transform: scale(0.65);
-    transform-origin: center right;
-    margin-left: -80px;
-    margin-right: 25px;
+    display: none;
   }
   .pixel-face {
     left: 0;
