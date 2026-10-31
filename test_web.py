@@ -124,7 +124,7 @@ class PackagingTests(unittest.TestCase):
     def test_package_contains_only_allowlisted_browser_files(self):
         build()
         files = {str(p.relative_to(OUTPUT)) for p in OUTPUT.rglob("*") if p.is_file()}
-        expected = {"index.html", "style.css", "app.js", "favicon.svg", ".nojekyll", "python-files.json"}
+        expected = {"index.html", "style.css", "app.js", "achievements.js", "favicon.svg", ".nojekyll", "python-files.json"}
         expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
         self.assertEqual(files, expected)
         for name in PYTHON_SOURCES:

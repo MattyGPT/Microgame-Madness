@@ -103,11 +103,12 @@ let roundSaved = false;
 let currentPlayer = "Player";
 const keys = new Set();
 const storageKey = "microgame-madness.v1";
-let saved = { player: "Player", scores: {} };
+let saved = { player: "Player", scores: {}, achievements: {} };
 let storageAvailable = true;
 try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
+    saved.achievements = value.achievements;
     if (typeof value.player === "string")
       saved.player = value.player.slice(0, 24);
     if (
@@ -120,16 +121,121 @@ try {
 } catch {
   storageAvailable = false;
 }
+const achievementTracker = new Achievements.Tracker(saved.achievements);
+saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
   try {
     localStorage.setItem(storageKey, JSON.stringify(saved));
+    storageAvailable = true;
   } catch {
     storageAvailable = false;
   }
   if (!storageAvailable)
     $("storage-note").textContent =
-      "Storage is unavailable. Scores last for this visit only.";
+      "Storage is unavailable. Scores and achievements last for this visit only.";
+}
+const achievementCards = new Map();
+const achievementQueue = [];
+let toastTimer;
+function showAchievementToast() {
+  clearTimeout(toastTimer);
+  const toast = $("achievement-toast");
+  toast.hidden = true;
+  toast.replaceChildren();
+  const item = achievementQueue.shift();
+  if (!item) return;
+  toast.dataset.tier = item.tier;
+  const badge = document.createElement("span");
+  badge.className = "medal";
+  badge.textContent = "★";
+  badge.setAttribute("aria-hidden", "true");
+  const detail = document.createElement("div");
+  const label = document.createElement("small");
+  label.textContent = `${item.tier} achievement · +${Achievements.points[item.tier]} points`;
+  const title = document.createElement("strong");
+  title.textContent = item.title;
+  detail.append(label, title);
+  const close = document.createElement("button");
+  close.textContent = "×";
+  close.setAttribute("aria-label", "Dismiss achievement notification");
+  close.onclick = showAchievementToast;
+  toast.append(badge, detail, close);
+  // Restart the fade for each queued award without moving keyboard focus.
+  void toast.offsetWidth;
+  toast.hidden = false;
+  toastTimer = setTimeout(showAchievementToast, 4500);
+}
+function renderAchievements() {
+  const unlocked = achievementTracker.data.unlocked;
+  $("profile-score").textContent = achievementTracker.score;
+  $("achievement-count").textContent = `${Object.keys(unlocked).length} / ${Achievements.catalog.length} achievements unlocked`;
+  let visible = 0;
+  for (const item of Achievements.catalog) {
+    const card = achievementCards.get(item.id);
+    const earned = Boolean(unlocked[item.id]);
+    card.classList.toggle("earned", earned);
+    card.querySelector(".achievement-state").textContent = earned
+      ? `Unlocked · ${new Date(unlocked[item.id]).toLocaleDateString()}`
+      : `Locked · ${achievementTracker.progress(item)} / ${item.target}`;
+    card.querySelector("progress").value = earned ? item.target : achievementTracker.progress(item);
+    const filter = $("achievement-filter").value;
+    card.hidden = (filter === "earned" && !earned) || (filter === "locked" && earned);
+    if (!card.hidden) visible++;
+  }
+  $("achievement-empty").hidden = visible > 0;
+}
+function updateAchievements(result) {
+  if (!result.changed) return;
+  persist();
+  renderAchievements();
+  achievementQueue.push(...result.earned);
+  if ($("achievement-toast").hidden) showAchievementToast();
+}
+function initializeAchievements() {
+  for (const item of Achievements.catalog) {
+    const card = document.createElement("article");
+    card.className = "achievement-card";
+    card.dataset.achievement = item.id;
+    card.dataset.tier = item.tier;
+    const tier = document.createElement("small");
+    tier.className = "achievement-tier";
+    tier.textContent = `★ ${item.tier} · +${Achievements.points[item.tier]} points`;
+    const title = document.createElement("h4");
+    title.textContent = item.title;
+    const description = document.createElement("p");
+    description.textContent = `${item.group} · ${item.description}`;
+    const progress = document.createElement("progress");
+    progress.max = item.target;
+    progress.setAttribute("aria-label", item.title);
+    const state = document.createElement("small");
+    state.className = "achievement-state";
+    card.append(tier, title, description, progress, state);
+    achievementCards.set(item.id, card);
+    $("achievements-list").append(card);
+  }
+  const tabs = [$("scores-tab"), $("achievements-tab")];
+  function selectTab(tab) {
+    for (const button of tabs) {
+      const selected = button === tab;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      $(button.getAttribute("aria-controls")).hidden = !selected;
+    }
+  }
+  tabs.forEach((tab, index) => {
+    tab.onclick = () => selectTab(tab);
+    tab.onkeydown = event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index];
+      selectTab(next);
+      next.focus();
+    };
+  });
+  $("achievement-filter").onchange = renderAchievements;
+  updateAchievements(achievementTracker.visit());
+  renderAchievements();
 }
 function scoreKey() {
   return `${selected}:${selectedDifficulty}`;
@@ -298,6 +404,7 @@ function startGame(difficulty) {
     fail(error);
     return;
   }
+  updateAchievements(achievementTracker.start(selected, selectedDifficulty));
   active = true;
   lastFrame = performance.now();
   $("welcome").hidden = true;
@@ -328,6 +435,7 @@ function showOverlay(title, copy, button, kicker) {
 }
 function render() {
   const s = snapshot;
+  updateAchievements(achievementTracker.observe(s));
   const hasHealth = selected === "boss" || selected === "pumpkin";
   $("player-health").hidden = !hasHealth;
   if (hasHealth) {
@@ -555,6 +663,7 @@ const arrowMap = {
   ArrowRight: "Right",
 };
 window.addEventListener("keydown", (event) => {
+  if (event.target.closest(".profile-tabs, #achievements-panel")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -699,10 +808,11 @@ async function initialize() {
     fail(error);
   }
 }
+initializeAchievements();
 selectGame("hangman");
 if (!storageAvailable)
   $("storage-note").textContent =
-    "Storage is unavailable. Scores last for this visit only.";
+    "Storage is unavailable. Scores and achievements last for this visit only.";
 requestAnimationFrame(frame);
 const gameLayout = new ResizeObserver(() => fitArcade());
 for (const selector of [".game-heading", ".game-footer", "#touch-controls", "#player-health"])
