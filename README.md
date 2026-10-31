@@ -79,16 +79,16 @@ Pull requests run these checks automatically. The publish workflow reruns them o
 
 ## GitHub Pages
 
-The intended address is **https://mattygpt.github.io/Microgame-Madness/**. Publishing is currently disabled because GitHub rejected Pages creation for this private repository on the account's current plan. The repository remains private.
+Play the browser version at **https://mattygpt.github.io/Microgame-Madness/**.
 
-A private personal repository requires GitHub Pro for Pages. The resulting Pages site and downloaded browser game code are public even though the repository remains private. [GitHub Pages availability](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site)
+The repository and website are public. GitHub Pages publishes through GitHub Actions, with the repository variable `PAGES_ENABLED` set to `true`.
 
-After upgrading, enable Pages with GitHub Actions as the publishing source, then set the repository Actions variable `PAGES_ENABLED` to `true`. With the GitHub CLI:
+Each push to `main` runs the Python, WebAssembly, and browser checks, then builds and deploys only the generated `dist/` directory. Shared rule changes therefore reach both the Python source and the published browser game. Local score files and the desktop runtime are excluded from the deployment package.
+
+To republish the current `main` branch manually:
 
 ```sh
-gh api --method POST repos/MattyGPT/Microgame-Madness/pages -f build_type=workflow
-gh variable set PAGES_ENABLED --body true --repo MattyGPT/Microgame-Madness
 gh workflow run pages.yml --repo MattyGPT/Microgame-Madness
 ```
 
-If Pages is already enabled, select **Settings → Pages → Source → GitHub Actions** instead of running the first command. Future pushes to `main` will test, package, and publish automatically. Only the generated `dist/` directory is deployed. Leaving `PAGES_ENABLED` unset runs checks and skips publication.
+Deployment progress is available in the repository's **Actions → Publish browser game** workflow. Setting `PAGES_ENABLED` to `false` skips future deployments while still running checks; it does not remove an already published site.
