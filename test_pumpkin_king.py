@@ -9,7 +9,8 @@ from unittest.mock import patch
 from boss_crush import Projectile, HealingPickup
 from pumpkin_king import (MODE, PumpkinKing, Stage, Finger, Ring, SLAM_ORDER,
                           ATTACK_BREAK, COLOR_BREAK, COUNTER_WINDOW, slam_stages,
-                          EYE_FLASH_PERIOD, EYE_FLASH_ON, EYE_FLASH_GAP)
+                          EYE_FLASH_PERIOD, EYE_FLASH_ON, EYE_FLASH_GAP,
+                          RING_SEGMENTS, RING_THICKNESS)
 from turtle_dodge import create_game, dodge_score_file, start_turtle_dodge
 
 
@@ -106,16 +107,63 @@ class KingTests(unittest.TestCase):
         heights = sorted(b.y for b in game.bullets)
         self.assertTrue(any(b-a > 80 for a, b in zip(heights, heights[1:])))
 
-    def test_rings_rotate_fall_and_have_colored_quarter(self):
+    def test_rings_rotate_fall_and_have_opposite_colored_sides(self):
         game = self.game("rings")
         ring = Ring(150, 100, 0, "blue")
         game.rings = [ring]
         pieces = list(ring.pieces())
-        self.assertEqual(sum(p[4] == "blue" for p in pieces), 12)
-        self.assertEqual(sum(p[4] == "normal" for p in pieces), 36)
+        self.assertEqual(sum(p[4] == "blue" for p in pieces), RING_SEGMENTS//4)
+        self.assertEqual(sum(p[4] == "orange" for p in pieces), RING_SEGMENTS//4)
+        self.assertEqual(sum(p[4] == "normal" for p in pieces), RING_SEGMENTS//2)
+        for i, piece in enumerate(pieces):
+            opposite = pieces[(i+RING_SEGMENTS//2) % RING_SEGMENTS]
+            self.assertAlmostEqual(piece[0]+opposite[0], 2*ring.x)
+            self.assertAlmostEqual(piece[1]+opposite[1], 2*ring.y)
+            self.assertEqual(opposite[4], {"blue": "orange", "orange": "blue", "normal": "normal"}[piece[4]])
         game.update(0.1, set())
         self.assertLess(ring.y, 100)
         self.assertGreater(ring.angle, 0)
+
+    def test_rings_nearly_fill_arena_without_gaps_in_the_outline(self):
+        game = self.game("rings")
+        for _ in range(10):
+            game._spawn()
+            ring = game.rings[-1]
+            self.assertEqual(ring.x, (game.left+game.right)/2)
+            pieces = list(ring.pieces())
+            width = max(p[0]+p[2]/2 for p in pieces)-min(p[0]-p[2]/2 for p in pieces)
+            height = max(p[1]+p[3]/2 for p in pieces)-min(p[1]-p[3]/2 for p in pieces)
+            self.assertGreater(width, 0.9*(game.right-game.left))
+            self.assertLess(width, game.right-game.left)
+            self.assertGreater(height, 0.9*(game.top-game.bottom))
+            self.assertLess(height, game.top-game.bottom)
+            self.assertGreaterEqual(min(p[1]-p[3]/2 for p in pieces), game.top)
+            for a, b in zip(pieces, pieces[1:]+pieces[:1]):
+                self.assertLess(abs(a[0]-b[0]), RING_THICKNESS)
+                self.assertLess(abs(a[1]-b[1]), RING_THICKNESS)
+
+    def test_both_ring_colors_apply_their_movement_rules(self):
+        for first_rule in ("blue", "orange"):
+            for side in (-1, 1):
+                rule = first_rule if side == 1 else {"blue": "orange", "orange": "blue"}[first_rule]
+                for moving in (False, True):
+                    with self.subTest(first_rule=first_rule, side=side, moving=moving):
+                        game = self.game("rings")
+                        ring = Ring(0, -130, 0, first_rule)
+                        game.rings = [ring]
+                        game.x, game.y = side*ring.radius, ring.y
+                        game.update(0.01, {"Up"} if moving else set())
+                        dangerous = (rule == "blue" and moving) or (rule == "orange" and not moving)
+                        self.assertEqual(game.lives, 4 if dangerous else 5)
+
+    def test_rings_remain_until_the_last_visible_edge_leaves(self):
+        game = self.game("rings")
+        ring = Ring(0, game.bottom-220-RING_THICKNESS/2+2, 0, "blue")
+        game.rings = [ring]
+        game.update(0.005, set())
+        self.assertEqual(game.rings, [ring])
+        game.update(0.02, set())
+        self.assertEqual(game.rings, [])
 
     def test_counter_destroys_fingers_only_with_timed_press(self):
         game = self.game("fingers")
@@ -169,9 +217,9 @@ class KingTests(unittest.TestCase):
         for _ in range(6000):
             game.update(1/60, set())
             seen.add(game.attack_index)
-            max_objects = max(max_objects, len(game.bullets)+len(game.rings)*48)
+            max_objects = max(max_objects, len(game.bullets)+len(game.rings)*RING_SEGMENTS)
         self.assertEqual(seen, set(range(6)))
-        self.assertLess(max_objects, 450)
+        self.assertLess(max_objects, 900)
 
     def test_healing_every_16_seconds_lasts_nine_and_caps_at_five(self):
         game = self.game()
