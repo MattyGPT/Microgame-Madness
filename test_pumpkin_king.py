@@ -167,25 +167,27 @@ class KingTests(unittest.TestCase):
 
     def test_counter_destroys_fingers_only_with_timed_press(self):
         game = self.game("fingers")
-        game.bullets = [Finger(game.x, game.y, 0, 0, rule="magenta")]
         game.update(0.01, {"c"})
+        self.assertEqual(game.counter_time, 0)  # C no longer activates the counter.
+        game.bullets = [Finger(game.x, game.y, 0, 0, rule="magenta")]
+        game.update(0.01, {"e"})
         self.assertEqual(game.lives, 5)
         self.assertEqual(game.counter_hits, 1)
         self.assertEqual(game.bullets, [])
-        game.update(0.8, {"c"})
+        game.update(0.8, {"e"})
         game.bullets = [Finger(game.x, game.y, 0, 0, rule="magenta")]
-        game.update(0.01, {"c"})
-        self.assertEqual(game.lives, 4)  # Holding C never automatically counters.
+        game.update(0.01, {"e"})
+        self.assertEqual(game.lives, 4)  # Holding E never automatically counters.
 
     def test_early_counter_expires_and_does_not_block_white_bullets(self):
         game = self.game("fingers")
-        game.update(COUNTER_WINDOW+0.02, {"c"})
+        game.update(COUNTER_WINDOW+0.02, {"e"})
         game.bullets = [Finger(game.x, game.y, 0, 0, rule="magenta")]
         game.update(0.01, set())
         self.assertEqual(game.lives, 4)
         other = self.game()
         other.bullets = [Projectile(other.x, other.y, 0, 0)]
-        other.update(0.01, {"c"})
+        other.update(0.01, {"e"})
         self.assertEqual(other.lives, 4)
 
     def test_fingers_home_toward_player(self):

@@ -22,7 +22,7 @@ COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
 RING_SEGMENTS, RING_THICKNESS = 160, 12
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
-                "MAGENTA FINGERS — tap C at impact", "CHAOS", "ROYAL SLAMS")
+                "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS")
 
 
 @dataclass(frozen=True)
@@ -128,7 +128,7 @@ class PumpkinKing(BossCrush):
             return "BREATHE — next attack in 1 second"
         if name == "fingers":
             close = any(isinstance(b, Finger) and math.hypot(b.x-self.x, b.y-self.y) < 65 for b in self.bullets)
-            return "C NOW!" if close else "MAGENTA FINGERS — tap C just before impact"
+            return "E NOW!" if close else "MAGENTA FINGERS — tap E just before impact"
         if not self.intro_done:
             return "THE AWAKENING" if name in ("shell", "glow", "left_burst", "right_burst", "shatter") else "SURVIVE THE KING'S ARRIVAL"
         return ATTACK_NAMES[self.attack_index]
@@ -244,7 +244,7 @@ class PumpkinKing(BossCrush):
         if dt <= 1e-9 or not self.alive or self.won:
             return
         # Counter is an edge-triggered input, never an automatic shield when held.
-        counter_down = "c" in keys
+        counter_down = "e" in keys
         if counter_down and not self.counter_held and self.counter_cooldown <= 0:
             self.counter_time = COUNTER_WINDOW
             self.counter_cooldown = COUNTER_COOLDOWN

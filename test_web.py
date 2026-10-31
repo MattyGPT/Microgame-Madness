@@ -101,7 +101,7 @@ class BrowserAdapterTests(unittest.TestCase):
             self.session.game.begin_attack(attack)
             self.session.game.invulnerable = 100
             for frame in range(160):
-                result = self.session.dispatch({"action": "tick", "dt": .05, "keys": ["f", "c"]})
+                result = self.session.dispatch({"action": "tick", "dt": .05, "keys": ["f", "e"]})
                 self.assertTrue(result["commands"])
                 self.assertTrue(all(c["kind"] in ("rectangle", "polygon", "text", "oval") for c in result["commands"]))
         self.assertLess(len(self.session.canvas.items), 1000)
