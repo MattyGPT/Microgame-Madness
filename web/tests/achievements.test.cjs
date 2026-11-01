@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 45);
+  assert.equal(catalog.length, 48);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -212,5 +212,39 @@ test('Walking Dictionary and Speed of Type remain gold for existing and new prof
     assert.equal(catalog.find(item => item.id === id).tier, 'gold');
     const tracker = new Tracker({ unlocked: { [id]: '2026-10-31' } });
     assert.equal(tracker.score, 90);
+  }
+});
+
+test('secret achievements award the requested tiers once and persist with existing progress', () => {
+  const tracker = new Tracker();
+  tracker.visit();
+  assert.deepEqual(ids(tracker.secret('dingdong')), ['dingdong']);
+  assert.equal(tracker.score, 280);
+  assert.equal(catalog.find(item => item.id === 'dingdong').description, 'WHO YOU ARE.');
+  assert.equal(catalog.find(item => item.id === 'dingdong').tier, 'crystal');
+  assert.deepEqual(ids(tracker.secret('cube')), ['cube_pet']);
+  assert.equal(catalog.find(item => item.id === 'cube_pet').title, 'Awwwwww!');
+  assert.equal(tracker.score, 370);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  for (const secret of ['cube', 'dingdong', 'unknown']) assert.equal(restored.secret(secret).changed, false);
+  assert.equal(restored.score, 370);
+});
+
+test('last-chance Hangman requires a completed win with exactly one guess remaining', () => {
+  for (const difficulty of ['easy', 'medium', 'hard']) {
+    const tracker = new Tracker();
+    tracker.start('hangman', difficulty);
+    tracker.observe({ mode: 'hangman', difficulty, over: false, remaining: 1 });
+    assert.equal(tracker.data.unlocked.hangman_last_chance, undefined);
+    for (const remaining of [0, 1]) finish(tracker, 'hangman', difficulty, { won: false, remaining });
+    for (const remaining of [undefined, 0, 2, 3]) finish(tracker, 'hangman', difficulty, { remaining });
+    assert.equal(tracker.data.unlocked.hangman_last_chance, undefined);
+    finish(tracker, 'hangman', difficulty, { remaining: 2 }); // Award the separate five-win milestone first.
+    const before = tracker.score;
+    assert.deepEqual(ids(finish(tracker, 'hangman', difficulty, { remaining: 1 })), ['hangman_last_chance']);
+    assert.equal(tracker.score - before, 90);
+    tracker.observe({ mode: 'hangman', difficulty, over: true, won: true, remaining: 1 });
+    assert.equal(tracker.data.stats.lastChanceWins, 1);
+    assert.equal(new Tracker(tracker.data).data.unlocked.hangman_last_chance, tracker.data.unlocked.hangman_last_chance);
   }
 });
