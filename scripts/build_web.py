@@ -19,7 +19,7 @@ def build():
             shutil.rmtree(child)
         else:
             child.unlink()
-    for name in ("index.html", "style.css", "app.js", "achievements.js", "favicon.svg"):
+    for name in ("index.html", "style.css", "app.js", "achievements.js", "music.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
     python_dir = OUTPUT / "python"
     python_dir.mkdir()
