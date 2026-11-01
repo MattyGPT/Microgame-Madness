@@ -814,7 +814,7 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     };
   });
   for (const [id, tier, color] of [['play_boss', 'bronze', '#b87545'], ['boss_mean_flawless', 'silver', '#a9bacb'],
-    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#8fe9ff'], ['pumpkin_flawless_5', 'rainbow', '#ff5470']]) {
+    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#55ddff'], ['pumpkin_flawless_5', 'rainbow', '#ff5470']]) {
     const soundedImmediately = await page.evaluate(id => {
       const item = Achievements.catalog.find(item => item.id === id);
       const before = window.awardSounds.length;
@@ -825,6 +825,23 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     const layer = page.locator(`.achievement-confetti[data-tier="${tier}"]`);
     await expect(layer.locator('i')).toHaveCount(40);
     expect(await layer.locator('i').first().evaluate(el => el.style.getPropertyValue('--confetti-color'))).toBe(color);
+    // Keep the original white shine while checking the actual tier colors.
+    const fills = await layer.locator('i').evaluateAll(pieces => pieces.map(piece => {
+      const style = getComputedStyle(piece);
+      const swatch = document.createElement('span');
+      swatch.style.color = piece.style.getPropertyValue('--confetti-color');
+      document.body.append(swatch);
+      const expected = getComputedStyle(swatch).color;
+      swatch.remove();
+      return { color: style.backgroundColor, expected, image: style.backgroundImage };
+    }));
+    if (tier === 'rainbow')
+      expect(fills.every(fill => fill.color === fill.expected && fill.image === 'none')).toBe(true);
+    else
+      expect(fills.every(fill => fill.image.includes(fill.expected) && fill.image.includes('rgba(255, 255, 255, 0.6)'))).toBe(true);
+    if (tier === 'diamond') expect([...new Set(fills.map(fill => fill.expected))]).toEqual([
+      'rgb(85, 221, 255)', 'rgb(169, 244, 255)', 'rgb(57, 186, 255)',
+    ]);
     const opacity = await layer.evaluate(el => {
       const animation = el.getAnimations()[0];
       animation.pause();
