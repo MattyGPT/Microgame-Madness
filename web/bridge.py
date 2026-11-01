@@ -131,6 +131,7 @@ class BrowserGame:
                           won=getattr(game, "won", False), score=game.score,
                           death_message=getattr(game, "death_message", None),
                           damage_taken=getattr(game, "damage_taken", None),
+                          healing_collected=getattr(game, "healing_collected", 0),
                           near_misses=getattr(game, "near_misses", 0),
                           elapsed=int(game.elapsed), can_pause=game.rules.can_pause,
                           bounds=[game.left, game.right, game.bottom, game.top],

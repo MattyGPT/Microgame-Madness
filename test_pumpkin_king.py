@@ -439,10 +439,12 @@ class KingTests(unittest.TestCase):
         game.update(9.01, set())
         self.assertEqual(game.healing_pickups, [])
         for hp, expected in ((3, 4), (4, 5), (5, 5)):
+            before = game.healing_collected
             game.lives = hp
             game.healing_pickups = [HealingPickup(game.x, game.y, 9)]
             game.update(0.01, set())
             self.assertEqual(game.lives, expected)
+            self.assertEqual(game.healing_collected, before + 1)
 
     def test_shoot_damage_victory_and_restart(self):
         game = self.game()

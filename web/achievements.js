@@ -61,7 +61,9 @@ const Achievements = (() => {
   add("boss_mean_flawless", "Domination!", "silver", "Boss Crush", "Defeat the Mean boss without taking any damage. Healing does not erase damage.", "meanFlawless");
   add("boss_cruel_flawless", "Cruel and Unscathed", "silver", "Boss Crush", "Defeat the Cruel boss without taking any damage. Healing does not erase damage.", "cruelFlawless");
   add("boss_nightmare_flawless", "Flawless Nightmare", "gold", "Boss Crush", "Defeat the Nightmare boss without taking any damage. Healing does not erase damage.", "nightmareFlawless");
-  const statNames = new Set(catalog.map(item => item.stat));
+  add("boss_clean_streak", "Untouchable Streak", "crystal", "Boss Crush", "Win 5 Boss Crush fights in a row without taking damage. Damage, losses, and abandoned fights reset the streak.", "bossCleanStreak", 5);
+  add("pumpkin_full_health", "Fit for a King", "crystal", "Pumpkin King", "Defeat the Pumpkin King with full HP in any mode. Healing is allowed.", "pumpkinFullHealth");
+  const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
   class Tracker {
@@ -91,7 +93,21 @@ const Achievements = (() => {
       }
       return { earned, changed: before !== JSON.stringify(this.data) };
     }
-    visit() { return this.update(stats => { stats.visits = 1; }); }
+    visit() {
+      return this.update(stats => {
+        stats.visits = 1;
+        // A saved unfinished Boss Crush fight was abandoned by leaving/reloading.
+        if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        stats.bossRunActive = 0;
+      });
+    }
+    abandon() {
+      if (this.round) this.round.finished = true;
+      return this.update(stats => {
+        if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        stats.bossRunActive = 0;
+      });
+    }
     secret(name) {
       return this.update(stats => {
         if (name === "dingdong") stats.dingdong = 1;
@@ -101,6 +117,8 @@ const Achievements = (() => {
     start(mode, difficulty) {
       this.round = { mode, difficulty, finished: false };
       return this.update(stats => {
+        if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        stats.bossRunActive = mode === "boss" ? 1 : 0;
         stats[`play_${mode}`] = 1;
         stats.gamesPlayed = games.filter(game => stats[`play_${game}`]).length;
       });
@@ -109,9 +127,11 @@ const Achievements = (() => {
       const round = this.round;
       if (!round || round.finished || s.mode !== round.mode || s.difficulty !== round.difficulty)
         return { earned: [], changed: false };
-      if (!s.over && !["keyboard", "dodge"].includes(s.mode))
+      const streakBroken = s.mode === "boss" && s.damage_taken > 0 && this.data.stats.bossCleanStreak > 0;
+      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken)
         return { earned: [], changed: false };
       return this.update(stats => {
+        if (streakBroken) stats.bossCleanStreak = 0;
         if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
           stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));
@@ -120,6 +140,10 @@ const Achievements = (() => {
         }
         if (!s.over) return;
         round.finished = true;
+        if (s.mode === "boss") {
+          stats.bossRunActive = 0;
+          stats.bossCleanStreak = s.won && s.damage_taken === 0 ? stats.bossCleanStreak + 1 : 0;
+        }
         if (!s.won) return;
         if (s.mode === "hangman") {
           stats.hangmanWins++;
@@ -128,6 +152,8 @@ const Achievements = (() => {
           if (s.remaining === 1) stats.lastChanceWins++;
         } else if (s.mode === "boss" || s.mode === "pumpkin") {
           stats[`${s.mode}Wins`]++;
+          if (s.mode === "pumpkin" && Number.isFinite(s.max_lives) && s.max_lives > 0 && s.lives === s.max_lives)
+            stats.pumpkinFullHealth = 1;
           if (s.damage_taken === 0) {
             if (s.mode === "pumpkin") stats.pumpkinFlawless = 1;
             else if (s.difficulty === "impossible") stats.bossFlawless = 1;

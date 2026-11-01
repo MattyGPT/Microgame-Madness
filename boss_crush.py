@@ -98,6 +98,7 @@ class BossCrush:
         self.max_lives = self.config.player_hp
         self.lives = self.max_lives
         self.damage_taken = 0
+        self.healing_collected = 0
         self.alive, self.won = True, False
         self.death_message = None
         self.elapsed = 0.0
@@ -223,6 +224,7 @@ class BossCrush:
             if pickup.remaining <= 1e-9:
                 continue
             if hits_player(self.x, self.y, pickup.x, pickup.y, HEAL_SIZE, HEAL_SIZE):
+                self.healing_collected += 1
                 self.lives = min(self.max_lives, self.lives + 1)
             else:
                 remaining.append(pickup)

@@ -397,8 +397,10 @@ class BossTests(unittest.TestCase):
             game.update(0.01, set())
             self.assertEqual(game.lives, expected)
             self.assertEqual(game.healing_pickups, [])
+            self.assertEqual(game.healing_collected, 1)
             game.update(0.01, set())
             self.assertEqual(game.lives, expected)
+            self.assertEqual(game.healing_collected, 1)
 
     def test_healing_pickup_expires(self):
         game = self.game("impossible")
@@ -406,6 +408,7 @@ class BossTests(unittest.TestCase):
         game.healing_pickups = [HealingPickup(200, 0)]
         game.update(HEAL_LIFETIME, set())
         self.assertEqual(game.healing_pickups, [])
+        self.assertEqual(game.healing_collected, 0)
 
     def test_healing_cannot_revive_after_fatal_bullet(self):
         game = self.game("impossible")

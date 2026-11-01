@@ -73,6 +73,7 @@ class BrowserAdapterTests(unittest.TestCase):
             result = self.session.dispatch({"action": "tick", "dt": .01})
             self.assertTrue(result["won"])
             self.assertEqual(result["lives"], result["max_lives"])
+            self.assertEqual(result["healing_collected"], int(wounded))
             self.assertEqual(result["damage_taken"], int(wounded))
 
     def test_every_arcade_difficulty_matches_desktop_model_replay(self):

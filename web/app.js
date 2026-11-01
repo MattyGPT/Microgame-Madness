@@ -99,6 +99,7 @@ let selected = "hangman";
 let selectedDifficulty = null;
 let previousBossHealth = null;
 let damageFlashAnimation = null;
+let healingFlashAnimation = null;
 let nameSurpriseActive = false;
 let nameSurpriseTimer;
 let nameWasDingdong = false;
@@ -146,6 +147,48 @@ function persist() {
 }
 const achievementCards = new Map();
 const achievementQueue = [];
+const celebrationTimers = new Map();
+const confettiColors = {
+  bronze: ["#b87545", "#e6ac7c", "#ffcf9e"],
+  silver: ["#a9bacb", "#e2e8f0", "#ffffff"],
+  gold: ["#ffd34d", "#ffeab0", "#c58d14"],
+  crystal: ["#b67dff", "#dfaaff", "#7de6ef"],
+  diamond: ["#8fe9ff", "#d9ffff", "#aabfff"],
+};
+function celebrateAchievements(earned) {
+  if (!earned.length) return;
+  // One clear ding for simultaneous awards; visual layers stay bounded to five.
+  if (soundOn) {
+    if (audioContext?.state === "running") {
+      pendingAchievementDing = false;
+      playSound("achievement");
+    }
+    else pendingAchievementDing = true;
+  }
+  for (const tier of new Set(earned.map(item => item.tier))) {
+    clearTimeout(celebrationTimers.get(tier));
+    $("achievement-celebrations").querySelector(`[data-tier="${tier}"]`)?.remove();
+    const layer = document.createElement("div");
+    layer.className = "achievement-confetti";
+    layer.dataset.tier = tier;
+    for (let index = 0; index < 40; index++) {
+      const piece = document.createElement("i");
+      piece.style.setProperty("--confetti-color", confettiColors[tier][index % 3]);
+      piece.style.setProperty("--x", `${Math.random() * 100}vw`);
+      piece.style.setProperty("--y", `${Math.random() * 100}vh`);
+      piece.style.setProperty("--drift", `${Math.random() * 24 - 12}vw`);
+      piece.style.setProperty("--turn", `${Math.random() * 1080 - 540}deg`);
+      piece.style.setProperty("--fall", `${2.5 + Math.random() * 2}s`);
+      piece.style.setProperty("--delay", `${-Math.random() * 4.5}s`);
+      layer.append(piece);
+    }
+    $("achievement-celebrations").append(layer);
+    celebrationTimers.set(tier, setTimeout(() => {
+      layer.remove();
+      celebrationTimers.delete(tier);
+    }, 5000));
+  }
+}
 let toastTimer;
 function showAchievementToast() {
   clearTimeout(toastTimer);
@@ -198,6 +241,7 @@ function updateAchievements(result) {
   if (!result.changed) return;
   persist();
   renderAchievements();
+  celebrateAchievements(result.earned);
   achievementQueue.push(...result.earned);
   if ($("achievement-toast").hidden) showAchievementToast();
 }
@@ -341,6 +385,7 @@ function showGameArea() {
 }
 function selectGame(mode) {
   if (loadFailed) return;
+  updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   if (active && selected === "keyboard") saveRound();
   active = false;
@@ -456,9 +501,17 @@ function resetDamageFeedback() {
   previousBossHealth = null;
   damageFlashAnimation?.cancel();
   damageFlashAnimation = null;
+  healingFlashAnimation?.cancel();
+  healingFlashAnimation = null;
 }
 function updateDamageFeedback(s) {
   if (selected !== "boss" && selected !== "pumpkin") return;
+  if (previousBossHealth && s.healing_collected > previousBossHealth.healing) {
+    healingFlashAnimation?.cancel();
+    healingFlashAnimation = $("healing-flash").animate(
+      [{ opacity: 1 }, { opacity: 0 }], { duration: 340, easing: "ease-out" },
+    );
+  }
   // Cumulative damage catches a hit even if healing also happens in this frame.
   if (previousBossHealth && (s.lives < previousBossHealth.lives ||
       s.damage_taken > previousBossHealth.damage)) {
@@ -468,7 +521,7 @@ function updateDamageFeedback(s) {
       { duration: 340, easing: "ease-out" },
     );
   }
-  previousBossHealth = { lives: s.lives, damage: s.damage_taken };
+  previousBossHealth = { lives: s.lives, damage: s.damage_taken, healing: s.healing_collected };
 }
 function render() {
   const s = snapshot;
@@ -637,6 +690,7 @@ function exitGame() {
   selectGame(selected);
 }
 function fail(error) {
+  updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   console.error(error);
   loadFailed = true;
@@ -817,8 +871,10 @@ let soundOn = true;
 let audioContext;
 let audioMaster;
 let musicPlayer;
+let pendingAchievementDing = false;
 $("sound").onclick = () => {
   soundOn = !soundOn;
+  if (!soundOn) pendingAchievementDing = false;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
   if (audioMaster) {
@@ -845,7 +901,13 @@ function initializeAudio() {
       audioMaster.connect(audioContext.destination);
       musicPlayer = new ArcadeMusic.Player(audioContext, audioMaster);
     }
-    audioContext.resume().then(syncMusic).catch(() => {});
+    audioContext.resume().then(() => {
+      syncMusic();
+      if (pendingAchievementDing && soundOn) {
+        pendingAchievementDing = false;
+        playSound("achievement");
+      }
+    }).catch(() => {});
     syncMusic();
   } catch {
     soundOn = false;
@@ -863,18 +925,20 @@ function playSound(event) {
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
   const squeak = event === "squeak";
-  oscillator.type = squeak ? "sine" : "sawtooth";
-  oscillator.frequency.setValueAtTime(squeak ? 650 : event === "slam" ? 65 : 95, now);
+  const ding = event === "achievement";
+  const duration = ding ? .7 : squeak ? .24 : .36;
+  oscillator.type = squeak || ding ? "sine" : "sawtooth";
+  oscillator.frequency.setValueAtTime(ding ? 1568 : squeak ? 650 : event === "slam" ? 65 : 95, now);
   if (squeak) oscillator.frequency.exponentialRampToValueAtTime(1500, now + .07);
-  oscillator.frequency.exponentialRampToValueAtTime(squeak ? 900 : 30, now + (squeak ? .2 : .3));
-  gain.gain.setValueAtTime(squeak ? .001 : .18, now);
-  if (squeak) gain.gain.exponentialRampToValueAtTime(.16, now + .015);
-  gain.gain.exponentialRampToValueAtTime(.003, now + (squeak ? .22 : .35));
+  if (!ding) oscillator.frequency.exponentialRampToValueAtTime(squeak ? 900 : 30, now + (squeak ? .2 : .3));
+  gain.gain.setValueAtTime(squeak || ding ? .001 : .18, now);
+  if (squeak || ding) gain.gain.exponentialRampToValueAtTime(ding ? .12 : .16, now + (ding ? .008 : .015));
+  gain.gain.exponentialRampToValueAtTime(ding ? .001 : .003, now + (ding ? .69 : squeak ? .22 : .35));
   oscillator.connect(gain);
   gain.connect(audioMaster);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   oscillator.start(now);
-  oscillator.stop(now + (squeak ? .24 : .36));
+  oscillator.stop(now + duration);
 }
 async function initialize() {
   try {
