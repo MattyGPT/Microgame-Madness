@@ -267,12 +267,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(52);
+  await expect(page.locator('.achievement-card')).toHaveCount(68);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(51);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(67);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -298,11 +298,11 @@ test("real Hangman wins award the requested medals once and persist across reloa
     for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
     if (round === 0) await expect(page.locator('#profile-score')).toHaveText('50');
-    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('110');
-    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('200');
+    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('200');
+    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('290');
     await page.locator('#overlay-action').click();
   }
-  await expect(page.locator('#profile-score')).toHaveText('290');
+  await expect(page.locator('#profile-score')).toHaveText('470');
   await page.locator('#achievements-tab').click();
   await page.locator('#achievement-filter').selectOption('earned');
   for (const id of ['play_hangman', 'hangman_win', 'hangman_hard', 'hangman_5', 'hangman_10'])
@@ -312,14 +312,14 @@ test("real Hangman wins award the requested medals once and persist across reloa
   await page.screenshot({ path: testInfo.outputPath('achievement-collection.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('290');
+  await expect(page.locator('#profile-score')).toHaveText('470');
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="hangman_25"]')).toContainText('10 / 25');
   await page.locator('#scores-tab').click();
   await page.locator('#player').fill('New nickname');
   await page.locator('[data-difficulty="hard"]').click();
   await page.locator('#exit').click();
-  await expect(page.locator('#profile-score')).toHaveText('290');
+  await expect(page.locator('#profile-score')).toHaveText('470');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.hangmanWins)).toBe(10);
 });
 
@@ -416,11 +416,11 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
   await expect(page.locator('#profile-score')).toHaveText('1130');
 });
 
-test('all five medal tiers have readable colored frames and reduced-motion support', async ({ page }, testInfo) => {
+test('all six medal tiers have readable colored frames and reduced-motion support', async ({ page }, testInfo) => {
   await page.locator('#achievements-tab').click();
   await expect(page.locator('.achievement-legend')).toContainText('Crystal +270 · Diamond +810');
   for (const [tier, id] of [['bronze', 'welcome'], ['silver', 'hangman_win'], ['gold', 'hangman_5'],
-    ['crystal', 'dodge_120'], ['diamond', 'pumpkin_flawless']]) {
+    ['crystal', 'dodge_120'], ['diamond', 'pumpkin_flawless'], ['rainbow', 'hangman_250']]) {
     const card = page.locator(`[data-achievement="${id}"]`);
     await card.scrollIntoViewIfNeeded();
     await expect(card).toHaveClass(/in-view/);
@@ -433,8 +433,8 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
     });
     expect(style.background).toContain('linear-gradient');
     expect(style.color.trim()).not.toBe('');
-    expect(style.thickness).toBe(['crystal', 'diamond'].includes(tier) ? '2px' : '4px');
-    expect(style.shape.startsWith('polygon(')).toBe(['crystal', 'diamond'].includes(tier));
+    expect(style.thickness).toBe(['crystal', 'diamond', 'rainbow'].includes(tier) ? '2px' : '4px');
+    expect(style.shape.startsWith('polygon(')).toBe(['crystal', 'diamond', 'rainbow'].includes(tier));
     expect(style.shine).toBe('medal-shine');
     expect(style.sparkle).toBe('medal-sparkle');
     expect(style.blend).toBe(id === 'welcome' ? 'normal' : 'multiply');
@@ -477,7 +477,7 @@ test('Pumpkin King arm-lift smashes and roar fire deal one HP in every mode', as
   }
 });
 
-test('Gerson Boom unlocks at 360 seconds with 810 points and survives reload', async ({ page }) => {
+test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', async ({ page }) => {
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace('self.game = DodgeGame(difficulty=difficulty)',
@@ -487,18 +487,18 @@ test('Gerson Boom unlocks at 360 seconds with 810 points and survives reload', a
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('1230');
+  await expect(page.locator('#profile-score')).toHaveText('3660');
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="dodge_360"]');
   await expect(card).toContainText('Gerson Boom');
-  await expect(card).toContainText('diamond · +810 points');
+  await expect(card).toContainText('rainbow · +2430 points');
   await expect(card).toContainText('Unlocked');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('1230');
+  await expect(page.locator('#profile-score')).toHaveText('3660');
 });
 
-for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 50, 30], ['cruel', 'silver', 80, 30], ['nightmare', 'gold', 140, 90]])
+for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 80, 30], ['cruel', 'silver', 110, 30], ['nightmare', 'crystal', 230, 270], ['impossible', 'diamond', 590, 810]])
 test(`${difficulty} flawless achievement rejects healed damage and restores the unlocked frame shine`, async ({ page }, testInfo) => {
   let wounded = true;
   await page.route('**/python/bridge.py', async route => {
@@ -516,7 +516,8 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
     await expect(page.locator('#profile-score')).toHaveText(String(score));
     await page.locator('#achievements-tab').click();
-    const card = page.locator(`[data-achievement="boss_${difficulty}_flawless"]`);
+    const card = page.locator(`[data-achievement="${difficulty === 'impossible' ? 'boss_flawless' : `boss_${difficulty}_flawless`}"]`);
+    await expect(page.locator(`[data-achievement="boss_${difficulty}_full"]`)).toContainText('Unlocked');
     await expect(card).toHaveAttribute('data-tier', tier);
     await expect(card).toContainText(wounded ? 'Locked' : 'Unlocked');
     expect(await card.evaluate(el => getComputedStyle(el).backgroundBlendMode)).toBe(wounded ? 'multiply' : 'normal');
@@ -813,7 +814,7 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     };
   });
   for (const [id, tier, color] of [['play_boss', 'bronze', '#b87545'], ['boss_mean_flawless', 'silver', '#a9bacb'],
-    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#8fe9ff']]) {
+    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#8fe9ff'], ['pumpkin_flawless_5', 'rainbow', '#ff5470']]) {
     const soundedImmediately = await page.evaluate(id => {
       const item = Achievements.catalog.find(item => item.id === id);
       const before = window.awardSounds.length;
@@ -838,19 +839,19 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     expect(opacity.held).toBe(1);
     expect(opacity.fading).toBeCloseTo(.5, 2);
   }
-  await expect(page.locator('.achievement-confetti')).toHaveCount(5);
+  await expect(page.locator('.achievement-confetti')).toHaveCount(6);
   await page.screenshot({ path: testInfo.outputPath('all-tier-confetti.png') });
   await expect(page.locator('#achievement-celebrations')).toHaveCSS('pointer-events', 'none');
   expect(await page.evaluate(() => window.awardSounds.every(osc => osc.type === 'sine' && osc.frequency.value === 1568))).toBe(true);
   await page.evaluate(() => updateAchievements(achievementTracker.secret('cube')));
-  expect(await page.evaluate(() => window.awardSounds.length)).toBe(5);
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(6);
   await expect(page.locator('.achievement-confetti')).toHaveCount(0, { timeout: 6500 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('#sound').click();
   await page.locator('[data-difficulty="easy"]').click();
   await expect(page.locator('.achievement-confetti[data-tier="bronze"]')).toBeVisible();
   await expect(page.locator('.achievement-confetti i').first()).toHaveCSS('animation-name', 'none');
-  expect(await page.evaluate(() => window.awardSounds.length)).toBe(5);
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(6);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -913,7 +914,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   const card = page.locator('[data-achievement="boss_clean_streak"]');
   await expect(card).toHaveAttribute('data-tier', 'crystal');
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('1580');
+  await expect(page.locator('#profile-score')).toHaveText('2360');
   instantWin = false;
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
@@ -923,7 +924,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   expect(await page.evaluate(() => achievementTracker.data.stats.bossCleanStreak)).toBe(0);
-  await expect(page.locator('#profile-score')).toHaveText('1580');
+  await expect(page.locator('#profile-score')).toHaveText('2360');
   // Exiting a different unfinished run must persist the reset immediately too.
   await page.evaluate(() => { achievementTracker.data.stats.bossCleanStreak = 4; persist(); });
   await page.locator('[data-game="boss"]').click();
@@ -931,4 +932,57 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   await page.locator('#pause').click();
   await page.locator('#exit').click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.bossCleanStreak)).toBe(0);
+});
+
+test('retiered profiles show corrected points and Rainbow awards have six-color celebrations', async ({ page }, testInfo) => {
+  const date = '2026-10-31T12:00:00.000Z';
+  await page.evaluate(date => {
+    const unlocked = Object.fromEntries(['welcome', 'boss_impossible', 'boss_nightmare_flawless', 'pumpkin_phase2', 'dodge_360'].map(id => [id, date]));
+    localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Returning Player', scores: {}, achievements: { stats: { visits: 1 }, unlocked, score: 1090 } }));
+  }, date);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('3790');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+  await expect(page.locator('.achievement-confetti')).toHaveCount(0);
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('.achievement-legend')).toContainText('Diamond +810 · Rainbow +2430');
+  for (const [id, tier] of [['boss_impossible', 'crystal'], ['boss_nightmare_flawless', 'crystal'], ['pumpkin_phase2', 'diamond'], ['dodge_360', 'rainbow']]) {
+    await expect(page.locator(`[data-achievement="${id}"]`)).toHaveAttribute('data-tier', tier);
+    await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');
+  }
+  const rainbow = page.locator('[data-achievement="dodge_360"]');
+  await rainbow.scrollIntoViewIfNeeded();
+  await rainbow.screenshot({ path: testInfo.outputPath('rainbow-medal.png') });
+  expect(await page.evaluate(() => achievementTracker.data.unlocked.dodge_360)).toBe(date);
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+    saved.achievements.stats.pumpkinFlawlessWins = 4;
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
+  });
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const setup = 'self.game = PumpkinKing(difficulty=difficulty)\n            from boss_crush import Projectile\n            self.game.begin_attack(0)\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+    await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', setup) });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="pumpkin"]').click();
+  await page.locator('[data-difficulty="baby"]').click();
+  await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+  await expect(page.locator('#profile-score')).toHaveText('7340');
+  const confetti = page.locator('.achievement-confetti[data-tier="rainbow"]');
+  await expect(confetti.locator('i')).toHaveCount(40);
+  expect(await confetti.evaluate(el => new Set([...el.children].map(piece => piece.style.getPropertyValue('--confetti-color'))).size)).toBe(6);
+  await page.screenshot({ path: testInfo.outputPath('rainbow-celebration.png') });
+  for (let i = 0; i < 8 && !(await page.locator('#achievement-toast').innerText()).includes('Sovereign of Suffering'); i++)
+    await page.getByRole('button', { name: 'Dismiss achievement notification' }).click();
+  await expect(page.locator('#achievement-toast')).toContainText('rainbow achievement · +2430 points');
+  await page.locator('#achievement-toast').screenshot({ path: testInfo.outputPath('rainbow-toast.png') });
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('[data-achievement="pumpkin_flawless_5"]')).toHaveAttribute('data-tier', 'rainbow');
+  await expect(page.locator('[data-achievement="pumpkin_flawless_5"]')).toContainText('Unlocked');
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('7340');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
 });

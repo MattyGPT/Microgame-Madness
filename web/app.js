@@ -154,10 +154,11 @@ const confettiColors = {
   gold: ["#ffd34d", "#ffeab0", "#c58d14"],
   crystal: ["#b67dff", "#dfaaff", "#7de6ef"],
   diamond: ["#8fe9ff", "#d9ffff", "#aabfff"],
+  rainbow: ["#ff5470", "#ff9e42", "#ffe663", "#6ee89b", "#56c7ff", "#bc8bff"],
 };
 function celebrateAchievements(earned) {
   if (!earned.length) return;
-  // One clear ding for simultaneous awards; visual layers stay bounded to five.
+  // One clear ding for simultaneous awards; one visual layer per tier.
   if (soundOn) {
     if (audioContext?.state === "running") {
       pendingAchievementDing = false;
@@ -173,7 +174,7 @@ function celebrateAchievements(earned) {
     layer.dataset.tier = tier;
     for (let index = 0; index < 40; index++) {
       const piece = document.createElement("i");
-      piece.style.setProperty("--confetti-color", confettiColors[tier][index % 3]);
+      piece.style.setProperty("--confetti-color", confettiColors[tier][index % confettiColors[tier].length]);
       piece.style.setProperty("--x", `${Math.random() * 100}vw`);
       piece.style.setProperty("--y", `${Math.random() * 100}vh`);
       piece.style.setProperty("--drift", `${Math.random() * 24 - 12}vw`);
