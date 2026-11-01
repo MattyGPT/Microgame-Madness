@@ -415,3 +415,12 @@ test('retiering recalculates existing profile scores without changing dates or r
   assert.equal(restored.score, 3790);
   assert.deepEqual(ids(restored.visit()), []);
 });
+
+
+test('healing a half-point scare hit never qualifies as a damage-free Pumpkin victory', () => {
+  const tracker = new Tracker();
+  finish(tracker, 'pumpkin', 'baby', { damage_taken: .5, lives: 15, max_lives: 15 });
+  assert.ok(tracker.data.unlocked.pumpkin_full_health);
+  assert.equal(tracker.data.unlocked.pumpkin_flawless, undefined);
+  assert.equal(tracker.data.stats.pumpkinFlawlessWins, 0);
+});

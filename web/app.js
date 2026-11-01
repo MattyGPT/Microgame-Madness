@@ -935,14 +935,25 @@ function playSound(event) {
     now = audioContext.currentTime;
   const squeak = event === "squeak";
   const ding = event === "achievement";
-  const duration = ding ? .7 : squeak ? .24 : .36;
+  const scare = event === "scare";
+  const duration = ding ? .7 : squeak ? .24 : scare ? .38 : .36;
   oscillator.type = squeak || ding ? "sine" : "sawtooth";
-  oscillator.frequency.setValueAtTime(ding ? 1568 : squeak ? 650 : event === "slam" ? 65 : 95, now);
-  if (squeak) oscillator.frequency.exponentialRampToValueAtTime(1500, now + .07);
-  if (!ding) oscillator.frequency.exponentialRampToValueAtTime(squeak ? 900 : 30, now + (squeak ? .2 : .3));
-  gain.gain.setValueAtTime(squeak || ding ? .001 : .18, now);
-  if (squeak || ding) gain.gain.exponentialRampToValueAtTime(ding ? .12 : .16, now + (ding ? .008 : .015));
-  gain.gain.exponentialRampToValueAtTime(ding ? .001 : .003, now + (ding ? .69 : squeak ? .22 : .35));
+  if (scare) {
+    oscillator.frequency.setValueAtTime(180, now);
+    oscillator.frequency.exponentialRampToValueAtTime(45, now + .37);
+    gain.gain.setValueAtTime(.001, now);
+    for (const offset of [0, .12, .24]) {
+      gain.gain.exponentialRampToValueAtTime(.18, now + offset + .015);
+      gain.gain.exponentialRampToValueAtTime(.001, now + offset + .10);
+    }
+  } else {
+    oscillator.frequency.setValueAtTime(ding ? 1568 : squeak ? 650 : event === "slam" ? 65 : 95, now);
+    if (squeak) oscillator.frequency.exponentialRampToValueAtTime(1500, now + .07);
+    if (!ding) oscillator.frequency.exponentialRampToValueAtTime(squeak ? 900 : 30, now + (squeak ? .2 : .3));
+    gain.gain.setValueAtTime(squeak || ding ? .001 : .18, now);
+    if (squeak || ding) gain.gain.exponentialRampToValueAtTime(ding ? .12 : .16, now + (ding ? .008 : .015));
+    gain.gain.exponentialRampToValueAtTime(ding ? .001 : .003, now + (ding ? .69 : squeak ? .22 : .35));
+  }
   oscillator.connect(gain);
   gain.connect(audioMaster);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };

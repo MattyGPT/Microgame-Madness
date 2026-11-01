@@ -6,7 +6,7 @@ Five games, two ways to play: a Python desktop/terminal collection and a browser
 - **Key Rush / Timed Keyboard Challenge:** type increasingly difficult sequences before time runs out.
 - **Turtle Dodge:** survive falling blocks across four difficulty levels.
 - **Boss Crush:** dodge and shoot through four boss difficulties.
-- **The Pumpkin King:** survive a transformation and six attacks, including a timed counter move. Choose “Come On, Are You Really That Bad at the Game?” for 23 HP, Baby Mode for 15 HP, Coward Mode for 10 HP, or Impossible Phase 2 for 5 HP; each has separate high scores. Touching the King’s head, arms, or hands kills instantly in every mode, including during the awakening and damage immunity. The roar warns of mouth fire; fire and arm-lift smashes deal 1 HP per hit with normal damage immunity. Projectiles and rings deal their usual damage.
+- **The Pumpkin King:** survive a transformation and seven attacks, including a timed counter move. Choose “Come On, Are You Really That Bad at the Game?” for 23 HP, Baby Mode for 15 HP, Coward Mode for 10 HP, or Impossible Phase 2 for 5 HP; each has separate high scores. Touching the King’s head, arms, or hands kills instantly in every mode, including during the awakening and damage immunity. The roar warns of mouth fire; fire and arm-lift smashes deal 1 HP per hit with normal damage immunity. Projectiles and rings deal their usual damage.
 
 ## Play the Python version
 
@@ -137,3 +137,5 @@ gh workflow run pages.yml --repo MattyGPT/Microgame-Madness
 Deployment progress is available in the repository's **Actions → Publish browser game** workflow. Setting `PAGES_ENABLED` to `false` skips future deployments while still running checks; it does not remove an already published site.
 
 The Impossible Boss Crush boss shares the Pumpkin King’s pre-transformation pumpkin face: black features on a white body, with only its eyes flashing yellow when struck.
+
+The Pumpkin King’s seventh attack, **Haunted Quadrants**, divides the arena with a plus sign for exactly five seconds. Ten scares appear every 0.5 seconds in clockwise order: top left, top right, bottom right, bottom left. Each slot starts with 0.2 seconds of flashing red/yellow exclamation marks, then three spooky faces and a short laugh. The active section deals 0.5 HP once per appearance, even if you enter it after the faces appear. The dividing lines and warnings do not deal damage; head/arm contact remains lethal. Healing restores HP normally but never erases the half-point damage history.
