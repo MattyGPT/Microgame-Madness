@@ -256,6 +256,7 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.reload();
   const toast = page.locator('#achievement-toast');
   await expect(toast).toContainText('Welcome to Microgame Madness!');
+  await expect(page.locator('.achievement-confetti[data-tier="bronze"] i')).toHaveCount(40);
   await expect(toast).toContainText('bronze achievement · +10 points');
   const box = await toast.boundingBox();
   expect(box.x).toBeLessThan(20);
@@ -266,12 +267,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(50);
+  await expect(page.locator('.achievement-card')).toHaveCount(52);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(49);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(51);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -400,17 +401,19 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
   }
   await win();
   await expect(page.locator('[data-achievement="pumpkin_flawless"]')).toContainText('Locked');
-  await expect(page.locator('#profile-score')).toHaveText('50');
+  await expect(page.locator('#profile-score')).toHaveText('320');
+  await expect(page.locator('[data-achievement="pumpkin_full_health"]')).toContainText('Unlocked');
+  await expect(page.locator('[data-achievement="pumpkin_full_health"]')).toHaveAttribute('data-tier', 'crystal');
   wounded = false;
   await win();
   await expect(page.locator('[data-achievement="pumpkin_flawless"]')).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('860');
+  await expect(page.locator('#profile-score')).toHaveText('1130');
   // Queued notifications keep the new tier and its reward as well.
   while (!(await page.locator('#achievement-toast').innerText()).includes('King of Suffering'))
     await page.getByRole('button', { name: 'Dismiss achievement notification' }).click();
   await expect(page.locator('#achievement-toast')).toContainText('diamond achievement · +810 points');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('860');
+  await expect(page.locator('#profile-score')).toHaveText('1130');
 });
 
 test('all five medal tiers have readable colored frames and reduced-motion support', async ({ page }, testInfo) => {
@@ -734,7 +737,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   else await cube.click({ force: true });
   await expect(cube).toHaveClass(/blushing/);
   await expect.poll(() => cube.evaluate(el => Number(getComputedStyle(el, '::before').opacity))).toBeGreaterThan(.9);
-  expect(await page.evaluate(() => window.squeaks.map(osc => osc.type))).toEqual(['sine']);
+  expect(await page.evaluate(() => window.squeaks.map(osc => osc.type))).toEqual(['sine', 'sine']);
   await expect(page.locator('#profile-score')).toHaveText('100');
   await cube.screenshot({ path: testInfo.outputPath('blushing-cube.png'), animations: 'disabled' });
   await expect(cube).not.toHaveClass(/blushing/);
@@ -743,7 +746,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await expect(page.locator('#profile-score')).toHaveText('100');
   await page.locator('#sound').click();
   await cube.press('Space');
-  expect(await page.evaluate(() => window.squeaks.length)).toBe(2);
+  expect(await page.evaluate(() => window.squeaks.length)).toBe(3);
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#profile-score')).toHaveText('370');
   await page.locator('#name-surprise').waitFor({ state: 'hidden' });
@@ -794,4 +797,138 @@ test('winning real Hangman on the last guess awards Down to the Wire once', asyn
   await expect(card).toContainText('Down to the Wire');
   await expect(card).toHaveAttribute('data-tier', 'gold');
   await expect(card).toContainText('Unlocked');
+});
+
+test('all achievement tiers celebrate immediately, hold confetti four seconds, then fade and clean up', async ({ page }, testInfo) => {
+  expect(await page.evaluate(() => pendingAchievementDing)).toBe(true);
+  await page.locator('#player').click();
+  await expect.poll(() => page.evaluate(() => pendingAchievementDing)).toBe(false);
+  await page.evaluate(() => {
+    window.awardSounds = [];
+    const create = audioContext.createOscillator.bind(audioContext);
+    audioContext.createOscillator = () => {
+      const oscillator = create();
+      window.awardSounds.push(oscillator);
+      return oscillator;
+    };
+  });
+  for (const [id, tier, color] of [['play_boss', 'bronze', '#b87545'], ['boss_mean_flawless', 'silver', '#a9bacb'],
+    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#8fe9ff']]) {
+    const soundedImmediately = await page.evaluate(id => {
+      const item = Achievements.catalog.find(item => item.id === id);
+      const before = window.awardSounds.length;
+      updateAchievements(achievementTracker.update(stats => { stats[item.stat] = item.target; }));
+      return window.awardSounds.length - before;
+    }, id);
+    expect(soundedImmediately).toBe(1);
+    const layer = page.locator(`.achievement-confetti[data-tier="${tier}"]`);
+    await expect(layer.locator('i')).toHaveCount(40);
+    expect(await layer.locator('i').first().evaluate(el => el.style.getPropertyValue('--confetti-color'))).toBe(color);
+    const opacity = await layer.evaluate(el => {
+      const animation = el.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 4000;
+      const held = Number(getComputedStyle(el).opacity);
+      animation.currentTime = 4500;
+      const fading = Number(getComputedStyle(el).opacity);
+      animation.currentTime = 0;
+      animation.play();
+      return { held, fading };
+    });
+    expect(opacity.held).toBe(1);
+    expect(opacity.fading).toBeCloseTo(.5, 2);
+  }
+  await expect(page.locator('.achievement-confetti')).toHaveCount(5);
+  await page.screenshot({ path: testInfo.outputPath('all-tier-confetti.png') });
+  await expect(page.locator('#achievement-celebrations')).toHaveCSS('pointer-events', 'none');
+  expect(await page.evaluate(() => window.awardSounds.every(osc => osc.type === 'sine' && osc.frequency.value === 1568))).toBe(true);
+  await page.evaluate(() => updateAchievements(achievementTracker.secret('cube')));
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(5);
+  await expect(page.locator('.achievement-confetti')).toHaveCount(0, { timeout: 6500 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#sound').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator('.achievement-confetti[data-tier="bronze"]')).toBeVisible();
+  await expect(page.locator('.achievement-confetti i').first()).toHaveCSS('animation-name', 'none');
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(5);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('actual healing pickups flash green even at full HP in Boss Crush and every Pumpkin mode', async ({ page }, testInfo) => {
+  let wounded = false;
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    let body = await response.text();
+    for (const constructor of ['BossCrush(difficulty)', 'PumpkinKing(difficulty=difficulty)']) {
+      body = body.replace(`self.game = ${constructor}`, `self.game = ${constructor}\n            from boss_crush import HealingPickup\n`
+        + (wounded ? '            self.game.hurt()\n' : '')
+        + '            self.game.healing_pickups = [HealingPickup(self.game.x, self.game.y)]');
+    }
+    await route.fulfill({ response, body });
+  });
+  for (wounded of [false, true]) {
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    for (const [mode, difficulty, hp] of [['boss', 'impossible', 5], ['pumpkin', 'phase2', 5], ['pumpkin', 'coward', 10], ['pumpkin', 'baby', 15], ['pumpkin', 'come_on', 23]]) {
+      await page.locator(`[data-game="${mode}"]`).click();
+      await page.locator(`[data-difficulty="${difficulty}"]`).click();
+      await expect.poll(() => page.evaluate(() => snapshot.healing_collected)).toBe(1);
+      await page.locator('#pause').click();
+      await expect(page.locator('#player-health-value')).toHaveText(`${hp} / ${hp}`);
+      expect(await page.evaluate(() => damageFlashAnimation)).toBe(null);
+      await page.evaluate(() => { healingFlashAnimation.pause(); healingFlashAnimation.currentTime = 0; });
+      await expect(page.locator('#healing-flash')).toHaveCSS('opacity', '1');
+      await expect(page.locator('#healing-flash')).toHaveCSS('background-color', 'rgba(55, 255, 115, 0.22)');
+      await expect(page.locator('#healing-flash')).toHaveCSS('pointer-events', 'none');
+      if (mode === 'pumpkin' && difficulty === 'baby' && !wounded)
+        await page.screenshot({ path: testInfo.outputPath('green-healing-flash.png') });
+      expect(await page.evaluate(() => { const flash = healingFlashAnimation; render(); return flash === healingFlashAnimation; })).toBe(true);
+      await page.locator('#exit').click();
+      await expect(page.locator('#healing-flash')).toHaveCSS('opacity', '0');
+      expect(await page.evaluate(() => healingFlashAnimation)).toBe(null);
+    }
+  }
+});
+
+test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset the saved streak', async ({ page }) => {
+  let instantWin = true;
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    let body = await response.text();
+    if (instantWin) body = body.replace('self.game = BossCrush(difficulty)',
+      'self.game = BossCrush(difficulty)\n            from boss_crush import Projectile\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]');
+    await route.fulfill({ response, body });
+  });
+  for (const [index, difficulty] of ['mean', 'cruel', 'nightmare', 'impossible', 'mean'].entries()) {
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await page.locator('[data-game="boss"]').click();
+    await page.locator(`[data-difficulty="${difficulty}"]`).click();
+    await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+    const data = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements);
+    expect(data.stats.bossCleanStreak).toBe(index + 1);
+    expect(Boolean(data.unlocked.boss_clean_streak)).toBe(index === 4);
+  }
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="boss_clean_streak"]');
+  await expect(card).toHaveAttribute('data-tier', 'crystal');
+  await expect(card).toContainText('Unlocked');
+  await expect(page.locator('#profile-score')).toHaveText('1580');
+  instantWin = false;
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="boss"]').click();
+  await page.locator('[data-difficulty="mean"]').click();
+  await page.locator('#pause').click();
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  expect(await page.evaluate(() => achievementTracker.data.stats.bossCleanStreak)).toBe(0);
+  await expect(page.locator('#profile-score')).toHaveText('1580');
+  // Exiting a different unfinished run must persist the reset immediately too.
+  await page.evaluate(() => { achievementTracker.data.stats.bossCleanStreak = 4; persist(); });
+  await page.locator('[data-game="boss"]').click();
+  await page.locator('[data-difficulty="mean"]').click();
+  await page.locator('#pause').click();
+  await page.locator('#exit').click();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.bossCleanStreak)).toBe(0);
 });

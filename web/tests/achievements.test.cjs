@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 50);
+  assert.equal(catalog.length, 52);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -275,5 +275,66 @@ test('Cruel and Nightmare flawless awards require zero-damage wins and persist o
     const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
     assert.deepEqual(ids(finish(restored, 'boss', difficulty, { damage_taken: 0 })), []);
     assert.equal(restored.score, tracker.score);
+  }
+});
+
+test('five consecutive clean Boss Crush wins award crystal once across modes and reloads', () => {
+  let tracker = new Tracker();
+  for (const [index, difficulty] of ['mean', 'cruel', 'nightmare', 'impossible', 'mean'].entries()) {
+    tracker.visit();
+    const result = finish(tracker, 'boss', difficulty, { damage_taken: 0 });
+    assert.equal(tracker.data.stats.bossCleanStreak, index + 1);
+    assert.equal(ids(result).includes('boss_clean_streak'), index === 4);
+    tracker.observe({ mode: 'boss', difficulty, won: true, over: true, damage_taken: 0 });
+    assert.equal(tracker.data.stats.bossCleanStreak, index + 1);
+    tracker.start('hangman', 'easy'); // Other games between completed boss rounds are allowed.
+    tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  }
+  assert.equal(catalog.find(item => item.id === 'boss_clean_streak').tier, 'crystal');
+  const before = tracker.score;
+  assert.ok(!ids(finish(tracker, 'boss', 'mean', { damage_taken: 0 })).includes('boss_clean_streak'));
+  assert.equal(tracker.score, before);
+});
+
+test('damage, losses, abandonment, and reloading unfinished boss fights break the streak', () => {
+  for (const breakStreak of [
+    tracker => tracker.observe({ mode: 'boss', difficulty: 'mean', damage_taken: 1, lives: 3 }),
+    tracker => tracker.observe({ mode: 'boss', difficulty: 'mean', damage_taken: 0, over: true, won: false }),
+    tracker => tracker.observe({ mode: 'boss', difficulty: 'mean', over: true, won: true }),
+    tracker => tracker.abandon(),
+    tracker => tracker.start('hangman', 'easy'),
+    tracker => tracker.start('boss', 'cruel'),
+    tracker => { const restored = new Tracker(tracker.data); restored.visit(); return restored; },
+  ]) {
+    let tracker = new Tracker({ stats: { bossCleanStreak: 4 } });
+    tracker.start('boss', 'mean');
+    const result = breakStreak(tracker);
+    if (result instanceof Tracker) tracker = result;
+    assert.equal(tracker.data.stats.bossCleanStreak, 0);
+    assert.equal(tracker.data.unlocked.boss_clean_streak, undefined);
+  }
+  const tracker = new Tracker({ stats: { bossCleanStreak: 4 } });
+  tracker.start('boss', 'mean');
+  tracker.abandon();
+  assert.equal(tracker.observe({ mode: 'boss', difficulty: 'mean', over: true, won: true, damage_taken: 0 }).changed, false);
+});
+
+test('full-health Pumpkin victories allow healing and remain distinct from no-hit diamonds', () => {
+  for (const [difficulty, max_lives] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
+    const tracker = new Tracker();
+    for (const extra of [
+      { lives: max_lives - 1, max_lives }, { lives: 0, max_lives: 0 },
+      { lives: max_lives }, { lives: max_lives, max_lives, won: false },
+    ]) {
+      finish(tracker, 'pumpkin', difficulty, { damage_taken: 1, ...extra });
+      assert.equal(tracker.data.unlocked.pumpkin_full_health, undefined);
+    }
+    const before = tracker.score;
+    assert.deepEqual(ids(finish(tracker, 'pumpkin', difficulty, { damage_taken: 2, lives: max_lives, max_lives })), ['pumpkin_full_health']);
+    assert.equal(tracker.score - before, 270);
+    assert.equal(tracker.data.unlocked.pumpkin_flawless, undefined);
+    const restored = new Tracker(tracker.data);
+    assert.ok(!ids(finish(restored, 'pumpkin', difficulty, { damage_taken: 1, lives: max_lives, max_lives })).includes('pumpkin_full_health'));
+    assert.ok(ids(finish(restored, 'pumpkin', difficulty, { damage_taken: 0, lives: max_lives, max_lives })).includes('pumpkin_flawless'));
   }
 });

@@ -289,6 +289,7 @@ class PumpkinKing(BossCrush):
             if pickup.remaining <= 1e-9:
                 continue
             if hits_player(self.x, self.y, pickup.x, pickup.y, 16, 16):
+                self.healing_collected += 1
                 self.lives = min(self.max_lives, self.lives + 1)
             else:
                 kept.append(pickup)
