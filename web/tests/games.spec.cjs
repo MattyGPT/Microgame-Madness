@@ -266,12 +266,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(48);
+  await expect(page.locator('.achievement-card')).toHaveCount(50);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(47);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(49);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -495,32 +495,34 @@ test('Gerson Boom unlocks at 360 seconds with 810 points and survives reload', a
   await expect(page.locator('#profile-score')).toHaveText('1230');
 });
 
-test('Domination rewards a no-damage Mean win and restores the unlocked frame shine', async ({ page }, testInfo) => {
+for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 50, 30], ['cruel', 'silver', 80, 30], ['nightmare', 'gold', 140, 90]])
+test(`${difficulty} flawless achievement rejects healed damage and restores the unlocked frame shine`, async ({ page }, testInfo) => {
   let wounded = true;
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     const setup = 'self.game = BossCrush(difficulty)\n            from boss_crush import Projectile\n'
-      + (wounded ? '            self.game.hurt()\n' : '')
+      + (wounded ? '            self.game.hurt()\n            self.game.lives = self.game.max_lives\n' : '')
       + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
     await route.fulfill({ response, body: (await response.text()).replace('self.game = BossCrush(difficulty)', setup) });
   });
-  for (const score of [50, 80]) {
+  for (const score of [baseScore, baseScore + reward]) {
     await page.reload();
     await expect(page.locator('#runtime-status')).toContainText('All games ready');
     await page.locator('[data-game="boss"]').click();
-    await page.locator('[data-difficulty="mean"]').click();
+    await page.locator(`[data-difficulty="${difficulty}"]`).click();
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
     await expect(page.locator('#profile-score')).toHaveText(String(score));
     await page.locator('#achievements-tab').click();
-    const card = page.locator('[data-achievement="boss_mean_flawless"]');
+    const card = page.locator(`[data-achievement="boss_${difficulty}_flawless"]`);
+    await expect(card).toHaveAttribute('data-tier', tier);
     await expect(card).toContainText(wounded ? 'Locked' : 'Unlocked');
     expect(await card.evaluate(el => getComputedStyle(el).backgroundBlendMode)).toBe(wounded ? 'multiply' : 'normal');
     expect(await card.evaluate(el => getComputedStyle(el).filter)).toBe(wounded ? 'grayscale(1)' : 'none');
-    await card.screenshot({ path: testInfo.outputPath(wounded ? 'locked-silver.png' : 'unlocked-silver.png') });
+    await card.screenshot({ path: testInfo.outputPath(`${difficulty}-${wounded ? 'locked' : 'unlocked'}-${tier}.png`) });
     wounded = false;
   }
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('80');
+  await expect(page.locator('#profile-score')).toHaveText(String(baseScore + reward));
 });
 
 test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and visibility", async ({ page }) => {
