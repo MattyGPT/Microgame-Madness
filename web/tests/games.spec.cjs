@@ -1052,3 +1052,58 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
   await page.evaluate(() => { active = false; });
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('impossible-face.png') });
 });
+
+
+test('Pumpkin quadrant scares show warnings, half HP, ten laughs, and pause without advancing', async ({ page }, testInfo) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)',
+      'self.game = PumpkinKing(difficulty=difficulty)\n            self.game.begin_attack(6)\n            self.game.x, self.game.y = -150, 30');
+    await route.fulfill({ response, body });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#player').click();
+  await page.evaluate(() => {
+    selectGame('pumpkin'); startGame('baby'); active = false;
+    window.scareSounds = [];
+    const original = playSound;
+    playSound = event => { if (event === 'scare') window.scareSounds.push(event); original(event); };
+    document.querySelector('#achievement-celebrations').replaceChildren();
+    document.querySelector('#achievement-toast').hidden = true;
+  });
+  const tick = frames => page.evaluate(frames => {
+    for (let i = 0; i < frames; i++) { snapshot = send('tick', { dt: .05, keys: [] }); render(); }
+    return { lives: snapshot.lives, label: snapshot.label, damage: snapshot.damage_taken,
+      warnings: snapshot.commands.filter(c => c.kind === 'text' && c.text === '!'),
+      faces: snapshot.commands.filter(c => c.fill === '#e7d9ff').length,
+      lines: snapshot.commands.filter(c => c.fill === '#d9b8f5').length };
+  }, frames);
+  let state = await tick(0);
+  expect(state.warnings).toHaveLength(3);
+  expect(state.warnings[0].fill).toBe('#ff4d55');
+  expect(state.lines).toBe(2);
+  state = await tick(2);
+  expect(state.warnings[0].fill).toBe('#ffe45c');
+  expect(state.lives).toBe(15);
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('scare-warning.png') });
+  state = await tick(2);
+  expect(state.warnings).toHaveLength(0);
+  expect(state.faces).toBe(3);
+  expect(state.lives).toBe(14.5);
+  expect(state.damage).toBe(.5);
+  await expect(page.locator('#player-health')).toContainText('14.5 / 15');
+  expect(await page.evaluate(() => damageFlashAnimation !== null)).toBe(true);
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('scare-faces.png') });
+  await page.evaluate(() => { snapshot = send('pause'); render(); });
+  const frozen = await tick(20);
+  expect(frozen).toEqual(state);
+  expect(await page.evaluate(() => window.scareSounds.length)).toBe(1);
+  await page.evaluate(() => { snapshot = send('pause'); render(); });
+  state = await tick(96);
+  expect(state.label).toContain('BREATHE');
+  expect(state.faces).toBe(0);
+  expect(state.lines).toBe(0);
+  expect(state.lives).toBe(13.5);
+  expect(await page.evaluate(() => window.scareSounds.length)).toBe(10);
+});

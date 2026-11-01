@@ -241,7 +241,7 @@ class KingTests(unittest.TestCase):
 
     def test_running_into_head_or_hands_is_lethal_during_attacks_in_every_mode(self):
         for mode, hp in PUMPKIN_DIFFICULTIES.items():
-            for attack in ("break", "raise", "slam", "roar"):
+            for attack in ("break", "raise", "slam", "roar", "scares"):
                 for x, y in ((0, 60), (-245, -30), (245, -30)):
                     game = create_game(mode)
                     game.intro_done = True
@@ -413,9 +413,9 @@ class KingTests(unittest.TestCase):
         self.assertIn("orange", rules)
         self.assertIn("blue", rules)
 
-    def test_all_six_attacks_cycle_and_have_one_second_breaks(self):
+    def test_all_seven_attacks_cycle_and_have_one_second_breaks(self):
         game = PumpkinKing(random.Random(4))
-        for index in range(6):
+        for index in range(7):
             game.begin_attack(index)
             self.assertEqual(game.queue[-1], Stage("break", ATTACK_BREAK))
         game.begin_attack(0)
@@ -426,8 +426,74 @@ class KingTests(unittest.TestCase):
             game.update(1/60, set())
             seen.add(game.attack_index)
             max_objects = max(max_objects, len(game.bullets)+len(game.rings)*RING_SEGMENTS)
-        self.assertEqual(seen, set(range(6)))
+        self.assertEqual(seen, set(range(7)))
         self.assertLess(max_objects, 900)
+
+    def test_scares_clockwise_warnings_half_damage_and_exact_five_seconds(self):
+        game = PumpkinKing(random.Random(4), difficulty=COME_ON_MODE)
+        game.begin_attack(6)
+        centers = [(-150, 30), (150, 30), (150, -120), (-150, -120)]
+        for beat in range(10):
+            game.x, game.y = centers[beat % 4]
+            self.assertTrue(game.scare_warning)
+            self.assertEqual(game.scare_beat, beat)
+            self.assertEqual(game.scare_rectangle[:2], [(-150, 120), (150, 120), (150, -120), (-150, -120)][beat % 4])
+            before = game.lives
+            game.update(.19, set())
+            self.assertEqual(game.lives, before)
+            game.update(.02, set())
+            self.assertFalse(game.scare_warning)
+            self.assertEqual(game.lives, before - .5)
+            self.assertEqual(game.sound_events.count("scare"), beat + 1)
+            game.update(.29, set())
+            self.assertEqual(game.lives, before - .5)  # One hit per face, not per frame.
+        self.assertAlmostEqual(game.elapsed, 5)
+        self.assertEqual(game.stage.name, "break")
+        self.assertEqual(game.damage_taken, 5)
+        self.assertEqual(game.lives, 18)
+        self.assertEqual(game.sound_events, ["scare"] * 10)
+
+    def test_scares_allow_late_entry_and_preserve_half_damage_after_healing_all_modes(self):
+        for mode in PUMPKIN_DIFFICULTIES:
+            with self.subTest(mode=mode):
+                game = PumpkinKing(random.Random(4), difficulty=mode)
+                game.begin_attack(6)
+                game.x, game.y = 150, -120
+                game.update(.3, set())
+                self.assertEqual(game.lives, game.max_lives)
+                game.x, game.y = -150, 30
+                game.update(.01, set())
+                self.assertEqual(game.lives, game.max_lives - .5)
+                self.assertEqual(game.damage_taken, .5)
+                game.update(.1, set())
+                self.assertEqual(game.damage_taken, .5)
+                game.healing_pickups = [HealingPickup(game.x, game.y)]
+                game.update_healing(.01)
+                self.assertEqual(game.lives, game.max_lives)
+                self.assertEqual(game.damage_taken, .5)
+                game.lives = .5
+                game.x, game.y = 150, 30
+                game.update(.3, set())
+                self.assertFalse(game.alive)
+                self.assertEqual(game.lives, 0)
+                self.assertEqual(game.damage_taken, 1)
+
+    def test_scares_events_are_frame_rate_independent_and_stop_after_five_seconds(self):
+        for fps in (30, 60, 144):
+            game = PumpkinKing(random.Random(4), difficulty=COME_ON_MODE)
+            game.begin_attack(6)
+            game.x, game.y = -150, -120
+            times = []
+            for _ in range(fps * 6):
+                game.update(1 / fps, set())
+                if game.sound_events:
+                    times.append(game.elapsed)
+                    self.assertEqual(game.sound_events, ["scare"])
+                    game.sound_events.clear()
+            self.assertEqual(len(times), 10)
+            for beat, time in enumerate(times):
+                self.assertAlmostEqual(time, .2 + beat * .5, delta=1 / fps + 1e-8)
+            self.assertEqual(game.damage_taken, 1)  # Bottom left is active twice.
 
     def test_healing_every_16_seconds_lasts_nine_and_caps_at_five(self):
         game = self.game()

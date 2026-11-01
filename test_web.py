@@ -164,7 +164,7 @@ class BrowserAdapterTests(unittest.TestCase):
 
     def test_pumpkin_all_attacks_render_and_canvas_pool_is_bounded(self):
         self.start("pumpkin", "phase2")
-        for attack in range(6):
+        for attack in range(7):
             self.session.game.begin_attack(attack)
             self.session.game.invulnerable = 100
             for frame in range(160):

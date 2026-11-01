@@ -27,8 +27,10 @@ COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
 RING_SEGMENTS, RING_THICKNESS = 160, 12
 RING_FALL_SPEED, RING_GAP = 145, 48
+SCARE_PERIOD, SCARE_WARNING, SCARE_DURATION = 0.5, 0.2, 5.0
+SCARE_QUADRANTS = ((-150, 120), (150, 120), (150, -120), (-150, -120))
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
-                "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS")
+                "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS", "HAUNTED QUADRANTS")
 
 
 @dataclass(frozen=True)
@@ -92,6 +94,8 @@ class PumpkinKing(BossCrush):
         self.attack_index = -1
         self.sequence = []
         self.spawn_in = 0.0
+        self.scare_sounded = -1
+        self.scare_hit = -1
         self.queue = deque([
             Stage("shell", 0.8), Stage("glow", 1.0), Stage("left_burst", 0.9),
             Stage("right_burst", 0.9), Stage("shatter", 1.1), Stage("roar", 0.6),
@@ -133,6 +137,9 @@ class PumpkinKing(BossCrush):
             return "MOUTH FIRE — GET OUT OF THE CENTER!"
         if name == "break":
             return "BREATHE — next attack in 1 second"
+        if name == "scares":
+            quadrant = ("TOP LEFT", "TOP RIGHT", "BOTTOM RIGHT", "BOTTOM LEFT")[self.scare_beat % 4]
+            return f"{quadrant} — {'WARNING! MOVE CLEAR' if self.scare_warning else 'SPOOKY FACES!'} · ½ HP"
         if name == "fingers":
             close = any(isinstance(b, Finger) and math.hypot(b.x-self.x, b.y-self.y) < 65 for b in self.bullets)
             return "E NOW!" if close else "MAGENTA FINGERS — tap E just before impact"
@@ -152,6 +159,8 @@ class PumpkinKing(BossCrush):
                 stages.append(Stage("color", 0.65, rule))
                 if i < len(self.sequence) - 1:
                     stages.append(Stage("color_gap", COLOR_BREAK))
+        elif index == 6:
+            stages = [Stage("scares", SCARE_DURATION)]
         elif index == 5:
             stages = slam_stages()
         else:
@@ -161,10 +170,12 @@ class PumpkinKing(BossCrush):
 
     def _next_stage(self):
         if not self.queue:
-            self.begin_attack((self.attack_index + 1) % 6)
+            self.begin_attack((self.attack_index + 1) % len(ATTACK_NAMES))
             return
         self.stage = self.queue.popleft()
         self.stage_age = 0.0
+        if self.stage.name == "scares":
+            self.scare_sounded = self.scare_hit = -1
         if self.stage.name in ("roar", "laugh"):
             self.sound_events.append(self.stage.name)
         if self.stage.name == "slam":
@@ -174,6 +185,31 @@ class PumpkinKing(BossCrush):
             self.rings.clear()
         if self.stage.name in ("bones", "rings", "fingers", "chaos", "color"):
             self.spawn_in = 0.0
+
+    @property
+    def scare_beat(self):
+        return min(int((self.stage_age + 1e-9) / SCARE_PERIOD), int(SCARE_DURATION / SCARE_PERIOD) - 1)
+
+    @property
+    def scare_warning(self):
+        return self.stage_age - self.scare_beat * SCARE_PERIOD < SCARE_WARNING - 1e-9
+
+    @property
+    def scare_rectangle(self):
+        return (*SCARE_QUADRANTS[self.scare_beat % 4], 300, 240)
+
+    def update_scares(self):
+        if self.stage.name != "scares" or self.scare_warning:
+            return
+        beat = self.scare_beat
+        if self.scare_sounded != beat:
+            self.sound_events.append("scare")
+            self.scare_sounded = beat
+        if self.scare_hit != beat and hits_player(self.x, self.y, *self.scare_rectangle):
+            # Each face can hit once, including when entering its active section.
+            # Normal hit immunity must not swallow the next half-second scare.
+            self.hurt(0.5, force=True)
+            self.scare_hit = beat
 
     def hazard_rectangles(self):
         if self.stage.name == "fire":
@@ -273,10 +309,10 @@ class PumpkinKing(BossCrush):
             return 0.24
         return 1.0
 
-    def hurt(self):
-        if self.invulnerable <= 0:
-            self.damage_taken += 1
-            self.lives = max(0, self.lives - 1)
+    def hurt(self, amount=1, *, force=False):
+        if self.invulnerable <= 0 or force:
+            self.damage_taken += amount
+            self.lives = max(0, self.lives - amount)
             self.invulnerable = 0.65
             self.alive = self.lives > 0
 
@@ -327,8 +363,8 @@ class PumpkinKing(BossCrush):
             self.y = max(self.bottom-PLAYER_BOTTOM, min(self.top-PLAYER_TOP, self.y+dy/length*260*step))
             moving = abs(self.x-old[0]) > 1e-9 or abs(self.y-old[1]) > 1e-9
             self.stage_age += step
-            while self.stage_age >= self.stage.duration:
-                extra = self.stage_age-self.stage.duration
+            while self.stage_age + 1e-9 >= self.stage.duration:
+                extra = max(0, self.stage_age-self.stage.duration)
                 self._next_stage()
                 self.stage_age = extra
 
@@ -339,6 +375,10 @@ class PumpkinKing(BossCrush):
                 self.lives = 0
                 self.alive = False
                 self.death_message = "You touched the Pumpkin King! His body and arms kill instantly."
+                return
+
+            self.update_scares()
+            if not self.alive:
                 return
 
             if self.stage.name in ("bones", "rings", "fingers", "chaos", "color", "color_gap"):

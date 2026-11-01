@@ -38,14 +38,14 @@ class KingAudio:
         self.processes = []
         self.paths = {}
         if self.player:
-            for name, duration in (("roar", 0.6), ("laugh", 0.75), ("slam", 0.12)):
+            for name, duration in (("roar", 0.6), ("laugh", 0.75), ("slam", 0.12), ("scare", 0.38)):
                 rng = random.Random(12)
                 rate = 22050
                 samples = bytearray()
                 for i in range(int(rate*duration)):
                     t = i/rate
                     envelope = min(1, t*30) * (1-t/duration)
-                    if name == "laugh":
+                    if name in ("laugh", "scare"):
                         envelope *= max(0, math.sin(t*math.tau*6))
                     frequency = (75 if name != "slam" else 45) - 25*t/duration
                     tone = math.sin(math.tau*frequency*t) + 0.35*math.sin(math.tau*frequency*2.03*t)
@@ -137,6 +137,29 @@ class KingView:
             color = glow if shell or index < 2 else "#38201c"
             self.poly([(x+px*scale, y+py*scale) for px, py in polygon], color)
 
+    def _scares(self, game):
+        x, y, width, height = game.scare_rectangle
+        warning = game.scare_warning
+        self.rect(x, y, width, height, "#251d30" if warning else "#482a60")
+        # The plus sign divides the entire arena; the lines themselves are safe.
+        self.rect(0, 0, 3, 480, "#d9b8f5")
+        self.rect(0, 0, 600, 3, "#d9b8f5")
+        if not warning:
+            # Three spectral faces fill the active quadrant, with hollow eyes
+            # and jagged mouths. They share one hit allowance for this beat.
+            for offset, lift, scale in ((-80, 40, .7), (0, -20, 1), (80, 40, .7)):
+                cx, cy = x + offset, y + lift
+                shape = ((-36, -36), (-36, 16), (-25, 35), (0, 44), (25, 35),
+                         (36, 16), (36, -36), (22, -25), (10, -38), (0, -26),
+                         (-10, -38), (-22, -25))
+                self.poly([(cx+px*scale, cy+py*scale) for px, py in shape], "#e7d9ff")
+                for side in (-1, 1):
+                    self.poly([(cx+(side*15+px)*scale, cy+py*scale)
+                               for px, py in ((-8, 18), (8, 12), (5, 0), (-6, 2))], "#251239")
+                mouth = ((-17, -8), (-8, -13), (0, -8), (8, -13), (17, -8),
+                         (12, -22), (0, -27), (-12, -22))
+                self.poly([(cx+px*scale, cy+py*scale) for px, py in mouth], "#251239")
+
     def draw(self, game):
         self.counts, self.used = {}, set()
         if self.audio:
@@ -149,6 +172,8 @@ class KingView:
         self.canvas.tag_lower(background)
         name = game.stage.name
         progress = min(1, game.stage_age/game.stage.duration)
+        if name == "scares" and not game.won:
+            self._scares(game)
         if not game.won:
             self._arm(game, "left")
             self._arm(game, "right")
@@ -165,6 +190,14 @@ class KingView:
                         x = math.cos(angle)*(25+progress*155)
                         y = 219 + math.sin(angle)*progress*55-progress*progress*210
                         self.poly(((x-5, y), (x+6, y+4), (x+2, y+12)), mix("#ffffff", bg, progress))
+        if name == "scares" and game.scare_warning and not game.won:
+            x, y, _, _ = game.scare_rectangle
+            # Upper-quadrant warnings sit below the arms and draw in front so
+            # the King cannot hide the cue to move out of the active section.
+            y = 40 if y > 0 else y
+            color = "#ff4d55" if int(game.stage_age * 15) % 2 == 0 else "#ffe45c"
+            for offset in (-76, 0, 76):
+                self.text(x + offset, y, "!", color, 64)
         for x, y, width, height in game.hazard_rectangles():
             if name == "fire":
                 self.rect(x, y, width, height, "#cb3c13")

@@ -62,7 +62,7 @@ def start_turtle_dodge():
     print("Hard: much faster yellow blocks that sway left and right")
     print("Merciless: faster red blocks, more spawns, smaller arena, deadly edges, NO PAUSE")
     print("Boss Crush: dodge bullet patterns and shoot the boss with F")
-    print("Impossible Phase 2: THE PUMPKIN KING — transformation, six attacks, E to counter")
+    print("Impossible Phase 2: THE PUMPKIN KING — transformation, seven attacks, E to counter")
     print("Coward Mode: THE PUMPKIN KING — 10 HP instead of 5")
     print("Baby Mode: THE PUMPKIN KING — 15 HP")
     print(f"{COME_ON_NAME} — 23 HP (enter come_on)")
