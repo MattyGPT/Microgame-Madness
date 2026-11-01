@@ -425,7 +425,7 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
       const cs = getComputedStyle(el);
       return { background: cs.backgroundImage, color: cs.getPropertyValue('--medal'), shape: cs.clipPath,
         thickness: cs.paddingTop, shine: cs.animationName, sparkle: getComputedStyle(el, '::before').animationName,
-        blend: cs.backgroundBlendMode, filter: cs.filter,
+        blend: cs.backgroundBlendMode, filter: cs.filter, frameColor: cs.backgroundColor,
         sparkleFilter: getComputedStyle(el, '::before').filter };
     });
     expect(style.background).toContain('linear-gradient');
@@ -436,7 +436,8 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
     expect(style.sparkle).toBe('medal-sparkle');
     expect(style.blend).toBe(id === 'welcome' ? 'normal' : 'multiply');
     expect(style.filter).toBe(id === 'welcome' ? 'none' : 'grayscale(1)');
-    expect(style.sparkleFilter).toBe(id === 'welcome' ? 'none' : 'brightness(0.65)');
+    if (id !== 'welcome') expect(style.frameColor).toBe('rgb(102, 102, 102)');
+    expect(style.sparkleFilter).toBe(id === 'welcome' ? 'none' : 'brightness(0.25)');
     await card.screenshot({ path: testInfo.outputPath(`medal-${tier}.png`) });
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -658,4 +659,60 @@ test('mascot floats and blinks, and every boss mode flashes only for damage', as
   await page.locator('[data-difficulty="easy"]').click();
   await page.getByRole('button', { name: 'Guess Z', exact: true }).click();
   expect(await page.evaluate(() => damageFlashAnimation)).toBe(null);
+});
+
+test('DINGDONG turns the screen red for four seconds and resumes the same music', async ({ page }) => {
+  await page.locator('#player').click();
+  await expect.poll(() => page.evaluate(() => musicPlayer?.current !== null && audioContext.currentTime > .1)).toBe(true);
+  await page.locator('#player').fill('DINGDON');
+  await expect(page.locator('#name-surprise')).toBeHidden();
+  await page.evaluate(() => {
+    window.nameEffectTimes = [];
+    new MutationObserver(() => window.nameEffectTimes.push(performance.now()))
+      .observe(document.getElementById('name-surprise'), { attributes: true, attributeFilter: ['hidden'] });
+  });
+  await page.locator('#player').fill('DINGDONG');
+  await expect(page.locator('#name-surprise')).toBeVisible();
+  await expect(page.locator('#name-surprise')).toHaveCSS('background-color', 'rgba(210, 0, 0, 0.72)');
+  await expect(page.locator('#name-surprise')).toHaveCSS('pointer-events', 'none');
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  const offset = await page.evaluate(() => musicPlayer.offset);
+  expect(offset).toBeGreaterThan(0);
+  await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'true');
+  // Repeated matching input events must not restart or prolong the effect.
+  await page.locator('#player').dispatchEvent('input');
+  await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
+  const times = await page.evaluate(() => window.nameEffectTimes);
+  expect(times).toHaveLength(2);
+  expect(times[1] - times[0]).toBeGreaterThanOrEqual(3900);
+  expect(times[1] - times[0]).toBeLessThan(6000);
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  expect(await page.evaluate(() => musicPlayer.current.offset)).toBeCloseTo(offset, 3);
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
+});
+
+test('DINGDONG can repeat, does not block play, and preserves mute and pause choices', async ({ page }) => {
+  await page.locator('#sound').click();
+  await page.locator('#player').fill('dingdong');
+  await expect(page.locator('#name-surprise')).toBeVisible();
+  await page.locator('[data-game="pumpkin"]').click();
+  await page.locator('[data-difficulty="baby"]').click();
+  await page.locator('#pause').click();
+  await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
+  await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+  await page.locator('#sound').click();
+  expect(await page.evaluate(() => musicPlayer.current)).toBe(null);
+  await page.locator('#overlay-action').click();
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe('pumpkin');
+  await page.locator('#exit').click();
+  await page.locator('#player').fill('Player');
+  await page.locator('#player').fill('DINGDONG');
+  await expect(page.locator('#name-surprise')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await page.locator('#sound').click();
+  await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
+  expect(await page.evaluate(() => musicPlayer.current)).toBe(null);
+  await page.locator('#sound').click();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
 });
