@@ -27,7 +27,8 @@ COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
 RING_SEGMENTS, RING_THICKNESS = 160, 12
 RING_FALL_SPEED, RING_GAP = 145, 48
-SCARE_PERIOD, SCARE_WARNING, SCARE_DURATION = 0.5, 0.2, 5.0
+# 1.5× the original scare rate; retain the full five-second attack.
+SCARE_PERIOD, SCARE_WARNING, SCARE_DURATION = 0.5 / 1.5, 0.2 / 1.5, 5.0
 SCARE_QUADRANTS = ((-150, 120), (150, 120), (150, -120), (-150, -120))
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
                 "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS", "HAUNTED QUADRANTS")
@@ -207,7 +208,7 @@ class PumpkinKing(BossCrush):
             self.scare_sounded = beat
         if self.scare_hit != beat and hits_player(self.x, self.y, *self.scare_rectangle):
             # Each face can hit once, including when entering its active section.
-            # Normal hit immunity must not swallow the next half-second scare.
+            # Normal hit immunity must not swallow the next scare.
             self.hurt(0.5, force=True)
             self.scare_hit = beat
 

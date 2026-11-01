@@ -1054,7 +1054,7 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
 });
 
 
-test('Pumpkin quadrant scares show warnings, half HP, ten laughs, and pause without advancing', async ({ page }, testInfo) => {
+test('Pumpkin quadrant scares show warnings, half HP, fifteen laughs, and pause without advancing', async ({ page }, testInfo) => {
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     const body = (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)',
@@ -1104,6 +1104,6 @@ test('Pumpkin quadrant scares show warnings, half HP, ten laughs, and pause with
   expect(state.label).toContain('BREATHE');
   expect(state.faces).toBe(0);
   expect(state.lines).toBe(0);
-  expect(state.lives).toBe(13.5);
-  expect(await page.evaluate(() => window.scareSounds.length)).toBe(10);
+  expect(state.lives).toBe(13);
+  expect(await page.evaluate(() => window.scareSounds.length)).toBe(15);
 });
