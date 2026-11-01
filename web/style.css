@@ -1160,7 +1160,8 @@ select:disabled {
 }
 .achievement-card.earned .achievement-content { background: linear-gradient(145deg, #303936, #171e20 70%); }
 .achievement-card:not(.earned) {
-  /* Dim just the frame beneath the opaque content, keeping text legible. */
+  /* Locked medals are fully gray; keep text contrast and dim the frame. */
+  filter: grayscale(1);
   background-color: #aaa;
   background-blend-mode: multiply;
 }
