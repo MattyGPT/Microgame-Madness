@@ -726,13 +726,15 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
       return oscillator;
     };
   });
-  if (testInfo.project.name === 'mobile') await cube.tap();
-  else await cube.click();
+  // The cube keeps floating, so activate its current position without waiting
+  // for the animated bounding box to become stationary.
+  if (testInfo.project.name === 'mobile') await cube.tap({ force: true });
+  else await cube.click({ force: true });
   await expect(cube).toHaveClass(/blushing/);
   await expect.poll(() => cube.evaluate(el => Number(getComputedStyle(el, '::before').opacity))).toBeGreaterThan(.9);
   expect(await page.evaluate(() => window.squeaks.map(osc => osc.type))).toEqual(['sine']);
   await expect(page.locator('#profile-score')).toHaveText('100');
-  await cube.screenshot({ path: testInfo.outputPath('blushing-cube.png') });
+  await cube.screenshot({ path: testInfo.outputPath('blushing-cube.png'), animations: 'disabled' });
   await expect(cube).not.toHaveClass(/blushing/);
   await cube.press('Enter');
   await expect(cube).toHaveClass(/blushing/);
@@ -758,7 +760,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#profile-score')).toHaveText('370');
-  await cube.click();
+  await cube.click({ force: true });
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#profile-score')).toHaveText('370');
 });
