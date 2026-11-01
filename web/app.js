@@ -99,6 +99,9 @@ let selected = "hangman";
 let selectedDifficulty = null;
 let previousBossHealth = null;
 let damageFlashAnimation = null;
+let nameSurpriseActive = false;
+let nameSurpriseTimer;
+let nameWasDingdong = false;
 let ready = false;
 let loadFailed = false;
 let active = false;
@@ -683,7 +686,22 @@ document
       showGameArea();
     }),
   );
-$("player").oninput = showScores;
+$("player").oninput = () => {
+  showScores();
+  const isDingdong = $("player").value.trim().toUpperCase() === "DINGDONG";
+  if (isDingdong && !nameWasDingdong) {
+    nameSurpriseActive = true;
+    $("name-surprise").hidden = false;
+    clearTimeout(nameSurpriseTimer);
+    syncMusic();
+    nameSurpriseTimer = setTimeout(() => {
+      nameSurpriseActive = false;
+      $("name-surprise").hidden = true;
+      syncMusic();
+    }, 4000);
+  }
+  nameWasDingdong = isDingdong;
+};
 $("exit").onclick = exitGame;
 $("pause").onclick = pause;
 $("overlay-action").onclick = () => {
@@ -804,7 +822,7 @@ function syncMusic() {
   if (!musicPlayer) return;
   musicPlayer.setState({
     theme: active && selected === "pumpkin" ? "pumpkin" : "arcade",
-    playing: soundOn && !document.hidden && !snapshot?.paused && !loadFailed,
+    playing: soundOn && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
   });
 }
 function initializeAudio() {

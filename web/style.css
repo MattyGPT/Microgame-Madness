@@ -212,6 +212,13 @@ h1 em {
   background: rgb(255 35 35 / 22%);
   box-shadow: inset 0 0 100px rgb(235 20 20 / 45%);
 }
+#name-surprise {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  background: rgb(210 0 0 / 72%);
+}
 @media (prefers-reduced-motion: reduce) {
   .pixel-face, .pixel-face i { animation: none; }
   #damage-flash {
@@ -1187,12 +1194,18 @@ select:disabled {
 }
 .achievement-card.earned .achievement-content { background: linear-gradient(145deg, #303936, #171e20 70%); }
 .achievement-card:not(.earned) {
-  /* Locked medals are fully gray; keep text contrast and dim the frame. */
+  /* Dark gray frames and subdued progress; keep the descriptions readable. */
   filter: grayscale(1);
-  background-color: #aaa;
+  --medal: #999;
+  --metal-dark: #444;
+  --metal-light: #aaa;
+  --prism-a: #555;
+  --prism-b: #999;
+  --prism-c: #777;
+  background-color: #666;
   background-blend-mode: multiply;
 }
-.achievement-card:not(.earned)::before, .achievement-card:not(.earned)::after { filter: brightness(.65); }
+.achievement-card:not(.earned)::before, .achievement-card:not(.earned)::after { filter: brightness(.25); }
 .achievement-card:is([data-tier="crystal"], [data-tier="diamond"]) {
   --gem-shape: polygon(22px 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 22px 100%, 0 50%);
   border-radius: 0;
