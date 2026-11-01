@@ -10,6 +10,8 @@ const Achievements = (() => {
     catalog.push({ id, title, tier, group, description, stat, target });
   }
   add("welcome", "Welcome to Microgame Madness!", "bronze", "Arcade", "Join the arcade.", "visits");
+  add("dingdong", "DINGDONG", "crystal", "Arcade", "WHO YOU ARE.", "dingdong");
+  add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make the cube blush and squeak.", "cubePets");
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
     ["keyboard", "Key to Success", "Key Rush"],
@@ -21,6 +23,7 @@ const Achievements = (() => {
   add("hangman_win", "Good Game", "silver", "Hangman", "Win a Hangman game.", "hangmanWins");
   add("hangman_hard", "You've Got the Hang of It!!", "silver", "Hangman", "Win a hard Hangman game.", "hardWins");
   add("hangman_perfect", "Letter Perfect", "silver", "Hangman", "Win Hangman without a wrong guess.", "perfectWins");
+  add("hangman_last_chance", "Down to the Wire", "gold", "Hangman", "Win Hangman with only one wrong guess remaining.", "lastChanceWins");
   add("hangman_5", "Word Wizard", "gold", "Hangman", "Win 5 Hangman games.", "hangmanWins", 5);
   add("hangman_10", "Professional Prodigy", "gold", "Hangman", "Win 10 Hangman games.", "hangmanWins", 10);
   add("hangman_25", "Walking Dictionary", "gold", "Hangman", "Win 25 Hangman games.", "hangmanWins", 25);
@@ -87,6 +90,12 @@ const Achievements = (() => {
       return { earned, changed: before !== JSON.stringify(this.data) };
     }
     visit() { return this.update(stats => { stats.visits = 1; }); }
+    secret(name) {
+      return this.update(stats => {
+        if (name === "dingdong") stats.dingdong = 1;
+        if (name === "cube") stats.cubePets = 1;
+      });
+    }
     start(mode, difficulty) {
       this.round = { mode, difficulty, finished: false };
       return this.update(stats => {
@@ -114,6 +123,7 @@ const Achievements = (() => {
           stats.hangmanWins++;
           if (s.difficulty === "hard") stats.hardWins++;
           if (s.mistakes === 0) stats.perfectWins++;
+          if (s.remaining === 1) stats.lastChanceWins++;
         } else if (s.mode === "boss" || s.mode === "pumpkin") {
           stats[`${s.mode}Wins`]++;
           if (s.damage_taken === 0) {

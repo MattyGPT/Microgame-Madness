@@ -690,6 +690,7 @@ $("player").oninput = () => {
   showScores();
   const isDingdong = $("player").value.trim().toUpperCase() === "DINGDONG";
   if (isDingdong && !nameWasDingdong) {
+    updateAchievements(achievementTracker.secret("dingdong"));
     nameSurpriseActive = true;
     $("name-surprise").hidden = false;
     clearTimeout(nameSurpriseTimer);
@@ -701,6 +702,15 @@ $("player").oninput = () => {
     }, 4000);
   }
   nameWasDingdong = isDingdong;
+};
+let blushTimer;
+$("cube").onclick = () => {
+  $("cube").classList.add("blushing");
+  clearTimeout(blushTimer);
+  blushTimer = setTimeout(() => $("cube").classList.remove("blushing"), 1800);
+  updateAchievements(achievementTracker.secret("cube"));
+  initializeAudio();
+  playSound("squeak");
 };
 $("exit").onclick = exitGame;
 $("pause").onclick = pause;
@@ -719,7 +729,7 @@ const arrowMap = {
   ArrowRight: "Right",
 };
 window.addEventListener("keydown", (event) => {
-  if (event.target.closest(".profile-tabs, #achievements-panel")) return;
+  if (event.target.closest("#cube, .profile-tabs, #achievements-panel")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -852,16 +862,19 @@ function playSound(event) {
   const oscillator = audioContext.createOscillator(),
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
-  oscillator.type = "sawtooth";
-  oscillator.frequency.setValueAtTime(event === "slam" ? 65 : 95, now);
-  oscillator.frequency.exponentialRampToValueAtTime(30, now + 0.3);
-  gain.gain.setValueAtTime(0.18, now);
-  gain.gain.exponentialRampToValueAtTime(0.003, now + 0.35);
+  const squeak = event === "squeak";
+  oscillator.type = squeak ? "sine" : "sawtooth";
+  oscillator.frequency.setValueAtTime(squeak ? 650 : event === "slam" ? 65 : 95, now);
+  if (squeak) oscillator.frequency.exponentialRampToValueAtTime(1500, now + .07);
+  oscillator.frequency.exponentialRampToValueAtTime(squeak ? 900 : 30, now + (squeak ? .2 : .3));
+  gain.gain.setValueAtTime(squeak ? .001 : .18, now);
+  if (squeak) gain.gain.exponentialRampToValueAtTime(.16, now + .015);
+  gain.gain.exponentialRampToValueAtTime(.003, now + (squeak ? .22 : .35));
   oscillator.connect(gain);
   gain.connect(audioMaster);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   oscillator.start(now);
-  oscillator.stop(now + 0.36);
+  oscillator.stop(now + (squeak ? .24 : .36));
 }
 async function initialize() {
   try {

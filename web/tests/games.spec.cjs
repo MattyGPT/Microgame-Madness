@@ -266,12 +266,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(45);
+  await expect(page.locator('.achievement-card')).toHaveCount(48);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(44);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(47);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -601,9 +601,6 @@ test("games remain playable when browser audio is unavailable", async ({ page })
 });
 
 test('mascot floats and blinks, and every boss mode flashes only for damage', async ({ page }) => {
-  // The decorative hero is intentionally hidden in the existing phone layout.
-  const viewport = page.viewportSize();
-  await page.setViewportSize({ width: 1440, height: 1100 });
   const face = page.locator('.pixel-face');
   expect(await face.evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-float');
   expect(await face.locator('i').first().evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-blink');
@@ -617,7 +614,6 @@ test('mascot floats and blinks, and every boss mode flashes only for damage', as
   });
   expect(poses.animated[0]).not.toBe(poses.normal[0]);
   expect(poses.animated[1]).not.toBe(poses.normal[1]);
-  await page.setViewportSize(viewport);
   for (const [game, modes] of [['boss', ['mean', 'cruel', 'nightmare', 'impossible']],
     ['pumpkin', ['phase2', 'coward', 'baby', 'come_on']]]) {
     await page.locator(`[data-game="${game}"]`).click();
@@ -715,4 +711,83 @@ test('DINGDONG can repeat, does not block play, and preserves mute and pause cho
   expect(await page.evaluate(() => musicPlayer.current)).toBe(null);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+});
+
+test('secret achievements persist, and the cube blushes and squeaks with mouse, touch, and keyboard', async ({ page }, testInfo) => {
+  const cube = page.getByRole('button', { name: 'Pet the cube' });
+  await expect(cube).toBeVisible();
+  await page.locator('#player').click();
+  await page.evaluate(() => {
+    window.squeaks = [];
+    const create = audioContext.createOscillator.bind(audioContext);
+    audioContext.createOscillator = () => {
+      const oscillator = create();
+      window.squeaks.push(oscillator);
+      return oscillator;
+    };
+  });
+  if (testInfo.project.name === 'mobile') await cube.tap();
+  else await cube.click();
+  await expect(cube).toHaveClass(/blushing/);
+  await expect.poll(() => cube.evaluate(el => Number(getComputedStyle(el, '::before').opacity))).toBeGreaterThan(.9);
+  expect(await page.evaluate(() => window.squeaks.map(osc => osc.type))).toEqual(['sine']);
+  await expect(page.locator('#profile-score')).toHaveText('100');
+  await cube.screenshot({ path: testInfo.outputPath('blushing-cube.png') });
+  await expect(cube).not.toHaveClass(/blushing/);
+  await cube.press('Enter');
+  await expect(cube).toHaveClass(/blushing/);
+  await expect(page.locator('#profile-score')).toHaveText('100');
+  await page.locator('#sound').click();
+  await cube.press('Space');
+  expect(await page.evaluate(() => window.squeaks.length)).toBe(2);
+  await page.locator('#player').fill('DINGDONG');
+  await expect(page.locator('#profile-score')).toHaveText('370');
+  await page.locator('#name-surprise').waitFor({ state: 'hidden' });
+  await page.locator('#achievements-tab').click();
+  for (const [id, tier, title, description] of [
+    ['dingdong', 'crystal', 'DINGDONG', 'WHO YOU ARE.'],
+    ['cube_pet', 'gold', 'Awwwwww!', 'Make the cube blush and squeak.'],
+  ]) {
+    const card = page.locator(`[data-achievement="${id}"]`);
+    await expect(card).toHaveAttribute('data-tier', tier);
+    await expect(card).toContainText(title);
+    await expect(card).toContainText(description);
+    await expect(card).toContainText('Unlocked');
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('370');
+  await cube.click();
+  await page.locator('#player').fill('DINGDONG');
+  await expect(page.locator('#profile-score')).toHaveText('370');
+});
+
+test('winning real Hangman on the last guess awards Down to the Wire once', async ({ page }) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace('random.choice(rules["words"])', '"cat"') });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  for (const [difficulty, wrong] of [['easy', 'bdefghijk'], ['medium', 'bdefgh'], ['hard', 'bdef']]) {
+    await page.locator(`[data-difficulty="${difficulty}"]`).click();
+    for (const letter of wrong.toUpperCase()) await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
+    await expect(page.locator('#metric')).toHaveText('1');
+    if (difficulty === 'easy') {
+      const data = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements);
+      expect(data.unlocked.hangman_last_chance).toBeUndefined();
+    }
+    for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
+    await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+    await expect(page.locator('#profile-score')).toHaveText(difficulty === 'hard' ? '170' : '140');
+    await page.locator('#overlay-action').click();
+  }
+  await page.reload();
+  await expect(page.locator('#profile-score')).toHaveText('170');
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="hangman_last_chance"]');
+  await expect(card).toContainText('Down to the Wire');
+  await expect(card).toHaveAttribute('data-tier', 'gold');
+  await expect(card).toContainText('Unlocked');
 });

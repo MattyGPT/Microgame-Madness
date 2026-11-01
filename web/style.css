@@ -160,6 +160,8 @@ h1 em {
   margin-right: 90px;
 }
 .pixel-face {
+  border: 0;
+  padding: 0;
   width: 145px;
   height: 145px;
   position: absolute;
@@ -195,6 +197,21 @@ h1 em {
   border: solid #17251a;
   border-width: 0 9px 7px;
 }
+.pixel-face::before, .pixel-face::after {
+  content: "";
+  position: absolute;
+  top: 78px;
+  width: 29px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f17f99;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+.pixel-face::before { left: 16px; }
+.pixel-face::after { right: 16px; }
+.pixel-face.blushing::before, .pixel-face.blushing::after { opacity: .95; }
 @keyframes mascot-float {
   0%, 100% { transform: translateY(0) rotate(-14deg); }
   50% { transform: translateY(-9px) rotate(-12deg); }
@@ -921,6 +938,8 @@ select:disabled {
   }
   .intro {
     padding: 35px 0;
+    flex-direction: column;
+    gap: 24px;
   }
   .intro h1 {
     letter-spacing: -3px;
@@ -929,12 +948,15 @@ select:disabled {
     font-size: 12px;
   }
   .hero-art {
-    display: none;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
   }
   .pixel-face {
-    left: 0;
-    top: 20px;
+    left: 25px;
+    top: 10px;
   }
+  .hero-art .orbit, .hero-art .spark { display: none; }
   .orbit {
     left: -90px;
     top: 35px;
@@ -948,8 +970,8 @@ select:disabled {
     bottom: 10px;
   }
   .art-label {
-    right: -60px;
-    bottom: 5px;
+    right: 0;
+    bottom: 0;
   }
   .section-heading h2 {
     font-size: 13px;
@@ -1253,7 +1275,7 @@ select:disabled {
   top: max(12px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
   width: min(365px, calc(100vw - 24px));
-  z-index: 20;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 12px;
