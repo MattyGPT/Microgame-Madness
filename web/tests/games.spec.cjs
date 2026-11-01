@@ -825,8 +825,7 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     const layer = page.locator(`.achievement-confetti[data-tier="${tier}"]`);
     await expect(layer.locator('i')).toHaveCount(40);
     expect(await layer.locator('i').first().evaluate(el => el.style.getPropertyValue('--confetti-color'))).toBe(color);
-    // Verify the rendered fill, not just the palette: a white gradient used to
-    // wash the tier colors out into gray against the dark game background.
+    // Keep the original white shine while checking the actual tier colors.
     const fills = await layer.locator('i').evaluateAll(pieces => pieces.map(piece => {
       const style = getComputedStyle(piece);
       const swatch = document.createElement('span');
@@ -836,8 +835,11 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
       swatch.remove();
       return { color: style.backgroundColor, expected, image: style.backgroundImage };
     }));
-    expect(fills.every(fill => fill.color === fill.expected && fill.image === 'none')).toBe(true);
-    if (tier === 'diamond') expect([...new Set(fills.map(fill => fill.color))]).toEqual([
+    if (tier === 'rainbow')
+      expect(fills.every(fill => fill.color === fill.expected && fill.image === 'none')).toBe(true);
+    else
+      expect(fills.every(fill => fill.image.includes(fill.expected) && fill.image.includes('rgba(255, 255, 255, 0.6)'))).toBe(true);
+    if (tier === 'diamond') expect([...new Set(fills.map(fill => fill.expected))]).toEqual([
       'rgb(85, 221, 255)', 'rgb(169, 244, 255)', 'rgb(57, 186, 255)',
     ]);
     const opacity = await layer.evaluate(el => {
