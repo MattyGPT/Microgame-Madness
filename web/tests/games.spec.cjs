@@ -424,7 +424,8 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
       const cs = getComputedStyle(el);
       return { background: cs.backgroundImage, color: cs.getPropertyValue('--medal'), shape: cs.clipPath,
         thickness: cs.paddingTop, shine: cs.animationName, sparkle: getComputedStyle(el, '::before').animationName,
-        blend: cs.backgroundBlendMode, sparkleFilter: getComputedStyle(el, '::before').filter };
+        blend: cs.backgroundBlendMode, filter: cs.filter,
+        sparkleFilter: getComputedStyle(el, '::before').filter };
     });
     expect(style.background).toContain('linear-gradient');
     expect(style.color.trim()).not.toBe('');
@@ -433,6 +434,7 @@ test('all five medal tiers have readable colored frames and reduced-motion suppo
     expect(style.shine).toBe('medal-shine');
     expect(style.sparkle).toBe('medal-sparkle');
     expect(style.blend).toBe(id === 'welcome' ? 'normal' : 'multiply');
+    expect(style.filter).toBe(id === 'welcome' ? 'none' : 'grayscale(1)');
     expect(style.sparkleFilter).toBe(id === 'welcome' ? 'none' : 'brightness(0.65)');
     await card.screenshot({ path: testInfo.outputPath(`medal-${tier}.png`) });
   }
@@ -510,6 +512,7 @@ test('Domination rewards a no-damage Mean win and restores the unlocked frame sh
     const card = page.locator('[data-achievement="boss_mean_flawless"]');
     await expect(card).toContainText(wounded ? 'Locked' : 'Unlocked');
     expect(await card.evaluate(el => getComputedStyle(el).backgroundBlendMode)).toBe(wounded ? 'multiply' : 'normal');
+    expect(await card.evaluate(el => getComputedStyle(el).filter)).toBe(wounded ? 'grayscale(1)' : 'none');
     await card.screenshot({ path: testInfo.outputPath(wounded ? 'locked-silver.png' : 'unlocked-silver.png') });
     wounded = false;
   }
