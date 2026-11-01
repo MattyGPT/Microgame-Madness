@@ -15,7 +15,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(restored.visit().changed, false);
   assert.equal(restored.score, 10);
-  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810 });
+  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430 });
   for (const raw of [null, [], 'bad', { stats: { hangmanWins: -1, typingBest: Infinity }, unlocked: { welcome: 'bad', fake: '2026-01-01' } }]) {
     const clean = new Tracker(raw);
     assert.equal(clean.score, 0);
@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 52);
+  assert.equal(catalog.length, 68);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -39,19 +39,19 @@ test('Hangman losses, abandonment, repeated final frames and reloads never dupli
   assert.equal(tracker.data.stats.hardWins, 0);
   for (let i = 0; i < 10; i++) tracker.observe({ mode: 'hangman', difficulty: 'easy', over: true, won: true });
   assert.equal(tracker.data.stats.hangmanWins, 1);
-  assert.deepEqual(ids(finish(tracker, 'hangman', 'hard', { mistakes: 0 })), ['hangman_hard', 'hangman_perfect']);
-  assert.equal(tracker.score, 110);
+  assert.deepEqual(ids(finish(tracker, 'hangman', 'hard', { mistakes: 0 })), ['hangman_hard', 'hangman_perfect', 'hangman_hard_perfect']);
+  assert.equal(tracker.score, 200);
   finish(tracker, 'hangman', 'medium');
   finish(tracker, 'hangman', 'easy');
   assert.deepEqual(ids(finish(tracker, 'hangman', 'hard')), ['hangman_5']);
-  assert.equal(tracker.score, 200);
+  assert.equal(tracker.score, 290);
   tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(tracker.observe({ mode: 'hangman', difficulty: 'hard', over: true, won: true }).changed, false);
   for (let i = 0; i < 4; i++) finish(tracker, 'hangman', 'easy');
   assert.deepEqual(ids(finish(tracker, 'hangman', 'hard')), ['hangman_10']);
-  assert.equal(tracker.score, 290);
-  for (let i = 0; i < 15; i++) finish(tracker, 'hangman', 'easy');
   assert.equal(tracker.score, 380);
+  for (let i = 0; i < 15; i++) finish(tracker, 'hangman', 'easy');
+  assert.equal(tracker.score, 470);
 });
 
 test('typing and survival use the best single run and exact thresholds', () => {
@@ -173,7 +173,7 @@ test('existing progress and medals migrate without losing points or repeating aw
   assert.equal(new Tracker(tracker.data).visit().changed, false);
 });
 
-test('Gerson Boom requires 360 seconds in one run and awards diamond points only once', () => {
+test('Gerson Boom requires 360 seconds in one run and awards rainbow points only once', () => {
   const tracker = new Tracker();
   tracker.visit();
   tracker.start('dodge', 'easy');
@@ -185,7 +185,7 @@ test('Gerson Boom requires 360 seconds in one run and awards diamond points only
   assert.equal(tracker.data.unlocked.dodge_360, undefined);
   const before = tracker.score;
   assert.deepEqual(ids(run(360)), ['dodge_360']);
-  assert.equal(tracker.score - before, 810);
+  assert.equal(tracker.score - before, 2430);
   assert.equal(run(360).changed, false);
   assert.equal(new Tracker(tracker.data).score, tracker.score);
 });
@@ -250,7 +250,7 @@ test('last-chance Hangman requires a completed win with exactly one guess remain
 });
 
 test('Cruel and Nightmare flawless awards require zero-damage wins and persist once', () => {
-  for (const [difficulty, tier, reward] of [['cruel', 'silver', 30], ['nightmare', 'gold', 90]]) {
+  for (const [difficulty, tier, reward] of [['cruel', 'silver', 30], ['nightmare', 'crystal', 270]]) {
     const id = `boss_${difficulty}_flawless`;
     assert.equal(catalog.find(item => item.id === id).tier, tier);
     for (const damage_taken of [undefined, null, 1, 3]) {
@@ -337,4 +337,76 @@ test('full-health Pumpkin victories allow healing and remain distinct from no-hi
     assert.ok(!ids(finish(restored, 'pumpkin', difficulty, { damage_taken: 1, lives: max_lives, max_lives })).includes('pumpkin_full_health'));
     assert.ok(ids(finish(restored, 'pumpkin', difficulty, { damage_taken: 0, lives: max_lives, max_lives })).includes('pumpkin_flawless'));
   }
+});
+
+test('full-HP Boss Crush awards accept healed and untouched wins, never losses or missing HP', () => {
+  for (const [difficulty, hp, tier, reward] of [['mean', 3, 'silver', 30], ['cruel', 3, 'silver', 30], ['nightmare', 3, 'gold', 90], ['impossible', 5, 'crystal', 270]]) {
+    const id = `boss_${difficulty}_full`;
+    assert.equal(catalog.find(item => item.id === id).tier, tier);
+    for (const extra of [{ lives: hp - 1, max_lives: hp }, { lives: hp }, { lives: 0, max_lives: 0 }, { lives: hp, max_lives: hp, won: false }]) {
+      const tracker = new Tracker();
+      finish(tracker, 'boss', difficulty, { damage_taken: 1, ...extra });
+      assert.equal(tracker.data.unlocked[id], undefined);
+    }
+    const tracker = new Tracker();
+    finish(tracker, 'boss', difficulty, { damage_taken: 1, lives: hp - 1, max_lives: hp });
+    const before = tracker.score;
+    assert.deepEqual(ids(finish(tracker, 'boss', difficulty, { damage_taken: 1, lives: hp, max_lives: hp, healing_collected: 1 })), [id]);
+    assert.equal(tracker.score - before, reward);
+    if (difficulty === 'impossible') assert.equal(tracker.data.unlocked.boss_flawless, undefined);
+    const untouched = new Tracker();
+    assert.ok(ids(finish(untouched, 'boss', difficulty, { damage_taken: 0, lives: hp, max_lives: hp, healing_collected: 0 })).includes(id));
+    assert.ok(new Tracker(untouched.data).data.unlocked[id]);
+  }
+  assert.equal(catalog.filter(item => item.stat === 'bossFlawless').length, 1);
+  assert.equal(catalog.find(item => item.id === 'boss_flawless').tier, 'diamond');
+});
+
+test('all added milestones unlock exactly at their threshold, including five new Rainbow challenges', () => {
+  for (const [id, stat, target, mode, difficulty, extra] of [
+    ['hangman_perfect_5', 'perfectWins', 5, 'hangman', 'easy', { mistakes: 0 }],
+    ['hangman_hard_perfect', 'hardPerfectWins', 1, 'hangman', 'hard', { mistakes: 0 }],
+    ['dodge_180', 'dodgeBest', 180, 'dodge', 'easy', { elapsed: 180 }],
+    ['boss_25', 'bossWins', 25, 'boss', 'mean', { damage_taken: 1 }],
+    ['pumpkin_25', 'pumpkinWins', 25, 'pumpkin', 'baby', { damage_taken: 1 }],
+    ['pumpkin_come_on', 'pumpkin_come_on', 1, 'pumpkin', 'come_on', { damage_taken: 1 }],
+    ['boss_clean_streak_10', 'bossCleanStreak', 10, 'boss', 'mean', { damage_taken: 0 }],
+    ['hangman_250', 'hangmanWins', 250, 'hangman', 'easy', {}],
+    ['typing_75', 'typingBest', 75, 'keyboard', 'progressive', { score: 75 }],
+    ['dodge_merciless_240', 'mercilessBest', 240, 'dodge', 'merciless', { elapsed: 240 }],
+    ['boss_clean_streak_15', 'bossCleanStreak', 15, 'boss', 'mean', { damage_taken: 0 }],
+    ['pumpkin_flawless_5', 'pumpkinFlawlessWins', 5, 'pumpkin', 'baby', { damage_taken: 0 }],
+  ]) {
+    const tracker = new Tracker({ stats: { [stat]: target - 1 } });
+    tracker.visit();
+    assert.equal(tracker.data.unlocked[id], undefined, id);
+    const result = finish(tracker, mode, difficulty, extra);
+    assert.ok(ids(result).includes(id), id);
+    assert.equal(tracker.data.stats[stat], target, id);
+    assert.equal(tracker.observe({ mode, difficulty, over: true, won: true, ...extra }).changed, false);
+    const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.equal(ids(restored.visit()).includes(id), false);
+    assert.equal(restored.data.unlocked[id], tracker.data.unlocked[id]);
+  }
+  const tracker = new Tracker({ stats: { pumpkinFlawlessWins: 4 } });
+  finish(tracker, 'pumpkin', 'baby', { damage_taken: 1, lives: 15, max_lives: 15 });
+  assert.equal(tracker.data.unlocked.pumpkin_flawless_5, undefined);
+  assert.equal(tracker.data.stats.pumpkinFlawlessWins, 4);
+  assert.equal(points.rainbow, 2430);
+  assert.ok(points.rainbow > points.diamond);
+  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 6);
+});
+
+test('retiering recalculates existing profile scores without changing dates or re-awarding medals', () => {
+  const date = '2026-10-31T12:00:00.000Z';
+  const tiers = { boss_impossible: 'crystal', boss_nightmare_flawless: 'crystal', pumpkin_phase2: 'diamond', dodge_360: 'rainbow' };
+  const unlocked = Object.fromEntries(['welcome', ...Object.keys(tiers)].map(id => [id, date]));
+  const tracker = new Tracker({ stats: { visits: 1 }, unlocked, score: 1090 });
+  for (const [id, tier] of Object.entries(tiers)) assert.equal(catalog.find(item => item.id === id).tier, tier);
+  assert.equal(tracker.score, 3790);
+  assert.equal(tracker.visit().changed, false);
+  assert.deepEqual(tracker.data.unlocked, unlocked);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(restored.score, 3790);
+  assert.deepEqual(ids(restored.visit()), []);
 });
