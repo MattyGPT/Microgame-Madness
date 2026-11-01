@@ -153,8 +153,8 @@ const confettiColors = {
   bronze: ["#b87545", "#e6ac7c", "#ffcf9e"],
   silver: ["#a9bacb", "#e2e8f0", "#ffffff"],
   gold: ["#ffd34d", "#ffeab0", "#c58d14"],
-  crystal: ["#b67dff", "#dfaaff", "#7de6ef"],
-  diamond: ["#8fe9ff", "#d9ffff", "#aabfff"],
+  crystal: ["#b67dff", "#dfaaff", "#a34ff0"],
+  diamond: ["#55ddff", "#a9f4ff", "#39baff"],
   rainbow: ["#ff5470", "#ff9e42", "#ffe663", "#6ee89b", "#56c7ff", "#bc8bff"],
 };
 function celebrateAchievements(earned) {

@@ -251,7 +251,8 @@ h1 em {
   top: 0;
   width: 9px;
   height: 14px;
-  background: linear-gradient(135deg, var(--confetti-color), #ffffff99, var(--confetti-color));
+  background: var(--confetti-color);
+  box-shadow: inset 1px 1px 0 #ffffff66;
   animation: confetti-fall var(--fall) linear infinite;
   animation-delay: var(--delay);
 }
@@ -259,10 +260,6 @@ h1 em {
 .achievement-confetti[data-tier="diamond"] i,
 .achievement-confetti[data-tier="rainbow"] i {
   clip-path: polygon(50% 0, 100% 35%, 75% 100%, 25% 100%, 0 35%);
-}
-.achievement-confetti[data-tier="rainbow"] i {
-  background: var(--confetti-color);
-  box-shadow: inset 1px 1px 0 #ffffff66;
 }
 @keyframes confetti-fall {
   from { transform: translate3d(0, -15vh, 0) rotate(0); }
