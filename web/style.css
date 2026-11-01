@@ -278,6 +278,22 @@ h1 em {
   z-index: 40;
   pointer-events: none;
   background: rgb(210 0 0 / 72%);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: white;
+  text-align: center;
+  font: 600 clamp(26px, 6vw, 64px) / 1.2 "Space Grotesk", sans-serif;
+  text-shadow: 0 3px 20px #000;
+}
+#name-surprise[data-secret="cubie"] { background: rgb(61 118 50 / 70%); }
+#name-surprise[data-secret="boo"] { background: rgb(85 32 124 / 75%); }
+#name-surprise[data-secret="starlight"] {
+  background: radial-gradient(circle at 20% 30%, #fff8 0 2px, transparent 3px),
+    radial-gradient(circle at 80% 65%, #fff8 0 3px, transparent 4px),
+    radial-gradient(circle at 65% 20%, #fff8 0 2px, transparent 3px),
+    linear-gradient(135deg, #142e70cc, #6b248dcc);
+  background-size: 180px 160px, 250px 220px, 320px 260px, 100% 100%;
 }
 @media (prefers-reduced-motion: reduce) {
   .pixel-face, .pixel-face i { animation: none; }
@@ -301,11 +317,34 @@ h1 em {
   border: 1px solid #394836;
   border-radius: 50%;
   transform: rotate(-28deg);
+  pointer-events: none;
+  animation: cubie-orbit 18s linear infinite;
 }
 .orbit-two {
   transform: rotate(31deg);
+  animation-name: cubie-orbit-reverse;
+  animation-duration: 24s;
+}
+.orbit::after {
+  content: "";
+  position: absolute;
+  left: 17%;
+  top: 7%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 9px #c6f78388;
+}
+@keyframes cubie-orbit { to { transform: rotate(332deg); } }
+@keyframes cubie-orbit-reverse { to { transform: rotate(-329deg); } }
+@keyframes cubie-sparkle {
+  0%, 100% { opacity: .4; transform: translateY(0) scale(.8) rotate(-10deg); }
+  50% { opacity: 1; transform: translateY(-8px) scale(1.1) rotate(20deg); }
 }
 .spark {
+  pointer-events: none;
+  animation: cubie-sparkle 3.4s ease-in-out infinite;
   color: var(--lime);
   position: absolute;
   font-size: 44px;
@@ -315,6 +354,7 @@ h1 em {
   top: 25px;
 }
 .s2 {
+  animation-delay: -1.7s;
   left: 42px;
   bottom: 35px;
   font-size: 30px;
@@ -327,6 +367,10 @@ h1 em {
   font: 10px monospace;
   color: var(--muted);
   letter-spacing: 2px;
+}
+.art-label strong { color: var(--lime); line-height: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .orbit, .spark { animation: none; }
 }
 .section-heading {
   display: flex;
@@ -1005,18 +1049,21 @@ select:disabled {
     left: 25px;
     top: 10px;
   }
-  .hero-art .orbit, .hero-art .spark { display: none; }
   .orbit {
-    left: -90px;
-    top: 35px;
+    width: 190px;
+    height: 85px;
+    left: 5px;
+    top: 45px;
   }
   .spark.s1 {
-    right: -55px;
+    right: -5px;
     top: -10px;
+    font-size: 30px;
   }
   .spark.s2 {
-    left: -35px;
-    bottom: 10px;
+    left: -5px;
+    bottom: 25px;
+    font-size: 22px;
   }
   .art-label {
     right: 0;

@@ -15,6 +15,15 @@ from pumpkin_king import Finger, KING_WIDTH, KING_HEIGHT, COUNTER_RANGE
 COLORS = {"normal": "#fff5e5", "blue": "#42c9ff", "orange": "#ff9d32", "magenta": "#ff42de"}
 BACKGROUND = "#111827"
 
+# Shared by the original shell face and the Impossible Boss Crush face.
+PUMPKIN_FACE_FEATURES = (
+    ((-25, 3), (-10, 5), (-17, 15)), ((10, 5), (25, 3), (17, 15)),
+    ((-4, 0), (4, 0), (0, 6)),
+    ((-25, -5), (-18, -8), (-14, -4), (-8, -8), (0, -5), (8, -8),
+     (14, -4), (18, -8), (25, -5), (22, -15), (14, -12), (8, -16),
+     (0, -12), (-8, -16), (-14, -12), (-22, -15)),
+)
+
 
 def mix(a, b, amount):
     amount = max(0, min(1, amount))
@@ -124,14 +133,7 @@ class KingView:
             self.rect(x, y, KING_WIDTH, KING_HEIGHT, "#ff9d25")
             for i in range(5):
                 self.rect(x-40+i*20, y, 3, 72, "#f77719")
-        features = (
-            ((-25, 3), (-10, 5), (-17, 15)), ((10, 5), (25, 3), (17, 15)),
-            ((-4, 0), (4, 0), (0, 6)),
-            ((-25, -5), (-18, -8), (-14, -4), (-8, -8), (0, -5), (8, -8),
-             (14, -4), (18, -8), (25, -5), (22, -15), (14, -12), (8, -16),
-             (0, -12), (-8, -16), (-14, -12), (-22, -15)),
-        )
-        for index, polygon in enumerate(features):
+        for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
             color = glow if shell or index < 2 else "#38201c"
             self.poly([(x+px*scale, y+py*scale) for px, py in polygon], color)
 

@@ -8,7 +8,7 @@ from keyboard_model import KeyboardRound, make_round
 from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_SIZE
 from boss_crush import BossCrush, BOSS_WIDTH, BOSS_HEIGHT
 from pumpkin_king import PumpkinKing
-from pumpkin_king_view import KingView
+from pumpkin_king_view import KingView, PUMPKIN_FACE_FEATURES
 
 
 class DrawCanvas:
@@ -146,11 +146,18 @@ class BrowserGame:
                 self.view.draw(game)
                 commands = self.canvas.commands()
             elif isinstance(game, BossCrush):
-                color = "#fff351" if game.hit_flash else game.config.color
-                rect(game.boss_x, game.boss_y, BOSS_WIDTH, BOSS_HEIGHT, color)
-                for offset in (-18, 18):
-                    rect(game.boss_x+offset, game.boss_y+5, 10, 10, "#111827")
-                rect(game.boss_x, game.boss_y-10, 28, 4, "#111827")
+                if game.difficulty == "impossible":
+                    rect(game.boss_x, game.boss_y, BOSS_WIDTH, BOSS_HEIGHT, game.config.color)
+                    for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
+                        commands.append({"kind": "polygon", "coords": [v for x, y in polygon
+                                         for v in (game.boss_x+x, -game.boss_y-y)],
+                                         "fill": "#fff351" if index < 2 and game.hit_flash > 0 else "#000000"})
+                else:
+                    color = "#fff351" if game.hit_flash else game.config.color
+                    rect(game.boss_x, game.boss_y, BOSS_WIDTH, BOSS_HEIGHT, color)
+                    for offset in (-18, 18):
+                        rect(game.boss_x+offset, game.boss_y+5, 10, 10, "#111827")
+                    rect(game.boss_x, game.boss_y-10, 28, 4, "#111827")
                 if game.lunge_state == "warning" and game.lunge_target:
                     x, y = game.lunge_target
                     commands.append({"kind": "oval", "coords": [x-32, -y-32, x+32, -y+32], "fill": "", "outline": "#ff4565", "width": 3})

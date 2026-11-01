@@ -102,7 +102,8 @@ let damageFlashAnimation = null;
 let healingFlashAnimation = null;
 let nameSurpriseActive = false;
 let nameSurpriseTimer;
-let nameWasDingdong = false;
+let previousSecretName = "";
+const nameSecrets = { dingdong: "", cubie: "Hi, I’m Cubie!", boo: "BOO!", starlight: "You’re made of starlight. ✦" };
 let ready = false;
 let loadFailed = false;
 let active = false;
@@ -743,9 +744,13 @@ document
   );
 $("player").oninput = () => {
   showScores();
-  const isDingdong = $("player").value.trim().toUpperCase() === "DINGDONG";
-  if (isDingdong && !nameWasDingdong) {
-    updateAchievements(achievementTracker.secret("dingdong"));
+  const name = $("player").value.trim().toLowerCase();
+  const secret = Object.hasOwn(nameSecrets, name) ? name : "";
+  if (secret && secret !== previousSecretName) {
+    updateAchievements(achievementTracker.secret(secret));
+    $("name-surprise").dataset.secret = secret;
+    $("name-surprise").textContent = nameSecrets[secret];
+    if (secret === "cubie") blushCubie();
     nameSurpriseActive = true;
     $("name-surprise").hidden = false;
     clearTimeout(nameSurpriseTimer);
@@ -756,16 +761,19 @@ $("player").oninput = () => {
       syncMusic();
     }, 4000);
   }
-  nameWasDingdong = isDingdong;
+  previousSecretName = secret;
 };
 let blushTimer;
-$("cube").onclick = () => {
+function blushCubie() {
   $("cube").classList.add("blushing");
   clearTimeout(blushTimer);
   blushTimer = setTimeout(() => $("cube").classList.remove("blushing"), 1800);
-  updateAchievements(achievementTracker.secret("cube"));
   initializeAudio();
   playSound("squeak");
+}
+$("cube").onclick = () => {
+  updateAchievements(achievementTracker.secret("cube"));
+  blushCubie();
 };
 $("exit").onclick = exitGame;
 $("pause").onclick = pause;
