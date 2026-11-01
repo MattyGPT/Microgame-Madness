@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 68);
+  assert.equal(catalog.length, 71);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -225,9 +225,14 @@ test('secret achievements award the requested tiers once and persist with existi
   assert.deepEqual(ids(tracker.secret('cube')), ['cube_pet']);
   assert.equal(catalog.find(item => item.id === 'cube_pet').title, 'Awwwwww!');
   assert.equal(tracker.score, 370);
+  for (const [name, tier] of [['cubie', 'gold'], ['boo', 'gold'], ['starlight', 'crystal']]) {
+    assert.deepEqual(ids(tracker.secret(name)), [`name_${name}`]);
+    assert.equal(catalog.find(item => item.id === `name_${name}`).tier, tier);
+  }
+  assert.equal(tracker.score, 820);
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
-  for (const secret of ['cube', 'dingdong', 'unknown']) assert.equal(restored.secret(secret).changed, false);
-  assert.equal(restored.score, 370);
+  for (const secret of ['cube', 'dingdong', 'cubie', 'boo', 'starlight', 'unknown']) assert.equal(restored.secret(secret).changed, false);
+  assert.equal(restored.score, 820);
 });
 
 test('last-chance Hangman requires a completed win with exactly one guess remaining', () => {

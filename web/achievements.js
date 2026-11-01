@@ -11,7 +11,10 @@ const Achievements = (() => {
   }
   add("welcome", "Welcome to Microgame Madness!", "bronze", "Arcade", "Join the arcade.", "visits");
   add("dingdong", "DINGDONG", "crystal", "Arcade", "WHO YOU ARE.", "dingdong");
-  add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make the cube blush and squeak.", "cubePets");
+  add("name_cubie", "On a First-Name Basis", "gold", "Arcade", "Say Cubie's name in your player name.", "name_cubie");
+  add("name_boo", "Boo to You Too!", "gold", "Arcade", "Give the arcade a little name-entry scare.", "name_boo");
+  add("name_starlight", "Written in the Stars", "crystal", "Arcade", "Find the starry name hidden in the arcade.", "name_starlight");
+  add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
     ["keyboard", "Key to Success", "Key Rush"],
@@ -130,6 +133,7 @@ const Achievements = (() => {
       return this.update(stats => {
         if (name === "dingdong") stats.dingdong = 1;
         if (name === "cube") stats.cubePets = 1;
+        if (["cubie", "boo", "starlight"].includes(name)) stats[`name_${name}`] = 1;
       });
     }
     start(mode, difficulty) {

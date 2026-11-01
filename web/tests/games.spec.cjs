@@ -267,12 +267,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(68);
+  await expect(page.locator('.achievement-card')).toHaveCount(71);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(67);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(70);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -720,7 +720,7 @@ test('DINGDONG can repeat, does not block play, and preserves mute and pause cho
 });
 
 test('secret achievements persist, and the cube blushes and squeaks with mouse, touch, and keyboard', async ({ page }, testInfo) => {
-  const cube = page.getByRole('button', { name: 'Pet the cube' });
+  const cube = page.getByRole('button', { name: 'Pet Cubie' });
   await expect(cube).toBeVisible();
   await page.locator('#player').click();
   await page.evaluate(() => {
@@ -754,7 +754,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await page.locator('#achievements-tab').click();
   for (const [id, tier, title, description] of [
     ['dingdong', 'crystal', 'DINGDONG', 'WHO YOU ARE.'],
-    ['cube_pet', 'gold', 'Awwwwww!', 'Make the cube blush and squeak.'],
+    ['cube_pet', 'gold', 'Awwwwww!', 'Make Cubie blush and squeak.'],
   ]) {
     const card = page.locator(`[data-achievement="${id}"]`);
     await expect(card).toHaveAttribute('data-tier', tier);
@@ -985,4 +985,53 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
   await page.reload();
   await expect(page.locator('#profile-score')).toHaveText('7340');
   await expect(page.locator('#achievement-toast')).toBeHidden();
+});
+
+
+test('new name secrets replace effects cleanly and award once across reloads', async ({ page }, testInfo) => {
+  await page.locator('#player').click();
+  for (const [name, secret, message, score] of [
+    ['  cUbIe  ', 'cubie', 'Hi, I’m Cubie!', '100'],
+    ['BOO', 'boo', 'BOO!', '190'],
+    ['starlight', 'starlight', 'You’re made of starlight.', '460'],
+  ]) {
+    await page.locator('#player').fill(name);
+    await expect(page.locator('#name-surprise')).toHaveAttribute('data-secret', secret);
+    await expect(page.locator('#name-surprise')).toContainText(message);
+    await expect(page.locator('#name-surprise')).toBeVisible();
+    await expect(page.locator('#profile-score')).toHaveText(score);
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+    if (secret === 'cubie') await expect(page.locator('#cube')).toHaveClass(/blushing/);
+  }
+  await page.screenshot({ path: testInfo.outputPath('starlight-secret.png') });
+  await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('460');
+  await page.locator('#sound').click();
+  for (const name of ['CUBIE', 'BOO', 'STARLIGHT']) await page.locator('#player').fill(name);
+  await expect(page.locator('#profile-score')).toHaveText('460');
+  await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
+  expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+});
+
+test('Cubie has moving sparkles and orbits with reduced-motion support', async ({ page }, testInfo) => {
+  await expect(page.getByRole('button', { name: 'Pet Cubie' })).toBeVisible();
+  await expect(page.locator('.art-label')).toContainText('CUBIE');
+  for (const selector of ['.orbit-one', '.orbit-two', '.spark.s1', '.spark.s2']) {
+    const decoration = page.locator(selector);
+    await expect(decoration).toBeVisible();
+    const before = await decoration.evaluate(el => getComputedStyle(el).transform);
+    await expect.poll(() => decoration.evaluate(el => getComputedStyle(el).transform)).not.toBe(before);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('.hero-art').screenshot({ path: testInfo.outputPath('cubie.png') });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const selector of ['#cube', '.orbit-one', '.orbit-two', '.spark.s1', '.spark.s2'])
+    expect(await page.locator(selector).evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  await page.locator('[data-game="boss"]').click();
+  await page.locator('[data-difficulty="impossible"]').click();
+  await page.evaluate(() => { active = false; });
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('impossible-face.png') });
 });

@@ -76,6 +76,26 @@ class BrowserAdapterTests(unittest.TestCase):
             self.assertEqual(result["healing_collected"], int(wounded))
             self.assertEqual(result["damage_taken"], int(wounded))
 
+    def test_impossible_uses_shell_face_and_only_eyes_flash_on_real_hit(self):
+        from boss_crush import Projectile
+        shell = self.start("pumpkin", "baby")
+        shell_features = [c for c in shell["commands"] if c["kind"] == "polygon"][:4]
+        original = self.start("boss", "impossible")
+        features = [c for c in original["commands"] if c["kind"] == "polygon"][:4]
+        self.assertEqual([c["coords"] for c in features], [list(c["coords"]) for c in shell_features])
+        self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
+        game = self.session.game
+        game.shots = [Projectile(game.boss_x, game.boss_y, 0, 520)]
+        struck = self.session.dispatch({"action": "tick", "dt": .01})
+        features = [c for c in struck["commands"] if c["kind"] == "polygon"][:4]
+        self.assertLess(struck["hp"], original["hp"])
+        self.assertEqual([c["fill"] for c in features], ["#fff351"] * 2 + ["#000000"] * 2)
+        self.assertEqual(struck["commands"][0]["fill"], "#ffffff")
+        for _ in range(20):
+            recovered = self.session.dispatch({"action": "tick", "dt": .05})
+        features = [c for c in recovered["commands"] if c["kind"] == "polygon"][:4]
+        self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
+
     def test_every_arcade_difficulty_matches_desktop_model_replay(self):
         cases = [("dodge", key, DodgeGame(difficulty=key, rng=random.Random(12))) for key in DIFFICULTIES]
         cases += [("boss", key, BossCrush(key, rng=random.Random(12))) for key in BOSS_DIFFICULTIES]
