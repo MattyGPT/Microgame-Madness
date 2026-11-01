@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 48);
+  assert.equal(catalog.length, 50);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -246,5 +246,34 @@ test('last-chance Hangman requires a completed win with exactly one guess remain
     tracker.observe({ mode: 'hangman', difficulty, over: true, won: true, remaining: 1 });
     assert.equal(tracker.data.stats.lastChanceWins, 1);
     assert.equal(new Tracker(tracker.data).data.unlocked.hangman_last_chance, tracker.data.unlocked.hangman_last_chance);
+  }
+});
+
+test('Cruel and Nightmare flawless awards require zero-damage wins and persist once', () => {
+  for (const [difficulty, tier, reward] of [['cruel', 'silver', 30], ['nightmare', 'gold', 90]]) {
+    const id = `boss_${difficulty}_flawless`;
+    assert.equal(catalog.find(item => item.id === id).tier, tier);
+    for (const damage_taken of [undefined, null, 1, 3]) {
+      const tracker = new Tracker();
+      finish(tracker, 'boss', difficulty, { damage_taken, lives: 3, max_lives: 3 });
+      assert.equal(tracker.data.unlocked[id], undefined);
+    }
+    for (const result of [{ over: false, won: false }, { over: true, won: false }]) {
+      const tracker = new Tracker();
+      tracker.start('boss', difficulty);
+      tracker.observe({ mode: 'boss', difficulty, damage_taken: 0, ...result });
+      assert.equal(tracker.data.unlocked[id], undefined);
+    }
+    const tracker = new Tracker();
+    finish(tracker, 'boss', difficulty, { damage_taken: 1 });
+    finish(tracker, 'boss', 'mean', { damage_taken: 0 });
+    assert.equal(tracker.data.unlocked[id], undefined);
+    const before = tracker.score;
+    assert.deepEqual(ids(finish(tracker, 'boss', difficulty, { damage_taken: 0 })), [id]);
+    assert.equal(tracker.score - before, reward);
+    assert.equal(tracker.observe({ mode: 'boss', difficulty, over: true, won: true, damage_taken: 0 }).changed, false);
+    const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.deepEqual(ids(finish(restored, 'boss', difficulty, { damage_taken: 0 })), []);
+    assert.equal(restored.score, tracker.score);
   }
 });
