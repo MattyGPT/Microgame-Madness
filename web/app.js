@@ -97,6 +97,8 @@ const modes = {
 };
 let selected = "hangman";
 let selectedDifficulty = null;
+let previousBossHealth = null;
+let damageFlashAnimation = null;
 let ready = false;
 let loadFailed = false;
 let active = false;
@@ -336,6 +338,7 @@ function showGameArea() {
 }
 function selectGame(mode) {
   if (loadFailed) return;
+  resetDamageFeedback();
   if (active && selected === "keyboard") saveRound();
   active = false;
   snapshot = null;
@@ -398,6 +401,7 @@ function selectGame(mode) {
 function startGame(difficulty) {
   if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
     return;
+  resetDamageFeedback();
   selectedDifficulty = difficulty;
   initializeAudio();
   currentPlayer = $("player").value.trim() || "Player";
@@ -445,8 +449,27 @@ function showOverlay(title, copy, button, kicker) {
   $("overlay-kicker").textContent = kicker;
   $("overlay").hidden = false;
 }
+function resetDamageFeedback() {
+  previousBossHealth = null;
+  damageFlashAnimation?.cancel();
+  damageFlashAnimation = null;
+}
+function updateDamageFeedback(s) {
+  if (selected !== "boss" && selected !== "pumpkin") return;
+  // Cumulative damage catches a hit even if healing also happens in this frame.
+  if (previousBossHealth && (s.lives < previousBossHealth.lives ||
+      s.damage_taken > previousBossHealth.damage)) {
+    damageFlashAnimation?.cancel();
+    damageFlashAnimation = $("damage-flash").animate(
+      [{ opacity: 1 }, { opacity: 0 }],
+      { duration: 340, easing: "ease-out" },
+    );
+  }
+  previousBossHealth = { lives: s.lives, damage: s.damage_taken };
+}
 function render() {
   const s = snapshot;
+  updateDamageFeedback(s);
   updateAchievements(achievementTracker.observe(s));
   const hasHealth = selected === "boss" || selected === "pumpkin";
   $("player-health").hidden = !hasHealth;
@@ -611,6 +634,7 @@ function exitGame() {
   selectGame(selected);
 }
 function fail(error) {
+  resetDamageFeedback();
   console.error(error);
   loadFailed = true;
   active = false;

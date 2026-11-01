@@ -348,6 +348,7 @@ test("Pumpkin King contact kills in every mode and restart restores health", asy
     await page.keyboard.up('ArrowUp');
     await expect(page.locator('#player-health-value')).toHaveText(`0 / ${hp}`);
     await expect(page.locator('#overlay-copy')).toContainText('His body and arms kill instantly');
+    expect(await page.evaluate(() => damageFlashAnimation !== null)).toBe(true);
     await page.locator('#overlay-action').click();
   }
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats);
@@ -463,6 +464,7 @@ test('Pumpkin King arm-lift smashes and roar fire deal one HP in every mode', as
     for (const [mode, hp] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
       await page.locator(`[data-difficulty="${mode}"]`).click();
       await expect(page.locator('#player-health-value')).toHaveText(`${hp - 1} / ${hp}`);
+      expect(await page.evaluate(() => damageFlashAnimation !== null)).toBe(true);
       await expect(page.locator('#overlay')).toBeHidden();
       await page.locator('#pause').click();
       await expect(page.locator('#overlay-title')).toHaveText('Take a breather.');
@@ -595,4 +597,65 @@ test("games remain playable when browser audio is unavailable", async ({ page })
   await page.getByRole("button", { name: "Guess A", exact: true }).click();
   await expect(page.getByRole("button", { name: "Guess A", exact: true })).toBeDisabled();
   expect(errors).toEqual([]);
+});
+
+test('mascot floats and blinks, and every boss mode flashes only for damage', async ({ page }) => {
+  // The decorative hero is intentionally hidden in the existing phone layout.
+  const viewport = page.viewportSize();
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  const face = page.locator('.pixel-face');
+  expect(await face.evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-float');
+  expect(await face.locator('i').first().evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-blink');
+  const poses = await face.evaluate(el => {
+    const float = el.getAnimations()[0], blink = el.querySelector('i').getAnimations()[0];
+    float.pause(); blink.pause();
+    float.currentTime = 0; blink.currentTime = 0;
+    const normal = [getComputedStyle(el).transform, getComputedStyle(el.querySelector('i')).transform];
+    float.currentTime = 1900; blink.currentTime = 4512;
+    return { normal, animated: [getComputedStyle(el).transform, getComputedStyle(el.querySelector('i')).transform] };
+  });
+  expect(poses.animated[0]).not.toBe(poses.normal[0]);
+  expect(poses.animated[1]).not.toBe(poses.normal[1]);
+  await page.setViewportSize(viewport);
+  for (const [game, modes] of [['boss', ['mean', 'cruel', 'nightmare', 'impossible']],
+    ['pumpkin', ['phase2', 'coward', 'baby', 'come_on']]]) {
+    await page.locator(`[data-game="${game}"]`).click();
+    for (const mode of modes) {
+      await page.locator(`[data-difficulty="${mode}"]`).click();
+      await page.locator('#pause').click();
+      expect(await page.evaluate(() => damageFlashAnimation)).toBe(null);
+      await page.evaluate(() => {
+        snapshot.lives--; snapshot.damage_taken++; render();
+        damageFlashAnimation.pause(); damageFlashAnimation.currentTime = 0;
+      });
+      await expect(page.locator('#damage-flash')).toHaveCSS('opacity', '1');
+      await expect(page.locator('#damage-flash')).toHaveCSS('pointer-events', 'none');
+      expect(await page.locator('#damage-flash').evaluate(el => {
+        const box = el.getBoundingClientRect();
+        return box.width === innerWidth && box.height === innerHeight && box.top === 0 && box.left === 0;
+      })).toBe(true);
+      expect(await page.evaluate(() => {
+        const flash = damageFlashAnimation;
+        render(); snapshot.lives++; render();
+        return damageFlashAnimation === flash;
+      })).toBe(true);
+      // Damage and healing together still need feedback, even with unchanged HP.
+      expect(await page.evaluate(() => {
+        const flash = damageFlashAnimation;
+        snapshot.damage_taken++; render();
+        return damageFlashAnimation !== flash;
+      })).toBe(true);
+      await expect(page.locator('#damage-flash')).toHaveCSS('opacity', '0');
+      await page.locator('#exit').click();
+      expect(await page.evaluate(() => damageFlashAnimation)).toBe(null);
+    }
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await face.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  expect(await face.locator('i').first().evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  await expect(page.locator('#damage-flash')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await page.locator('[data-game="hangman"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await page.getByRole('button', { name: 'Guess Z', exact: true }).click();
+  expect(await page.evaluate(() => damageFlashAnimation)).toBe(null);
 });
