@@ -234,7 +234,11 @@ class BrowserAdapterTests(unittest.TestCase):
         self.assertEqual(result["word"].replace(" ", ""), word)
 
     def test_pumpkin_all_attacks_render_and_canvas_pool_is_bounded(self):
+        from collections import Counter
         self.start("pumpkin", "phase2")
+        self.session.game.rng.seed(42)
+        self.session.game.candy_rng.seed(42)
+        peak_counts = Counter(item["kind"] for item in self.session.canvas.items.values())
         for attack in range(7):
             self.session.game.begin_attack(attack)
             self.session.game.invulnerable = 100
@@ -242,7 +246,11 @@ class BrowserAdapterTests(unittest.TestCase):
                 result = self.session.dispatch({"action": "tick", "dt": .05, "keys": ["f", "e"]})
                 self.assertTrue(result["commands"])
                 self.assertTrue(all(c["kind"] in ("rectangle", "polygon", "text", "oval") for c in result["commands"]))
-        self.assertLess(len(self.session.canvas.items), 1000)
+                peak_counts |= Counter(c["kind"] for c in self.session.canvas.commands())
+        # Richer attack artwork needs more shapes, but allocation must still
+        # equal each shape kind's peak demand, never accumulate across frames.
+        self.assertEqual(len(self.session.canvas.items), sum(peak_counts.values()))
+        self.assertLess(len(self.session.canvas.items), 1500)
 
     def test_healing_and_counter_shapes_are_serializable(self):
         from boss_crush import HealingPickup
@@ -270,7 +278,7 @@ class PackagingTests(unittest.TestCase):
                 client.write_text(client.read_text() + "\n// Next client release.\n")
                 build()
                 second = (output / "index.html").read_text()
-            for name in ("app.js", "style.css", "achievements.js", "music.js", "leaderboards.js"):
+            for name in ("app.js", "style.css", "achievements.js", "customs.js", "music.js", "leaderboards.js"):
                 with self.subTest(asset=name):
                     pattern = rf'"(\./{re.escape(name)}\?v=[a-f0-9]+)"'
                     before = re.search(pattern, first)
@@ -283,8 +291,9 @@ class PackagingTests(unittest.TestCase):
                         self.assertEqual(before[1], after[1])
 
     def test_leaderboard_configuration_never_publishes_private_keys(self):
-        with patch.dict("os.environ", {}, clear=True):
-            self.assertEqual(leaderboard_config(), {"url": "", "key": ""})
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("scripts.build_web.ROOT", Path(directory)), patch.dict("os.environ", {}, clear=True):
+                self.assertEqual(leaderboard_config(), {"url": "", "key": ""})
         with patch.dict("os.environ", {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_example"}, clear=True):
             self.assertEqual(leaderboard_config()["key"], "sb_publishable_example")
         for key in ("sb_secret_private", "not-a-public-key", "e30.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.sig"):
@@ -297,10 +306,45 @@ class PackagingTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 leaderboard_config()
 
+    def test_shared_leaderboard_config_works_locally_and_with_empty_actions_variables(self):
+        config = {"url": "https://example.supabase.co", "key": "sb_publishable_example"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "leaderboard-config.json").write_text(json.dumps(config))
+            with patch("scripts.build_web.ROOT", root):
+                for env in ({}, {"SUPABASE_URL": "", "SUPABASE_PUBLISHABLE_KEY": ""}):
+                    with patch.dict("os.environ", env, clear=True):
+                        self.assertEqual(leaderboard_config(), config)
+                with patch.dict("os.environ", {"SUPABASE_URL": "https://override.supabase.co",
+                                               "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_override"}, clear=True):
+                    self.assertEqual(leaderboard_config()["url"], "https://override.supabase.co")
+                # Never combine credentials belonging to different projects.
+                for env in ({"SUPABASE_URL": "https://override.supabase.co"},
+                            {"SUPABASE_PUBLISHABLE_KEY": "sb_publishable_override"}):
+                    with patch.dict("os.environ", env, clear=True), self.assertRaises(ValueError):
+                        leaderboard_config()
+
+    def test_invalid_shared_config_preserves_the_previous_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "dist"
+            output.mkdir()
+            previous = output / "index.html"
+            previous.write_text("Last good build")
+            invalid = ["{", "[]", '{"url": 42, "key": null}',
+                       json.dumps({"url": "https://example.supabase.co", "key": "sb_secret_private"}),
+                       json.dumps({"url": "https://example.supabase.co", "key": "e30.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.sig"})]
+            with patch("scripts.build_web.ROOT", root), patch("scripts.build_web.OUTPUT", output), patch.dict("os.environ", {}, clear=True):
+                for content in invalid:
+                    (root / "leaderboard-config.json").write_text(content)
+                    with self.subTest(content=content), self.assertRaises(ValueError):
+                        build()
+                    self.assertEqual(previous.read_text(), "Last good build")
+
     def test_package_contains_only_allowlisted_browser_files(self):
         build()
         files = {str(p.relative_to(OUTPUT)) for p in OUTPUT.rglob("*") if p.is_file()}
-        expected = {"index.html", "style.css", "app.js", "achievements.js", "music.js", "effects.js", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
+        expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "music.js", "effects.js", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
         expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
         self.assertEqual(files, expected)
         for name in PYTHON_SOURCES:

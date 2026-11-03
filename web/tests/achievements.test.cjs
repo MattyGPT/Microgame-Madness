@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 117);
+  assert.equal(catalog.length, 128);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
@@ -190,6 +190,8 @@ test('typing and survival use the best single run and exact thresholds', () => {
   assert.deepEqual(ids(typing(5)), []);
   assert.equal(tracker.data.stats.typingBest, 5);
   assert.deepEqual(ids(typing(10)), ['typing_10']);
+  assert.deepEqual(ids(typing(14)), []);
+  assert.deepEqual(ids(typing(15)), ['typing_15']);
   assert.deepEqual(ids(typing(20)), ['typing_20']);
   tracker.start('dodge', 'easy');
   const dodge = (elapsed, difficulty = 'easy') => tracker.observe({ mode: 'dodge', difficulty, elapsed, over: false });
@@ -544,7 +546,7 @@ test('all added milestones unlock exactly at their threshold, including five new
   assert.equal(tracker.data.stats.pumpkinFlawlessWins, 4);
   assert.equal(points.rainbow, 2430);
   assert.ok(points.rainbow > points.diamond);
-  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 14);
+  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 16);
 });
 
 test('retiering recalculates existing profile scores without changing dates or re-awarding medals', () => {
@@ -568,4 +570,39 @@ test('healing a half-point scare hit never qualifies as a damage-free Pumpkin vi
   assert.ok(tracker.data.unlocked.pumpkin_full_health);
   assert.equal(tracker.data.unlocked.pumpkin_flawless, undefined);
   assert.equal(tracker.data.stats.pumpkinFlawlessWins, 0);
+});
+
+test('new arcade names award once and survive reloads', () => {
+  let tracker = new Tracker();
+  for (const [name, id, tier] of [
+    ['pixel', 'name_pixel', 'gold'], ['1up', 'name_1up', 'gold'],
+    ['high score', 'name_high_score', 'crystal'],
+  ]) {
+    const before = tracker.score;
+    assert.deepEqual(ids(tracker.secret(name)), [id]);
+    assert.equal(tracker.score - before, points[tier]);
+    tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.equal(tracker.secret(name).changed, false);
+  }
+});
+
+test('seven new gameplay milestones recognize saved progress at the exact threshold', () => {
+  for (const id of ['hangman_hard_perfect_5', 'hangman_last_chance_5', 'typing_15',
+    'dodge_90', 'boss_50', 'pumpkin_50', 'wrath_win_10']) {
+    const item = catalog.find(item => item.id === id);
+    let tracker = new Tracker({ stats: { [item.stat]: item.target - 1 } });
+    tracker.visit();
+    assert.equal(tracker.data.unlocked[id], undefined);
+    assert.equal(tracker.progress(item), item.target - 1);
+    const result = tracker.update(stats => { stats[item.stat]++; });
+    assert.ok(ids(result).includes(id));
+    const date = tracker.data.unlocked[id];
+    const score = tracker.score;
+    tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.equal(tracker.visit().changed, false);
+    assert.equal(tracker.data.unlocked[id], date);
+    assert.equal(tracker.score, score);
+    const returning = new Tracker({ stats: { [item.stat]: item.target } });
+    assert.ok(ids(returning.visit()).includes(id));
+  }
 });

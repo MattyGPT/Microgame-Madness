@@ -18,6 +18,21 @@ body {
   background: var(--bg);
   color: var(--ink);
 }
+.now-playing {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  z-index: 100;
+  max-width: calc(100vw - 16px);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--lime);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}
 button,
 input,
 select {
@@ -1668,3 +1683,54 @@ select:disabled {
   #scores-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   #scores-panel .score-panel { border-bottom: 0; }
 }
+
+/* Cubie's closet: each Custom keeps the same eyes and smile. */
+.cubie-custom-art { display: block; width: 100%; height: 100%; overflow: visible; }
+.cubie-float { animation: custom-float 3.8s ease-in-out infinite; transform: rotate(-14deg); transform-origin: center; }
+.cubie-eyes { animation: mascot-blink 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes custom-float { 0%, 100% { transform: translateY(0) rotate(-14deg); } 50% { transform: translateY(-9px) rotate(-12deg); } }
+.custom-card-art .cubie-custom-art { width: 62px; height: 62px; }
+.pixel-face.custom-equipped { background: transparent; box-shadow: none; }
+.pixel-face.custom-equipped > i, .pixel-face.custom-equipped > b { display: none; }
+.pixel-face.custom-equipped > svg { position: absolute; inset: 0; }
+.pixel-face.custom-equipped .cubie-float { animation: none; transform: none; }
+.pixel-face.custom-equipped::before, .pixel-face.custom-equipped::after { z-index: 1; }
+#customs-room { padding: clamp(16px, 3vw, 32px); text-align: left; }
+.customs-preview { display: flex; align-items: center; gap: 24px; padding: 22px; border: 1px solid #c6f78355; border-radius: 18px; background: radial-gradient(ellipse at 15% 50%, #c6f78318, transparent 70%), #1c2424; }
+#customs-preview-art { width: 150px; height: 156px; flex-shrink: 0; }
+#customs-preview-art .cubie-custom-art { width: 96px; height: 96px; margin: 36px auto 24px; }
+.customs-preview h3 { font-size: clamp(22px, 3vw, 32px); margin: 8px 0; }
+.customs-preview p { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 6px 0; }
+#customs-count { color: var(--lime); font-weight: 700; }
+#customs-status { min-height: 21px; }
+.customs-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 26px 0 16px; }
+.customs-toolbar h4 { margin: 0; font-size: 18px; }
+.customs-toolbar label { font-size: 12px; color: var(--muted); }
+#customs-filter { margin-left: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #202728; color: var(--ink); }
+#customs-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.custom-tile { display: flex; flex-direction: column; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #1c2325; }
+.custom-tile[data-equipped="true"] { border-color: var(--lime); background: #c6f7830a; }
+.custom-swatch { height: 108px; padding: 3px 0 9px; margin-bottom: 8px; background: radial-gradient(ellipse, #ffffff0b, transparent 70%); }
+.custom-swatch svg { width: 62px; height: 62px; margin: 24px auto 0; }
+.custom-swatch .cubie-float, .custom-swatch .cubie-eyes { animation: none; }
+.custom-tile h5 { font-size: 14px; line-height: 1.4; margin: 4px 0 8px; }
+.custom-tile p { font-size: 11px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; overflow-wrap: anywhere; flex-grow: 1; }
+.custom-equip { min-height: 40px; padding: 8px; border-radius: 7px; border: 1px solid #c6f78366; background: #c6f78317; color: var(--lime); font: inherit; font-size: 12px; }
+.custom-equip:disabled { background: #ffffff04; border-color: var(--line); color: #a2a8a6; cursor: not-allowed; }
+.custom-locked .custom-swatch { opacity: .65; }
+.custom-equip:focus-visible, #customs-filter:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .customs-preview { gap: 12px; padding: 14px; }
+  #customs-preview-art { width: 96px; height: 112px; }
+  #customs-preview-art .cubie-custom-art { width: 62px; height: 62px; margin: 28px auto 22px; }
+  #customs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .custom-tile { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-float, .cubie-eyes { animation: none !important; }
+}
+
+.custom-preview-button { width: 100%; height: 130px; border: 1px solid transparent; border-radius: 8px; color: var(--muted); cursor: pointer; }
+.custom-preview-button span { display: block; margin-top: 12px; font-size: 11px; }
+.custom-preview-button:hover, .custom-preview-button[aria-pressed="true"] { border-color: #c6f78366; color: var(--lime); }
+.custom-preview-button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }

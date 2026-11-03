@@ -198,7 +198,7 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
 });
 
 test("The King's Wrath has a yellow crown and loads all eight practice modes", async ({ page }, testInfo) => {
-  await expect(page.locator('[data-game]:visible')).toHaveCount(7);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(8);
   const card = page.locator('[data-game="wrath"]');
   await expect(card).toContainText("The King's Wrath");
   expect(await card.locator('svg path').evaluate(el => getComputedStyle(el).fill)).toBe('rgb(255, 224, 102)');
@@ -484,12 +484,13 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(117);
+  const achievementTotal = await page.evaluate(() => Achievements.catalog.length);
+  await expect(page.locator('.achievement-card')).toHaveCount(achievementTotal);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(116);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(achievementTotal - 1);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -975,6 +976,8 @@ test('Boss Crush difficulties play increasingly heavy rock themes and return to 
     snapshot = send('tick', { dt: 0 });
     render();
   });
+  // The boss theme remains through the death animation, then returns to arcade.
+  await expect(page.locator('#overlay-title')).toHaveText('One more try?');
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="mean"]').click();
@@ -1266,7 +1269,7 @@ test("games remain playable when browser audio is unavailable", async ({ page })
 });
 
 test('mascot floats and blinks, and every boss mode flashes only for damage', async ({ page }) => {
-  const face = page.locator('.pixel-face');
+  const face = page.locator('#cube');
   expect(await face.evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-float');
   expect(await face.locator('i').first().evaluate(el => getComputedStyle(el).animationName)).toBe('mascot-blink');
   const poses = await face.evaluate(el => {
@@ -2031,9 +2034,9 @@ test(`${mode} Haunted Quadrants gives two seconds to position with laughing face
     for (let i = 0; i < frames; i++) { snapshot = send('tick', { dt: .05, keys: [] }); render(); }
     return { lives: snapshot.lives, label: snapshot.label, damage: snapshot.damage_taken,
       warnings: snapshot.commands.filter(c => c.kind === 'text' && c.text === '!'),
-      introFaces: snapshot.commands.filter(c => c.kind === 'polygon' && c.coords.length > 20
+      introFaces: snapshot.commands.filter(c => c.kind === 'polygon' && c.coords.length === 22
         && ['#9e8cff', '#7cdae6', '#b8a3f4'].includes(c.fill)).length,
-      faces: snapshot.commands.filter(c => c.fill === '#e7d9ff').length,
+      faces: snapshot.commands.filter(c => c.kind === 'polygon' && c.coords.length === 22 && c.fill === '#e7d9ff').length,
       lines: snapshot.commands.filter(c => c.fill === '#d9b8f5').length };
   }, frames);
   let state = await tick(0);
@@ -2178,4 +2181,106 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   });
   await expect(dialog).not.toBeVisible();
   expect(await page.evaluate(() => saved.cubieHintShown)).toBe(true);
+});
+
+test('three new arcade names unlock through name entry and persist', async ({ page }) => {
+  for (const [name, id, title] of [
+    ['  PiXeL  ', 'name_pixel', 'Pixel Perfect'],
+    ['1uP', 'name_1up', 'Extra Life Energy'],
+    ['High Score', 'name_high_score', 'Name on the Leaderboard'],
+  ]) {
+    await page.locator('#player').fill(name);
+    await expect(page.locator('#name-surprise')).toBeVisible();
+    await expect(page.locator('#achievement-toast')).toContainText(title);
+    expect(await page.evaluate(id => !!achievementTracker.data.unlocked[id], id)).toBe(true);
+  }
+  await expect(page.locator('#profile-score')).toHaveText('460');
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#achievements-tab').click();
+  for (const id of ['name_pixel', 'name_1up', 'name_high_score'])
+    await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');
+  await page.locator('#player').fill('PIXEL');
+  await expect(page.locator('#profile-score')).toHaveText('460');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+});
+
+test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', async ({ page }, testInfo) => {
+  const card = page.locator('[data-game="customs"]');
+  await expect(card.locator('.cubie-float')).toHaveCSS('animation-name', 'custom-float');
+  await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
+  await card.click();
+  await expect(page.locator('#customs-room')).toBeVisible();
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(34);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 34 Customs unlocked');
+  const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
+  await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
+  await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
+  // A completed real-mode victory unlocks the reward immediately.
+  await page.evaluate(() => {
+    updateAchievements(achievementTracker.start('pumpkin', 'baby'));
+    updateAchievements(achievementTracker.observe({
+      mode: 'pumpkin', difficulty: 'baby', over: true, won: true,
+      damage_taken: 2, lives: 13, max_lives: 15,
+    }));
+  });
+  await expect(pumpkin.locator('.custom-equip')).toBeEnabled();
+  await pumpkin.locator('.custom-equip').click();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'pumpkin');
+  await expect(page.locator('#customs-equipped-name')).toHaveText('Pumpkin Cubie');
+  await expect(page.locator('#customs-status')).toHaveText('Now wearing Pumpkin Cubie.');
+  await page.locator('#customs-filter').selectOption('unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(2);
+  await page.locator('#customs-filter').selectOption('all');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('#achievement-toast').waitFor({ state: 'hidden' });
+  await page.locator('.achievement-confetti').first().waitFor({ state: 'hidden' });
+  await page.locator('#customs-room').screenshot({ path: testInfo.outputPath('custom-cubie-collection.png') });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'pumpkin');
+  await page.locator('#cube').click({ force: true });
+  await expect(page.locator('#cube')).toHaveClass(/blushing/);
+  await card.click();
+  await page.getByRole('button', { name: 'Wear Classic Cubie', exact: true }).click();
+  await expect(page.locator('#cube')).not.toHaveClass(/custom-equipped/);
+  await page.locator('[data-game="hangman"]').click();
+  await expect(page.locator('#customs-room')).toBeHidden();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(page.locator('#hangman-game')).toBeVisible();
+  await card.click();
+  await expect(page.locator('#customs-room')).toBeVisible();
+  expect(await page.evaluate(() => active)).toBe(false);
+});
+
+test('Custom Cubie rejects locked saved outfits and respects reduced motion', async ({ page }) => {
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+    saved.cubieCustom = 'pumpkin';
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+  await expect(page.locator('[data-game="customs"] .cubie-float')).toHaveCSS('animation-name', 'none');
+});
+
+test('locked Customs can be previewed with flavor text without equipping', async ({ page }) => {
+  await page.locator('[data-game="customs"]').click();
+  await page.getByRole('button', { name: 'Preview Pumpkin Cubie', exact: true }).click();
+  await expect(page.locator('#customs-equipped-name')).toHaveText('Pumpkin Cubie');
+  await expect(page.locator('#customs-flavor')).toHaveText('Won the crown. Kept the pumpkin. Refuses to become pie.');
+  await expect(page.locator('#customs-status')).toContainText('Preview only · Locked');
+  await expect(page.locator('[data-custom="pumpkin"] .custom-equip')).toBeDisabled();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+  expect(await page.evaluate(() => saved.cubieCustom)).toBe('classic');
+  await page.getByRole('button', { name: 'Preview Word Wizard', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#customs-equipped-name')).toHaveText('Word Wizard');
+  await expect(page.locator('#customs-flavor')).toHaveText('Knows every spell except the one that finds missing socks.');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
 });

@@ -16,12 +16,14 @@
       defer
     ></script>
     <script src="./achievements.js" defer></script>
+    <script src="./customs.js" defer></script>
     <script src="./music.js" defer></script>
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
+    <div id="now-playing" class="now-playing" role="status" aria-live="polite" hidden></div>
     <div id="achievement-toast" class="achievement-toasts" role="status" aria-live="polite" aria-atomic="false" aria-relevant="additions" hidden></div>
     <header class="topbar">
       <a class="brand" href="./"
@@ -153,6 +155,12 @@
           <span class="card-title">Arcade Jukebox <span>↗</span></span>
           <span class="card-description">Your songs. On repeat.</span>
         </button>
+        <button class="game-card" data-game="customs" aria-pressed="false" style="--accent: #c6f783">
+          <span class="card-top">09 <span>CUBIE'S CLOSET</span></span>
+          <span class="card-art custom-card-art" aria-hidden="true"></span>
+          <span class="card-title">Custom Cubie <span>↗</span></span>
+          <span class="card-description">Big achievements. Little outfits.</span>
+        </button>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
         <div class="game-main">
@@ -192,6 +200,19 @@
                 aria-labelledby="difficulty-title"
               ></div>
             </div>
+            <section id="customs-room" aria-label="Cubie's Customs" hidden>
+              <div class="customs-preview">
+                <div id="customs-preview-art"></div>
+                <div aria-live="polite" aria-atomic="true"><p class="eyebrow">CUSTOM PREVIEW</p><h3 id="customs-equipped-name">Classic Cubie</h3>
+                  <p id="customs-flavor"></p><p id="customs-count"></p>
+                  <p id="customs-status" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+              <div class="customs-toolbar"><h4>Your Customs</h4>
+                <label>Show <select id="customs-filter"><option value="all">All Customs</option><option value="unlocked">Unlocked</option><option value="locked">Locked</option></select></label>
+              </div>
+              <div id="customs-grid"></div>
+            </section>
             <div id="hangman-game" class="hangman-game" hidden>
               <pre id="hangman-picture" aria-hidden="true"></pre>
               <p id="word" class="word" aria-label="Word"></p>
@@ -335,7 +356,7 @@
     <footer class="site-footer">
       <span>MICROGAME MADNESS</span>
       <p>Made for the joy of one more try.</p>
-      <span id="game-total">6 GAMES + JUKEBOX / ENDLESS REMATCHES</span>
+      <span id="game-total">6 GAMES + JUKEBOX + CLOSET / ENDLESS REMATCHES</span>
     </footer>
     <dialog id="cubie-hint" aria-labelledby="cubie-hint-title" aria-describedby="cubie-hint-copy">
       <div class="cubie-hint-art" aria-hidden="true"><span class="pixel-face"><i></i><i></i><b></b></span></div>

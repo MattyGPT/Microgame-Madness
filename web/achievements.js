@@ -39,6 +39,7 @@ const Achievements = (() => {
   add("typing_5", "Finding Your Rhythm", "silver", "Key Rush", "Complete 5 rounds in one Key Rush game.", "typingBest", 5);
   add("typing_10", "Keyboard Lightning", "gold", "Key Rush", "Complete 10 rounds in one Key Rush game.", "typingBest", 10);
   add("typing_20", "Speed of Type", "gold", "Key Rush", "Complete 20 rounds in one Key Rush game.", "typingBest", 20);
+  add("dodge_early_death", "At Least You Tried", "bronze", "Turtle Dodge", "Die in less than 5 seconds in Turtle Dodge.", "dodgeEarlyDeath");
   add("dodge_15", "Just Keep Moving", "bronze", "Turtle Dodge", "Survive 15 seconds in Turtle Dodge.", "dodgeBest", 15);
   add("dodge_30", "Shell Shockproof", "silver", "Turtle Dodge", "Survive 30 seconds in Turtle Dodge.", "dodgeBest", 30);
   add("dodge_60", "Untouchable Turtle", "gold", "Turtle Dodge", "Survive 60 seconds in Turtle Dodge.", "dodgeBest", 60);
@@ -143,6 +144,16 @@ const Achievements = (() => {
   add("dodge_merciless_300", "Beyond the Last Mercy", "empyrorite", "Turtle Dodge", "Survive 300 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 300);
   add("boss_clean_streak_20", "Sovereign of the Arena", "empyrorite", "Boss Crush", "Win 20 consecutive Boss Crush fights on Cruel or harder without damage. Mean fights are ignored. Damage, losses, and abandoned qualifying fights reset the streak.", "bossSovereignStreak", 20);
   add("determination", "Determination", "crystal", "Arcade", "Lose 50 minigame rounds in total.", "totalLosses", 50);
+  add("name_pixel", "Pixel Perfect", "gold", "Arcade", "Enter PIXEL as your arcade name.", "name_pixel");
+  add("name_1up", "Extra Life Energy", "gold", "Arcade", "Enter 1UP as your arcade name.", "name_1up");
+  add("name_high_score", "Name on the Leaderboard", "crystal", "Arcade", "Enter HIGH SCORE as your arcade name.", "name_high_score");
+  add("hangman_hard_perfect_5", "Five-Star Vocabulary", "crystal", "Hangman", "Win 5 hard Hangman games without a wrong guess.", "hardPerfectWins", 5);
+  add("hangman_last_chance_5", "Clutch Wordsmith", "crystal", "Hangman", "Win 5 Hangman games with only one wrong guess remaining.", "lastChanceWins", 5);
+  add("typing_15", "Turbo Typist", "gold", "Key Rush", "Complete 15 rounds in one Key Rush game.", "typingBest", 15);
+  add("dodge_90", "Shell Endurance", "gold", "Turtle Dodge", "Survive 90 seconds in one Turtle Dodge game.", "dodgeBest", 90);
+  add("boss_50", "Arena All-Star", "rainbow", "Boss Crush", "Win 50 Boss Crush games.", "bossWins", 50);
+  add("pumpkin_50", "Endless Harvest", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 50 times in any mode.", "pumpkinWins", 50);
+  add("wrath_win_10", "Royal Regular", "crystal", "The King's Wrath", "Win 10 practice fights, in any modes.", "wrathWins", 10);
   const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
@@ -197,7 +208,8 @@ const Achievements = (() => {
       return this.update(stats => {
         if (name === "dingdong") stats.dingdong = 1;
         if (name === "cube") stats.cubePets++;
-        if (["cubie", "boo", "starlight", "rocknroy"].includes(name)) stats[`name_${name}`] = 1;
+        if (["cubie", "boo", "starlight", "rocknroy", "pixel", "1up"].includes(name)) stats[`name_${name}`] = 1;
+        if (name === "high score") stats.name_high_score = 1;
         if (name === "gravitron") stats.name_gravitron = 1;
       });
     }
@@ -246,6 +258,8 @@ const Achievements = (() => {
         }
         if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
+          if (s.over === true && s.won === false && Number.isFinite(s.elapsed)
+              && s.elapsed >= 0 && s.elapsed < 5) stats.dodgeEarlyDeath = 1;
           stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));
           stats.dodgeBest = Math.max(stats.dodgeBest, count(s.elapsed));
           if (s.difficulty === "merciless") stats.mercilessBest = Math.max(stats.mercilessBest, count(s.elapsed));

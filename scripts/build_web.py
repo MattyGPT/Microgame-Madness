@@ -21,6 +21,19 @@ def leaderboard_config():
     """Only browser-safe project configuration may enter the public build."""
     url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
     key = os.environ.get("SUPABASE_PUBLISHABLE_KEY", "").strip()
+    # Keep local builds and Pages on the same backend without requiring shell
+    # variables on every machine. A complete environment pair can override it.
+    if not url and not key:
+        source = ROOT / "leaderboard-config.json"
+        if source.exists():
+            try:
+                config = json.loads(source.read_text())
+            except (ValueError, OSError) as error:
+                raise ValueError("Could not read leaderboard-config.json as JSON.") from error
+            if (not isinstance(config, dict) or set(config) != {"url", "key"}
+                    or not all(isinstance(value, str) for value in config.values())):
+                raise ValueError("leaderboard-config.json must contain only string fields url and key.")
+            url, key = config["url"].strip().rstrip("/"), config["key"].strip()
     if not url and not key:
         return {"url": "", "key": ""}
     parsed = urlsplit(url)
@@ -41,6 +54,9 @@ def leaderboard_config():
 
 def build():
     config = leaderboard_config()  # Validate before replacing the last good build.
+    if not config["url"]:
+        print("Global leaderboards are disconnected: configure leaderboard-config.json "
+              "with a Supabase project URL and publishable key. Local scores still work.")
     OUTPUT.mkdir(exist_ok=True)
     # Only this generated directory is replaced; user score/runtime files stay local.
     for child in OUTPUT.iterdir():
@@ -49,7 +65,7 @@ def build():
         else:
             child.unlink()
     html = (ROOT / "web" / "index.html").read_text()
-    for name in ("style.css", "app.js", "achievements.js", "music.js", "effects.js", "leaderboards.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "achievements.js", "customs.js", "music.js", "effects.js", "leaderboards.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')

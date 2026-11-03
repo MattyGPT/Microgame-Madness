@@ -998,6 +998,7 @@ const ArcadeMusic = (() => {
       if (!playing) {
         // Include any fading old theme, so mute/pause never leaves a second loop.
         for (const voice of this.voices) this.retire(voice, .02);
+        this.onPlaybackChange?.();
         return;
       }
       if (this.current) return;
@@ -1032,6 +1033,7 @@ const ArcadeMusic = (() => {
       this.voices.add(voice);
       this.current = voice;
       source.start(this.context.currentTime, this.offset);
+      this.onPlaybackChange?.();
     }
   }
   return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, jukeboxTracks };

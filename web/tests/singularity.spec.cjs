@@ -304,7 +304,7 @@ test('Echo Protocol safely demonstrates all four positions on the box before its
       return { hp: snapshot.lives, damage: snapshot.damage_taken,
         preview: testRuntime.runPython('session.game.echo_preview'),
         safePositions: snapshot.commands.filter(c => c.outline === '#8affba').length,
-        liveHazards: snapshot.commands.filter(c => c.kind === 'oval' && c.fill === '#ff527e').length };
+        liveHazards: snapshot.commands.filter(c => c.kind === 'oval' && c.fill === '#f080db' && c.outline === '#ffe4ef').length };
     });
     expect(live).toEqual({ hp: 9, damage: 1, preview: false, safePositions: 0, liveHazards: 8 });
     await expect(page.locator('#game-instruction')).toContainText('YOUR TURN');
