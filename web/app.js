@@ -2,6 +2,15 @@
 
 const $ = (id) => document.getElementById(id);
 const modes = {
+  jukebox: {
+    title: "Arcade Jukebox", category: "08 / MUSIC ROOM", art: "♫",
+    heading: "Pick your soundtrack.",
+    copy: "Browse the arcade songs, game themes, and rock tracks. Your selected song loops until you choose another.",
+    accent: "#f5a5dc", controls: "Choose a song · Pause or resume below · Esc stops playback",
+    choiceLabel: "Choose a song", localOnly: true, temporary: true,
+    difficulties: Object.fromEntries(ArcadeMusic.jukeboxTracks.map(track =>
+      [track.id, [track.title, `${track.category} · ${track.bpm} BPM`]])),
+  },
   hangman: {
     title: "Hangman",
     category: "01 / WORDPLAY",
@@ -126,7 +135,7 @@ const modes = {
     localOnly: true,
     difficulties: {
       gravitron: ["Enter containment", "Harder than the King. Two arrows jump to a corner. The Core cannot be damaged until every attack ends."],
-      practice: ["Practice attacks (temporary)", "Choose any of the 15 attacks and repeat it while tuning the fight."],
+      practice: ["Practice attacks (temporary)", "Repeat any of the 15 attacks or watch the final cutscene."],
     },
   },
   core_practice: {
@@ -134,18 +143,104 @@ const modes = {
     category: "TEMPORARY / ATTACK PRACTICE",
     art: "◎",
     heading: "Choose a protocol. Perfect your escape.",
-    copy: "Repeat any of the Core’s 15 attacks with 10 HP and a three-second countdown before each repeat. Galactic healing packs appear every three repeats. Practice does not award achievements or save records.",
+    copy: "Repeat any of the Core’s 15 attacks with 10 HP and a three-second countdown before each repeat. Galactic healing packs appear every three repeats. Or watch the final cutscene immediately. Practice does not award achievements or save records.",
     accent: "#65f5ff",
     controls: "Hold arrows to teleport · Release to center · D pauses · Esc picks another attack",
-    choiceLabel: "Choose one of the 15 attacks",
+    choiceLabel: "Choose an attack or watch the finale",
     localOnly: true,
     temporary: true,
     // Loaded from the shared Python attacks so edits also update this picker.
     difficulties: {},
   },
 };
+// Each sleeve has its own palette; related songs share a visual motif.
+const songSleeves = {
+  arcade: ["#c6f783", "#5cb8a5", "pixels"],
+  megalo_remix: ["#72dfff", "#5267ed", "heart"],
+  freedom_remix: ["#ffe77e", "#ec73d8", "star"],
+  gaster_remix: ["#e0e7ed", "#7f8eac", "signal"],
+  lantern_leap: ["#ffcf75", "#c8743b", "lantern"],
+  copper_comet: ["#ffb58a", "#b86846", "comet"],
+  sleepy_satellite: ["#b9caff", "#747bbb", "moon"],
+  comet: ["#9eecff", "#9178f2", "comet"],
+  clockwork: ["#f6cf85", "#ae8c56", "clock"],
+  moonlit: ["#c4c9ff", "#6c83c7", "moon"],
+  soda: ["#a7ffb3", "#ed81bc", "bubbles"],
+  ghost: ["#e0d6ff", "#9da9d9", "ghost"],
+  hero: ["#fbd883", "#6ca7d8", "shield"],
+  crystal: ["#adf4ff", "#a38eea", "crystal"],
+  midnight: ["#e3a1ff", "#7162d8", "bolt"],
+  home: ["#ffcba6", "#b29779", "home"],
+  arcade_pixel: ["#ffc0e5", "#88b8fb", "pixels"],
+  arcade_moonlit: ["#a3cfff", "#8b7fc9", "moon"],
+  arcade_turbo: ["#ffdb7f", "#ed875c", "coin"],
+  arcade_bubblebyte: ["#8df1ed", "#559cc1", "waves"],
+  arcade_horizon: ["#ffbf8f", "#ac83e3", "sunrise"],
+  dodge_easy: ["#b5eca0", "#69bca1", "shell"],
+  dodge_normal: ["#a5ddff", "#718dd1", "rain"],
+  dodge_hard: ["#ffdc76", "#779ca0", "waves"],
+  dodge_merciless: ["#ff9aab", "#9271c1", "waves"],
+  hangman: ["#d0ef99", "#97ad6b", "letters"],
+  keyrush: ["#d3b9ff", "#7da5e7", "keys"],
+  pumpkin: ["#ffc16e", "#aa76d6", "pumpkin"],
+  singularity: ["#8bf3ff", "#ac8bfa", "orbit"],
+  boss_mean: ["#ff9a98", "#b66774", "circuit"],
+  boss_cruel: ["#d5dfed", "#8a9daa", "shield"],
+  boss_nightmare: ["#dcadff", "#bb668f", "eye"],
+  boss_impossible: ["#ffcc7a", "#b66173", "crown"],
+  rock_afterburn: ["#ffb384", "#df675b", "flame"],
+  rock_neon: ["#ff9ce6", "#67ced9", "bolt"],
+  rock_static: ["#dfef9e", "#9e9a79", "signal"],
+  rock_midnight: ["#b8b8ff", "#698ab6", "circuit"],
+  rock_victory: ["#ffdf7c", "#c39a4c", "crown"],
+};
+const sleevePaths = {
+  pixels: "M12 12h12v12H12z M40 12h12v12H40z M26 26h12v12H26z M12 40h12v12H12z M40 40h12v12H40z",
+  heart: "M32 51 10 29V17h9l13 10 13-10h9v12Z",
+  star: "m32 7 7 17 18 2-14 12 4 18-15-10-15 10 4-18L7 26l18-2Z",
+  signal: "M7 20h13l5-10v44l10-36v31l7-16h15 M8 10h7 M48 52h8",
+  lantern: "M22 19v-5a10 10 0 0 1 20 0v5 M16 20h32l-4 31H20Z M25 28h14v15H25Z M16 56h32",
+  comet: "m11 37 27-26 M23 41l30-30 M29 52l26-26 M23 43a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z",
+  clock: "M55 32a23 23 0 1 1-46 0 23 23 0 0 1 46 0Z M32 15v18l12 7 M32 3v6 M32 55v6 M3 32h6 M55 32h6",
+  moon: "M43 9a23 23 0 1 0 12 35A25 25 0 0 1 43 9Z M52 12v10 M47 17h10",
+  bubbles: "M30 39a12 12 0 1 1-24 0 12 12 0 0 1 24 0Z M53 19a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z M53 48a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z",
+  ghost: "M14 53V28a18 18 0 0 1 36 0v25l-9-6-9 6-9-6Z M25 26v7 M39 26v7",
+  shield: "M12 11h40v23Q49 48 32 57 15 48 12 34Z M32 19v26 M22 29h20",
+  crystal: "m20 9 24 0 12 18-24 29L8 27Z M8 27h48 M20 9l-1 18 13 29 13-29-1-18 M19 27l13-18 13 18",
+  bolt: "M35 5 12 36h18l-3 23 25-34H35Z",
+  home: "M8 30 32 9l24 21 M15 26v28h34V26 M27 54V38h10v16",
+  coin: "M54 32a22 22 0 1 1-44 0 22 22 0 0 1 44 0Z M45 32a13 13 0 1 1-26 0 13 13 0 0 1 26 0Z M32 25v14",
+  waves: "M6 20q9-12 18 0t18 0 18 0 M6 33q9-12 18 0t18 0 18 0 M6 46q9-12 18 0t18 0 18 0",
+  sunrise: "M13 39a19 19 0 0 1 38 0 M6 39h52 M12 47h40 M21 55h22 M32 4v7 M8 15l6 6 M56 15l-6 6",
+  shell: "M49 35a17 20 0 1 1-34 0 17 20 0 0 1 34 0Z M25 27h14l5 13-12 9-12-9Z M25 27l-5-8 M39 27l5-8 M32 49v6 M26 15V8h12v7 M15 29l-8-5 M49 29l8-5",
+  rain: "M12 12h10v10H12Z M39 9h12v12H39Z M29 32h10v10H29Z M13 32v12 M49 32v19 M28 51v8",
+  letters: "M9 45 21 14l12 31 M14 33h14 M40 16h14 M47 16v29 M40 45h14",
+  keys: "M8 14h48v36H8Z M16 23h5 M29 23h5 M42 23h5 M16 32h5 M29 32h5 M42 32h5 M23 41h18",
+  pumpkin: "M32 17q-22-12-25 13t25 23q22 2 25-23T32 17Z M32 17q-5-11 5-13 M17 28l7 7H14Z M47 28l3 7H40Z M17 42l8 6 7-4 7 4 8-6",
+  orbit: "M48 32a16 16 0 1 1-32 0 16 16 0 0 1 32 0Z M14 23C-12 37 9 54 36 43S72 11 46 22 M6 14h4 M8 12v4",
+  circuit: "M7 14h17l16 16h17 M7 49h17l16-16 M24 14v35 M49 9v12 M49 43v12 M6 29h9 M6 35h9",
+  eye: "M5 32Q32 1 59 32 32 63 5 32Z M41 32a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z M32 24v16",
+  crown: "m8 18 14 13 10-21 10 21 14-13-6 29H14Z M15 55h34",
+  flame: "M32 5c6 20 19 18 19 34a19 19 0 0 1-38 0c0-10 6-15 9-21l3 14c7-6 9-16 7-27Z M32 35c-12 11-8 20 0 20s12-9 0-20Z",
+};
+function styleSongCard(button, id) {
+  const [color, glow, motif] = songSleeves[id];
+  button.classList.add("song-card");
+  button.style.setProperty("--song-color", color);
+  button.style.setProperty("--song-glow", glow);
+  button.dataset.motif = motif;
+  const art = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  art.setAttribute("viewBox", "0 0 64 64");
+  art.setAttribute("class", "song-art");
+  art.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(art.namespaceURI, "path");
+  path.setAttribute("d", sleevePaths[motif]);
+  art.append(path);
+  button.prepend(art);
+}
 let selected = "hangman";
 let selectedDifficulty = null;
+let jukeboxPaused = false;
 let previousBossHealth = null;
 let damageFlashAnimation = null;
 let healingFlashAnimation = null;
@@ -173,13 +268,16 @@ let roundSaved = false;
 let currentPlayer = "Player";
 const keys = new Set();
 const storageKey = "microgame-madness.v1";
-let saved = { player: "Player", scores: {}, achievements: {}, unlocks: { singularity: false } };
+let saved = { player: "Player", scores: {}, achievements: {}, unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false };
 let storageAvailable = true;
 try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
     saved.unlocks.singularity = value.unlocks?.singularity === true;
+    saved.minigamesCompleted = Number.isSafeInteger(value.minigamesCompleted) && value.minigamesCompleted >= 0
+      ? Math.min(value.minigamesCompleted, 20) : 0;
+    saved.cubieHintShown = value.cubieHintShown === true;
     if (typeof value.player === "string")
       saved.player = value.player.slice(0, 24);
     if (
@@ -206,13 +304,38 @@ function persist() {
     $("storage-note").textContent =
       "Storage is unavailable. Scores and achievements last for this visit only.";
 }
+let cubieHintStarted = null;
+function countCompletedMinigame() {
+  saved.minigamesCompleted = Math.min(20, saved.minigamesCompleted + 1);
+  if (saved.minigamesCompleted === 20 && !saved.cubieHintShown) {
+    saved.cubieHintShown = true;
+    clearKeys();
+    cubieHintStarted = performance.now();
+    $("cubie-hint").showModal();
+    syncMusic();
+  }
+  persist();
+}
+$("cubie-hint").addEventListener("cancel", event => event.preventDefault());
+$("cubie-hint-okay").onclick = () => {
+  if (cubieHintStarted === null) return;
+  gameTimeOffset += performance.now() - cubieHintStarted;
+  cubieHintStarted = null;
+  lastFrame = performance.now();
+  clearKeys();
+  $("cubie-hint").close();
+  syncMusic();
+  if (selected === "keyboard" && matchMedia("(pointer: coarse)").matches)
+    $("typing-input").focus();
+  else $("arena").focus({ preventScroll: true });
+};
 function unlockSingularity(navigate = true) {
   saved.unlocks.singularity = true;
   saved.player = $("player").value.trim() || "Player";
   persist();
   document.querySelector('[data-game="singularity"]').hidden = false;
-  $("game-count").textContent = "07";
-  $("game-total").textContent = "7 GAMES / ENDLESS REMATCHES";
+  $("game-count").textContent = "08";
+  $("game-total").textContent = "7 GAMES + JUKEBOX / ENDLESS REMATCHES";
   updateAchievements(achievementTracker.secret("gravitron"));
   if (navigate) {
     selectGame("singularity");
@@ -450,7 +573,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = "Temporary practice — records are not saved.";
+    row.textContent = selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -482,6 +605,7 @@ function saveRound() {
   if (roundSaved || !snapshot) return;
   roundSaved = true;
   if (modes[selected].temporary) return;
+  if (snapshot.over) countCompletedMinigame();
   const list = rankings();
   const previous = list.find((entry) => entry.player === currentPlayer);
   if (previous) previous.score = Math.max(previous.score, snapshot.score);
@@ -592,7 +716,7 @@ function clearKeys() {
 function setLocked(value) {
   $("player").disabled = value;
   document.querySelectorAll("[data-difficulty]").forEach((button) => {
-    button.disabled = value || !ready;
+    button.disabled = value || (!ready && selected !== "jukebox");
   });
 }
 function fitArcade() {
@@ -624,6 +748,8 @@ function selectGame(mode) {
   clearKeys();
   selected = mode;
   selectedDifficulty = null;
+  jukeboxPaused = false;
+  $("jukebox-controls").hidden = mode !== "jukebox";
   $("arena").classList.remove("arcade");
   $("player-health").hidden = true;
   const config = modes[mode];
@@ -652,6 +778,7 @@ function selectGame(mode) {
       const detail = document.createElement("span");
       detail.textContent = description;
       button.append(title, detail);
+      if (mode === "jukebox") styleSongCard(button, value);
       button.onclick = () => startGame(value);
       return button;
     }),
@@ -686,6 +813,13 @@ function selectGame(mode) {
   syncMusic();
 }
 function startGame(difficulty) {
+  if (selected === "jukebox" && Object.hasOwn(modes.jukebox.difficulties, difficulty)) {
+    selectedDifficulty = difficulty;
+    jukeboxPaused = false;
+    initializeAudio();
+    syncMusic();
+    return;
+  }
   if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
     return;
   if (selected === "singularity" && difficulty === "practice") {
@@ -778,9 +912,9 @@ function updateDamageFeedback(s) {
 function render() {
   const s = snapshot;
   updateDamageFeedback(s);
-  if (!modes[selected].temporary) updateAchievements(achievementTracker.observe(s));
+  if (!s.dying && !modes[selected].temporary) updateAchievements(achievementTracker.observe(s));
   const hasHealth = ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected);
-  $("player-health").hidden = !hasHealth;
+  $("player-health").hidden = !hasHealth || s.arena_shattered;
   if (hasHealth) {
     const health = `${s.lives} / ${s.max_lives}`;
     if ($("player-health-value").textContent !== health)
@@ -831,7 +965,11 @@ function render() {
     $("game-instruction").textContent = s.label || modes[selected].controls;
     for (const event of s.sounds) playSound(event);
   }
-  if (s.over) {
+  if (s.dying) {
+    clearKeys();
+    $("pause").hidden = true;
+    $("overlay").hidden = true;
+  } else if (s.over) {
     active = false;
     clearKeys();
     setLocked(false);
@@ -845,11 +983,17 @@ function render() {
       title = "Time’s up!";
       copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
     }
-    if (selected === "core_practice")
-      copy = `${s.death_message} Choose another attack or try this one again.`;
+    if (selected === "core_practice") {
+      if (selectedDifficulty === "final_cutscene") {
+        title = "Singularity erased.";
+        copy = "Cutscene complete. Watch again or choose a practice attack. No records or achievements awarded.";
+      } else {
+        copy = `${s.death_message} Choose another attack or try this one again.`;
+      }
+    }
     if (selected === "singularity" && s.won) {
       title = "Singularity erased.";
-      copy = `All 15 protocols survived. ${s.lives} / 10 HP remaining. The annihilation laser finished the Core.`;
+      copy = `Score: ${s.score}. All 15 protocols survived. ${s.lives} / 10 HP remaining. The annihilation laser finished the Core.`;
     }
     showOverlay(
       title,
@@ -928,7 +1072,7 @@ function draw(s) {
       ? "#ff4565"
       : "#45534b";
   ctx.lineWidth = 2;
-  ctx.strokeRect(left, -top, right - left, top - bottom);
+  if (!s.arena_shattered) ctx.strokeRect(left, -top, right - left, top - bottom);
   if (s.hp !== null && !["singularity", "core_practice"].includes(selected)) {
     ctx.fillStyle = "#344039";
     ctx.fillRect(-110, -264, 220, 6);
@@ -952,6 +1096,7 @@ function type(key) {
   render();
 }
 function pause() {
+  if ($("cubie-hint").open) return;
   if (!active || !snapshot?.can_pause) return;
   clearKeys();
   snapshot = send("pause");
@@ -988,7 +1133,7 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
-  if (active && !gasterActive && selected !== "hangman") {
+  if (active && !gasterActive && !$("cubie-hint").open && selected !== "hangman") {
     try {
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
@@ -998,6 +1143,12 @@ function frame(now) {
     } catch (error) {
       fail(error);
     }
+  }
+  const noteIcon = document.querySelector('[data-game="jukebox"] .card-art');
+  if (noteIcon) {
+    const pulse = soundOn && !document.hidden && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? musicPlayer?.melodyPulse() || 0 : 0;
+    noteIcon.style.transform = `scale(${1 + pulse * .22})`;
   }
   lastFrame = now;
   requestAnimationFrame(frame);
@@ -1088,12 +1239,16 @@ const arrowMap = {
   ArrowRight: "Right",
 };
 window.addEventListener("keydown", (event) => {
-  if (gasterActive) return;
+  if (gasterActive || $("cubie-hint").open) return;
   if (event.target.closest("#cube, .profile-tabs, #achievements-panel")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape") {
+    if (selected === "jukebox") {
+      $("jukebox-stop").click();
+      return;
+    }
     if (active || snapshot) {
       event.preventDefault();
       exitGame();
@@ -1179,6 +1334,7 @@ let soundOn = pendingGaster?.soundOn !== false;
 let audioContext;
 let audioMaster;
 let musicPlayer;
+let sequencePlayer;
 let pendingAchievementDing = false;
 let pendingRockSong = null;
 const soundEffects = new Set();
@@ -1199,21 +1355,48 @@ $("sound").onclick = () => {
   initializeAudio();
 };
 function syncMusic() {
+  if (selected === "jukebox") renderJukebox();
+  if (sequencePlayer) {
+    const kind = snapshot?.dying ? "death" : snapshot?.laser_firing ? "finale" : null;
+    sequencePlayer.sync(active ? kind : null, kind === "death" ? snapshot.death_age : snapshot?.cinematic_age,
+      soundOn && !snapshot?.paused && !document.hidden && !gasterActive && !loadFailed);
+  }
   if (!musicPlayer) return;
   const state = {
-    theme: active && ["singularity", "core_practice"].includes(selected) ? "singularity"
+    theme: selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+      : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
-    playing: soundOn && !gasterActive && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
+    playing: soundOn && !gasterActive && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
+      && (selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
   if (pendingRockSong) {
     musicPlayer.playOnce(pendingRockSong, state);
     pendingRockSong = null;
   } else musicPlayer.setState(state);
 }
+function renderJukebox() {
+  const title = modes.jukebox.difficulties[selectedDifficulty]?.[0];
+  $("jukebox-status").textContent = title
+    ? `${!soundOn ? "Muted" : jukeboxPaused ? "Paused" : "Now playing"}: ${title}` : "Choose a song to start listening.";
+  $("jukebox-pause").textContent = jukeboxPaused ? "Resume" : "Pause";
+  $("jukebox-pause").disabled = $("jukebox-stop").disabled = !title;
+  document.querySelectorAll("[data-difficulty]").forEach(button =>
+    button.setAttribute("aria-pressed", String(button.dataset.difficulty === selectedDifficulty)));
+}
+$("jukebox-pause").onclick = () => {
+  jukeboxPaused = !jukeboxPaused;
+  initializeAudio();
+  syncMusic();
+};
+$("jukebox-stop").onclick = () => {
+  selectedDifficulty = null;
+  jukeboxPaused = false;
+  syncMusic();
+};
 function initializeAudio() {
   if (!soundOn) return;
   try {
@@ -1223,6 +1406,7 @@ function initializeAudio() {
       audioMaster = audioContext.createGain();
       audioMaster.connect(audioContext.destination);
       musicPlayer = new ArcadeMusic.Player(audioContext, audioMaster);
+      sequencePlayer = new ArcadeEffects.SequencePlayer(audioContext, audioMaster);
     }
     audioContext.resume().then(() => {
       syncMusic();
@@ -1244,6 +1428,7 @@ document.addEventListener("keydown", event => {
 });
 function playSound(event) {
   if (!soundOn || !audioContext || gasterActive) return;
+  if (["turtle_death", "core_laser", "core_implode", "core_destroyed"].includes(event)) return;
   const oscillator = audioContext.createOscillator(),
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
@@ -1374,6 +1559,9 @@ async function initialize() {
     modes.core_practice.difficulties = Object.fromEntries(practice.attacks.map(attack => [
       attack.id, [`${String(attack.number).padStart(2, "0")} · ${attack.name}`, attack.hint],
     ]));
+    modes.core_practice.difficulties.final_cutscene = [
+      "Watch final cutscene", "Play the annihilation laser finale immediately. D pauses; Escape returns to practice.",
+    ];
     ready = true;
     $("runtime-status").textContent = "● All games ready";
     setLocked(false);

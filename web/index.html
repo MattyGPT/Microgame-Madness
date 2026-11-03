@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#101315" />
     <meta
       name="description"
-      content="Six little games. One more try. Play Microgame Madness in your browser."
+      content="Little games and an arcade jukebox. One more try. Play Microgame Madness in your browser."
     />
     <title>Microgame Madness — Play a little. Lose track of time.</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -17,6 +17,7 @@
     ></script>
     <script src="./achievements.js" defer></script>
     <script src="./music.js" defer></script>
+    <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
@@ -53,7 +54,7 @@
         </div>
       </section>
       <div class="section-heading">
-        <h2>Choose your microgame <span id="game-count">06</span></h2>
+        <h2>Choose your microgame <span id="game-count">07</span></h2>
         <p>No downloads. Just play.</p>
       </div>
       <nav class="game-grid" aria-label="Games">
@@ -65,7 +66,7 @@
         >
           <span class="card-top">01 <span>WORDPLAY</span></span
           ><span class="card-art word-art" aria-hidden="true"
-            >A<span>?</span>Z</span
+            ><span class="word-letter">A</span><span class="word-question">?</span><span class="word-letter">Z</span></span
           ><span class="card-title">Hangman <span>↗</span></span
           ><span class="card-description">A word worth guessing.</span>
         </button>
@@ -146,6 +147,12 @@
           <span class="card-title">Singularity Core <span>↗</span></span>
           <span class="card-description">15 protocols. One final shot.</span>
         </button>
+        <button class="game-card" data-game="jukebox" aria-pressed="false" style="--accent: #f5a5dc">
+          <span class="card-top">08 <span>MUSIC ROOM</span></span>
+          <span class="card-art" aria-hidden="true">♫</span>
+          <span class="card-title">Arcade Jukebox <span>↗</span></span>
+          <span class="card-description">Your songs. On repeat.</span>
+        </button>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
         <div class="game-main">
@@ -172,6 +179,11 @@
               <p id="welcome-copy">
                 Find the hidden word before your guesses run out.
               </p>
+              <div id="jukebox-controls" hidden>
+                <p id="jukebox-status" role="status" aria-live="polite">Choose a song to start listening.</p>
+                <button id="jukebox-pause" class="quiet-button" disabled>Pause</button>
+                <button id="jukebox-stop" class="quiet-button" disabled>Stop</button>
+              </div>
               <h4 id="difficulty-title">Choose a difficulty to play</h4>
               <div
                 id="difficulty-choices"
@@ -323,8 +335,15 @@
     <footer class="site-footer">
       <span>MICROGAME MADNESS</span>
       <p>Made for the joy of one more try.</p>
-      <span id="game-total">6 GAMES / ENDLESS REMATCHES</span>
+      <span id="game-total">6 GAMES + JUKEBOX / ENDLESS REMATCHES</span>
     </footer>
+    <dialog id="cubie-hint" aria-labelledby="cubie-hint-title" aria-describedby="cubie-hint-copy">
+      <div class="cubie-hint-art" aria-hidden="true"><span class="pixel-face"><i></i><i></i><b></b></span></div>
+      <p class="eyebrow">A SECRET FROM CUBIE</p>
+      <h2 id="cubie-hint-title">Psst… you've finished 20 minigames!</h2>
+      <p id="cubie-hint-copy">I heard that entering <strong>GRAVITRON</strong> somewhere on this website unlocks a secret! But… I don't know where you're supposed to put it. Maybe you can figure it out?</p>
+      <button id="cubie-hint-okay" type="button" autofocus>Okay</button>
+    </dialog>
     <div id="damage-flash" aria-hidden="true"></div>
     <div id="healing-flash" aria-hidden="true"></div>
     <div id="achievement-celebrations" aria-hidden="true"></div>

@@ -16,10 +16,14 @@ NODES = tuple((x * TELEPORT_DISTANCE, BOX_CENTER[1] + y * TELEPORT_DISTANCE)
 INTRO_DURATION = 2.6
 ATTACK_BREAK = .65
 HIT_IMMUNITY = .42
-LASER_DURATION = 1.35
+LASER_CONTACT = .25
+LASER_WHITEN = .65
+LASER_IMPLODE = 2.4
+LASER_SHATTER = 3.7
+LASER_DURATION = 5.4
 RAILGUN_WARNING = .72  # An extra 0.4 seconds to read the first protocol's lanes.
 HEAL_EVERY_ATTACKS = 3
-HEAL_LASTS = 9.0
+HEAL_LASTS = 5.0
 HEAL_SIZE = 24
 POLARITY_SPEED = 1.1 * 1.1
 ECHO_STEPS = 4
@@ -41,13 +45,13 @@ ATTACKS = (
     Attack("COLLAPSING HORIZONS", 7, 1.28, "Jump across the contracting photon rings."),
     Attack("TARGET LOCK", 7, .44, "Missiles remember your position. Leave each target."),
     Attack("EVENT LATTICE", 7, .68, "The marked nodes will burn. Read the changing grid."),
-    Attack("BINARY STARS", 8, 1.02, "Two orbiting stars and repeated center detonations."),
+    Attack("BINARY STARS", 8, 1.02, "Two stars sweep the corners. Jump behind them; watch the center pulses."),
     Attack("GRAVITY GUILLOTINE", 7, .89, "Teleport through the sweeping walls."),
     Attack("PHOTON RAIN", 8, .19 / .9, "Dense falling photons. Keep switching lanes."),
     Attack("CROSSFIRE ENGINE", 7, .65, "Crossed beams erase rows and columns."),
     Attack("DARK MATTER MINES", 7, 1.08, "Three nodes are mined at a time. Find open ground."),
     Attack("POLARITY INVERSION", 7, .76 / POLARITY_SPEED, "Alternate between the center and the edges."),
-    Attack("ORBITAL SAWS", 8, 1.03, "Perimeter blades circle while the center pulses."),
+    Attack("ORBITAL SAWS", 8, 1.03, "Blades sweep edges and corners. Jump into a gap; the center pulses."),
     Attack("ECHO PROTOCOL", ECHO_PREVIEW_DURATION + ECHO_STEPS * ECHO_INTERVAL, ECHO_INTERVAL,
            f"Watch the safe preview on the box, then repeat its {ECHO_STEPS} positions."),
     Attack("LENS FRACTURE", 8, .82, "Three slanted lasers split the box."),
@@ -73,6 +77,7 @@ class Hazard:
     orbit_y: float = 0
     age: float = 0
     harmless: bool = False
+    orbit_power: float = 2
 
     @property
     def active(self):
@@ -81,9 +86,17 @@ class Hazard:
     @property
     def position(self):
         if self.kind == "orbit":
-            return (self.x + math.cos(self.angle) * self.orbit_x,
-                    self.y + math.sin(self.angle) * self.orbit_y)
+            return self.orbit_position(self.angle)
         return self.x, self.y
+
+    def orbit_position(self, angle):
+        cosine, sine = math.cos(angle), math.sin(angle)
+        # A superellipse keeps the continuous orbit but lets it follow the
+        # containment box into its corners. Power 2 is the original ellipse.
+        scale = ((abs(cosine) ** self.orbit_power + abs(sine) ** self.orbit_power)
+                 ** (1 / self.orbit_power)) if self.orbit_power != 2 else 1
+        return (self.x + cosine / scale * self.orbit_x,
+                self.y + sine / scale * self.orbit_y)
 
     def update(self, dt):
         previous = self.age
@@ -157,6 +170,16 @@ class SingularityCore:
         return self.stage == "exposed" and not self.shielded and self.alive and not self.won
 
     @property
+    def laser_phase(self):
+        if self.won:
+            return "complete"
+        if self.stage != "laser":
+            return None
+        return ("beam" if self.stage_age < LASER_WHITEN else
+                "whitening" if self.stage_age < LASER_IMPLODE else
+                "implosion" if self.stage_age < LASER_SHATTER else "shatter")
+
+    @property
     def echo_preview(self):
         return (self.stage == "attack" and self.attack_index == 12
                 and self.stage_age < ECHO_PREVIEW_DURATION - 1e-9)
@@ -184,7 +207,10 @@ class SingularityCore:
         if self.stage == "exposed":
             return "ALL 15 PROTOCOLS SURVIVED — release F, then press F to fire the annihilation laser!"
         if self.stage == "laser":
-            return "ANNIHILATION LASER — EVENT HORIZON COLLAPSING"
+            return {"beam": "ANNIHILATION LASER — CONTINUOUS FIRE",
+                    "whitening": "EVENT HORIZON OVERLOADING",
+                    "implosion": "GRAVITATIONAL IMPLOSION",
+                    "shatter": "CONTAINMENT SHATTERED"}[self.laser_phase]
         if self.stage == "break":
             return f"{self.attacks_completed} / 15 COMPLETE · NEXT: {ATTACKS[self.attack_index + 1].name}"
         attack = ATTACKS[self.attack_index]
@@ -273,7 +299,8 @@ class SingularityCore:
             if beat == 0:
                 for angle in (0, math.pi):
                     self.hazards.append(Hazard("orbit", cx, cy, 22, .4, 7.4,
-                                               angle=angle, spin=2.5, orbit_x=142, orbit_y=124))
+                                               angle=angle, spin=2.5, orbit_x=142, orbit_y=124,
+                                               orbit_power=8))
             self._node_blast(4, .4, .35, 45)
         elif i == 6:
             horizontal = beat % 2 == 0
@@ -305,7 +332,9 @@ class SingularityCore:
             if beat == 0:
                 for angle in (0, math.pi / 2, math.pi, math.pi * 1.5):
                     self.hazards.append(Hazard("orbit", cx, cy, 19, .4, 7.5,
-                                               angle=angle, spin=-2.8, orbit_x=128, orbit_y=128))
+                                               # The wider route needs more time between blades.
+                                               angle=angle, spin=-1.6, orbit_x=128, orbit_y=128,
+                                               orbit_power=8))
             self._node_blast(4, .35, .42, 42)
         elif i == 12:
             if beat < 2 * len(self.memory):
@@ -350,13 +379,14 @@ class SingularityCore:
         elif self.stage == "laser":
             self.hp = 0
             self.won = True
-            self.sound_events.append("core_destroyed")
+            self.stage = "victory"
 
     def fire_laser(self):
         if not self.laser_ready:
             return False
         self.stage = "laser"
         self.stage_age = 0
+        self.healing_pickups.clear()
         self.sound_events.append("core_laser")
         return True
 
@@ -364,8 +394,9 @@ class SingularityCore:
         if dt <= 1e-9 or not self.alive or self.won:
             return
         old = self.x, self.y
-        self.x = (int("Right" in keys) - int("Left" in keys)) * TELEPORT_DISTANCE
-        self.y = BOX_CENTER[1] + (int("Up" in keys) - int("Down" in keys)) * TELEPORT_DISTANCE
+        if self.stage != "laser":
+            self.x = (int("Right" in keys) - int("Left" in keys)) * TELEPORT_DISTANCE
+            self.y = BOX_CENTER[1] + (int("Up" in keys) - int("Down" in keys)) * TELEPORT_DISTANCE
         if old != (self.x, self.y):
             self.sound_events.append("core_teleport")
         fire = "f" in keys
@@ -379,7 +410,12 @@ class SingularityCore:
                 break
             self.elapsed += step
             self.invulnerable = max(0, self.invulnerable - step)
+            previous_age = self.stage_age
             self.stage_age += step
+            if self.stage == "laser":
+                for boundary, sound in ((LASER_IMPLODE, "core_implode"), (LASER_SHATTER, "core_destroyed")):
+                    if previous_age < boundary <= self.stage_age:
+                        self.sound_events.append(sound)
             duration = (ATTACKS[self.attack_index].duration if self.stage == "attack" else
                         INTRO_DURATION if self.stage == "intro" else
                         ATTACK_BREAK if self.stage == "break" else
@@ -389,7 +425,8 @@ class SingularityCore:
                 self._advance()
                 self.stage_age = extra
             if self.stage != "attack":
-                self.update_healing(step)
+                if self.stage != "laser":
+                    self.update_healing(step)
                 continue
             self.spawn_in -= step
             if self.spawn_in <= 1e-9:

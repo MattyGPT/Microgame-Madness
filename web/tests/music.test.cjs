@@ -2,11 +2,37 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const { compose, composeGaster, gasterDuration, tracks, arcadeTracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, Player } = require('../music.js');
+const { jukeboxTracks } = require('../music.js');
 
-test('the arcade playlist adds five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 15);
+test('jukebox selects every catalog song, loops, pauses, switches, and returns to game music', () => {
+  const ctx = context(), player = new Player(ctx);
+  player.buffer = () => ({ duration: 60 });
+  assert.equal(new Set(jukeboxTracks.map(track => track.id)).size, jukeboxTracks.length);
+  assert.ok(jukeboxTracks.some(track => track.id === 'singularity'));
+  for (const track of jukeboxTracks) {
+    const theme = `jukebox:${track.id}`;
+    player.setState({ theme, playing: true });
+    assert.equal(player.track, track.id);
+    assert.equal(player.current.source.loop, true);
+    ctx.advance(ctx.currentTime + 2);
+    player.setState({ theme, playing: false });
+    assert.equal(player.offset, 2);
+    ctx.advance(ctx.currentTime + 1);
+    assert.equal(player.voices.size, 0);
+    player.setState({ theme, playing: true });
+    assert.equal(player.current.offset, 2);
+  }
+  player.setState({ theme: 'pumpkin', playing: true });
+  ctx.advance(ctx.currentTime + 1);
+  assert.equal(player.track, 'pumpkin');
+  assert.equal(player.voices.size, 1);
+  assert.throws(() => player.setState({ theme: 'jukebox:missing', playing: true }), /Unknown music/);
+});
+
+test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
+  assert.equal(arcadeTracks.length, 21);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 15);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 21);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -107,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('fifteen distinct original arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 15);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 15);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 15);
+test('twenty-one distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 21);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 21);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 21);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
   const fingerprints = new Set();
   for (const track of [...tracks, { id: 'pumpkin', bpm: 156 }]) {
@@ -132,7 +158,7 @@ test('fifteen distinct original arcade songs and the boss score have safe levels
     assert.ok(Math.abs(samples.length / 22050 - bars * 4 * 60 / track.bpm) < 1 / 22050);
     fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(fingerprints.size, 16);
+  assert.equal(fingerprints.size, 22);
   assert.throws(() => compose('missing'), /Unknown music/);
 });
 
@@ -318,7 +344,23 @@ test('Singularity has a separate looping theme with pause and return to the arca
   const samples = compose('singularity');
   assert.ok(samples.every(Number.isFinite));
   assert.ok(samples.some(value => Math.abs(value) > .1));
-  assert.ok(samples.length / 22050 > 45, 'the cinematic cue develops over a full arrangement');
+  assert.ok(Math.abs(samples.length / 22050 - 48 * 4 * 60 / 78) < 1 / 22050,
+    'the extended cinematic arrangement lasts 48 bars');
+  const bar = 4 * 60 / 78;
+  const rms = (start, end) => {
+    let sum = 0;
+    const first = Math.round(start * 22050), last = Math.round(end * 22050);
+    for (let i = first; i < last; i++) sum += samples[i] ** 2;
+    return Math.sqrt(sum / (last - first));
+  };
+  assert.ok(rms(16 * bar, 20 * bar) > rms(0, 4 * bar) * 1.8, 'first drop has real dynamic impact');
+  assert.ok(rms(16 * bar, 20 * bar) > rms(12 * bar, 15 * bar) * 1.5,
+    'post-drop section stays distinctly louder than the buildup');
+  assert.ok(rms(36 * bar, 40 * bar) > rms(16 * bar, 20 * bar) * 1.05,
+    'the final drop intensifies beyond the first');
+  assert.ok(rms(36 * bar, 40 * bar) > rms(25 * bar, 27 * bar) * 2, 'final drop returns strongly after the interlude');
+  for (const drop of [16, 32])
+    assert.ok(rms(drop * bar - .2, drop * bar - .02) < .001, 'pre-drop silence includes reverb tails');
   let peak = 0, mean = 0, opening = 0, climax = 0;
   for (let i = 0; i < samples.length; i++) {
     const value = samples[i];
@@ -497,4 +539,26 @@ test('muting and interruptions preserve the selected arcade track without skippi
   assert.equal(player.track, returning);
   assert.deepEqual(player.queue, queue);
   assert.equal(player.voices.size, 1);
+});
+
+test('melody pulses follow synthesized notes, rests, pause and loop position', () => {
+  for (const track of ['arcade', 'singularity', rockTracks[0].id, bossTracks[0].id]) {
+    const notes = [];
+    compose(track, 1000, notes);
+    assert.ok(notes.length > 0, track);
+    assert.ok(notes.every(n => Number.isFinite(n.start) && n.duration > 0));
+  }
+  const player = new Player(context());
+  player.playing = true;
+  player.current = { track: 'test', offset: 0, started: 0, source: { loop: true, buffer: { duration: 2 } } };
+  player.melodyNotes.set('test', [{ start: .5, duration: .2 }]);
+  player.context.currentTime = .52;
+  const pulse = player.melodyPulse();
+  assert.ok(pulse > 0 && pulse <= 1);
+  player.context.currentTime = 1;
+  assert.equal(player.melodyPulse(), 0);
+  player.context.currentTime = 2.52;
+  assert.ok(Math.abs(player.melodyPulse() - pulse) < 1e-10);
+  player.playing = false;
+  assert.equal(player.melodyPulse(), 0);
 });

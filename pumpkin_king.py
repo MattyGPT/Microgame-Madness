@@ -3,6 +3,7 @@
 from collections import deque
 from dataclasses import dataclass
 import math
+import random
 
 from boss_crush import (BossCrush, BossDifficulty, Projectile, HealingPickup,
                         hits_player, SHOT_WIDTH, SHOT_HEIGHT)
@@ -27,6 +28,7 @@ EYE_FLASH_GAP = 0.2
 EYE_FLASH_PERIOD = EYE_FLASH_ON + EYE_FLASH_GAP
 COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
+CANDY_VARIANTS = ("bonbon", "peppermint", "lollipop", "candy_corn", "gummy_bear")
 RING_SEGMENTS, RING_THICKNESS = 160, 12
 RING_FALL_SPEED, RING_GAP = 145, 48
 # Reduce the previous scare rate by 25%, keeping five seconds of active scares.
@@ -47,6 +49,11 @@ class Stage:
 @dataclass
 class Finger(Projectile):
     age: float = 0
+
+
+@dataclass
+class CandyPickup(HealingPickup):
+    variant: str = "bonbon"
 
 
 @dataclass
@@ -89,6 +96,9 @@ class PumpkinKing(BossCrush):
         self.max_lives = self.lives = self.config.player_hp
         self.boss_x, self.boss_y = 0.0, 130.0
         self.heal_in = HEAL_EVERY
+        # Cosmetic choices must not change attack patterns or pickup positions.
+        self.candy_rng = random.Random()
+        self.candy_rng.setstate(self.rng.getstate())
         self.rings = []
         self.counter_time = self.counter_cooldown = 0.0
         self.counter_held = False
@@ -339,8 +349,9 @@ class PumpkinKing(BossCrush):
         self.heal_in -= step
         if self.heal_in <= 1e-9:
             self.heal_in += HEAL_EVERY
-            self.healing_pickups.append(HealingPickup(self.rng.uniform(-250, 250),
-                                                      self.rng.uniform(-200, 30), HEAL_LASTS))
+            self.healing_pickups.append(CandyPickup(self.rng.uniform(-250, 250),
+                                                    self.rng.uniform(-200, 30), HEAL_LASTS,
+                                                    self.candy_rng.choice(CANDY_VARIANTS)))
 
     def update(self, dt, keys):
         if dt <= 1e-9 or not self.alive or self.won:

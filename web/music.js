@@ -1,6 +1,6 @@
 "use strict";
 
-// Original scores. MIDI pitches, with 0 representing a rest.
+// Original scores and credited fan remixes. MIDI pitches, with 0 representing a rest.
 // Pulse lead + triangle bass + arpeggio + noise drums evoke a small chip synth.
 const ArcadeMusic = (() => {
   const semitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -43,6 +43,72 @@ const ArcadeMusic = (() => {
         [79, 0, 77, 74, 71, 74, 79, 0], [76, 74, 72, 0, 67, 71, 72, 0],
       ],
     },
+    megalo_remix: song("Megalovania — Neon Determination", 168, "Dm Dm C C Bdim Bdim Bb A Dm F C Gm Bb Gm A Dm", [
+      "D4 D4 D5 - A4 - - Ab4 - G4 - F4 F4 D4 F4 G4",
+      "A4 D5 C5 A4 G4 F4 E4 D4",
+      "C4 C4 D5 - A4 - - Ab4 - G4 - F4 F4 D4 F4 G4",
+      "E5 G5 E5 D5 C5 G4 E4 -",
+      "B3 B3 D5 - A4 - - Ab4 - G4 - F4 F4 D4 F4 G4",
+      "F5 D5 B4 F4 Ab4 B4 D5 -",
+      "Bb3 D4 F4 A4 D5 C5 A4 F4", "E5 C#5 A4 G4 E4 G4 A4 C#5",
+      "D5 A4 D5 F5 E5 D5 A4 -", "A5 F5 C5 A4 C5 E5 F5 -",
+      "G5 E5 C5 G4 C5 D5 E5 G5", "Bb5 A5 G5 D5 F5 D5 Bb4 -",
+      "F5 D5 Bb4 D5 F5 A5 Bb5 -", "G5 D5 Bb4 G4 A4 Bb4 D5 F5",
+      "E5 C#5 A4 C#5 E5 G5 A5 C#6", "D6 A5 F5 E5 D5 - D4 -",
+    ], { groove: "drive", pulse: "narrow", gate: .9,
+      credit: "Fan remix of MEGALOVANIA (UNDERTALE), composed by Toby Fox." }),
+    freedom_remix: song("Freedom Motif — Unbound Carousel", 144, "Em F# B G#m Em B C#m F# Em F# G#m B C#m Em F# B", [
+      "B4 - B4 A#4 B4 F#5 A#4 B4", "F#5 - F#5 G#5 F#5 E5 D#5 -",
+      "B4 C#5 - G#4 C#5 D#5 E5 D#5", "C#5 - B4 - D#5 F#5 G#5 -",
+      "B5 - B5 A#5 B5 F#6 A#5 B5", "D#6 B5 F#5 D#5 F#5 A#5 B5 -",
+      "G#5 E5 C#5 D#5 E5 G#5 B5 -", "A#5 F#5 C#5 A#4 C#5 E5 F#5 -",
+      "G5 E5 B4 E5 G5 A5 B5 G5", "F#5 A#5 C#6 - B5 A#5 G#5 F#5",
+      "B5 G#5 D#5 G#5 A#5 B5 D#6 -", "F#6 D#6 B5 A#5 F#5 D#5 B4 -",
+      "E5 G#5 B5 C#6 B5 G#5 E5 -", "G5 B5 E6 D#6 B5 G5 E5 -",
+      "C#6 A#5 F#5 E5 C#5 E5 A#5 C#6", "B5 F#5 D#5 C#5 B4 - B5 -",
+    ], { groove: "skip", swing: .12, pulse: "narrow", gate: 1.1,
+      credit: "Fan remix of the Freedom / THE WORLD REVOLVING motif (DELTARUNE), composed by Toby Fox." }),
+    gaster_remix: song("Gaster's Theme — Signal in the Static", 108, "Dm Dm Db Db Cm Cm B B Dm Bb Db A Cm Ab B Dm", [
+      "C#5 D5 A5 D5 C#6 D5 A5 D5", "C#5 D5 A5 - D5 A4 D5 -",
+      "C5 Db5 Ab5 Db5 C6 Db5 Ab5 Db5", "C5 Db5 Ab5 - Db5 Ab4 Db5 -",
+      "B4 C5 G5 C5 B5 C5 G5 C5", "B4 C5 G5 - C5 G4 C5 -",
+      "A#4 B4 F#5 B4 A#5 B4 F#5 B4", "A#4 B4 F#5 - B4 F#4 B4 -",
+      "D5 A5 F5 E5 C#5 D5 A5 -", "F5 D5 Bb4 D5 F5 A5 Bb5 -",
+      "Db5 Ab5 F5 Eb5 C5 Db5 Ab5 -", "E5 C#5 A4 C#5 E5 G5 A5 -",
+      "C5 G5 Eb5 D5 B4 C5 G5 -", "Eb5 C5 Ab4 C5 Eb5 G5 Ab5 -",
+      "B4 F#5 D#5 C#5 A#4 B4 F#5 -", "C#5 D5 A5 D5 F5 E5 D5 -",
+    ], { groove: "hush", lead: "triangle", tremolo: true, gate: 1.6,
+      credit: "Fan remix of Gaster's Theme (UNDERTALE), composed by Toby Fox." }),
+    sleepy_satellite: song("Sleepy Satellite", 60, "Cmaj7 Am Fmaj7 G Em Am Dm G Cmaj7 Em Fmaj7 C Dm F G C", [
+      "E5 - B4 C5 - G5 E5 -", "C5 - E5 B5 - A5 E5 -",
+      "A4 C5 - E5 G5 - F5 -", "D5 - B4 D5 A5 G5 - -",
+      "G5 - B5 F#5 E5 - B4 -", "E5 C5 - A4 B4 C5 E5 -",
+      "F5 - A5 E5 D5 - A4 -", "B4 D5 - G5 F5 D5 B4 -",
+      "G5 - E5 B4 C5 - E5 G5", "B5 - G5 F#5 E5 - D5 -",
+      "C6 A5 - G5 E5 - F5 -", "G5 E5 - D5 C5 - G4 -",
+      "A4 D5 F5 - E5 D5 A4 -", "C5 F5 A5 - G5 E5 C5 -",
+      "B4 D5 G5 - A5 F5 D5 B4", "E5 - B4 C5 - G4 C5 -",
+    ], { groove: "hush", lead: "triangle", gate: 1.6, bassOctave: 3 }),
+    lantern_leap: song("Lantern Leap", 132, "Eb Cm Ab Bb Eb Gm Ab Bb Fm Cm Ab Eb Fm Ab Bb Eb", [
+      "G5 - D5 Eb5 Bb5 G5 - F5", "Eb5 C6 G5 - Bb5 G5 Eb5 D5",
+      "C5 Eb5 Ab5 - G5 C6 Bb5 Ab5", "D5 F5 - Bb5 A5 Bb5 F5 D5",
+      "G5 Bb5 F5 G5 Eb6 - D6 Bb5", "D6 Bb5 G5 D5 F5 G5 Bb5 -",
+      "Eb6 C6 Ab5 G5 C6 - Eb5 Ab5", "F5 D5 Bb4 F5 Ab5 G5 F5 -",
+      "Ab5 C6 G5 Ab5 F6 Eb6 C6 -", "G5 Eb5 C5 G5 Bb5 C6 D6 Eb6",
+      "C6 Ab5 Eb5 C5 Eb5 G5 Ab5 -", "Bb5 G5 Eb5 - D5 Eb5 G5 Bb5",
+      "C6 Ab5 F5 Eb5 C5 F5 G5 Ab5", "Eb6 C6 Bb5 Ab5 G5 Eb5 C5 -",
+      "D5 F5 Bb5 D6 C6 Ab5 F5 D5", "Eb5 G5 D5 Eb5 Bb5 - Eb6 -",
+    ], { groove: "skip", swing: .2, lead: "triangle", gate: 1.15 }),
+    copper_comet: song("Copper Comet", 174, "F#m D A E F#m D Bm C# F#m A E B D Bm C# F#m", [
+      "F#5 C#6 G#5 A5 - E5 F#5 C#5", "D5 A5 E5 F#5 - C#5 D5 A4",
+      "E5 A5 B5 C#6 E6 C#6 B5 -", "G#5 E5 B4 E5 F#5 G#5 B5 D6",
+      "C#6 F#5 A5 G#5 F#5 - E5 C#5", "A5 F#5 D5 E5 F#5 A5 C#6 D6",
+      "B5 F#5 D5 C#5 B4 D5 E5 F#5", "G#5 E#5 C#5 E#5 G#5 B5 C#6 -",
+      "A5 C#6 F#6 E6 C#6 A5 G#5 F#5", "E6 C#6 B5 A5 E5 C#5 E5 -",
+      "B5 E6 G#6 F#6 E6 B5 G#5 -", "D#6 B5 F#5 D#5 F#5 A5 B5 -",
+      "A5 D6 F#6 E6 D6 A5 F#5 E5", "D6 B5 F#5 E5 D5 C#5 B4 -",
+      "E#5 G#5 C#6 B5 G#5 E#5 C#5 E#5", "F#5 C#6 G#5 A5 E5 - F#5 -",
+    ], { groove: "pursuit", pulse: "narrow", gate: .75, bassGate: .25 }),
     comet: song("Pocket Comet", 146, "Am F C G Am F Dm E Am Em F C Dm Am E Am", [
       "E5 - A5 B5 C6 B5 A5 E5", "F5 A5 C6 - A5 G5 F5 E5",
       "G5 - E5 G5 C6 B5 G5 E5", "D5 G5 B5 A5 G5 - D5 E5",
@@ -327,7 +393,7 @@ const ArcadeMusic = (() => {
   const loopThemes = ["pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
-    .map(([id, score]) => Object.freeze({ id, title: score.title, bpm: score.bpm })));
+    .map(([id, score]) => Object.freeze({ id, title: score.title, bpm: score.bpm, credit: score.credit || "Original composition" })));
   const grooves = {
     classic: { bass: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5], kicks: [0, 2], hats: 8 },
     drive: { bass: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5], kicks: [0, 1.5, 2, 2.75], hats: 16 },
@@ -374,7 +440,14 @@ const ArcadeMusic = (() => {
   function pickRockTrack(random = Math.random) {
     return rockTracks[Math.floor(random() * rockTracks.length)];
   }
-  function composeRock(track, sampleRate) {
+  const jukeboxTracks = Object.freeze([
+    ...Object.entries(scores).map(([id, score]) => ({ id, title: score.title, bpm: score.bpm,
+      category: loopThemes.includes(id) ? "Game theme" : "Arcade soundtrack" })),
+    { id: "singularity", title: "Singularity Core", bpm: 78, category: "Game theme" },
+    ...bossTracks.map(track => ({ ...track, category: "Boss Crush" })),
+    ...rockTracks.map(track => ({ ...track, category: "Rock" })),
+  ].map(({ id, title, bpm, category }) => Object.freeze({ id, title, bpm, category })));
+  function composeRock(track, sampleRate, notes) {
     const beat = 60 / track.bpm, duration = 32 * 4 * beat + (track.loop ? 0 : 1.2);
     const samples = new Float32Array(Math.round(duration * sampleRate));
     let seed = 9317 + track.bpm;
@@ -383,6 +456,7 @@ const ArcadeMusic = (() => {
       return seed / 2147483648 - 1;
     }
     function guitar(pitch, start, length, amplitude, lead = false) {
+      if (lead) notes.push({ start, duration: length });
       const frequency = 440 * 2 ** ((pitch - 69) / 12);
       const offset = Math.round(start * sampleRate);
       for (let i = 0; i < length * sampleRate && offset + i < samples.length; i++) {
@@ -475,11 +549,11 @@ const ArcadeMusic = (() => {
     samples[samples.length - 1] = 0;
     return samples;
   }
-  function composeCinematicCore(sampleRate) {
+  function composeCinematicCore(sampleRate, melodyEvents) {
     // A slow, original orchestral/synth cue: bowed low strings, legato brass,
     // vowel-like choir, resonant ensemble drums, and a diffuse reverb tail.
     const beat = 60 / 78, barLength = beat * 4;
-    const samples = new Float32Array(Math.round(barLength * 16 * sampleRate));
+    const samples = new Float32Array(Math.round(barLength * 48 * sampleRate));
     const roots = [38, 34, 43, 45, 38, 41, 34, 45, 38, 36, 34, 45, 43, 34, 45, 45];
     const melody = [[62, 65], [65, 62], [67, 70], [69, 73],
       [74, 72], [69, 65], [70, 74], [73, 69],
@@ -512,6 +586,7 @@ const ArcadeMusic = (() => {
       return table[left] * (1 - fraction) + table[(left + 1) % table.length] * fraction;
     }
     function voice(pitch, start, duration, level, kind, attack, release) {
+      if (kind === "brass") melodyEvents.push({ start, duration });
       const key = `${pitch}:${duration}:${kind}:${attack}:${release}`;
       if (!notes.has(key)) {
         const data = new Float32Array(Math.round(duration * sampleRate));
@@ -561,26 +636,96 @@ const ArcadeMusic = (() => {
         samples[offset + i] += (high - low) * Math.sin(Math.PI * t / duration) ** 2 * level;
       }
     }
-    for (let bar = 0; bar < 16; bar++) {
-      const start = bar * barLength, root = roots[bar];
+    function percussion(start, level, snare = false) {
+      const offset = Math.round(start * sampleRate), duration = snare ? .34 : .09;
+      let low = 0;
+      for (let i = 0; i < duration * sampleRate && offset + i < samples.length; i++) {
+        const t = i / sampleRate, white = noise();
+        low += .16 * (white - low);
+        const body = snare ? .6 * Math.sin(2 * Math.PI * 178 * t) * Math.exp(-t * 24) : 0;
+        const snap = (white - low) * Math.exp(-t * (snare ? 16 : 55));
+        samples[offset + i] += (body + snap) * Math.min(1, t / .002) * level;
+      }
+    }
+    function riser(start, duration) {
+      const offset = Math.round(start * sampleRate);
+      let low = 0, phase = 0;
+      for (let i = 0; i < duration * sampleRate && offset + i < samples.length; i++) {
+        const p = i / (duration * sampleRate), white = noise();
+        low += (.02 + .35 * p) * (white - low);
+        phase += Math.min(sampleRate * .35, 180 * 2 ** (p * 3)) / sampleRate;
+        samples[offset + i] += (low * .2 + Math.sin(phase * Math.PI * 2) * .035)
+          * p ** 2 * Math.min(1, (1 - p) * duration / .02);
+      }
+    }
+    // 0–11: original cinematic opening. 12–15: build. 16–23: first drop.
+    // 24–27: weightless interlude. 28–31: rebuild. 32–43: expanded final drop.
+    // 44–47: dissolve back into the opening's low strings for the loop.
+    for (let bar = 0; bar < 48; bar++) {
+      const phrase = bar % 16;
+      const start = bar * barLength, root = bar >= 44 ? [43, 34, 45, 38][bar - 44] : roots[phrase];
+      const drop = bar >= 16 && bar < 24 || bar >= 32 && bar < 44;
+      const build = bar >= 12 && bar < 16 || bar >= 28 && bar < 32;
+      const interlude = bar >= 24 && bar < 28;
+      const outro = bar >= 44;
       const chord = [0, [45, 41, 36, 34].includes(root) ? 4 : 3, 7];
-      const intensity = bar < 4 ? .52 : bar < 8 ? .74 : bar < 12 ? 1 : .86;
-      voice(root - 12, start, barLength + .55, .21 * intensity, 'bass', .14, .75);
+      const intensity = drop ? (bar >= 32 ? 1.28 : 1.16) : interlude ? .48 : outro ? .75 - (bar - 44) * .12
+        : bar < 4 ? .52 : bar < 8 ? .74 : 1;
+      if (!drop) voice(root - 12, start, barLength + .55, .21 * intensity, 'bass', .14, .75);
       chord.forEach((interval, i) => {
-        voice(root + 12 + interval, start, barLength + .7, .12 * intensity, 'strings', .55, .95);
+        voice(root + 12 + interval, start, barLength + .7, (drop ? .095 : .12) * intensity, 'strings', .55, .95);
         if (bar >= 8) voice(root + 24 + interval, start + .08 * i, barLength + .5,
           .065 * intensity, 'choir', .8, 1.1);
       });
-      if (bar >= 4) {
+      if (bar >= 4 && !drop && !interlude && !outro) {
         for (let n = 0; n < 4; n++) voice(root + 12 + [0, 7, 12, 7][n], start + n * beat,
           beat * .72, .14 * intensity, 'strings', .045, .27);
-        melody[bar].forEach((pitch, i) => voice(pitch, start + i * beat * 2,
+        melody[phrase].forEach((pitch, i) => voice(pitch, start + i * beat * 2,
           beat * 2.25, .15 * intensity, 'brass', .25, .5));
       }
-      drum(start, .36 * intensity);
-      if (bar >= 4) drum(start + beat * 2, .24 * intensity);
-      if (bar >= 8) drum(start + beat * 3.5, .16 * intensity);
-      if (bar % 4 === 3) {
+      if (drop) {
+        // Syncopated sub-bass and a half-time backbeat under the same brass motif.
+        for (const hit of [0, 1.5, 2.75, 3.5]) {
+          drum(start + hit * beat, hit === 0 ? .60 : .36);
+          voice(root - 12, start + hit * beat, beat * .72, .40, 'bass', .012, .15);
+          voice(root, start + hit * beat + .04, beat * .45, .12, 'brass', .025, .13);
+        }
+        percussion(start + 2 * beat, .36, true);
+        for (let n = 0; n < 8; n++) {
+          percussion(start + n * beat / 2, n % 2 ? .085 : .05);
+          voice(root + 24 + [0, 7, 12, 7, chord[1], 7, 14, 12][n], start + n * beat / 2,
+            beat * .36, bar >= 32 ? .12 : .09, 'strings', .015, .14);
+          if (bar >= 32) {
+            percussion(start + (n / 2 + .25) * beat, .035);
+            voice(root + 36 + [7, 0, chord[1], 7][n % 4], start + (n / 2 + .25) * beat,
+              beat * .2, .045, 'strings', .012, .09);
+          }
+        }
+        const lead = melody[(phrase + 8) % 16];
+        [0, 1.5, 2.5, 3.25].forEach((hit, n) => {
+          const pitch = lead[n % 2] + (n === 3 ? 7 : 0);
+          voice(pitch, start + hit * beat, beat * (n === 0 ? 1.3 : .65), .23, 'brass', .06, .2);
+          if (bar >= 32) voice(pitch + 12, start + hit * beat, beat * .75, .085, 'choir', .08, .2);
+        });
+        if (bar % 4 === 3) {
+          for (let n = 0; n < 4; n++) percussion(start + (3 + n / 4) * beat, .07 + n * .025, true);
+        }
+      } else if (!interlude && !outro) {
+        drum(start, .36 * intensity);
+        if (bar >= 4) drum(start + beat * 2, .24 * intensity);
+        if (bar >= 8) drum(start + beat * 3.5, .16 * intensity);
+      }
+      if (interlude || outro) {
+        voice(melody[phrase][0] + 12, start + beat, beat * 2.8, .07, 'choir', .6, .8);
+        if (bar % 2 === 0) drum(start, .10);
+      }
+      if (build) {
+        const step = bar % 4, count = [4, 8, 8, 16][step];
+        for (let n = 0; n < count; n++) percussion(start + n * barLength / count,
+          .045 + step * .022 + n / count * .025, true);
+        if (step === 0) riser(start, barLength * 4 - beat * .5);
+      }
+      if (bar % 4 === 3 && !interlude && !outro) {
         swell(start + beat, beat * 3, .15);
         for (let n = 0; n < 4; n++) drum(start + beat * (3 + n / 4), .045 + n * .018);
       }
@@ -594,14 +739,34 @@ const ArcadeMusic = (() => {
     }
     for (let i = 0; i < samples.length; i++) {
       const fade = Math.min(1, i / (sampleRate * .08), (samples.length - 1 - i) / (sampleRate * .55));
-      samples[i] = Math.tanh(samples[i] * 1.35) * .82 * fade;
+      // A brief vacuum cuts even the reverb before each impact. Ramp both
+      // edges to avoid clicks; the drop itself remains on the exact downbeat.
+      const t = i / sampleRate;
+      let vacuum = 1;
+      for (const bar of [16, 32]) {
+        const until = bar * barLength - t;
+        if (until > 0 && until < beat * .5) vacuum = Math.max(0, 1 - (beat * .5 - until) / .035);
+        else if (until <= 0 && until > -.008) vacuum = -until / .008;
+      }
+      // Lift the whole post-drop mix, growing toward each section's end.
+      // Ease out over the last half beat so the quieter interlude stays smooth.
+      let dropGain = 1;
+      for (const [first, last, lift] of [[16, 24, .35], [32, 44, .48]]) {
+        const start = first * barLength, end = last * barLength;
+        if (t >= start && t < end) {
+          const progress = (t - start) / (end - start);
+          dropGain += (lift + .18 * progress) * Math.min(1, (t - start) / .015, (end - t) / (beat * .5));
+        }
+      }
+      samples[i] = Math.tanh(samples[i] * 1.35 * dropGain) * .82 * fade * vacuum;
     }
+    samples[0] = samples[samples.length - 1] = 0;
     return samples;
   }
-  function compose(track, sampleRate = 22050) {
-    if (track === "singularity") return composeCinematicCore(sampleRate);
+  function compose(track, sampleRate = 22050, notes = []) {
+    if (track === "singularity") return composeCinematicCore(sampleRate, notes);
     const rock = rockTracks.find(song => song.id === track) || bossTracks.find(song => song.id === track);
-    if (rock) return composeRock(rock, sampleRate);
+    if (rock) return composeRock(rock, sampleRate, notes);
     const score = scores[track];
     if (!score) throw new Error(`Unknown music theme: ${track}`);
     const beat = 60 / score.bpm;
@@ -610,6 +775,7 @@ const ArcadeMusic = (() => {
     const tones = new Map();
     function tone(pitch, start, duration, amplitude, voice) {
       if (!pitch) return;
+      if (voice === "lead") notes.push({ start, duration });
       const offset = Math.round(start * sampleRate);
       const key = `${pitch}:${duration}:${amplitude}:${voice}`;
       if (!tones.has(key)) {
@@ -651,7 +817,9 @@ const ArcadeMusic = (() => {
       const root = score.roots[bar], chord = score.chords[bar];
       const start = bar * 4 * beat;
       const swing = n => n + (n % 2 ? score.swing || 0 : 0);
-      score.melody[bar].forEach((pitch, n) => tone(pitch, start + swing(n) * beat / 2, beat * .42 * (score.gate || 1), .21, "lead"));
+      const melodyStep = 4 * beat / score.melody[bar].length;
+      score.melody[bar].forEach((pitch, n) => tone(pitch, start + swing(n) * melodyStep,
+        melodyStep * .84 * (score.gate || 1), .21, "lead"));
       groove.bass.forEach((position, n) => tone(root + (n % 4 === 3 ? 12 : n % 2 ? 7 : 0),
         start + position * beat, beat * (score.bassGate || (score.groove === "hush" ? .85 : .4)), .24, "bass"));
       for (let n = 0; n < groove.hats; n++)
@@ -711,6 +879,7 @@ const ArcadeMusic = (() => {
       this.context = context;
       this.destination = destination;
       this.buffers = new Map();
+      this.melodyNotes = new Map();
       this.voices = new Set();
       this.current = null;
       this.theme = "arcade";
@@ -742,12 +911,33 @@ const ArcadeMusic = (() => {
     }
     buffer(theme) {
       if (!this.buffers.has(theme)) {
-        const data = compose(theme);
+        const notes = [];
+        const data = compose(theme, 22050, notes);
+        this.melodyNotes.set(theme, notes.sort((a, b) => a.start - b.start));
         const buffer = this.context.createBuffer(1, data.length, 22050);
         buffer.copyToChannel(data, 0);
         this.buffers.set(theme, buffer);
       }
       return this.buffers.get(theme);
+    }
+    melodyPulse() {
+      if (!this.playing || !this.current || this.context.state === "suspended") return 0;
+      const voice = this.current;
+      const elapsed = voice.offset + this.context.currentTime - voice.started;
+      const time = voice.source.loop ? elapsed % voice.source.buffer.duration : elapsed;
+      const notes = this.melodyNotes.get(voice.track) || [];
+      // Binary search follows the audio clock, including pauses and loop wraps.
+      let lo = 0, hi = notes.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if (notes[mid].start <= time) lo = mid + 1;
+        else hi = mid;
+      }
+      const note = notes[lo - 1];
+      if (!note) return 0;
+      const age = time - note.start;
+      const length = Math.min(.4, note.duration);
+      return age < length ? Math.sin(Math.PI * Math.min(1, age / .035) / 2) * (1 - age / length) ** 2 : 0;
     }
     retire(voice, fade) {
       const now = this.context.currentTime;
@@ -777,7 +967,13 @@ const ArcadeMusic = (() => {
       this.setState(state);
     }
     setState({ theme, playing }) {
-      if (theme !== "arcade" && !loopThemes.includes(theme)) throw new Error(`Unknown music theme: ${theme}`);
+      const jukebox = theme.startsWith("jukebox:");
+      if (jukebox ? !jukeboxTracks.some(track => track.id === theme.slice(8))
+        : theme !== "arcade" && !loopThemes.includes(theme)) throw new Error(`Unknown music theme: ${theme}`);
+      if (jukebox) {
+        this.oneShot = null;
+        this.interruptedArcade = null;
+      }
       this.state = { theme, playing };
       theme = this.oneShot || theme;
       this.playing = playing;
@@ -808,11 +1004,12 @@ const ArcadeMusic = (() => {
       this.start();
     }
     start() {
-      if (!this.track) this.track = this.oneShot || (loopThemes.includes(this.theme) ? this.theme : this.nextTrack());
+      if (!this.track) this.track = this.theme.startsWith("jukebox:") ? this.theme.slice(8)
+        : this.oneShot || (loopThemes.includes(this.theme) ? this.theme : this.nextTrack());
       const source = this.context.createBufferSource();
       const gain = this.context.createGain();
       source.buffer = this.buffer(this.track);
-      source.loop = loopThemes.includes(this.theme);
+      source.loop = this.theme.startsWith("jukebox:") || loopThemes.includes(this.theme);
       gain.gain.setValueAtTime(0, this.context.currentTime);
       gain.gain.linearRampToValueAtTime(.22, this.context.currentTime + .18);
       source.connect(gain);
@@ -837,6 +1034,6 @@ const ArcadeMusic = (() => {
       source.start(this.context.currentTime, this.offset);
     }
   }
-  return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack };
+  return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, jukeboxTracks };
 })();
 if (typeof module !== "undefined") module.exports = ArcadeMusic;

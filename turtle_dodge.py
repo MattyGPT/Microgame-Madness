@@ -14,6 +14,7 @@ from boss_crush import (BOSS_DIFFICULTIES, BOSS_WIDTH, BOSS_HEIGHT,
                         HEAL_SIZE, SHOT_WIDTH, SHOT_HEIGHT, BossCrush)
 from scores import SCORE_FILE, ScoreError, load_scores, save_score
 from pumpkin_king import MODE as PHASE_TWO, COWARD_MODE, BABY_MODE, COME_ON_MODE, COME_ON_NAME, PUMPKIN_DIFFICULTIES, PumpkinKing
+from arcade_effects import DEATH_DURATION, death_pixels
 
 DODGE_SCORE_FILE = SCORE_FILE.with_name("turtle_scores.json")
 CANVAS_WIDTH, CANVAS_HEIGHT = 680, 660
@@ -127,6 +128,9 @@ class TurtleDodge:
         if isinstance(self.game, BossCrush):
             from pumpkin_king_view import KingView
             self.king_view = KingView(canvas, audio=isinstance(self.game, PumpkinKing))
+        from pumpkin_king_view import KingAudio
+        self.death_audio = self.king_view.audio if isinstance(self.game, PumpkinKing) else KingAudio((("turtle_death", DEATH_DURATION),))
+        self.death_started = None
         self.state = "ready"
         self.keys = set()
         self.saved = False
@@ -145,6 +149,9 @@ class TurtleDodge:
         self.player.color("#b7f7cc", "#4ade80")
         self.player.setheading(90)
         self.player.showturtle()
+        self.death_particles = self.pen()
+        self.death_particles.shape("square")
+        self.death_particles.color("#ffffff")
         self.blocks = self.pen()
         self.blocks.shape("square")
         self.blocks.shapesize(BLOCK_SIZE / 20, outline=BLOCK_OUTLINE_WIDTH)
@@ -199,7 +206,7 @@ class TurtleDodge:
         self.message.write(wrapped, align="center", font=("Arial", 18, "bold"))
 
     def space(self):
-        if self.state in ("playing", "countdown"):
+        if self.state in ("playing", "countdown", "dying"):
             return
         if self.state == "paused":
             self.keys.clear()
@@ -210,6 +217,9 @@ class TurtleDodge:
             return
         self.game = create_game(self.game.difficulty)
         self.saved = False
+        self.death_started = None
+        self.death_particles.clearstamps()
+        self.player.showturtle()
         self.keys.clear()
         self.state = "playing"
         self.message.clear()
@@ -248,7 +258,18 @@ class TurtleDodge:
             self.closed = True
             if self.king_view:
                 self.king_view.close()
+            if not isinstance(self.game, PumpkinKing):
+                self.death_audio.close()
             self.root.destroy()
+
+    def finish_round(self):
+        self.state = "over"
+        self.keys.clear()
+        self.save()
+        result = "BOSS CRUSHED!" if getattr(self.game, "won", False) else "GAME OVER"
+        if getattr(self.game, "death_message", None):
+            result = self.game.death_message
+        self.set_message(f"{result}\nScore: {self.game.score}\n\nSPACE to try again\nESC to return to menu")
 
     def draw_boss(self):
         game = self.game
@@ -323,14 +344,16 @@ class TurtleDodge:
                 self.set_message(f"GET READY\n\n{remaining}")
         elif self.state == "playing":
             self.game.update(dt, self.keys)
-            if not self.game.alive or getattr(self.game, "won", False):
-                self.state = "over"
+            if not self.game.alive:
+                self.state = "dying"
                 self.keys.clear()
-                self.save()
-                result = "BOSS CRUSHED!" if getattr(self.game, "won", False) else "GAME OVER"
-                if getattr(self.game, "death_message", None):
-                    result = self.game.death_message
-                self.set_message(f"{result}\nScore: {self.game.score}\n\nSPACE to try again\nESC to return to menu")
+                self.death_started = now
+                self.player.hideturtle()
+                self.death_audio.play("turtle_death")
+            elif getattr(self.game, "won", False):
+                self.finish_round()
+        elif self.state == "dying" and now-self.death_started >= DEATH_DURATION:
+            self.finish_round()
         self.player.goto(self.game.x, self.game.y)
         self.blocks.clearstamps()
         boss_mode = isinstance(self.game, BossCrush)
@@ -343,6 +366,13 @@ class TurtleDodge:
                     if self.game.bottom - CELL / 2 <= y <= self.game.top + CELL / 2:
                         self.blocks.goto(x, y)
                         self.blocks.stamp()
+        self.death_particles.clearstamps()
+        if self.state == "dying":
+            for x, y, size in death_pixels(self.game.x, self.game.y, now-self.death_started):
+                if self.game.left <= x <= self.game.right and self.game.bottom <= y <= self.game.top:
+                    self.death_particles.shapesize(size/20, size/20, outline=0)
+                    self.death_particles.goto(x, y)
+                    self.death_particles.stamp()
         hud = (self.game.score, self.best, int(self.game.elapsed), self.notice,
                self.game.hp if boss_mode else None, self.game.lives if boss_mode else None,
                self.game.pattern_label if boss_mode else "")

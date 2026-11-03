@@ -3,12 +3,41 @@
 import random
 import unittest
 
-from singularity_core import ATTACKS, BOX_CENTER, HEAL_LASTS, SingularityCore
+from singularity_core import ATTACKS, BOX_CENTER, HEAL_LASTS, LASER_DURATION, SingularityCore
 from singularity_practice import PRACTICE_ATTACKS, SingularityPractice
 from web.bridge import BrowserGame
 
 
 class SingularityPracticeTests(unittest.TestCase):
+    def test_cutscene_replays_shared_finale_and_can_pause_and_restart(self):
+        session = BrowserGame()
+        start = dict(action="start", mode="core_practice", difficulty="final_cutscene")
+        state = session.dispatch(start)
+        self.assertTrue(state["laser_firing"])
+        self.assertFalse(state["over"])
+        self.assertEqual(session.game.attacks_completed, 0)
+        full = SingularityCore()
+        full.attacks_completed = len(ATTACKS)
+        full.stage = "exposed"
+        full.fire_laser()
+        session.dispatch(dict(action="pause"))
+        session.dispatch(dict(action="tick", dt=.05))
+        self.assertEqual(session.game.stage_age, 0)
+        session.dispatch(dict(action="pause"))
+        for dt in (.7, 1.8, 1.3, LASER_DURATION):
+            full.sound_events.clear()
+            session.game.update(dt, set())
+            full.update(dt, set())
+            self.assertEqual(session.game.laser_phase, full.laser_phase)
+            self.assertEqual(session.game.sound_events, full.sound_events)
+            self.assertEqual(session.game.won, full.won)
+            self.assertTrue(session.dispatch(dict(action="tick", dt=0))["commands"])
+        self.assertTrue(session.game.won)
+        self.assertEqual(session.game.attacks_completed, 0)
+        self.assertEqual(session.game.hazards, [])
+        self.assertTrue(session.dispatch(start)["laser_firing"])
+        self.assertEqual(session.game.stage_age, 0)
+
     def test_each_protocol_matches_the_full_fight_after_countdown(self):
         self.assertEqual(len(PRACTICE_ATTACKS), 15)
         for attack, index in PRACTICE_ATTACKS.items():

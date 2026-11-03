@@ -10,9 +10,10 @@ from boss_crush import BossCrush
 from pumpkin_king import PumpkinKing
 from kings_wrath import KingsWrath
 from singularity_core import ATTACKS, SingularityCore
-from singularity_practice import PRACTICE_ATTACKS, SingularityPractice
+from singularity_practice import PRACTICE_ATTACKS, SingularityCutscene, SingularityPractice
 from singularity_core_view import draw_core
 from pumpkin_king_view import KingView
+from arcade_effects import DEATH_DURATION, death_pixels
 
 
 class DrawCanvas:
@@ -73,6 +74,8 @@ class BrowserGame:
         self.message = ""
         self.now = now
         self.canvas = DrawCanvas()
+        self.death_age = None
+        self.death_sound_pending = False
         self.view = KingView(self.canvas, audio=False)
         if mode == "hangman":
             rules = DIFFICULTY[difficulty]
@@ -92,7 +95,8 @@ class BrowserGame:
                 raise ValueError("Unknown Singularity Core difficulty")
             self.game = SingularityCore()
         elif mode == "core_practice":
-            self.game = SingularityPractice(difficulty)
+            self.game = (SingularityCutscene() if difficulty == "final_cutscene"
+                         else SingularityPractice(difficulty))
         else:
             raise ValueError("Unknown game")
 
@@ -127,7 +131,11 @@ class BrowserGame:
             if self.game.rules.can_pause and self.game.alive and not getattr(self.game, "won", False):
                 self.paused = not self.paused
         elif action == "tick" and self.mode in ("dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice") and not self.paused:
-            self.game.update(max(0, min(float(request.get("dt", 0)), 0.05)), set(request.get("keys", [])))
+            dt = max(0, min(float(request.get("dt", 0)), 0.05))
+            if self.death_age is not None:
+                self.death_age = min(DEATH_DURATION, self.death_age+dt)
+            else:
+                self.game.update(dt, set(request.get("keys", [])))
         return self.snapshot()
 
     def snapshot(self):
@@ -145,7 +153,12 @@ class BrowserGame:
                           sequence=game.sequence, matched=game.matched, mistakes=game.mistakes,
                           remaining=game.remaining(self.now), level=self.completed+1)
         else:
+            if not game.alive and self.death_age is None:
+                self.death_age = 0.0
+                self.death_sound_pending = True
             result.update(over=not game.alive or getattr(game, "won", False),
+                          dying=self.death_age is not None and self.death_age < DEATH_DURATION-1e-9,
+                          death_age=self.death_age,
                           won=getattr(game, "won", False), score=game.score,
                           death_message=getattr(game, "death_message", None),
                           damage_taken=getattr(game, "damage_taken", None),
@@ -153,7 +166,7 @@ class BrowserGame:
                           counter_hits=getattr(game, "counter_hits", 0),
                           healing_collected=getattr(game, "healing_collected", 0),
                           near_misses=getattr(game, "near_misses", 0),
-                          elapsed=int(game.elapsed), can_pause=game.rules.can_pause,
+                          elapsed=int(game.elapsed), can_pause=game.rules.can_pause and game.alive,
                           bounds=[game.left, game.right, game.bottom, game.top],
                           label=getattr(game, "pattern_label", "Dodge the blocks. Stay in the game."),
                           lives=getattr(game, "lives", None), max_lives=getattr(game, "max_lives", None),
@@ -168,7 +181,10 @@ class BrowserGame:
                 result.update(sounds=game.sound_events[:], hp=game.hp, max_hp=1,
                               attacks_completed=game.attacks_completed, attack_total=15,
                               shielded=game.shielded, laser_ready=game.laser_ready,
-                              laser_firing=game.stage == "laser")
+                              laser_firing=game.stage == "laser",
+                              cinematic_age=game.stage_age if game.stage == "laser" else None,
+                              cinematic_phase=game.laser_phase,
+                              arena_shattered=game.laser_phase in ("shatter", "complete"))
                 commands = draw_core(game)
                 game.sound_events.clear()
             elif isinstance(game, PumpkinKing):
@@ -198,8 +214,15 @@ class BrowserGame:
                     outline = block_outline_color(block.color)
                     for x, y in block.centers():
                         rect(x, y, BLOCK_SIZE, BLOCK_SIZE, block.color, outline, BLOCK_OUTLINE_WIDTH)
-            commands.append({"kind": "polygon", "coords": [v for x, y in PLAYER_POLYGON for v in (game.x+x, -game.y-y)],
-                             "fill": "#ffffff" if getattr(game, "invulnerable", 0) else "#a3ff80"})
+            if self.death_age is not None:
+                for x, y, size in death_pixels(game.x, game.y, self.death_age):
+                    rect(x, y, size, size, "#ffffff")
+                if self.death_sound_pending:
+                    result["sounds"].append("turtle_death")
+                    self.death_sound_pending = False
+            elif not result.get("arena_shattered"):
+                commands.append({"kind": "polygon", "coords": [v for x, y in PLAYER_POLYGON for v in (game.x+x, -game.y-y)],
+                                 "fill": "#ffffff" if getattr(game, "invulnerable", 0) else "#a3ff80"})
             result["commands"] = commands
         return result
 

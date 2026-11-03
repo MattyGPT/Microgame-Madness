@@ -9,6 +9,22 @@ PRACTICE_ATTACKS = {attack.name.lower().replace(" ", "_"): index
                     for index, attack in enumerate(ATTACKS)}
 
 
+class SingularityCutscene(SingularityCore):
+    """Replay the shared finale without completing any survival protocols."""
+
+    practice_attack = None
+
+    def __init__(self, rng=None):
+        super().__init__(rng=rng)
+        self.difficulty = "final_cutscene"
+        self.stage = "exposed"
+        self.fire_laser()
+
+    @property
+    def shielded(self):
+        return False
+
+
 class SingularityPractice(SingularityCore):
     ready_time = 3.0
 

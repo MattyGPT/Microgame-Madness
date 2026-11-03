@@ -10,7 +10,8 @@ import tempfile
 import wave
 from pathlib import Path
 
-from pumpkin_king import Finger, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME
+from pumpkin_king import (Finger, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME,
+                          EYE_FLASH_PERIOD, EYE_FLASH_ON)
 
 COLORS = {"normal": "#fff5e5", "blue": "#42c9ff", "orange": "#ff9d32", "magenta": "#ff42de"}
 BACKGROUND = "#111827"
@@ -34,16 +35,18 @@ def mix(a, b, amount):
 
 class KingAudio:
     """Short original growls and impacts, generated locally without extra packages."""
-    def __init__(self):
+    def __init__(self, effects=None):
         self.player = shutil.which("paplay")
         self.directory = tempfile.TemporaryDirectory(prefix="pumpkin-king-audio-")
         self.processes = []
         self.paths = {}
         if self.player:
-            for name, duration in (("roar", 0.6), ("laugh", 0.75), ("slam", 0.12), ("scare", 0.38)):
+            for name, duration in (effects if effects is not None else
+                                   (("roar", .6), ("laugh", .75), ("slam", .12), ("scare", .38), ("turtle_death", 1.6))):
                 rng = random.Random(12)
                 rate = 22050
                 samples = bytearray()
+                held, phase = 0.0, 0.0
                 for i in range(int(rate*duration)):
                     t = i/rate
                     envelope = min(1, t*30) * (1-t/duration)
@@ -51,7 +54,13 @@ class KingAudio:
                         envelope *= max(0, math.sin(t*math.tau*6))
                     frequency = (75 if name != "slam" else 45) - 25*t/duration
                     tone = math.sin(math.tau*frequency*t) + 0.35*math.sin(math.tau*frequency*2.03*t)
-                    sound = (tone*0.55 + rng.uniform(-1, 1)*0.35)*envelope*0.28
+                    if name == "turtle_death":
+                        phase += (340*math.exp(-t*2.8)+25)/rate
+                        if i % max(1, int(rate/(6500-3900*t/duration))) == 0:
+                            held = round(((1 if math.sin(phase*math.tau) > 0 else -1)*.6+rng.uniform(-.4,.4))*7)/7
+                        sound = held*envelope*.38
+                    else:
+                        sound = (tone*0.55 + rng.uniform(-1, 1)*0.35)*envelope*0.28
                     samples.extend(struct.pack('<h', int(max(-1, min(1, sound))*32767)))
                 path = Path(self.directory.name) / f"{name}.wav"
                 with wave.open(str(path), 'wb') as output:
@@ -63,6 +72,11 @@ class KingAudio:
 
     def play(self, name):
         self.processes = [p for p in self.processes if p.poll() is None]
+        if name == "turtle_death":
+            for process in self.processes:
+                process.terminate()
+                process.wait()
+            self.processes.clear()
         if self.player and name in self.paths and len(self.processes) < 3:
             self.processes.append(subprocess.Popen([self.player, str(self.paths[name])],
                                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
@@ -112,6 +126,25 @@ class KingView:
     def text(self, x, y, text, color, size=18):
         return self.item("text", (x, -y), text=text, fill=color, font=("Arial", size, "bold"), anchor="center")
 
+    def _vocal_caption(self, name, age):
+        caption = "ROOOAAAR!" if name == "roar" else "HA. HA. HA!"
+        # Entry Number Seventeen's lettering jitters independently on a 30 Hz
+        # clock, by about one native pixel per axis. Keep redraws deterministic
+        # so pausing freezes the text and rendering never consumes combat RNG.
+        jitter = random.Random(int((age + 1e-9)*30) + (17000 if name == "roar" else 27000))
+        widths = {"R": .722, "O": .778, "A": .722, "H": .722,
+                  ".": .278, "!": .333, " ": .278}
+        advances = [22*widths[letter] for letter in caption]
+        if hasattr(self.canvas, "tk"):
+            advances = [float(self.canvas.tk.call("font", "measure", ("Arial", 22, "bold"), letter))
+                        for letter in caption]
+        x = -sum(advances)/2
+        for letter, advance in zip(caption, advances):
+            dx, dy = jitter.randint(-1, 1), jitter.randint(-1, 1)
+            if letter != " ":
+                self.text(x+advance/2+dx, 68+dy, letter, "#ffdd63", 22)
+            x += advance
+
     def rounded_rect(self, x, y, width, height, radius, color):
         radius = min(radius, width/2, height/2)
         self.rect(x, y, width-2*radius, height, color)
@@ -120,6 +153,159 @@ class KingView:
             for dy in (-1, 1):
                 self.oval(x+dx*(width/2-radius), y+dy*(height/2-radius),
                           radius*2, radius*2, color)
+
+    def draw_bone_walls(self, bullets):
+        """Fuse each gauntlet column into two shafts with gap-facing knuckles."""
+        columns = {}
+        for bullet in bullets:
+            if getattr(bullet, "bone", False):
+                columns.setdefault((bullet.x, bullet.vx, bullet.rule), []).append(bullet)
+        for (x, _, rule), column in columns.items():
+            column.sort(key=lambda bone: bone.y)
+            runs = [[]]
+            for bone in column:
+                if runs[-1] and bone.y-runs[-1][-1].y > 30:
+                    runs.append([])
+                runs[-1].append(bone)
+            color = COLORS.get(rule, "#ffffff")
+            for run in runs:
+                lower = run[0].y-run[0].height/2
+                upper = run[-1].y+run[-1].height/2
+                # The screen-facing end is flat; only the opening gets two lobes.
+                points_up = run[0] is column[0]
+                tip = upper if points_up else lower
+                edge = -240 if points_up else 240
+                direction = 1 if points_up else -1
+                cap_y = tip-direction*6
+                self.rect(x, (edge+cap_y)/2, 16, abs(cap_y-edge), color)
+                for side in (-1, 1):
+                    self.oval(x+side*5, cap_y, 12, 12, color)
+                # Ivory shafts, shaded knuckles and hairline fractures stay
+                # inside the existing silhouette and never bridge the safe gap.
+                self.rect(x+4, (edge+cap_y)/2, 4, abs(cap_y-edge), mix(color, "#44354b", .5))
+                self.rect(x-4, (edge+cap_y)/2, 3, abs(cap_y-edge), mix(color, "#ffffff", .65))
+                for side in (-1, 1):
+                    self.oval(x+side*5-1, cap_y+2, 6, 5, mix(color, "#ffffff", .6))
+                for index in range(int(abs(cap_y-edge)/42)):
+                    py = edge+direction*(15+index*42)
+                    self.ribbon(((x-3, py-5), (x+1, py), (x-1, py+5)), 1.2, "#8f8292")
+
+    def _attack_atmosphere(self, game):
+        """Quiet stage decoration; only the existing hazards represent danger."""
+        name, t = game.stage.name, game.elapsed
+        if name in ("memory", "recall_ready", "color", "color_gap"):
+            rule = game.eye_rule
+            color = COLORS.get(rule, "#a394cc")
+            for side in (-1, 1):
+                for index in range(9):
+                    y = -210+index*49
+                    self.poly(((side*298, y-10), (side*290, y), (side*298, y+10)),
+                              mix(BACKGROUND, color, .28+.12*math.sin(t*4+index)))
+            if name == "memory":
+                current = int(game.stage_age/EYE_FLASH_PERIOD)
+                for index in range(6):
+                    x = (index-2.5)*27
+                    lit = index == current and game.stage_age%EYE_FLASH_PERIOD < EYE_FLASH_ON
+                    self.poly(((x-7, -218), (x, -211), (x+7, -218), (x, -225)),
+                              color if lit else "#343047")
+                # Only the currently flashed color is shown, never the answer sequence.
+            if name == "color":
+                self.text(0, -218, "Ⅱ  HOLD STILL" if rule == "blue" else "»  KEEP MOVING", color, 12)
+        elif name in ("bones", "rings", "fingers", "chaos"):
+            tint = {"bones": "#b9b2a5", "rings": "#7abfd2", "fingers": "#ed74ce", "chaos": "#c088ee"}[name]
+            for side in (-1, 1):
+                for index in range(7):
+                    y = -215+index*66
+                    self.ribbon(((side*298, y-14), (side*290, y-6), (side*290, y+6), (side*298, y+14)),
+                                1.5, mix(BACKGROUND, tint, .25))
+            if name == "chaos":
+                for index in range(12):
+                    x = -260+index*47
+                    y = 224+4*math.sin(t*3+index)
+                    self._star(x, y, 3, tint, t*4+index)
+        elif name == "raise":
+            # The raised hands already announce these exact slam regions.
+            sides = (-1, 1) if game.stage.side == "both" else (-1,) if game.stage.side == "left" else (1,)
+            for side in sides:
+                x, width = (side*170, 260) if len(sides) == 2 else (side*150, 300)
+                self.rect(x, -236, width-4, 3, "#e6a95b")
+                for index in range(6):
+                    px = x-width/2+(index+.5)*width/6
+                    self.ribbon(((px-5, -218), (px, -224), (px+5, -218)), 2, "#b57542")
+        elif name == "roar":
+            for index in range(3):
+                radius = 14+((t*38+index*12)%38)
+                self.item("oval", (game.boss_x-radius, -game.boss_y+9-radius*.5,
+                                   game.boss_x+radius, -game.boss_y+9+radius*.5),
+                          fill="", outline=mix(BACKGROUND, "#ffb35c", 1-radius/65), width=2)
+
+    def _candy(self, pickup, t):
+        x, y = pickup.x, pickup.y
+        variant = getattr(pickup, "variant", "bonbon")
+        # A green halo/+ marks every design as healing. The sprite is anchored
+        # to the unchanged 16×16 collection box, and never rerolls while drawn.
+        self.item("oval", (x-13, -y-13, x+13, -y+13), fill="", outline="#5dd6a1", width=1)
+        if variant == "bonbon":
+            for side in (-1, 1):
+                self.poly(((x+side*5, y), (x+side*12, y+6), (x+side*10, y), (x+side*12, y-6)), "#f6a9dc")
+            self.oval(x, y, 15, 13, "#b54a9a")
+            self.oval(x-1, y+1, 12, 10, "#ff80c7")
+            self.ribbon(((x-3, y-4), (x, y), (x+2, y+4)), 2, "#ffe1f3")
+        elif variant == "peppermint":
+            self.oval(x, y, 18, 18, "#fff4dd")
+            for index in range(6):
+                a = index*math.tau/6
+                self.poly(((x, y), (x+math.cos(a)*8, y+math.sin(a)*8),
+                           (x+math.cos(a+.45)*8, y+math.sin(a+.45)*8),
+                           (x+math.cos(a+.9)*3, y+math.sin(a+.9)*3)), "#e9576b")
+        elif variant == "lollipop":
+            self.rect(x, y-5, 3, 17, "#fff2cf")
+            self.oval(x, y+3, 17, 17, "#54dcd9")
+            self.ribbon([(x+math.cos(i*.4)*i*.23, y+3+math.sin(i*.4)*i*.23)
+                         for i in range(28)], 2, "#f1ffe0")
+        elif variant == "candy_corn":
+            self.poly(((x, y+11), (x-9, y-8), (x+9, y-8)), "#ffd75f")
+            self.poly(((x, y+11), (x-6, y-2), (x+6, y-2)), "#ff974f")
+            self.poly(((x, y+11), (x-3, y+5), (x+3, y+5)), "#fff4dd")
+        else:  # gummy bear
+            for dx in (-5, 5):
+                self.oval(x+dx, y+7, 6, 6, "#b18cf7")
+                self.oval(x+dx, y-6, 6, 7, "#b18cf7")
+                self.oval(x+dx, y-1, 7, 6, "#9261da")
+            self.oval(x, y-2, 12, 13, "#aa78ec")
+            self.oval(x, y+5, 13, 11, "#c7a0ff")
+            for dx in (-2, 2):
+                self.oval(x+dx, y+6, 1.5, 2, "#473460")
+            self.oval(x, y+2, 4, 3, "#e3caff")
+        self.oval(x-3, y+5, 3, 2, "#ffffff")
+        self.rect(x+13, y+11, 2, 6, "#a0ffca")
+        self.rect(x+13, y+11, 6, 2, "#a0ffca")
+        if pickup.remaining < 2:
+            self.item("oval", (x-15, -y-15, x+15, -y+15), fill="",
+                      outline=mix(BACKGROUND, "#b8ffdc", .4+.3*math.sin(t*9)), width=1)
+
+    def _spell_projectile(self, bullet, t):
+        color = COLORS.get(bullet.rule, "#fff5e5")
+        x, y, w, h = bullet.x, bullet.y, bullet.width, bullet.height
+        if isinstance(bullet, Finger):
+            self._finger_claw(x, y, h, -1 if bullet.vx > 0 else 1, t,
+                              magenta=True, width=w)
+        else:
+            # Keep the full rectangular collision silhouette, with an inset
+            # luminous core rather than misleading round-only projectiles.
+            self.rect(x, y, w, h, color)
+            self.rect(x, y, max(1, w-3), max(1, h-3), mix(color, "#32213e", .3))
+            self.poly(((x, y+h*.38), (x+w*.3, y), (x, y-h*.38), (x-w*.3, y)),
+                      mix(color, "#ffffff", .7))
+
+    def _runic_ring(self, ring, t):
+        for index, (x, y, w, h, rule) in enumerate(ring.pieces()):
+            if not (-310 < x < 310 and -250 < y < 250):
+                continue
+            color = COLORS[rule]
+            self.rect(x, y, w, h, color if index % 2 else mix(color, "#263149", .18))
+            if index % 8 == 0:
+                self.poly(((x-3, y), (x, y+4), (x+3, y), (x, y-4)), "#fff8e9")
 
     def soft_poly(self, points, color):
         softened = []
@@ -202,24 +388,35 @@ class KingView:
             self.ribbon(points, 3.7, "#c9c1ba")
             self.ribbon([(x, y+.8) for x, y in points], 1.2, "#efffe2")
 
+    def _finger_claw(self, x, y, height, sign, t, magenta=False, width=12):
+        """The same curved claw, knuckle, and highlight on hands and projectiles."""
+        top, bottom = y+height/2, y-height/2
+        rim, slit, edge, shell, inner, shine, glint = (
+            ("#ec91e2", "#43133f", "#873878", "#850c76", "#ff42de", "#ffb3f3", "#ffe0fa")
+            if magenta else
+            ("#a987aa", "#382037", "#285d46", "#690f35", "#ed294b", "#ff9d9a", "#e4b7c5"))
+        sx = width/12
+        # Shorter flying fingers retain the attached claws' curved silhouette.
+        sy = min(1, height/32)
+        self.oval(x, top-1, width, 10*sy, rim)
+        self.oval(x, top-2*sy, width*.75, 5*sy, slit)
+        shape = ((x-sign*4*sx, top+sy), (x+sign*4*sx, top),
+                 (x+sign*5*sx, y+7*sy), (x+sign*4*sx, y-5*sy),
+                 (x-sign*3*sx, bottom+5*sy), (x-sign*5*sx, bottom),
+                 (x-sign*sx, y-7*sy), (x-sign*4*sx, y+4*sy))
+        wobble = 1.15+.035*math.sin(t*3+abs(x))
+        self.soft_poly([(x+(px-x)*wobble, y+(py-y)*1.04) for px, py in shape], edge)
+        self.soft_poly(shape, shell)
+        self.soft_poly([(x+(px-x)*.69, py+sy) for px, py in shape], inner)
+        self.ribbon(((x-sign*sx, top-3*sy), (x+sign*sx, y+9*sy),
+                     (x+sign*1.8*sx, y)), 1.4, shine)
+        self.oval(x-sign*3*sx, top+sy, 4*sx, 2*sy, glint)
+
     def _claws(self, game, side):
         sign = -1 if side == "left" else 1
         for x, y, _, height in game.hand_rectangles(side):
-            top, bottom = y+height/2, y-height/2
-            # A clean knuckle rim and small dark slit suggest a claw emerging
-            # through the hand, without blood or spray.
-            self.oval(x, top-1, 12, 10, "#a987aa")
-            self.oval(x, top-2, 9, 5, "#382037")
-            shape = ((x-4, top+1), (x+4, top), (x+5, y+7),
-                     (x+sign*4, y-5), (x-sign*3, bottom+5),
-                     (x-sign*5, bottom), (x-sign, y-7), (x-4, y+4))
-            wobble = 1.15+.035*math.sin(game.elapsed*3+x)
-            self.soft_poly([(x+(px-x)*wobble, y+(py-y)*1.04) for px, py in shape], "#285d46")
-            self.soft_poly(shape, "#690f35")
-            inner = [(x+(px-x)*.69, py+1) for px, py in shape]
-            self.soft_poly(inner, "#ed294b")
-            self.ribbon(((x-1, top-3), (x+1, y+9), (x+sign*1.8, y)), 1.4, "#ff9d9a")
-            self.oval(x-sign*3, top+1, 4, 2, "#e4b7c5")
+            self._finger_claw(x, y, height, sign, game.elapsed,
+                              magenta=game.stage.name == "fingers")
 
     def _arm(self, game, side):
         segments = list(game.arm_segments(side))
@@ -288,28 +485,48 @@ class KingView:
         self.soft_poly(points, fill)
 
     def _fire_crown(self, x, y, t):
-        """Living flames form the crown itself, with tall outer points."""
+        """Layered fire with upward-moving turbulence and cooling embers."""
         base = y+34
-        for index, offset in enumerate((-39, -26, -13, 0, 13, 26, 39)):
-            phase = index*1.73
-            height = 18+29*(abs(offset)/39)**1.5+3*math.sin(t*5+phase)
-            for layer, color in enumerate(("#783525", "#ec3f1d", "#ff8c22", "#ffe17a")):
+        # Fit the complete flame into the arena instead of flattening its tip.
+        room = max(0, 238-base)
+        wind = 2.4*math.sin(t*1.7)+1.3*math.sin(t*3.13)
+        palette = ("#913321", "#d94317", "#f96c19", "#ffb536", "#fff2b0")
+        # Draw each temperature layer across the crown before the next, so
+        # neighboring flames merge into one continuous bed of fire.
+        for layer, color in enumerate(palette):
+            for index, offset in enumerate((-39, -26, -13, 0, 13, 26, 39)):
+                phase = index*2.399
+                flicker = (math.sin(t*6.3+phase)*.12
+                           + math.sin(t*10.7+phase*1.8)*.06
+                           + math.sin(t*3.1+phase*.7)*.1)
+                height = min(room, (22+27*(abs(offset)/39)**1.5)*(1+flicker))
+                height *= 1-layer*.13
                 left, right = [], []
-                for step in range(19):
-                    p = step/18
-                    curl = (math.sin(t*4-p*5+phase)*6+offset/39*p*5)*p
-                    width = (13-layer*2.7)*(1-p)**.8*(.9+.1*math.sin(p*9-t*6+phase))
+                for step in range(23):
+                    p = step/22
+                    # Waves travel from the root toward the tip. Higher
+                    # frequencies become visible only as the flame thins.
+                    curl = (wind*p+math.sin(p*7-t*5.4+phase)*4*p
+                            + math.sin(p*14-t*8.1+phase)*2*p*p)
+                    width = (12.5-layer*2.1)*(1-p)**.85
+                    width *= 1+.22*math.sin(p*11-t*7+phase)*p
                     px = x+offset+curl
-                    py = min(238, base+p*height*(1-layer*.11))
-                    left.append((px-width, py))
-                    right.append((px+width, py))
+                    py = base+p*height
+                    asymmetry = math.sin(p*9-t*4.7+phase)*.22*p
+                    left.append((px-width*(1+asymmetry), py))
+                    right.append((px+width*(1-asymmetry), py))
                 self.poly(left+right[::-1], color)
-        for index in range(5):
-            rise = (t*.55+index*.213)%1
-            px = x-33+index*16+math.sin(t*2+index)*3
-            py = min(236, base+12+rise*45)
-            color = mix(BACKGROUND, "#ffd57b", (1-rise)*.85)
-            self.oval(px, py, 1.5, 2.5, color)
+        for index in range(11):
+            lifetime = 1.1+(index%4)*.23
+            rise = (t/lifetime+index*.6180339)%1
+            offset = -40+(index*29)%81
+            px = x+offset+wind*rise+math.sin(rise*5+index)*5*rise
+            py = base+12+rise*min(64, max(0, room-14))
+            # Fade in after birth and cool to red as the spark rises.
+            intensity = min(1, rise*12)*(1-rise)**1.3
+            heat = mix("#ff5924", "#fff0a2", 1-rise)
+            color = mix(BACKGROUND, heat, intensity)
+            self.oval(px, py, 1.8*(1-rise)+.3, 3*(1-rise)+.5, color)
 
     def _face(self, x, y, scale, shell, glow, t, game=None):
         if shell:
@@ -442,13 +659,17 @@ class KingView:
         jaw = 3 + 6 * (.5 + .5*math.sin(t*math.tau*3.5+phase))
         self.poly(points(((-25, -3), (-13, -9), (0, -11), (13, -7), (26, 0),
                           (19, -22-jaw), (3, -29-jaw), (-16, -23-jaw))), "#070b19")
+        upper_teeth = []
         for i in range(7):
             px = -20+i*6
             top = -7-4*math.sin((i+1)*math.pi/8)
-            self.poly(points(((px-2.5, top), (px+2.5, top+1), (px+.7, top-7-i%3))), "#d5ffff")
+            upper_teeth.extend(((px-2.5, top), (px+.7, top-7-i%3), (px+2.5, top+1)))
+        self.poly(points(upper_teeth), "#d5ffff")
+        lower_teeth = []
         for i in range(5):
             px, bottom = -13+i*6, -23-jaw+abs(i-2)*1.7
-            self.poly(points(((px-2, bottom), (px+2, bottom), (px-.6, bottom+6))), color)
+            lower_teeth.extend(((px-2, bottom), (px-.6, bottom+6), (px+2, bottom)))
+        self.poly(points(lower_teeth), color)
         for crack in (((-8, 40), (-4, 26), (-9, 29), (-6, 19), (-11, 30), (-7, 28)),
                       ((30, -10), (21, -14), (24, -22), (18, -15))):
             self.poly(points(crack), "#292640")
@@ -474,6 +695,12 @@ class KingView:
         x, y, width, height = game.scare_rectangle
         warning = game.scare_warning
         self.rect(x, y, width, height, "#251d30" if warning else "#482a60")
+        for index in range(5):
+            py = y-100+index*44
+            self.ribbon([(x-145+step*29, py+5*math.sin(step*.8+game.elapsed*4+index))
+                         for step in range(11)], 4, "#312341" if warning else "#58306f")
+        for side in (-1, 1):
+            self.rect(x+side*(width/2-2), y, 2, height, "#b68bcf")
         # The plus sign divides the entire arena; the lines themselves are safe.
         self.rect(0, 0, 3, 480, "#d9b8f5")
         self.rect(0, 0, 600, 3, "#d9b8f5")
@@ -482,16 +709,81 @@ class KingView:
             # and jagged mouths. They share one hit allowance for this beat.
             for offset, lift, scale in ((-80, 40, .7), (0, -20, 1), (80, 40, .7)):
                 cx, cy = x + offset, y + lift
-                shape = ((-36, -36), (-36, 16), (-25, 35), (0, 44), (25, 35),
-                         (36, 16), (36, -36), (22, -25), (10, -38), (0, -26),
-                         (-10, -38), (-22, -25))
-                self.poly([(cx+px*scale, cy+py*scale) for px, py in shape], "#e7d9ff")
+                self._laughing_face(cx, cy, scale, "#e7d9ff", game.elapsed*1.4, offset*.07)
                 for side in (-1, 1):
-                    self.poly([(cx+(side*15+px)*scale, cy+py*scale)
-                               for px, py in ((-8, 18), (8, 12), (5, 0), (-6, 2))], "#251239")
-                mouth = ((-17, -8), (-8, -13), (0, -8), (8, -13), (17, -8),
-                         (12, -22), (0, -27), (-12, -22))
-                self.poly([(cx+px*scale, cy+py*scale) for px, py in mouth], "#251239")
+                    self._star(cx+side*35*scale, cy+45*scale, 4, "#96e9f2", game.elapsed*7+side)
+
+    def _mouth_fire(self, x, y, width, height, t, mouth_x, mouth_y):
+        bottom, top = y-height/2, y+height/2
+        top = mouth_y
+        height = top-bottom
+        # The jet starts inside the open mouth and spreads into a cone.
+        taper_length = 105
+        for layer, color in enumerate(("#692b20", "#b93619", "#ed5318", "#ff9626", "#ffd35c", "#fff2bc")):
+            left, right = [], []
+            for step in range(49):
+                p = step/48
+                py = top-p*height
+                wave = math.sin(p*23-t*16)+.45*math.sin(p*47-t*23)
+                spread = min(1, p*height/taper_length)
+                center = mouth_x+(x-mouth_x)*spread+math.sin(p*17-t*12)*p*5
+                radius = (width/2-layer*6.5)*spread
+                radius *= 1+.12*wave
+                radius = min(width/2-abs(center-x), radius)
+                left.append((center-radius, py))
+                right.append((center+radius, py))
+            self.poly(left+right[::-1], color)
+        # Hot fragments are carried down by the jet, then vanish at the floor.
+        for index in range(18):
+            p = (t*(1.7+index%3*.17)+index*.618)%1
+            spread = min(1, p*height/taper_length)
+            px = mouth_x+(x-mouth_x)*spread+math.sin(index*2.399+p*8)*(width/2-5)*spread
+            py = top-5-p*(height-10)
+            self.oval(px, py, 2, 4+5*p, mix("#ff7623", "#fff6c8", 1-p))
+        # Thin bright filaments inside the cone add turbulent motion without
+        # widening the damaging lane or hiding its silhouette.
+        for side in (-1, 1):
+            self.ribbon([(mouth_x+side*min(width*.22, p*height*.18)+math.sin(p*28-t*19)*3*p,
+                          top-p*height) for p in (step/32 for step in range(33))],
+                        1.5, "#fff8d1")
+
+    def _slam_impact(self, x, y, width, height, progress):
+        left, right = x-width/2, x+width/2
+        floor = y-height/2
+        fade = (1-progress)**.7
+        self.rect(x, y, width, height, mix(BACKGROUND, "#754027", .45+.3*fade))
+        self.rect(x, floor+3, width-4, 5, mix(BACKGROUND, "#fff0a4", fade))
+        for side in (-1, 1):
+            self.rect(x+side*(width/2-2), y, 2, height, mix(BACKGROUND, "#ffbb68", fade*.7))
+        # Fast downward streaks communicate the whole struck area.
+        for i in range(15):
+            px = left+width*(i+.5)/15
+            fall = (progress*2.6+i*.618)%1
+            py = y+height/2-fall*(height-55)
+            self.ribbon(((px-2, py), (px, py-22), (px+1, py-50)),
+                        1+i%3, mix(BACKGROUND, "#ffca78", fade*.7))
+        # Expanding ground shockwave and branching fissures remain inside
+        # the actual danger zone, including the safe gap on a double slam.
+        radius = width*.48*min(1, progress*3)
+        for band in range(3):
+            self.oval(x, floor+7+band*3, max(1, radius*2-band*10),
+                      8+band*4, mix(BACKGROUND, "#ffba60", fade*(.7-band*.15)))
+        for i in range(9):
+            origin = left+(i+.5)*width/9
+            reach = (18+i%3*12)*min(1, progress*5)
+            self.ribbon(((origin, floor+2), (origin-7, floor+reach*.4),
+                         (origin+4, floor+reach*.7), (origin+1, floor+reach)),
+                        2, mix(BACKGROUND, "#ffd394", fade))
+        # Ballistic debris rises quickly and falls under gravity.
+        for i in range(20):
+            origin = left+(i+.5)*width/20
+            age = progress*.75
+            px = max(left+5, min(right-5, origin+math.sin(i*4.7)*age*24))
+            py = floor+5+max(0, (90+i%5*22)*age-190*age*age)
+            size = 2+i%3
+            color = mix(BACKGROUND, "#c79b73", fade)
+            self.poly(((px-size, py), (px, py+size*1.4),
+                       (px+size, py+1), (px+1, py-size)), color)
 
     def _practice_countdown(self, game):
         remaining = max(0, game.stage.duration-game.stage_age)
@@ -540,6 +832,8 @@ class KingView:
                         x = math.cos(angle)*(25+progress*155)
                         y = 219 + math.sin(angle)*progress*55-progress*progress*210
                         self.poly(((x-5, y), (x+6, y+4), (x+2, y+12)), mix("#ffffff", bg, progress))
+        if not game.won:
+            self._attack_atmosphere(game)
         if name == "scares" and game.scare_warning and not game.won:
             x, y, _, _ = game.scare_rectangle
             # Upper-quadrant warnings sit below the arms and draw in front so
@@ -555,30 +849,20 @@ class KingView:
             self.text(0, -35, f"TOP LEFT FIRST · MOVE CLEAR · {seconds}", "#a4f4ff", 14)
         for x, y, width, height in game.hazard_rectangles():
             if name == "fire":
-                self.rect(x, y, width, height, "#cb3c13")
-                for i in range(28):
-                    py = -230+i*12
-                    offset = math.sin(game.elapsed*23+i)*9
-                    self.poly(((offset-22, py), (offset+22, py), (offset+6, py+35)), "#ffbb25" if i%2 else "#fff08c")
+                self._mouth_fire(x, y, width, height, game.elapsed, game.boss_x, game.boss_y-9)
             else:
-                self.rect(x, y, width, height, "#d85615")
-                for i in range(13):
-                    self.rect(x-width/2+10+i*20, y, 8, height, "#ffb238" if i%2 else "#ffd05c")
+                self._slam_impact(x, y, width, height, progress)
+        self.draw_bone_walls(game.bullets)
         for bullet in game.bullets:
-            color = COLORS.get(bullet.rule, "#ffffff")
-            for rectangle in bullet.rectangles():
-                self.rect(*rectangle, color)
-            if isinstance(bullet, Finger):
-                self.rect(bullet.x, bullet.y+8, 6, 8, "#ffd1f8")
+            if getattr(bullet, "bone", False):
+                continue
+            self._spell_projectile(bullet, game.elapsed)
         for ring in game.rings:
-            for x, y, width, height, rule in ring.pieces():
-                self.rect(x, y, width, height, COLORS[rule])
+            self._runic_ring(ring, game.elapsed)
         for shot in game.shots:
             self.rect(shot.x, shot.y, 4, 12, "#67e8f9")
         for pickup in game.healing_pickups:
-            self.rect(pickup.x, pickup.y, 16, 16, "#22c55e")
-            self.rect(pickup.x, pickup.y, 4, 12, "#ffffff")
-            self.rect(pickup.x, pickup.y, 12, 4, "#ffffff")
+            self._candy(pickup, game.elapsed)
         if game.counter_time > 0:
             r = COUNTER_RANGE
             self.item("oval", (game.x-r, -game.y-r, game.x+r, -game.y+r),
@@ -586,7 +870,7 @@ class KingView:
         if name == "wrath_ready" and not game.won:
             self._practice_countdown(game)
         if name in ("roar", "laugh"):
-            self.text(0, 68, "ROOOAAAR!" if name == "roar" else "HA. HA. HA!", "#ffdd63", 22)
+            self._vocal_caption(name, game.stage_age)
         if name == "title":
             fade = min(1, progress*5) * (1-progress)**0.6
             self.text(0, 10, "THE PUMPKIN KING", mix(bg, "#ffce55", fade), 31)

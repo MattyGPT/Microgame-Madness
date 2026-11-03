@@ -198,7 +198,7 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
 });
 
 test("The King's Wrath has a yellow crown and loads all eight practice modes", async ({ page }, testInfo) => {
-  await expect(page.locator('[data-game]:visible')).toHaveCount(6);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(7);
   const card = page.locator('[data-game="wrath"]');
   await expect(card).toContainText("The King's Wrath");
   expect(await card.locator('svg path').evaluate(el => getComputedStyle(el).fill)).toBe('rgb(255, 224, 102)');
@@ -880,13 +880,13 @@ test('global outages keep games playable and queued scores retry after reload', 
   expect(service.guests).toBe(1);
 });
 
-test("arcade music shuffles all fifteen songs automatically before repeating", async ({ page }) => {
+test("arcade music shuffles all twenty-one songs automatically before repeating", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.locator('[data-game="hangman"]').click();
+  await page.locator('h1').click();
   await expect.poll(() => page.evaluate(() => audioContext?.state)).toBe("running");
   const heard = [];
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 21; i++) {
     const track = await page.evaluate(() => musicPlayer.track);
     heard.push(track);
     expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
@@ -896,7 +896,7 @@ test("arcade music shuffles all fifteen songs automatically before repeating", a
     await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
   }
   expect([...heard].sort()).toEqual(await page.evaluate(() => ArcadeMusic.tracks.map(track => track.id).sort()));
-  expect(new Set(heard).size).toBe(15);
+  expect(new Set(heard).size).toBe(21);
   expect(errors).toEqual([]);
 });
 
@@ -2120,4 +2120,62 @@ test("ROCKNROY and The King's Wrath work together and restore the boss theme", a
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
   await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
   expect(errors).toEqual([]);
+});
+
+test('Cubie hints after twenty completed minigames, ignores exits, and remembers dismissal', async ({ page }, testInfo) => {
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1') || '{}');
+    saved.minigamesCompleted = 18;
+    saved.minigamesStarted = 20;
+    saved.cubieHintShown = false;
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  const dialog = page.locator('#cubie-hint');
+  // Abandoning even a scored Key Rush run must not count as completion.
+  await page.locator('[data-game="keyboard"]').click();
+  await page.locator('#difficulty-choices button').first().click();
+  await page.locator('#exit').click();
+  expect(await page.evaluate(() => saved.minigamesCompleted)).toBe(18);
+  await page.locator('[data-game="hangman"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(dialog).not.toBeVisible();
+  // Complete a loss, then verify that completion survives a reload.
+  await page.evaluate(() => {
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+      if (!snapshot.over && !snapshot.word.toLowerCase().includes(letter)) guess(letter);
+    }
+  });
+  expect(await page.evaluate(() => saved.minigamesCompleted)).toBe(19);
+  await expect(dialog).not.toBeVisible();
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="hangman"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await expect(dialog).not.toBeVisible();
+  // The next finished round is completion twenty; repeated renders must not count twice.
+  await page.evaluate(() => {
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') if (!snapshot.over) guess(letter);
+    render();
+    render();
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('GRAVITRON');
+  await expect(dialog).toContainText('finished 20 minigames');
+  await expect(page.locator('#cubie-hint-okay')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('cubie-hint.png') });
+  await page.locator('#cubie-hint-okay').click();
+  await expect(dialog).not.toBeVisible();
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="hangman"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await page.evaluate(() => {
+    for (const letter of 'abcdefghijklmnopqrstuvwxyz') if (!snapshot.over) guess(letter);
+  });
+  await expect(dialog).not.toBeVisible();
+  expect(await page.evaluate(() => saved.cubieHintShown)).toBe(true);
 });

@@ -175,6 +175,27 @@ h1 em {
     13px 13px 0 #6d8b44,
     25px 25px 0 #202b22;
 }
+#cubie-hint {
+  width: min(900px, 90vw);
+  max-height: 90dvh;
+  min-height: min(650px, 85dvh);
+  margin: auto;
+  padding: clamp(24px, 5vw, 64px);
+  overflow-y: auto;
+  border: 3px solid var(--lime);
+  border-radius: 28px;
+  background: #17251a;
+  color: #f1f5e9;
+  text-align: center;
+  box-shadow: 0 24px 100px #0009;
+}
+#cubie-hint::backdrop { background: rgb(5 10 8 / 85%); }
+.cubie-hint-art { position: relative; height: 190px; }
+.cubie-hint-art .pixel-face { top: 10px; left: calc(50% - 72px); }
+#cubie-hint h2 { font-size: clamp(25px, 4vw, 42px); line-height: 1.15; }
+#cubie-hint-copy { font-size: clamp(18px, 2.5vw, 25px); line-height: 1.6; margin: 24px auto; max-width: 650px; }
+#cubie-hint-copy strong { color: var(--lime); overflow-wrap: anywhere; }
+#cubie-hint-okay { min-width: 180px; min-height: 52px; padding: 12px 36px; background: var(--lime); color: #17251a; border-radius: 12px; font-weight: 800; }
 .pixel-face i {
   transform-origin: center;
   animation: mascot-blink 4.8s ease-in-out infinite;
@@ -451,7 +472,7 @@ body.gaster-active { overflow: hidden; cursor: none; }
     sans-serif;
   letter-spacing: -2px;
 }
-.word-art span {
+.word-art .word-question {
   transform: rotate(9deg);
   border: 1px solid var(--accent);
   padding: 0 10px;
@@ -503,6 +524,92 @@ body.gaster-active { overflow: hidden; cursor: none; }
 .singularity-art svg { width: 100px; height: 80px; filter: drop-shadow(0 0 12px #a488ff66); }
 .singularity-card { background: linear-gradient(135deg, #121625, #242039); }
 .wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
+/* Quiet, independent idle motions keep the arcade selection alive. */
+.word-art .word-question { animation: arcade-question 3.4.8s ease-in-out infinite; }
+.keys-art i { animation: arcade-key-left 3.2s ease-in-out infinite; }
+.keys-art i:nth-child(2) { animation: arcade-key-middle 3.8s ease-in-out -1.2s infinite; }
+.keys-art i:nth-child(3) { animation: arcade-key-right 3.4s ease-in-out -.7s infinite; }
+.blocks-art { animation: arcade-block-drift 4.2s ease-in-out infinite; }
+.blocks-art span { animation: arcade-block-turn 3.4.8s ease-in-out -1.1s infinite; }
+.boss-art span {
+  animation: arcade-boss-blink 4.4s ease-in-out -2s infinite,
+    arcade-boss-look 8s ease-in-out infinite;
+  transform-origin: center;
+}
+.pumpkin-art { animation: arcade-pumpkin-shift 4s ease-in-out infinite; }
+.wrath-art svg { animation: arcade-crown-breathe 3.4s ease-in-out infinite; }
+.singularity-art svg { animation: arcade-core-hover 4.8s ease-in-out infinite; }
+.singularity-art circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: arcade-core-pulse 4.4s ease-in-out infinite;
+}
+ .word-art .word-letter {
+  display: inline-block;
+  animation: arcade-letter .5s ease-in-out infinite;
+}
+.word-art .word-letter:last-child { animation-delay: -.25s; }
+@keyframes arcade-letter {
+  0%, 100% { transform: rotate(-1.5deg); }
+  50% { transform: translateY(-1px) rotate(1.5deg); }
+}
+@keyframes arcade-question {
+  0%, 52%, 100% { transform: rotate(9deg); }
+  63% { transform: translateY(-5px) rotate(-1deg); }
+  74% { transform: rotate(18deg); }
+  85% { transform: translateY(-2px) rotate(4deg); }
+}
+@keyframes arcade-key-left {
+  0%, 100% { transform: translate(0, 0) rotate(-8deg); }
+  50% { transform: translate(-4px, -8px) rotate(-15deg); }
+}
+@keyframes arcade-key-middle {
+  0%, 100% { transform: translateY(7px) rotate(5deg); }
+  50% { transform: translateY(-3px) rotate(-2deg); }
+}
+@keyframes arcade-key-right {
+  0%, 100% { transform: translate(0, 0) rotate(-8deg); }
+  50% { transform: translate(4px, 6px) rotate(2deg); }
+}
+@keyframes arcade-block-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes arcade-block-turn {
+  0%, 100% { transform: rotate(15deg) translateY(10px); }
+  50% { transform: rotate(5deg) translate(4px, 20px); }
+}
+@keyframes arcade-boss-look {
+  0%, 10%, 95%, 100% { translate: 0 0; }
+  18%, 30% { translate: -5px -1px; }
+  40%, 52% { translate: 5px 0; }
+  62%, 72% { translate: 1px -3px; }
+  82%, 88% { translate: -2px 2px; }
+}
+@keyframes arcade-boss-blink {
+  0%, 42%, 49%, 100% { transform: translateX(-50%) scaleY(1); }
+  45%, 46% { transform: translateX(-50%) scaleY(.08); }
+}
+@keyframes arcade-pumpkin-shift {
+  0%, 100% { transform: translateX(-5px) rotate(-12deg); }
+  50% { transform: translate(5px, -5px) rotate(-3deg); }
+}
+@keyframes arcade-crown-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+@keyframes arcade-core-hover {
+  0%, 100% { transform: translateY(2px) rotate(-4deg); }
+  50% { transform: translateY(-7px) rotate(4deg); }
+}
+@keyframes arcade-core-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(.90); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-card .card-art,
+  .game-card .card-art * { animation: none !important; }
+}
 #welcome-art svg { display: block; width: 56px; height: 56px; margin: auto; }
 .card-title {
   font:
@@ -673,6 +780,19 @@ body.gaster-active { overflow: hidden; cursor: none; }
   border-color: var(--accent);
   background: #22292b;
 }
+.difficulty-choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 4px 0 var(--accent);
+}
+#jukebox-controls {
+  padding: 16px;
+  margin: 20px 0;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+}
+#jukebox-controls p { margin: 0 0 12px; }
+#jukebox-controls button { margin: 0 8px; }
 .difficulty-choice strong {
   display: block;
   color: var(--accent);
@@ -684,6 +804,68 @@ body.gaster-active { overflow: hidden; cursor: none; }
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
+}
+.difficulty-choice.song-card {
+  --accent: var(--song-color);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 176px;
+  padding: 78px 18px 18px;
+  border-color: color-mix(in srgb, var(--song-glow) 50%, #242b36);
+  background: radial-gradient(ellipse at 90% 0%, color-mix(in srgb, var(--song-glow) 32%, transparent), transparent 75%), #121720;
+  transition: border-color .15s, box-shadow .15s;
+}
+.song-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 63px;
+  z-index: -1;
+  opacity: .16;
+  background: repeating-linear-gradient(135deg, transparent 0 14px, var(--song-color) 15px 16px, transparent 17px 30px);
+  mask-image: linear-gradient(to right, #000, transparent 85%);
+}
+.song-card[data-motif="pixels"]::before,
+.song-card[data-motif="keys"]::before,
+.song-card[data-motif="letters"]::before {
+  background: repeating-conic-gradient(var(--song-color) 0% 25%, transparent 0% 50%) 0 0 / 20px 20px;
+}
+.song-card[data-motif="signal"]::before,
+.song-card[data-motif="circuit"]::before {
+  background: repeating-linear-gradient(0deg, transparent 0 3px, var(--song-color) 4px 5px);
+}
+.song-card[data-motif="orbit"]::before,
+.song-card[data-motif="moon"]::before,
+.song-card[data-motif="comet"]::before {
+  background: radial-gradient(circle, var(--song-color) 1px, transparent 2px) 0 0 / 19px 19px;
+}
+.song-card .song-art {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 54px;
+  height: 54px;
+  fill: none;
+  stroke: var(--song-color);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--song-glow) 65%, transparent));
+}
+.song-card strong { position: relative; line-height: 1.4; }
+.song-card span { color: #bfc8d5; }
+.difficulty-choice.song-card:hover:not(:disabled),
+.difficulty-choice.song-card:focus-visible {
+  border-color: var(--song-color);
+  box-shadow: inset 0 0 30px color-mix(in srgb, var(--song-glow) 12%, transparent);
+}
+.difficulty-choice.song-card[aria-pressed="true"] {
+  border-color: var(--song-color);
+  box-shadow: inset 4px 0 var(--song-color), 0 0 16px color-mix(in srgb, var(--song-glow) 20%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .difficulty-choice.song-card { transition: none; }
 }
 .game-footer {
   display: flex;

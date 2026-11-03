@@ -13,6 +13,7 @@ PYTHON_SOURCES = (
     "hangman_model.py", "keyboard_model.py", "dodge_model.py", "boss_crush.py",
     "pumpkin_king.py", "pumpkin_king_view.py", "kings_wrath.py",
     "singularity_core.py", "singularity_core_view.py", "singularity_practice.py",
+    "arcade_effects.py",
 )
 
 
@@ -48,7 +49,7 @@ def build():
         else:
             child.unlink()
     html = (ROOT / "web" / "index.html").read_text()
-    for name in ("style.css", "app.js", "achievements.js", "music.js", "leaderboards.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "achievements.js", "music.js", "effects.js", "leaderboards.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')

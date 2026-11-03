@@ -42,10 +42,11 @@ test('spectral Pumpkin King and rounded Boss Crush faces animate without changin
   const animated = await pose('session.game.elapsed = 1.6');
   expect(animated.unchanged).toBe(true);
   expect(animated.commands).not.toEqual(idle.commands);
-  for (const [stage, side] of [['raise', 'both'], ['roar', ''], ['fire', ''], ['laugh', '']]) {
+  for (const [stage, side] of [['raise', 'both'], ['slam', 'both'], ['slam', 'left'], ['slam', 'right'], ['roar', ''], ['fire', ''], ['laugh', '']]) {
     const state = await pose(`session.game.stage = Stage('${stage}', 1, '${side}')\nsession.game.stage_age = .3`);
     expect(state.unchanged).toBe(true);
-    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`spectral-king-${stage}.png`) });
+    expect(state.commands.every(c => c.coords.every(Number.isFinite))).toBe(true);
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`spectral-king-${stage}-${side}.png`) });
   }
   const reactions = await page.evaluate(() => {
     const expressions = [];

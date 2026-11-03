@@ -238,8 +238,27 @@ class CountdownTests(unittest.TestCase):
         self.app.notice = ""
         self.app.last_hud = None
         self.app.last_time = 10
-        for name in ("screen", "player", "blocks", "hud", "message", "set_message"):
+        for name in ("screen", "player", "blocks", "hud", "message", "set_message", "death_particles", "death_audio"):
             setattr(self.app, name, Mock())
+
+    def test_death_freezes_combat_and_waits_one_point_six_seconds_before_score(self):
+        app = self.app
+        app.state = "playing"
+        app.game.alive = False
+        app.save = Mock()
+        for now in (10, 11.59):
+            with patch("turtle_dodge.time.monotonic", return_value=now):
+                app.tick()
+            self.assertEqual(app.state, "dying")
+            self.assertEqual(app.game.elapsed, 10)
+            app.save.assert_not_called()
+        app.player.hideturtle.assert_called_once()
+        app.death_audio.play.assert_called_once_with("turtle_death")
+        with patch("turtle_dodge.time.monotonic", return_value=11.61):
+            app.tick()
+        self.assertEqual(app.state, "over")
+        app.save.assert_called_once()
+        self.assertIn("Score: 100", app.set_message.call_args.args[0])
 
     def test_countdown_freezes_game_then_resumes(self):
         app = self.app

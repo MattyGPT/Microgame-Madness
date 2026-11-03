@@ -12,6 +12,49 @@ from web.bridge import BrowserGame
 
 
 class SingularityCoreTests(unittest.TestCase):
+    def test_orbit_attacks_hit_every_stationary_node_including_all_corners(self):
+        from singularity_practice import SingularityPractice
+        for index, choice in ((5, "binary_stars"), (11, "orbital_saws")):
+            for node in range(9):
+                for practice in (False, True):
+                    with self.subTest(attack=choice, node=node, practice=practice):
+                        game = SingularityPractice(choice) if practice else SingularityCore()
+                        if practice:
+                            game.update(3, set())
+                        else:
+                            game.begin_attack(index)
+                        game.update(ATTACKS[index].duration, self.node_keys(node))
+                        self.assertGreater(game.damage_taken, 0)
+
+    def test_corner_sweeps_leave_readable_escape_windows_and_a_clean_route(self):
+        for index, count in ((5, 2), (11, 4)):
+            with self.subTest(attack=ATTACKS[index].name):
+                game = SingularityCore()
+                game.begin_attack(index)
+                game.invulnerable = 1000
+                unsafe = []
+                for frame in range(round(ATTACKS[index].duration * 120)):
+                    game.update(1 / 120, set())
+                    hazards = [h for h in game.hazards if h.active and not h.harmless]
+                    unsafe.append({node for node, xy in enumerate(NODES)
+                                   if any(h.touches(*xy) for h in hazards)})
+                    if frame == 0:
+                        orbits = [h for h in game.hazards if h.kind == "orbit"]
+                        self.assertEqual(len(orbits), count)
+                        self.assertTrue(all(h.warning == .4 for h in orbits))
+                        self.assertTrue(any(c.get("outline") == "#ffcf7466" for c in draw_core(game)))
+                # Check every possible starting frame, not just a lucky cadence.
+                for frame in range(len(unsafe) - 35):
+                    self.assertGreaterEqual(len(set(range(9)) - set.union(*unsafe[frame:frame + 36])), 2)
+                # Execute an actual no-damage route with at most one jump per .3s.
+                player = SingularityCore()
+                player.begin_attack(index)
+                for frame in range(0, len(unsafe), 36):
+                    window = unsafe[frame:frame + 36]
+                    safe = set(range(9)) - set.union(*window)
+                    player.update(len(window) / 120, self.node_keys(min(safe)))
+                self.assertEqual((player.damage_taken, player.lives, player.attacks_completed), (0, 10, 1))
+
     @staticmethod
     def node_keys(node):
         x, y = NODES[node]
@@ -319,8 +362,8 @@ class SingularityCoreTests(unittest.TestCase):
             self.assertTrue(state["commands"])
             self.assertEqual(state["sounds"], ["core_protocol"])
             self.assertEqual(session.snapshot()["sounds"], [])
-            self.assertEqual(sum(c["kind"] == "clip_start" for c in state["commands"]), 1)
-            self.assertEqual(sum(c["kind"] == "clip_end" for c in state["commands"]), 1)
+            self.assertEqual(sum(c["kind"] == "clip_start" for c in state["commands"]), 2 if index == 14 else 1)
+            self.assertEqual(sum(c["kind"] == "clip_end" for c in state["commands"]), 2 if index == 14 else 1)
         session.dispatch(dict(action="pause"))
         position, elapsed = (session.game.x, session.game.y), session.game.elapsed
         session.dispatch(dict(action="tick", dt=.05, keys=["Left", "f"]))
