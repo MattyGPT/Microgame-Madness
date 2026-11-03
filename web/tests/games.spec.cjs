@@ -1486,11 +1486,11 @@ test('winning real Hangman on the last guess awards Down to the Wire once', asyn
     }
     for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
-    await expect(page.locator('#profile-score')).toHaveText(difficulty === 'hard' ? '170' : '140');
+    await expect(page.locator('#profile-score')).toHaveText(difficulty === 'hard' ? '180' : difficulty === 'medium' ? '150' : '140');
     await page.locator('#overlay-action').click();
   }
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('170');
+  await expect(page.locator('#profile-score')).toHaveText('180');
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="hangman_last_chance"]');
   await expect(card).toContainText('Down to the Wire');
