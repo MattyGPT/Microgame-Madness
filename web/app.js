@@ -94,6 +94,40 @@ const modes = {
       ],
     },
   },
+  wrath: {
+    title: "The King's Wrath",
+    category: "06 / ATTACK PRACTICE",
+    art: "",
+    heading: "Choose your attack. Or shuffle them all.",
+    copy: "Start with 15 HP and a three-second countdown before each attack. Repeat one pattern or face all seven in Random Order. Body and arm contact still kills instantly.",
+    accent: "#ffe066",
+    controls: "Arrows move · F shoots · E counters · D pauses · Esc picks another attack",
+    choiceLabel: "Choose an attack to load",
+    difficulties: {
+      color_memory: ["Color Memory", "Watch six eye colors, then obey blue and orange."],
+      bone_gauntlet: ["Bone Gauntlet", "Weave through the King's bone patterns."],
+      rotating_rings: ["Rotating Rings", "Read the colored ring sections and find a way through."],
+      magenta_fingers: ["Magenta Fingers", "Tap E just before a magenta finger reaches you."],
+      chaos: ["Chaos", "Dodge the King's mixed projectile patterns."],
+      royal_slams: ["Royal Slams", "Avoid the raised hands, then escape the mouth fire."],
+      haunted_quadrants: ["Haunted Quadrants", "Three-second countdown, then two more seconds to get in position. Dodge slower clockwise scares. Half a heart per hit."],
+      random_order: ["Random Order", "All seven attacks in a shuffled order. Three seconds to prepare for each. Reshuffles after every seven attacks."],
+    },
+  },
+  singularity: {
+    title: "Singularity Core",
+    category: "07 / SECRET BOSS",
+    art: "◎",
+    heading: "Nothing escapes. Except you.",
+    copy: "A robotic black hole. Survive all 15 protocols to drop its shield, then erase it with one enormous laser. 10 HP. Galactic +1 HP packs appear every three attacks.",
+    accent: "#65f5ff",
+    controls: "Hold arrows to teleport · Release to center · F fires the final laser · D pauses",
+    choiceLabel: "Containment access granted",
+    localOnly: true,
+    difficulties: {
+      gravitron: ["Enter containment", "Harder than the King. Two arrows jump to a corner. The Core cannot be damaged until every attack ends."],
+    },
+  },
 };
 let selected = "hangman";
 let selectedDifficulty = null;
@@ -104,6 +138,16 @@ let nameSurpriseActive = false;
 let nameSurpriseTimer;
 let previousSecretName = "";
 const nameSecrets = { dingdong: "", cubie: "Hi, I’m Cubie!", boo: "BOO!", starlight: "You’re made of starlight. ✦" };
+// History state survives a real reload without exposing a URL hint or relying
+// on browser storage. Consume it immediately so later reloads cannot replay it.
+const pendingGaster = history.state?.gasterSequence;
+if (pendingGaster) {
+  const state = { ...history.state };
+  delete state.gasterSequence;
+  history.replaceState(state, "");
+}
+let gasterActive = false;
+let gameTimeOffset = 0;
 let ready = false;
 let loadFailed = false;
 let active = false;
@@ -114,12 +158,13 @@ let roundSaved = false;
 let currentPlayer = "Player";
 const keys = new Set();
 const storageKey = "microgame-madness.v1";
-let saved = { player: "Player", scores: {}, achievements: {} };
+let saved = { player: "Player", scores: {}, achievements: {}, unlocks: { singularity: false } };
 let storageAvailable = true;
 try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
+    saved.unlocks.singularity = value.unlocks?.singularity === true;
     if (typeof value.player === "string")
       saved.player = value.player.slice(0, 24);
     if (
@@ -146,6 +191,20 @@ function persist() {
     $("storage-note").textContent =
       "Storage is unavailable. Scores and achievements last for this visit only.";
 }
+function unlockSingularity(navigate = true) {
+  saved.unlocks.singularity = true;
+  saved.player = $("player").value.trim() || "Player";
+  persist();
+  document.querySelector('[data-game="singularity"]').hidden = false;
+  $("game-count").textContent = "07";
+  $("game-total").textContent = "7 GAMES / ENDLESS REMATCHES";
+  updateAchievements(achievementTracker.secret("gravitron"));
+  if (navigate) {
+    selectGame("singularity");
+    showGameArea();
+    $("difficulty-choices").querySelector("button").focus({ preventScroll: true });
+  }
+}
 const achievementCards = new Map();
 const achievementQueue = [];
 const celebrationTimers = new Map();
@@ -156,7 +215,22 @@ const confettiColors = {
   crystal: ["#b67dff", "#dfaaff", "#a34ff0"],
   diamond: ["#55ddff", "#a9f4ff", "#39baff"],
   rainbow: ["#ff5470", "#ff9e42", "#ffe663", "#6ee89b", "#56c7ff", "#bc8bff"],
+  empyrorite: ["#2cf5a0", "#a4ffdb", "#00b97b", "#e3fff3", "#65eac6", "#55cc8d"],
+  black: ["#000000", "#171717", "#454545"],
 };
+function empyroriteGem() {
+  const gem = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  gem.setAttribute("viewBox", "0 0 72 72");
+  gem.setAttribute("aria-hidden", "true");
+  gem.setAttribute("class", "empyrorite-gem");
+  gem.innerHTML = '<path d="M36 6 59 22 53 51 36 66 19 51 13 22Z" fill="#14c98a" stroke="#c3ffe6" stroke-width="1.5"/>'
+    + '<path d="M36 6 28 27 13 22Z" fill="#b0ffe0"/><path d="M36 6 59 22 44 27Z" fill="#69f7bc"/>'
+    + '<path d="M28 27 44 27 36 66Z" fill="#58ffc2"/><path d="M13 22 28 27 36 66 19 51Z" fill="#078b60"/>'
+    + '<path d="M59 22 44 27 36 66 53 51Z" fill="#10b57e"/>'
+    + '<path d="M28 27 36 6 44 27Z" fill="#effff7" opacity=".8"/>'
+    + '<path d="m57 3 2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM10 46l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z" fill="#d6fff1"/>';
+  return gem;
+}
 function celebrateAchievements(earned) {
   if (!earned.length) return;
   // One clear ding for simultaneous awards; one visual layer per tier.
@@ -202,11 +276,12 @@ function showAchievementToast() {
   toast.dataset.tier = item.tier;
   const badge = document.createElement("span");
   badge.className = "medal";
-  badge.textContent = "★";
+  if (item.tier === "empyrorite") badge.append(empyroriteGem());
+  else badge.textContent = "★";
   badge.setAttribute("aria-hidden", "true");
   const detail = document.createElement("div");
   const label = document.createElement("small");
-  label.textContent = `${item.tier} achievement · +${Achievements.points[item.tier]} points`;
+  label.textContent = `${item.tier === "black" ? "Secret" : item.tier} achievement · +${Achievements.points[item.tier]} points`;
   const title = document.createElement("strong");
   title.textContent = item.title;
   detail.append(label, title);
@@ -228,16 +303,59 @@ function renderAchievements() {
   for (const item of Achievements.catalog) {
     const card = achievementCards.get(item.id);
     const earned = Boolean(unlocked[item.id]);
+    const redacted = item.secret && !earned;
+    if (!card.firstChild || card.classList.contains("redacted") !== Boolean(redacted))
+      populateAchievementCard(card, item, redacted);
     card.classList.toggle("earned", earned);
-    card.querySelector(".achievement-state").textContent = earned
-      ? `Unlocked · ${new Date(unlocked[item.id]).toLocaleDateString()}`
-      : `Locked · ${achievementTracker.progress(item)} / ${item.target}`;
-    card.querySelector("progress").value = earned ? item.target : achievementTracker.progress(item);
+    if (!redacted) {
+      card.querySelector(".achievement-state").textContent = earned
+        ? `Unlocked · ${new Date(unlocked[item.id]).toLocaleDateString()}`
+        : `Locked · ${achievementTracker.progress(item)} / ${item.target}`;
+      card.querySelector("progress").value = earned ? item.target : achievementTracker.progress(item);
+    }
     const filter = $("achievement-filter").value;
     card.hidden = (filter === "earned" && !earned) || (filter === "locked" && earned);
     if (!card.hidden) visible++;
   }
   $("achievement-empty").hidden = visible > 0;
+}
+function populateAchievementCard(card, item, redacted) {
+  card.replaceChildren();
+  card.classList.toggle("redacted", Boolean(redacted));
+  const content = document.createElement("div");
+  content.className = "achievement-content";
+  card.append(content);
+  if (redacted) {
+    delete card.dataset.tier;
+    card.setAttribute("aria-label", "Redacted achievement");
+    const label = document.createElement("strong");
+    label.textContent = "[REDACTED]";
+    content.append(label);
+    for (let i = 0; i < 3; i++) {
+      const bar = document.createElement("span");
+      bar.className = "redacted-bar";
+      bar.setAttribute("aria-hidden", "true");
+      content.append(bar);
+    }
+    return;
+  }
+  card.removeAttribute("aria-label");
+  card.dataset.tier = item.tier;
+  if (item.tier === "empyrorite") content.append(empyroriteGem());
+  const tier = document.createElement("small");
+  tier.className = "achievement-tier";
+  tier.textContent = `★ ${item.tier} · +${Achievements.points[item.tier]} points`;
+  const title = document.createElement("h4");
+  title.textContent = item.title;
+  const description = document.createElement("p");
+  description.textContent = item.wingdings ? item.description : `${item.group} · ${item.description}`;
+  if (item.wingdings) description.className = "wingdings";
+  const progress = document.createElement("progress");
+  progress.max = item.target;
+  progress.setAttribute("aria-label", item.title);
+  const state = document.createElement("small");
+  state.className = "achievement-state";
+  content.append(tier, title, description, progress, state);
 }
 function updateAchievements(result) {
   if (!result.changed) return;
@@ -255,28 +373,11 @@ function initializeAchievements() {
     const card = document.createElement("article");
     card.className = "achievement-card";
     card.dataset.achievement = item.id;
-    card.dataset.tier = item.tier;
-    const tier = document.createElement("small");
-    tier.className = "achievement-tier";
-    tier.textContent = `★ ${item.tier} · +${Achievements.points[item.tier]} points`;
-    const title = document.createElement("h4");
-    title.textContent = item.title;
-    const description = document.createElement("p");
-    description.textContent = `${item.group} · ${item.description}`;
-    const progress = document.createElement("progress");
-    progress.max = item.target;
-    progress.setAttribute("aria-label", item.title);
-    const state = document.createElement("small");
-    state.className = "achievement-state";
-    const content = document.createElement("div");
-    content.className = "achievement-content";
-    content.append(tier, title, description, progress, state);
-    card.append(content);
     achievementCards.set(item.id, card);
     $("achievements-list").append(card);
     visibleCards.observe(card);
   }
-  const tabs = [$("scores-tab"), $("achievements-tab")];
+  const tabs = [$("scores-tab"), $("achievements-tab"), $("global-tab")];
   function selectTab(tab) {
     for (const button of tabs) {
       const selected = button === tab;
@@ -284,13 +385,15 @@ function initializeAchievements() {
       button.tabIndex = selected ? 0 : -1;
       $(button.getAttribute("aria-controls")).hidden = !selected;
     }
+    if (tab.id === "global-tab") loadGlobalScores();
   }
   tabs.forEach((tab, index) => {
     tab.onclick = () => selectTab(tab);
     tab.onkeydown = event => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index];
+      const next = tabs[event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length];
       selectTab(next);
       next.focus();
     };
@@ -349,10 +452,98 @@ function saveRound() {
   saved.scores[scoreKey()] = list;
   persist();
   showScores();
+  publishGlobalScore({ mode: selected, difficulty: selectedDifficulty, player: currentPlayer, score: snapshot.score });
+}
+// The cloud identity uses its own key; never replace the existing local profile.
+const leaderboardReady = fetch("./leaderboard-config.json", { cache: "no-store" })
+  .then(response => response.ok ? response.json() : {})
+  .catch(() => ({}))
+  .then(config => new Leaderboards.Client(config));
+let globalRequest = 0;
+let submissionRequest = 0;
+function updateGlobalDifficulties(difficulty) {
+  const mode = $("leaderboard-game").value;
+  document.querySelector('label[for="leaderboard-difficulty"]').textContent = mode === "wrath" ? "Attack" : "Difficulty";
+  $("leaderboard-difficulty").replaceChildren(...Object.entries(modes[mode].difficulties).map(([value, [label]]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    return option;
+  }));
+  if (Object.hasOwn(modes[mode].difficulties, difficulty)) $("leaderboard-difficulty").value = difficulty;
+}
+function initializeGlobalLeaderboards() {
+  $("leaderboard-game").replaceChildren(...Object.entries(modes).filter(([, config]) => !config.localOnly).map(([value, config]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = config.title;
+    return option;
+  }));
+  updateGlobalDifficulties();
+  $("leaderboard-game").onchange = () => { updateGlobalDifficulties(); loadGlobalScores(); };
+  $("leaderboard-difficulty").onchange = loadGlobalScores;
+  $("leaderboard-refresh").onclick = async () => {
+    await retryGlobalScores();
+    loadGlobalScores();
+  };
+  window.addEventListener("online", async () => {
+    await retryGlobalScores();
+    if (!$("global-panel").hidden) loadGlobalScores();
+  });
+  retryGlobalScores();
+}
+async function loadGlobalScores() {
+  const request = ++globalRequest;
+  const mode = $("leaderboard-game").value, difficulty = $("leaderboard-difficulty").value;
+  $("global-scores").replaceChildren();
+  $("global-scores").setAttribute("aria-busy", "true");
+  $("leaderboard-status").textContent = "Loading global rankings…";
+  try {
+    const client = await leaderboardReady;
+    const rows = await client.list(mode, difficulty);
+    if (request !== globalRequest) return;
+    for (const entry of rows) {
+      const row = document.createElement("li"), name = document.createElement("span"), score = document.createElement("strong");
+      name.textContent = `${String(entry.rank).padStart(2, "0")}  ${entry.player}${entry.is_you ? " (you)" : ""}`;
+      score.textContent = `${entry.score}${mode === "keyboard" ? " rounds" : " pts"}`;
+      row.classList.toggle("is-you", entry.is_you === true);
+      row.append(name, score);
+      $("global-scores").append(row);
+    }
+    $("leaderboard-status").textContent = rows.length ? "Best scores from players everywhere." : "No scores yet. Set the first record!";
+  } catch (error) {
+    if (request === globalRequest) $("leaderboard-status").textContent = error.message;
+  } finally {
+    if (request === globalRequest) $("global-scores").setAttribute("aria-busy", "false");
+  }
+}
+async function publishGlobalScore(entry) {
+  if (modes[entry.mode]?.localOnly) return;
+  const request = ++submissionRequest;
+  try {
+    const client = await leaderboardReady;
+    if (!client.configured) return;
+    $("leaderboard-submission").textContent = "Sharing your best score…";
+    await client.submit(entry);
+    if (request === submissionRequest) $("leaderboard-submission").textContent = "Your best score is on the global leaderboard.";
+    if (!$("global-panel").hidden) loadGlobalScores();
+  } catch {
+    if (request === submissionRequest) $("leaderboard-submission").textContent = "Saved locally. We’ll retry your global score when you reconnect or press Refresh.";
+  }
+}
+async function retryGlobalScores() {
+  try {
+    const client = await leaderboardReady;
+    if (!client.configured || !Object.keys(client.pending).length) return;
+    await client.flush();
+    $("leaderboard-submission").textContent = "Your best score is on the global leaderboard.";
+  } catch {
+    $("leaderboard-submission").textContent = "Saved locally. We’ll retry your global score when you reconnect or press Refresh.";
+  }
 }
 function send(action, extra = {}) {
   return JSON.parse(
-    handle(JSON.stringify({ action, now: performance.now() / 1000, ...extra })),
+    handle(JSON.stringify({ action, now: (performance.now() - gameTimeOffset) / 1000, ...extra })),
   );
 }
 function clearKeys() {
@@ -387,6 +578,7 @@ function showGameArea() {
 }
 function selectGame(mode) {
   if (loadFailed) return;
+  if (mode === "singularity" && !saved.unlocks.singularity) return;
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   if (active && selected === "keyboard") saveRound();
@@ -406,9 +598,12 @@ function selectGame(mode) {
   });
   $("game-title").textContent = config.title;
   $("game-category").textContent = config.category;
-  $("welcome-art").textContent = config.art;
+  const icon = document.querySelector(`[data-game="${mode}"] .card-art svg`);
+  if (icon) $("welcome-art").replaceChildren(icon.cloneNode(true));
+  else $("welcome-art").textContent = config.art;
   $("welcome-title").textContent = config.heading;
   $("welcome-copy").textContent = config.copy;
+  $("difficulty-title").textContent = config.choiceLabel || "Choose a difficulty to play";
   $("game-instruction").textContent = config.controls;
   $("difficulty-choices").replaceChildren(
     ...Object.entries(config.difficulties).map(([value, [label, description]]) => {
@@ -446,6 +641,11 @@ function selectGame(mode) {
           : "Your HP";
   setLocked(false);
   showScores();
+  if (!config.localOnly) {
+    $("leaderboard-game").value = mode;
+    updateGlobalDifficulties();
+    if (!$("global-panel").hidden) loadGlobalScores();
+  }
   syncMusic();
 }
 function startGame(difficulty) {
@@ -453,6 +653,11 @@ function startGame(difficulty) {
     return;
   resetDamageFeedback();
   selectedDifficulty = difficulty;
+  if (!modes[selected].localOnly) {
+    $("leaderboard-game").value = selected;
+    updateGlobalDifficulties(difficulty);
+    if (!$("global-panel").hidden) loadGlobalScores();
+  }
   initializeAudio();
   currentPlayer = $("player").value.trim() || "Player";
   $("player").value = currentPlayer;
@@ -478,13 +683,15 @@ function startGame(difficulty) {
   $("exit").hidden = false;
   $("hangman-game").hidden = selected !== "hangman";
   $("keyboard-game").hidden = selected !== "keyboard";
-  const arcade = ["dodge", "boss", "pumpkin"].includes(selected);
+  const arcade = ["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(selected);
   $("arena").classList.toggle("arcade", arcade);
   $("game-canvas").hidden = !arcade;
+  $("game-canvas").setAttribute("aria-label", `${modes[selected].title}. ${modes[selected].controls}`);
   $("touch-controls").hidden =
     !arcade || !matchMedia("(pointer: coarse)").matches;
   $("touch-fire").hidden = selected === "dodge";
-  $("touch-counter").hidden = selected !== "pumpkin";
+  $("touch-fire").textContent = selected === "singularity" ? "Laser" : "Fire";
+  $("touch-counter").hidden = !["pumpkin", "wrath"].includes(selected);
   setLocked(true);
   render();
   showGameArea();
@@ -507,7 +714,7 @@ function resetDamageFeedback() {
   healingFlashAnimation = null;
 }
 function updateDamageFeedback(s) {
-  if (selected !== "boss" && selected !== "pumpkin") return;
+  if (!["boss", "pumpkin", "wrath", "singularity"].includes(selected)) return;
   if (previousBossHealth && s.healing_collected > previousBossHealth.healing) {
     healingFlashAnimation?.cancel();
     healingFlashAnimation = $("healing-flash").animate(
@@ -529,7 +736,7 @@ function render() {
   const s = snapshot;
   updateDamageFeedback(s);
   updateAchievements(achievementTracker.observe(s));
-  const hasHealth = selected === "boss" || selected === "pumpkin";
+  const hasHealth = ["boss", "pumpkin", "wrath", "singularity"].includes(selected);
   $("player-health").hidden = !hasHealth;
   if (hasHealth) {
     const health = `${s.lives} / ${s.max_lives}`;
@@ -572,6 +779,10 @@ function render() {
       `${Math.max(0, Math.min(100, (s.remaining / Math.max(4, 8 - (s.level - 1) * 0.25)) * 100))}%`;
   } else {
     draw(s);
+    if (selected === "singularity") {
+      $("touch-fire").disabled = !s.laser_ready;
+      $("touch-fire").textContent = s.laser_firing ? "Firing!" : s.laser_ready ? "FIRE LASER" : "Laser locked";
+    } else $("touch-fire").disabled = false;
     $("metric").textContent =
       selected === "dodge" ? `${s.elapsed}s` : `${s.lives} / ${s.max_lives}`;
     $("game-instruction").textContent = s.label || modes[selected].controls;
@@ -590,6 +801,10 @@ function render() {
     if (selected === "keyboard") {
       title = "Time’s up!";
       copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
+    }
+    if (selected === "singularity" && s.won) {
+      title = "Singularity erased.";
+      copy = `All 15 protocols survived. ${s.lives} / 10 HP remaining. The annihilation laser finished the Core.`;
     }
     showOverlay(
       title,
@@ -621,6 +836,17 @@ function draw(s) {
   ctx.clip();
   for (const command of s.commands) {
     const c = command.coords;
+    if (command.kind === "clip_start") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(c[0], c[1], c[2] - c[0], c[3] - c[1]);
+      ctx.clip();
+      continue;
+    }
+    if (command.kind === "clip_end") {
+      ctx.restore();
+      continue;
+    }
     ctx.beginPath();
     ctx.fillStyle = command.fill || "transparent";
     ctx.strokeStyle = command.outline || "transparent";
@@ -658,7 +884,7 @@ function draw(s) {
       : "#45534b";
   ctx.lineWidth = 2;
   ctx.strokeRect(left, -top, right - left, top - bottom);
-  if (s.hp !== null) {
+  if (s.hp !== null && selected !== "singularity") {
     ctx.fillStyle = "#344039";
     ctx.fillRect(-110, -264, 220, 6);
     ctx.fillStyle = modes[selected].accent;
@@ -687,6 +913,11 @@ function pause() {
   render();
   lastFrame = performance.now();
 }
+function fireCoreLaser() {
+  if (!active || selected !== "singularity" || !snapshot?.laser_ready || snapshot.paused) return;
+  snapshot = send("laser");
+  render();
+}
 function exitGame() {
   if (selected === "keyboard" && active) saveRound();
   selectGame(selected);
@@ -712,7 +943,7 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
-  if (active && selected !== "hangman") {
+  if (active && !gasterActive && selected !== "hangman") {
     try {
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
@@ -745,21 +976,41 @@ document
 $("player").oninput = () => {
   showScores();
   const name = $("player").value.trim().toLowerCase();
-  const secret = Object.hasOwn(nameSecrets, name) ? name : "";
+  if (name === "gravitron") {
+    unlockSingularity();
+    return;
+  }
+  if (name === "gaster") {
+    history.replaceState({ ...history.state, gasterSequence: { soundOn } }, "");
+    saved.player = $("player").value.trim();
+    persist();
+    location.reload();
+    return;
+  }
+  const secret = name === "rocknroy" || Object.hasOwn(nameSecrets, name) ? name : "";
   if (secret && secret !== previousSecretName) {
     updateAchievements(achievementTracker.secret(secret));
-    $("name-surprise").dataset.secret = secret;
-    $("name-surprise").textContent = nameSecrets[secret];
-    if (secret === "cubie") blushCubie();
-    nameSurpriseActive = true;
-    $("name-surprise").hidden = false;
-    clearTimeout(nameSurpriseTimer);
-    syncMusic();
-    nameSurpriseTimer = setTimeout(() => {
+    if (secret === "rocknroy") {
+      clearTimeout(nameSurpriseTimer);
       nameSurpriseActive = false;
       $("name-surprise").hidden = true;
+      pendingRockSong = ArcadeMusic.pickRockTrack().id;
+      initializeAudio();
       syncMusic();
-    }, 4000);
+    } else {
+      $("name-surprise").dataset.secret = secret;
+      $("name-surprise").textContent = nameSecrets[secret];
+      if (secret === "cubie") blushCubie();
+      nameSurpriseActive = true;
+      $("name-surprise").hidden = false;
+      clearTimeout(nameSurpriseTimer);
+      syncMusic();
+      nameSurpriseTimer = setTimeout(() => {
+        nameSurpriseActive = false;
+        $("name-surprise").hidden = true;
+        syncMusic();
+      }, 4000);
+    }
   }
   previousSecretName = secret;
 };
@@ -792,6 +1043,7 @@ const arrowMap = {
   ArrowRight: "Right",
 };
 window.addEventListener("keydown", (event) => {
+  if (gasterActive) return;
   if (event.target.closest("#cube, .profile-tabs, #achievements-panel")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
@@ -818,7 +1070,7 @@ window.addEventListener("keydown", (event) => {
     type(event.key);
     return;
   }
-  if (["dodge", "boss", "pumpkin"].includes(selected)) {
+  if (["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(selected)) {
     if (
       event.key === " " &&
       !active &&
@@ -840,6 +1092,7 @@ window.addEventListener("keydown", (event) => {
     if (["Up", "Down", "Left", "Right", "f", "e"].includes(key)) {
       event.preventDefault();
       keys.add(key);
+      if (key === "f" && !event.repeat) fireCoreLaser();
     }
   }
 });
@@ -866,6 +1119,7 @@ document.querySelectorAll("[data-key]").forEach((button) => {
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
     keys.add(button.dataset.key);
+    if (button.dataset.key === "f") fireCoreLaser();
     button.classList.add("pressed");
   });
   const release = () => {
@@ -876,11 +1130,17 @@ document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
 });
-let soundOn = true;
+let soundOn = pendingGaster?.soundOn !== false;
 let audioContext;
 let audioMaster;
 let musicPlayer;
 let pendingAchievementDing = false;
+let pendingRockSong = null;
+const soundEffects = new Set();
+if (!soundOn) {
+  $("sound").textContent = "Sound off";
+  $("sound").setAttribute("aria-pressed", "false");
+}
 $("sound").onclick = () => {
   soundOn = !soundOn;
   if (!soundOn) pendingAchievementDing = false;
@@ -895,10 +1155,15 @@ $("sound").onclick = () => {
 };
 function syncMusic() {
   if (!musicPlayer) return;
-  musicPlayer.setState({
-    theme: active && selected === "pumpkin" ? "pumpkin" : "arcade",
-    playing: soundOn && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
-  });
+  const state = {
+    theme: active && selected === "singularity" ? "singularity"
+      : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin" : "arcade",
+    playing: soundOn && !gasterActive && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
+  };
+  if (pendingRockSong) {
+    musicPlayer.playOnce(pendingRockSong, state);
+    pendingRockSong = null;
+  } else musicPlayer.setState(state);
 }
 function initializeAudio() {
   if (!soundOn) return;
@@ -929,16 +1194,32 @@ document.addEventListener("keydown", event => {
   if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) initializeAudio();
 });
 function playSound(event) {
-  if (!soundOn || !audioContext) return;
+  if (!soundOn || !audioContext || gasterActive) return;
   const oscillator = audioContext.createOscillator(),
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
   const squeak = event === "squeak";
   const ding = event === "achievement";
   const scare = event === "scare";
-  const duration = ding ? .7 : squeak ? .24 : scare ? .38 : .36;
+  const core = {
+    core_teleport: [950, 180, .09, .035],
+    core_protocol: [440, 80, .28, .065],
+    core_hit: [120, 35, .24, .12],
+    core_heal: [520, 1040, .3, .07],
+    core_exposed: [330, 1320, .7, .09],
+    core_laser: [65, 780, 1.2, .14],
+    core_destroyed: [180, 25, 1, .13],
+  }[event];
+  const duration = core ? core[2] : ding ? .7 : squeak ? .24 : scare ? .38 : .36;
   oscillator.type = squeak || ding ? "sine" : "sawtooth";
-  if (scare) {
+  if (core) {
+    oscillator.type = ["core_teleport", "core_exposed", "core_heal"].includes(event) ? "sine" : "sawtooth";
+    oscillator.frequency.setValueAtTime(core[0], now);
+    oscillator.frequency.exponentialRampToValueAtTime(core[1], now + duration * .9);
+    gain.gain.setValueAtTime(.001, now);
+    gain.gain.exponentialRampToValueAtTime(core[3], now + .01);
+    gain.gain.exponentialRampToValueAtTime(.001, now + duration);
+  } else if (scare) {
     oscillator.frequency.setValueAtTime(180, now);
     oscillator.frequency.exponentialRampToValueAtTime(45, now + .37);
     gain.gain.setValueAtTime(.001, now);
@@ -956,22 +1237,82 @@ function playSound(event) {
   }
   oscillator.connect(gain);
   gain.connect(audioMaster);
-  oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+  soundEffects.add(oscillator);
+  oscillator.onended = () => {
+    oscillator.disconnect();
+    gain.disconnect();
+    soundEffects.delete(oscillator);
+  };
   oscillator.start(now);
   oscillator.stop(now + duration);
+}
+function startGasterSequence() {
+  const started = performance.now();
+  const focus = document.activeElement;
+  const wasInert = document.body.inert;
+  let source;
+  let fallback;
+  gasterActive = true;
+  clearKeys();
+  resetDamageFeedback();
+  document.body.inert = true;
+  document.body.classList.add("gaster-active");
+  $("gaster-blackout").hidden = false;
+  syncMusic();
+  for (const effect of soundEffects) effect.stop();
+  function finish() {
+    if (!gasterActive) return;
+    clearTimeout(fallback);
+    if (source) {
+      source.onended = null;
+      source.stop();
+      source.disconnect();
+    }
+    gameTimeOffset += performance.now() - started;
+    lastFrame = performance.now();
+    gasterActive = false;
+    $("gaster-blackout").hidden = true;
+    document.body.classList.remove("gaster-active");
+    document.body.inert = wasInert;
+    if (focus?.isConnected) focus.focus({ preventScroll: true });
+    syncMusic();
+    updateAchievements(achievementTracker.completeGaster());
+  }
+  try {
+    if (soundOn && audioContext?.state === "running") {
+      const data = ArcadeMusic.composeGaster();
+      const buffer = audioContext.createBuffer(1, data.length, 22050);
+      buffer.copyToChannel(data, 0);
+      source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioMaster);
+      source.onended = finish;
+      source.start();
+    }
+  } catch {
+    // Audio failure must never leave the page permanently black.
+    if (source) {
+      source.onended = null;
+      source.disconnect();
+      source = null;
+    }
+  }
+  // Muted/unavailable audio follows the same duration. The extra second for a
+  // playing source is a watchdog for contexts suspended by the browser.
+  fallback = setTimeout(finish, (ArcadeMusic.gasterDuration + (source ? 1 : 0)) * 1000);
 }
 async function initialize() {
   try {
     const pyodide = await loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/",
     });
-    const manifest = await fetch("./python-files.json");
+    const manifest = await fetch("./python-files.json", { cache: "no-store" });
     if (!manifest.ok) throw new Error("Missing Python manifest");
     const files = await manifest.json();
     pyodide.FS.mkdir("/game");
     await Promise.all(
       files.map(async (name) => {
-        const response = await fetch(`./python/${name}`);
+        const response = await fetch(`./python/${name}`, { cache: "no-store" });
         if (!response.ok) throw new Error(`Missing ${name}`);
         pyodide.FS.writeFile(`/game/${name}`, await response.text());
       }),
@@ -987,8 +1328,15 @@ async function initialize() {
     fail(error);
   }
 }
+initializeGlobalLeaderboards();
 initializeAchievements();
 selectGame("hangman");
+if (saved.unlocks.singularity || saved.player.trim().toUpperCase() === "GRAVITRON")
+  unlockSingularity(false);
+if (pendingGaster) {
+  initializeAudio();
+  setTimeout(startGasterSequence, Math.max(0, 5000 - performance.now()));
+}
 if (!storageAvailable)
   $("storage-note").textContent =
     "Storage is unavailable. Scores and achievements last for this visit only.";

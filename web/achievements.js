@@ -3,18 +3,23 @@
 // This model is shared by the browser UI and Node tests. Only completed wins
 // count toward victory milestones; leaving a round never counts as a win.
 const Achievements = (() => {
-  const points = { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430 };
+  const points = { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430, empyrorite: 7290, black: 666 };
   const games = ["hangman", "keyboard", "dodge", "boss", "pumpkin"];
+  const sovereignDifficulties = ["cruel", "nightmare", "impossible"];
+  const wrathModes = ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers',
+    'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'];
   const catalog = [];
-  function add(id, title, tier, group, description, stat, target = 1) {
-    catalog.push({ id, title, tier, group, description, stat, target });
+  function add(id, title, tier, group, description, stat, target = 1, options = {}) {
+    catalog.push({ id, title, tier, group, description, stat, target, ...options });
   }
   add("welcome", "Welcome to Microgame Madness!", "bronze", "Arcade", "Join the arcade.", "visits");
   add("dingdong", "DINGDONG", "crystal", "Arcade", "WHO YOU ARE.", "dingdong");
   add("name_cubie", "On a First-Name Basis", "gold", "Arcade", "Say Cubie's name in your player name.", "name_cubie");
   add("name_boo", "Boo to You Too!", "gold", "Arcade", "Give the arcade a little name-entry scare.", "name_boo");
   add("name_starlight", "Written in the Stars", "crystal", "Arcade", "Find the starry name hidden in the arcade.", "name_starlight");
+  add("name_rocknroy", "Game Tester", "rainbow", "Arcade", "Turn up the arcade with ROCKNROY.", "name_rocknroy");
   add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
+  add("cube_pet_100", "Cubie's Best Friend", "crystal", "Arcade", "Pet Cubie 100 times.", "cubePets", 100);
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
     ["keyboard", "Key to Success", "Key Rush"],
@@ -22,7 +27,7 @@ const Achievements = (() => {
     ["boss", "Challenge Accepted", "Boss Crush"],
     ["pumpkin", "Royal Invitation", "Pumpkin King"],
   ]) add(`play_${game}`, title, "bronze", label, `Start a ${label} game.`, `play_${game}`);
-  add("sampler", "A Little of Everything", "silver", "Arcade", "Play all five games.", "gamesPlayed", 5);
+  add("sampler", "A Little of Everything", "silver", "Arcade", "Play all five original games.", "gamesPlayed", 5);
   add("hangman_win", "Good Game", "silver", "Hangman", "Win a Hangman game.", "hangmanWins");
   add("hangman_hard", "You've Got the Hang of It!!", "silver", "Hangman", "Win a hard Hangman game.", "hardWins");
   add("hangman_perfect", "Letter Perfect", "silver", "Hangman", "Win Hangman without a wrong guess.", "perfectWins");
@@ -83,7 +88,61 @@ const Achievements = (() => {
   add("dodge_merciless_240", "Beyond Mercy", "rainbow", "Turtle Dodge", "Survive 240 seconds in one Merciless game.", "mercilessBest", 240);
   add("boss_clean_streak_15", "Unbreakable Spectrum", "rainbow", "Boss Crush", "Win 15 consecutive Boss Crush fights without damage. Damage, losses, and abandoned fights reset the streak.", "bossCleanStreak", 15);
   add("pumpkin_flawless_5", "Sovereign of Suffering", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 5 times without taking damage, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 5);
-  const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive"]);
+  // Unicode equivalents of Wingdings M Y / A R M, repeated three times.
+  // These remain symbols on devices without the Windows Wingdings font.
+  add("waste_of_time", "WASTE OF TIME", "black", "Arcade",
+    "💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎", "gasterCompleted", 1,
+    { secret: true, wingdings: true });
+  // New achievements for the secret boss, practice game, and highest-tier challenges.
+  add("name_gravitron", "Access Granted", "bronze", "Singularity Core", "Unlock Singularity Core with GRAVITRON.", "name_gravitron");
+  add("play_singularity", "Into the Event Horizon", "silver", "Singularity Core", "Start a Singularity Core fight.", "play_singularity");
+  for (const [index, [title, tier, protocol]] of [
+    ["Railway to Nowhere", "bronze", "Railgun Array"],
+    ["Outside the Spin", "silver", "Accretion Sweep"],
+    ["Between Horizons", "silver", "Collapsing Horizons"],
+    ["Can't Lock This", "silver", "Target Lock"],
+    ["Lattice Escape", "gold", "Event Lattice"],
+    ["Two Stars, One Turtle", "gold", "Binary Stars"],
+    ["Gravity Dodger", "gold", "Gravity Guillotine"],
+    ["Weathering the Photons", "gold", "Photon Rain"],
+    ["Crossfire Specialist", "crystal", "Crossfire Engine"],
+    ["Mind the Dark Matter", "crystal", "Dark Matter Mines"],
+    ["Perfect Polarity", "crystal", "Polarity Inversion"],
+    ["Orbit Breaker", "crystal", "Orbital Saws"],
+    ["Echoes Remembered", "diamond", "Echo Protocol"],
+    ["Unbroken Lens", "diamond", "Lens Fracture"],
+    ["Still Here", "diamond", "Total Collapse"],
+  ].entries()) add(`core_protocol_${index + 1}`, title, tier, "Singularity Core",
+    `Survive protocol ${index + 1}: ${protocol}.`, "coreProtocolsBest", index + 1);
+  add("core_win", "My Fingers Hurt", "rainbow", "Singularity Core", "Survive all 15 protocols and destroy Singularity Core with the final laser.", "coreWins");
+  add("core_win_3", "Callus Protocol", "rainbow", "Singularity Core", "Defeat Singularity Core 3 times.", "coreWins", 3);
+  add("core_win_10", "Gravity Is Optional", "rainbow", "Singularity Core", "Defeat Singularity Core 10 times.", "coreWins", 10);
+  add("core_flawless", "Hands of Empyrorite", "empyrorite", "Singularity Core", "Destroy Singularity Core without taking any damage throughout the fight.", "coreFlawlessWins");
+  add("core_clutch", "One Finger Left", "rainbow", "Singularity Core", "Destroy Singularity Core with exactly 1 HP remaining.", "coreClutch");
+  add("core_steady", "Steady Hands", "crystal", "Singularity Core", "Survive the first 5 protocols in one fight without taking damage.", "coreCleanProtocolsBest", 5);
+  add("play_wrath", "Practice Makes Panic", "bronze", "The King's Wrath", "Start a King's Wrath practice fight.", "play_wrath");
+  for (const [index, [title, tier, label]] of [
+    ["A Colorful Education", "silver", "Color Memory"],
+    ["Bone to Pick", "silver", "Bone Gauntlet"],
+    ["Ring Reader", "gold", "Rotating Rings"],
+    ["Counter Culture", "gold", "Magenta Fingers"],
+    ["Method in the Madness", "gold", "Chaos"],
+    ["Hands Off the Crown", "gold", "Royal Slams"],
+    ["Unspookable", "gold", "Haunted Quadrants"],
+    ["Royal Roulette", "diamond", "Random Order"],
+  ].entries()) add(`wrath_${wrathModes[index]}`, title, tier, "The King's Wrath",
+    `Win a ${label} practice fight.`, `wrath_${wrathModes[index]}`);
+  add("wrath_curriculum", "The Royal Curriculum", "diamond", "The King's Wrath", "Win each of the seven individual practice attacks.", "wrathLessons", 7);
+  add("wrath_win_5", "Practice Paying Off", "gold", "The King's Wrath", "Win 5 practice fights, in any modes.", "wrathWins", 5);
+  add("wrath_win_25", "Resident of the Throne Room", "rainbow", "The King's Wrath", "Win 25 practice fights, in any modes.", "wrathWins", 25);
+  add("wrath_flawless", "Unscathed Rehearsal", "diamond", "The King's Wrath", "Win a practice fight without taking damage. Healing cannot undo a hit.", "wrathFlawlessWins");
+  add("wrath_full_deck", "Full Deck", "crystal", "The King's Wrath", "Survive all seven attacks in one Random Order fight.", "wrathRandomSetsBest");
+  add("wrath_three_sets", "Shuffled Survivor", "rainbow", "The King's Wrath", "Survive 21 attacks in one Random Order fight: three complete shuffled sets.", "wrathRandomSetsBest", 3);
+  add("wrath_perfect_shuffle", "Chaos, Perfected", "rainbow", "The King's Wrath", "Survive a full set of seven Random Order attacks, then win without taking any damage throughout the fight.", "wrathPerfectShuffle");
+  add("wrath_counter_25", "The King's Rebuttal", "crystal", "The King's Wrath", "Successfully counter 25 magenta fingers in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 25);
+  add("dodge_merciless_300", "Beyond the Last Mercy", "empyrorite", "Turtle Dodge", "Survive 300 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 300);
+  add("boss_clean_streak_20", "Sovereign of the Arena", "empyrorite", "Boss Crush", "Win 20 consecutive Boss Crush fights on Cruel or harder without damage. Mean fights are ignored. Damage, losses, and abandoned qualifying fights reset the streak.", "bossSovereignStreak", 20);
+  const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
   class Tracker {
@@ -119,28 +178,38 @@ const Achievements = (() => {
         stats.visits = 1;
         // A saved unfinished Boss Crush fight was abandoned by leaving/reloading.
         if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
         stats.bossRunActive = 0;
+        stats.bossSovereignRunActive = 0;
       });
     }
     abandon() {
       if (this.round) this.round.finished = true;
       return this.update(stats => {
         if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
         stats.bossRunActive = 0;
+        stats.bossSovereignRunActive = 0;
       });
     }
     secret(name) {
       return this.update(stats => {
         if (name === "dingdong") stats.dingdong = 1;
-        if (name === "cube") stats.cubePets = 1;
-        if (["cubie", "boo", "starlight"].includes(name)) stats[`name_${name}`] = 1;
+        if (name === "cube") stats.cubePets++;
+        if (["cubie", "boo", "starlight", "rocknroy"].includes(name)) stats[`name_${name}`] = 1;
+        if (name === "gravitron") stats.name_gravitron = 1;
       });
     }
+    completeGaster() {
+      return this.update(stats => { stats.gasterCompleted = 1; });
+    }
     start(mode, difficulty) {
-      this.round = { mode, difficulty, finished: false };
+      this.round = { mode, difficulty, finished: false, counterHits: 0 };
       return this.update(stats => {
         if (stats.bossRunActive) stats.bossCleanStreak = 0;
+        if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
         stats.bossRunActive = mode === "boss" ? 1 : 0;
+        stats.bossSovereignRunActive = mode === "boss" && sovereignDifficulties.includes(difficulty) ? 1 : 0;
         stats[`play_${mode}`] = 1;
         stats.gamesPlayed = games.filter(game => stats[`play_${game}`]).length;
       });
@@ -150,10 +219,30 @@ const Achievements = (() => {
       if (!round || round.finished || s.mode !== round.mode || s.difficulty !== round.difficulty)
         return { earned: [], changed: false };
       const streakBroken = s.mode === "boss" && s.damage_taken > 0 && this.data.stats.bossCleanStreak > 0;
-      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken)
+      const sovereignFight = s.mode === "boss" && sovereignDifficulties.includes(s.difficulty);
+      const sovereignBroken = sovereignFight && s.damage_taken > 0 && this.data.stats.bossSovereignStreak > 0;
+      const core = s.mode === "singularity" && s.difficulty === "gravitron";
+      const wrath = s.mode === "wrath" && wrathModes.includes(s.difficulty);
+      const protocols = Math.min(15, count(s.attacks_completed));
+      const randomSets = wrath && s.difficulty === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
+      const counters = wrath ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
+      const newCoreProgress = core && (protocols > this.data.stats.coreProtocolsBest ||
+        s.damage_taken === 0 && protocols > this.data.stats.coreCleanProtocolsBest);
+      const newWrathProgress = wrath && (counters > 0 || randomSets > this.data.stats.wrathRandomSetsBest);
+      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken && !sovereignBroken && !newCoreProgress && !newWrathProgress)
         return { earned: [], changed: false };
       return this.update(stats => {
         if (streakBroken) stats.bossCleanStreak = 0;
+        if (sovereignBroken) stats.bossSovereignStreak = 0;
+        if (core) {
+          stats.coreProtocolsBest = Math.max(stats.coreProtocolsBest, protocols);
+          if (s.damage_taken === 0) stats.coreCleanProtocolsBest = Math.max(stats.coreCleanProtocolsBest, protocols);
+        }
+        if (wrath) {
+          stats.wrathRandomSetsBest = Math.max(stats.wrathRandomSetsBest, randomSets);
+          stats.wrathCounterHits += counters;
+          round.counterHits = Math.max(round.counterHits, count(s.counter_hits));
+        }
         if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
           stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));
@@ -165,8 +254,25 @@ const Achievements = (() => {
         if (s.mode === "boss") {
           stats.bossRunActive = 0;
           stats.bossCleanStreak = s.won && s.damage_taken === 0 ? stats.bossCleanStreak + 1 : 0;
+          stats.bossSovereignRunActive = 0;
+          if (sovereignFight)
+            stats.bossSovereignStreak = s.won && s.damage_taken === 0 ? stats.bossSovereignStreak + 1 : 0;
         }
         if (!s.won) return;
+        if (core && s.attacks_completed === 15 && s.hp === 0 && s.shielded === false) {
+          stats.coreWins++;
+          if (s.damage_taken === 0) stats.coreFlawlessWins++;
+          if (s.lives === 1) stats.coreClutch = 1;
+        }
+        if (wrath) {
+          stats.wrathWins++;
+          stats[`wrath_${s.difficulty}`] = 1;
+          stats.wrathLessons = wrathModes.slice(0, 7).filter(mode => stats[`wrath_${mode}`] > 0).length;
+          if (s.damage_taken === 0) {
+            stats.wrathFlawlessWins++;
+            if (randomSets >= 1) stats.wrathPerfectShuffle = 1;
+          }
+        }
         if (s.mode === "hangman") {
           stats.hangmanWins++;
           if (s.difficulty === "hard") stats.hardWins++;

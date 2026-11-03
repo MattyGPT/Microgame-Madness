@@ -8,6 +8,10 @@ from keyboard_model import KeyboardRound, make_round
 from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_SIZE
 from boss_crush import BossCrush, BOSS_WIDTH, BOSS_HEIGHT
 from pumpkin_king import PumpkinKing
+from kings_wrath import KingsWrath
+from singularity_core import ATTACKS, SingularityCore
+from singularity_practice import PRACTICE_ATTACKS, SingularityPractice
+from singularity_core_view import draw_core
 from pumpkin_king_view import KingView, PUMPKIN_FACE_FEATURES
 
 
@@ -81,6 +85,14 @@ class BrowserGame:
             self.game = BossCrush(difficulty)
         elif mode == "pumpkin":
             self.game = PumpkinKing(difficulty=difficulty)
+        elif mode == "wrath":
+            self.game = KingsWrath(attack=difficulty)
+        elif mode == "singularity":
+            if difficulty != "gravitron":
+                raise ValueError("Unknown Singularity Core difficulty")
+            self.game = SingularityCore()
+        elif mode == "core_practice":
+            self.game = SingularityPractice(difficulty)
         else:
             raise ValueError("Unknown game")
 
@@ -92,6 +104,10 @@ class BrowserGame:
         action = request["action"]
         now = float(request.get("now", self.now))
         self.now = now
+        if action == "core_practice_options":
+            return {"attacks": [{"id": key, "number": index + 1,
+                                 "name": ATTACKS[index].name, "hint": ATTACKS[index].hint}
+                                for key, index in PRACTICE_ATTACKS.items()]}
         if action == "start":
             self.start(request["mode"], request.get("difficulty", "easy"), now)
         elif self.game is None:
@@ -105,10 +121,12 @@ class BrowserGame:
             if self.game.result == "completed":
                 self.completed += 1
                 self.new_round(now)
-        elif action == "pause" and self.mode in ("dodge", "boss", "pumpkin"):
+        elif action == "laser" and self.mode == "singularity" and not self.paused:
+            self.game.fire_laser()
+        elif action == "pause" and self.mode in ("dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"):
             if self.game.rules.can_pause and self.game.alive and not getattr(self.game, "won", False):
                 self.paused = not self.paused
-        elif action == "tick" and self.mode in ("dodge", "boss", "pumpkin") and not self.paused:
+        elif action == "tick" and self.mode in ("dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice") and not self.paused:
             self.game.update(max(0, min(float(request.get("dt", 0)), 0.05)), set(request.get("keys", [])))
         return self.snapshot()
 
@@ -131,6 +149,8 @@ class BrowserGame:
                           won=getattr(game, "won", False), score=game.score,
                           death_message=getattr(game, "death_message", None),
                           damage_taken=getattr(game, "damage_taken", None),
+                          attacks_completed=getattr(game, "attacks_completed", 0),
+                          counter_hits=getattr(game, "counter_hits", 0),
                           healing_collected=getattr(game, "healing_collected", 0),
                           near_misses=getattr(game, "near_misses", 0),
                           elapsed=int(game.elapsed), can_pause=game.rules.can_pause,
@@ -141,7 +161,14 @@ class BrowserGame:
             commands = []
             def rect(x, y, width, height, color):
                 commands.append({"kind": "rectangle", "coords": [x-width/2, -y-height/2, x+width/2, -y+height/2], "fill": color})
-            if isinstance(game, PumpkinKing):
+            if isinstance(game, SingularityCore):
+                result.update(sounds=game.sound_events[:], hp=game.hp, max_hp=1,
+                              attacks_completed=game.attacks_completed, attack_total=15,
+                              shielded=game.shielded, laser_ready=game.laser_ready,
+                              laser_firing=game.stage == "laser")
+                commands = draw_core(game)
+                game.sound_events.clear()
+            elif isinstance(game, PumpkinKing):
                 result["sounds"] = game.sound_events[:]
                 self.view.draw(game)
                 commands = self.canvas.commands()

@@ -2,15 +2,20 @@
 import json
 from pathlib import Path
 import random
+import re
+import shutil
+import tempfile
 import unittest
+from unittest.mock import patch
 
 from hangman_model import HangmanGame
 from keyboard_model import KeyboardRound
 from dodge_model import DodgeGame, DIFFICULTIES
 from boss_crush import BossCrush, BOSS_DIFFICULTIES
 from pumpkin_king import PumpkinKing, PUMPKIN_DIFFICULTIES
+from kings_wrath import KingsWrath, RANDOM_ORDER, WRATH_ATTACKS
 from web.bridge import BrowserGame
-from scripts.build_web import build, OUTPUT, PYTHON_SOURCES
+from scripts.build_web import build, leaderboard_config, OUTPUT, PYTHON_SOURCES
 
 
 class SharedRulesTests(unittest.TestCase):
@@ -100,6 +105,7 @@ class BrowserAdapterTests(unittest.TestCase):
         cases = [("dodge", key, DodgeGame(difficulty=key, rng=random.Random(12))) for key in DIFFICULTIES]
         cases += [("boss", key, BossCrush(key, rng=random.Random(12))) for key in BOSS_DIFFICULTIES]
         cases += [("pumpkin", key, PumpkinKing(rng=random.Random(12), difficulty=key)) for key in PUMPKIN_DIFFICULTIES]
+        cases += [("wrath", key, KingsWrath(key, rng=random.Random(12))) for key in WRATH_ATTACKS]
         for mode, difficulty, desktop in cases:
             with self.subTest(mode=mode, difficulty=difficulty):
                 self.start(mode, difficulty)
@@ -110,7 +116,7 @@ class BrowserAdapterTests(unittest.TestCase):
                     result = self.session.dispatch({"action": "tick", "dt": 1/60, "keys": keys, "now": frame/60})
                     self.assertAlmostEqual(self.session.game.x, desktop.x)
                     self.assertEqual(result["score"], desktop.score)
-                    if mode == "pumpkin":
+                    if mode in ("pumpkin", "wrath"):
                         self.assertEqual(result["difficulty"], desktop.difficulty)
                         self.assertEqual(result["lives"], desktop.lives)
                         self.assertEqual(result["max_lives"], desktop.max_lives)
@@ -125,6 +131,43 @@ class BrowserAdapterTests(unittest.TestCase):
         self.assertEqual(self.session.game.y, -190)
         self.start("dodge", "merciless")
         self.assertFalse(self.session.dispatch({"action": "pause"})["paused"])
+
+    def test_wrath_is_distinct_from_pumpkin_and_pauses_the_loaded_attack(self):
+        for attack, index in WRATH_ATTACKS.items():
+            result = self.start("wrath", attack)
+            self.assertEqual((result["mode"], result["difficulty"]), ("wrath", attack))
+            self.assertEqual(self.session.game.attack_index, index)
+            self.assertTrue(self.session.game.intro_done)
+            self.assertTrue(result["commands"])
+            self.assertEqual((result["lives"], result["max_lives"]), (15, 15))
+            paused = self.session.dispatch({"action": "pause"})
+            self.assertTrue(paused["paused"])
+            self.assertEqual(self.session.dispatch({"action": "tick", "dt": .05, "keys": ["Up", "f", "e"]}), paused)
+            self.assertEqual(self.session.game.stage_age, 0)
+            self.session.dispatch({"action": "pause"})
+            self.session.dispatch({"action": "tick", "dt": .05})
+            self.assertGreater(self.session.game.stage_age, 0)
+        self.start("pumpkin", "baby")
+        self.assertEqual(self.session.game.stage.name, "shell")
+        self.assertFalse(self.session.game.intro_done)
+
+    def test_random_wrath_has_its_own_mode_and_pauses_the_countdown(self):
+        result = self.start("wrath", RANDOM_ORDER)
+        self.assertEqual(result["difficulty"], RANDOM_ORDER)
+        self.assertEqual((result["lives"], result["max_lives"]), (15, 15))
+        self.assertIn(self.session.game.attack_index, WRATH_ATTACKS.values())
+        self.assertIn("NEXT:", result["label"])
+        paused = self.session.dispatch({"action": "pause"})
+        self.assertEqual(self.session.dispatch({"action": "tick", "dt": .05}), paused)
+        self.session.dispatch({"action": "pause"})
+        result = self.session.dispatch({"action": "tick", "dt": .05})
+        self.assertFalse(result["paused"])
+        self.assertAlmostEqual(self.session.game.stage_age, .05)
+        self.session.game.attacks_completed = 7
+        self.session.game.counter_hits = 3
+        result = self.session.snapshot()
+        self.assertEqual(result["attacks_completed"], 7)
+        self.assertEqual(result["counter_hits"], 3)
 
     def test_pumpkin_arm_contact_reports_death_and_correct_max_hp(self):
         for mode, hp in PUMPKIN_DIFFICULTIES.items():
@@ -184,10 +227,52 @@ class BrowserAdapterTests(unittest.TestCase):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_changed_client_uses_a_new_url_instead_of_a_cached_old_script(self):
+        source = Path(__file__).parent
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(source / "web", root / "web")
+            for name in PYTHON_SOURCES:
+                shutil.copy2(source / name, root / name)
+            output = root / "dist"
+            with patch("scripts.build_web.ROOT", root), patch("scripts.build_web.OUTPUT", output):
+                build()
+                first = (output / "index.html").read_text()
+                client = root / "web" / "app.js"
+                client.write_text(client.read_text() + "\n// Next client release.\n")
+                build()
+                second = (output / "index.html").read_text()
+            for name in ("app.js", "style.css", "achievements.js", "music.js", "leaderboards.js"):
+                with self.subTest(asset=name):
+                    pattern = rf'"(\./{re.escape(name)}\?v=[a-f0-9]+)"'
+                    before = re.search(pattern, first)
+                    after = re.search(pattern, second)
+                    self.assertIsNotNone(before)
+                    self.assertIsNotNone(after)
+                    if name == "app.js":
+                        self.assertNotEqual(before[1], after[1])
+                    else:
+                        self.assertEqual(before[1], after[1])
+
+    def test_leaderboard_configuration_never_publishes_private_keys(self):
+        with patch.dict("os.environ", {}, clear=True):
+            self.assertEqual(leaderboard_config(), {"url": "", "key": ""})
+        with patch.dict("os.environ", {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_example"}, clear=True):
+            self.assertEqual(leaderboard_config()["key"], "sb_publishable_example")
+        for key in ("sb_secret_private", "not-a-public-key", "e30.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.sig"):
+            with patch.dict("os.environ", {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_PUBLISHABLE_KEY": key}, clear=True):
+                with self.assertRaises(ValueError):
+                    leaderboard_config()
+        with patch.dict("os.environ", {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_PUBLISHABLE_KEY": "e30.eyJyb2xlIjoiYW5vbiJ9.sig"}, clear=True):
+            self.assertEqual(leaderboard_config()["key"], "e30.eyJyb2xlIjoiYW5vbiJ9.sig")
+        with patch.dict("os.environ", {"SUPABASE_URL": "https://user:password@example.supabase.co", "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_example"}, clear=True):
+            with self.assertRaises(ValueError):
+                leaderboard_config()
+
     def test_package_contains_only_allowlisted_browser_files(self):
         build()
         files = {str(p.relative_to(OUTPUT)) for p in OUTPUT.rglob("*") if p.is_file()}
-        expected = {"index.html", "style.css", "app.js", "achievements.js", "music.js", "favicon.svg", ".nojekyll", "python-files.json"}
+        expected = {"index.html", "style.css", "app.js", "achievements.js", "music.js", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
         expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
         self.assertEqual(files, expected)
         for name in PYTHON_SOURCES:

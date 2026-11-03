@@ -10,10 +10,11 @@ import tempfile
 import wave
 from pathlib import Path
 
-from pumpkin_king import Finger, KING_WIDTH, KING_HEIGHT, COUNTER_RANGE
+from pumpkin_king import Finger, KING_WIDTH, KING_HEIGHT, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME
 
 COLORS = {"normal": "#fff5e5", "blue": "#42c9ff", "orange": "#ff9d32", "magenta": "#ff42de"}
 BACKGROUND = "#111827"
+HAUNT_FACE_COLORS = ("#9e8cff", "#7cdae6", "#b8a3f4")
 
 # Shared by the original shell face and the Impossible Boss Crush face.
 PUMPKIN_FACE_FEATURES = (
@@ -103,39 +104,121 @@ class KingView:
     def poly(self, points, color):
         return self.item("polygon", tuple(v for x, y in points for v in (x, -y)), fill=color, outline="", width=0)
 
+    def oval(self, x, y, width, height, color):
+        return self.item("oval", (x-width/2, -y-height/2, x+width/2, -y+height/2),
+                         fill=color, outline="", width=0)
+
     def text(self, x, y, text, color, size=18):
         return self.item("text", (x, -y), text=text, fill=color, font=("Arial", size, "bold"), anchor="center")
 
+    def rounded_rect(self, x, y, width, height, radius, color):
+        radius = min(radius, width/2, height/2)
+        self.rect(x, y, width-2*radius, height, color)
+        self.rect(x, y, width, height-2*radius, color)
+        for dx in (-1, 1):
+            for dy in (-1, 1):
+                self.oval(x+dx*(width/2-radius), y+dy*(height/2-radius),
+                          radius*2, radius*2, color)
+
+    def soft_poly(self, points, color):
+        softened = []
+        for i, (x, y) in enumerate(points):
+            before, after = points[i-1], points[(i+1)%len(points)]
+            start = (x*.84+before[0]*.16, y*.84+before[1]*.16)
+            end = (x*.84+after[0]*.16, y*.84+after[1]*.16)
+            for step in range(5):
+                t = step/4
+                softened.append(((1-t)**2*start[0]+2*(1-t)*t*x+t*t*end[0],
+                                 (1-t)**2*start[1]+2*(1-t)*t*y+t*t*end[1]))
+        self.poly(softened, color)
+
     def _arm(self, game, side):
+        segments = list(game.arm_segments(side))
         t = game.elapsed
-        for x, y, width, height, progress in game.arm_segments(side):
-            hue = (0.08 + progress*0.12 + math.sin(t*2+progress*5)*0.08) % 1
-            prism = colorsys.hsv_to_rgb((t*0.15+progress*0.8) % 1, 0.7, 1)
-            color = '#'+''.join(f'{int(c*255):02x}' for c in colorsys.hsv_to_rgb(hue, 0.85, 1))
-            edge = '#'+''.join(f'{int(c*255):02x}' for c in prism)
-            self.rect(x, y, width, height, edge)
-            self.rect(x, y, width, 29+progress*14, color)
-        for rectangle in game.hand_rectangles(side):
-            self.rect(*rectangle, "#ff42de" if game.stage.name == "fingers" else "#ffc14d")
+        def color_at(progress, outer):
+            hue = (t*.15+progress*.8)%1 if outer else (.08+progress*.12+math.sin(t*2+progress*5)*.08)%1
+            rgb = colorsys.hsv_to_rgb(hue, .9 if outer else .95, 1)
+            return '#'+''.join(f'{int(channel*255):02x}' for channel in rgb)
+        # Keep the original shifting orange/gold arms and rainbow rims, joining
+        # their cross sections into smooth ribbons instead of rectangular steps.
+        for outer in (True, False):
+            for first, second in zip(segments, segments[1:]):
+                x1, y1, _, h1, p1 = first
+                x2, y2, _, h2, p2 = second
+                if not outer:
+                    h1, h2 = 29+p1*14, 29+p2*14
+                overlap = .6 if x2 > x1 else -.6
+                self.poly(((x1-overlap, y1+h1/2), (x2+overlap, y2+h2/2),
+                           (x2+overlap, y2-h2/2), (x1-overlap, y1-h1/2)), color_at((p1+p2)/2, outer))
+            caps = segments[:1] if len(segments) == 1 else segments[:1]+segments[-1:]
+            for x, y, width, height, progress in caps:
+                self.oval(x, y, width, height if outer else 29+progress*14, color_at(progress, outer))
+        for x, y, width, height in game.hand_rectangles(side):
+            self.rounded_rect(x, y, width, height, 4,
+                              "#ff42de" if game.stage.name == "fingers" else "#ffc14d")
 
     def _face(self, x, y, scale, shell, glow, t):
         if shell:
-            self.rect(x, y, 72, 42, "#ffffff")
+            self.rounded_rect(x, y, 72, 42, 6, "#ffffff")
         else:
-            # Layered flames animate independently of the collision rectangle.
-            for layer, color in ((0, "#b73218"), (1, "#ff6a16"), (2, "#ffbd38")):
+            for layer, color in ((0, "#d83a18"), (1, "#ff7519"), (2, "#ffd04a")):
                 points = [(x-50+layer*5, y-35), (x+50-layer*5, y-35)]
                 for i in range(10, -1, -1):
-                    px = x-50+layer*5 + i*(100-layer*10)/10
-                    peak = 20 + 16*math.sin(t*9+i*2+layer) + 14*(i%2)
+                    px = x-50+layer*5+i*(100-layer*10)/10
+                    peak = 20+16*math.sin(t*9+i*2+layer)+14*(i%2)
                     points.append((px, min(235, y+28+peak-layer*8)))
-                self.poly(points, color)
-            self.rect(x, y, KING_WIDTH, KING_HEIGHT, "#ff9d25")
+                self.soft_poly(points, color)
+            self.rounded_rect(x, y, KING_WIDTH, KING_HEIGHT, 12, "#ff9d25")
             for i in range(5):
-                self.rect(x-40+i*20, y, 3, 72, "#f77719")
+                self.rounded_rect(x-40+i*20, y, 3, 66, 1.5, "#f77719")
         for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
             color = glow if shell or index < 2 else "#38201c"
             self.poly([(x+px*scale, y+py*scale) for px, py in polygon], color)
+
+    def _laughing_face(self, x, y, scale, color, t, phase):
+        tilt = .12 * math.sin(t * 1.8 + phase)
+        def points(shape):
+            return [(x + (px*math.cos(tilt)-py*math.sin(tilt))*scale,
+                     y + (px*math.sin(tilt)+py*math.cos(tilt))*scale) for px, py in shape]
+        skull = ((-33, 17), (-25, 37), (-5, 45), (19, 39), (34, 19),
+                 (33, -16), (23, -34), (11, -31), (0, -44), (-14, -36), (-30, -25))
+        self.poly(points([(px*1.18, py*1.12) for px, py in skull]), "#292640")
+        self.poly(points(skull), color)
+        for eye in (((-26, 18), (-6, 12), (-10, 0), (-25, 6)),
+                    ((7, 13), (25, 23), (27, 5), (11, -1))):
+            self.poly(points(eye), "#070b19")
+        for px, py in ((-17, 8), (18, 10)):
+            self.poly(points(((px-1, py+5), (px+1, py+4), (px+1, py-2), (px-1, py-3))), "#d5ffff")
+        jaw = 3 + 6 * (.5 + .5*math.sin(t*math.tau*3.5+phase))
+        self.poly(points(((-25, -3), (-13, -9), (0, -11), (13, -7), (26, 0),
+                          (19, -22-jaw), (3, -29-jaw), (-16, -23-jaw))), "#070b19")
+        for i in range(7):
+            px = -20+i*6
+            top = -7-4*math.sin((i+1)*math.pi/8)
+            self.poly(points(((px-2.5, top), (px+2.5, top+1), (px+.7, top-7-i%3))), "#d5ffff")
+        for i in range(5):
+            px, bottom = -13+i*6, -23-jaw+abs(i-2)*1.7
+            self.poly(points(((px-2, bottom), (px+2, bottom), (px-.6, bottom+6))), color)
+        for crack in (((-8, 40), (-4, 26), (-9, 29), (-6, 19), (-11, 30), (-7, 28)),
+                      ((30, -10), (21, -14), (24, -22), (18, -15))):
+            self.poly(points(crack), "#292640")
+
+    def _haunting_intro(self, game):
+        self.rect(0, 0, 600, 480, "#0d1022")
+        t = game.stage_age
+        for row in range(4):
+            for column in range(5):
+                index = row*5+column
+                phase = index*2.399
+                x = -240+column*120+8*math.sin(t*1.7+phase)
+                y = 184-row*115+7*math.sin(t*2.2+phase)
+                scale = .66+.14*math.sin(phase)+.035*math.sin(t*4+phase)
+                self._laughing_face(x, y, scale, HAUNT_FACE_COLORS[index%3], t, phase)
+        # Preview the first quadrant without activating its damage.
+        self.rect(-150, 239, 300, 2, "#9e8cff")
+        self.rect(-299, 120, 2, 240, "#9e8cff")
+        self.rect(0, 0, 3, 480, "#d9b8f5")
+        self.rect(0, 0, 600, 3, "#d9b8f5")
 
     def _scares(self, game):
         x, y, width, height = game.scare_rectangle
@@ -160,6 +243,20 @@ class KingView:
                          (12, -22), (0, -27), (-12, -22))
                 self.poly([(cx+px*scale, cy+py*scale) for px, py in mouth], "#251239")
 
+    def _practice_countdown(self, game):
+        remaining = max(0, game.stage.duration-game.stage_age)
+        seconds = math.ceil(remaining-1e-9)
+        self.rect(0, -67, 496, 242, "#756a3c")
+        self.rect(0, -67, 490, 236, "#141a29")
+        self.text(0, 21, "GET READY", "#ffe066", 27)
+        self.text(0, -48, str(seconds), "#fff2bd", 70)
+        self.text(0, -109, "POSITION YOUR FINGERS", "#e5e9ed", 16)
+        self.text(0, -137, "ARROWS MOVE · F SHOOTS · E COUNTERS", "#aab9c8", 12)
+        self.rect(0, -164, 390, 5, "#343b49")
+        width = 390*(1-remaining/game.stage.duration)
+        if width > 0:
+            self.rect(-195+width/2, -164, width, 5, "#ffe066")
+
     def draw(self, game):
         self.counts, self.used = {}, set()
         if self.audio:
@@ -172,7 +269,9 @@ class KingView:
         self.canvas.tag_lower(background)
         name = game.stage.name
         progress = min(1, game.stage_age/game.stage.duration)
-        if name == "scares" and not game.won:
+        if name == "scare_ready" and not game.won:
+            self._haunting_intro(game)
+        elif name == "scares" and not game.won:
             self._scares(game)
         if not game.won:
             self._arm(game, "left")
@@ -195,9 +294,14 @@ class KingView:
             # Upper-quadrant warnings sit below the arms and draw in front so
             # the King cannot hide the cue to move out of the active section.
             y = 40 if y > 0 else y
-            color = "#ff4d55" if int(game.stage_age * 15) % 2 == 0 else "#ffe45c"
+            color = "#ff4d55" if int(game.stage_age * 2 / SCARE_WARNING) % 2 == 0 else "#ffe45c"
             for offset in (-76, 0, 76):
                 self.text(x + offset, y, "!", color, 64)
+        if name == "scare_ready" and not game.won:
+            self.rect(0, -21, 458, 64, "#101021")
+            self.text(0, -9, "THEY'RE LAUGHING AT YOU", "#b8a3f4", 18)
+            seconds = math.ceil(max(0, SCARE_PREP_TIME-game.stage_age))
+            self.text(0, -35, f"TOP LEFT FIRST · MOVE CLEAR · {seconds}", "#a4f4ff", 14)
         for x, y, width, height in game.hazard_rectangles():
             if name == "fire":
                 self.rect(x, y, width, height, "#cb3c13")
@@ -228,6 +332,8 @@ class KingView:
             r = COUNTER_RANGE
             self.item("oval", (game.x-r, -game.y-r, game.x+r, -game.y+r),
                       fill="", outline="#ff69e5", width=3)
+        if name == "wrath_ready" and not game.won:
+            self._practice_countdown(game)
         if name in ("roar", "laugh"):
             self.text(0, 68, "ROOOAAAR!" if name == "roar" else "HA. HA. HA!", "#ffdd63", 22)
         if name == "title":

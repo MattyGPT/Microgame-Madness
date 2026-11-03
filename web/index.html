@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#101315" />
     <meta
       name="description"
-      content="Five little games. One more try. Play Microgame Madness in your browser."
+      content="Six little games. One more try. Play Microgame Madness in your browser."
     />
     <title>Microgame Madness — Play a little. Lose track of time.</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
@@ -17,6 +17,7 @@
     ></script>
     <script src="./achievements.js" defer></script>
     <script src="./music.js" defer></script>
+    <script src="./leaderboards.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -52,7 +53,7 @@
         </div>
       </section>
       <div class="section-heading">
-        <h2>Choose your microgame <span>05</span></h2>
+        <h2>Choose your microgame <span id="game-count">06</span></h2>
         <p>No downloads. Just play.</p>
       </div>
       <nav class="game-grid" aria-label="Games">
@@ -114,6 +115,36 @@
           ><span class="card-art pumpkin-art" aria-hidden="true">◈</span
           ><span class="card-title">Pumpkin King <span>↗</span></span
           ><span class="card-description">Long live your reflexes.</span>
+        </button>
+        <button
+          class="game-card"
+          data-game="wrath"
+          aria-pressed="false"
+          style="--accent: #ffe066"
+        >
+          <span class="card-top">06 <span>ATTACK PRACTICE</span></span>
+          <span class="card-art wrath-art" aria-hidden="true">
+            <svg viewBox="0 0 64 64" focusable="false">
+              <path d="M8 18 21 30 32 10 43 30 56 18 50 46H14Z" fill="currentColor" />
+              <rect x="14" y="50" width="36" height="6" rx="2" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="card-title">The King's Wrath <span>↗</span></span>
+          <span class="card-description">Your attack. Your rematch.</span>
+        </button>
+        <button class="game-card singularity-card" data-game="singularity"
+          aria-pressed="false" style="--accent: #65f5ff" hidden>
+          <span class="card-top">07 <span>SECRET BOSS</span></span>
+          <span class="card-art singularity-art" aria-hidden="true">
+            <svg viewBox="0 0 100 80" focusable="false">
+              <ellipse cx="50" cy="40" rx="45" ry="13" fill="none" stroke="#a488ff" stroke-width="3" />
+              <path d="M27 16 42 10 58 10 73 16 82 32 82 48 73 64 58 70 42 70 27 64 18 48 18 32Z" fill="#202a44" stroke="#65f5ff" />
+              <circle cx="50" cy="40" r="26" fill="#000107" stroke="#c3a5ff" stroke-width="2" />
+              <path d="M6 40Q50 67 94 40" fill="none" stroke="#65f5ff" stroke-width="3" />
+            </svg>
+          </span>
+          <span class="card-title">Singularity Core <span>↗</span></span>
+          <span class="card-description">15 protocols. One final shot.</span>
         </button>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
@@ -235,6 +266,7 @@
           <div class="profile-tabs" role="tablist" aria-label="Profile">
             <button id="scores-tab" role="tab" aria-selected="true" aria-controls="scores-panel">Scores</button>
             <button id="achievements-tab" role="tab" aria-selected="false" aria-controls="achievements-panel" tabindex="-1">Achievements</button>
+            <button id="global-tab" role="tab" aria-selected="false" aria-controls="global-panel" tabindex="-1">Global</button>
           </div>
           <div id="scores-panel" role="tabpanel" aria-labelledby="scores-tab">
             <div class="score-panel">
@@ -255,8 +287,23 @@
               <ol id="scores-list"></ol>
             </div>
           </div>
+          <section id="global-panel" role="tabpanel" aria-labelledby="global-tab" hidden>
+            <div class="global-filters">
+              <label for="leaderboard-game">Game</label>
+              <select id="leaderboard-game"></select>
+              <label for="leaderboard-difficulty">Difficulty</label>
+              <select id="leaderboard-difficulty"></select>
+            </div>
+            <div class="leaderboard">
+              <h3>Global top 10 <button id="leaderboard-refresh" class="quiet-button" type="button">Refresh</button></h3>
+              <p id="leaderboard-status" role="status" aria-live="polite"></p>
+              <ol id="global-scores" aria-label="Global high scores"></ol>
+              <p class="global-note">Your best completed round appears under your player name. Each difficulty has its own rankings.</p>
+              <p id="leaderboard-submission" role="status" aria-live="polite"></p>
+            </div>
+          </section>
           <section id="achievements-panel" role="tabpanel" aria-labelledby="achievements-tab" hidden>
-            <p class="achievement-legend">Bronze +10 · Silver +30 · Gold +90<br />Crystal +270 · Diamond +810 · Rainbow +2430</p>
+            <p class="achievement-legend">Bronze +10 · Silver +30 · Gold +90<br />Crystal +270 · Diamond +810 · Rainbow +2430<br /><span class="empyrorite-legend">✦ Empyrorite +7290</span></p>
             <label for="achievement-filter">Show achievements</label>
             <select id="achievement-filter">
               <option value="all">All achievements</option>
@@ -266,7 +313,7 @@
             <div id="achievements-list" tabindex="0" aria-label="Achievement collection"></div>
             <p id="achievement-empty" hidden>No achievements in this view yet.</p>
           </section>
-          <p id="storage-note">Scores and achievements stay in this browser. Changing your name keeps your achievement profile.</p>
+          <p id="storage-note">Local scores and achievements stay in this browser. Global rankings share your player name and best scores when connected. Changing your name keeps your achievement profile.</p>
           <p class="sidebar-note">
             <span>✳</span> Easy to start.<br />Hard to call it a day.
           </p>
@@ -276,11 +323,12 @@
     <footer class="site-footer">
       <span>MICROGAME MADNESS</span>
       <p>Made for the joy of one more try.</p>
-      <span>5 GAMES / ENDLESS REMATCHES</span>
+      <span id="game-total">6 GAMES / ENDLESS REMATCHES</span>
     </footer>
     <div id="damage-flash" aria-hidden="true"></div>
     <div id="healing-flash" aria-hidden="true"></div>
     <div id="achievement-celebrations" aria-hidden="true"></div>
     <div id="name-surprise" aria-hidden="true" hidden></div>
+    <div id="gaster-blackout" aria-hidden="true" hidden></div>
   </body>
 </html>

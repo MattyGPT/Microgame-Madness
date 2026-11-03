@@ -15,7 +15,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(restored.visit().changed, false);
   assert.equal(restored.score, 10);
-  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430 });
+  assert.deepEqual(points, { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430, empyrorite: 7290, black: 666 });
   for (const raw of [null, [], 'bad', { stats: { hangmanWins: -1, typingBest: Infinity }, unlocked: { welcome: 'bad', fake: '2026-01-01' } }]) {
     const clean = new Tracker(raw);
     assert.equal(clean.score, 0);
@@ -23,7 +23,68 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 71);
+  assert.equal(catalog.length, 116);
+});
+
+test('100 Cubie pets accumulate across visits and award crystal exactly once', () => {
+  let tracker = new Tracker();
+  tracker.visit();
+  const item = catalog.find(item => item.id === 'cube_pet_100');
+  assert.equal(item.title, "Cubie's Best Friend");
+  assert.equal(item.tier, 'crystal');
+  assert.equal(item.target, 100);
+  for (let pets = 1; pets <= 99; pets++) {
+    assert.deepEqual(ids(tracker.secret('cube')), pets === 1 ? ['cube_pet'] : []);
+    assert.equal(tracker.progress(item), pets);
+  }
+  assert.equal(tracker.score, 100);
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(tracker.visit().changed, false);
+  assert.equal(tracker.progress(item), 99);
+  assert.deepEqual(ids(tracker.secret('cube')), ['cube_pet_100']);
+  assert.equal(tracker.score, 370);
+  const unlocked = tracker.data.unlocked.cube_pet_100;
+  for (let i = 0; i < 5; i++) assert.deepEqual(ids(tracker.secret('cube')), []);
+  assert.equal(tracker.data.stats.cubePets, 105);
+  assert.equal(tracker.progress(item), 100);
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(tracker.score, 370);
+  assert.equal(tracker.data.unlocked.cube_pet_100, unlocked);
+  assert.deepEqual(ids(tracker.secret('cube')), []);
+});
+
+test('ROCKNROY awards the rainbow Game Tester achievement once and persists', () => {
+  const tracker = new Tracker();
+  tracker.visit();
+  const item = catalog.find(item => item.id === 'name_rocknroy');
+  assert.equal(item.title, 'Game Tester');
+  assert.equal(item.tier, 'rainbow');
+  assert.deepEqual(ids(tracker.secret('rocknroy')), ['name_rocknroy']);
+  assert.equal(tracker.score, 2440);
+  assert.equal(tracker.secret('rocknroy').changed, false);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(restored.score, 2440);
+  assert.equal(restored.secret('rocknroy').changed, false);
+});
+
+test('WASTE OF TIME waits for sequence completion, adds 666 points once, and persists', () => {
+  const tracker = new Tracker();
+  tracker.visit();
+  const item = catalog.find(item => item.id === 'waste_of_time');
+  assert.equal(item.title, 'WASTE OF TIME');
+  assert.equal(item.tier, 'black');
+  assert.equal(item.secret, true);
+  assert.equal(item.wingdings, true);
+  assert.equal(item.description, '💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎');
+  assert.deepEqual(ids(tracker.secret('gaster')), []);
+  assert.equal(tracker.score, 10);
+  assert.deepEqual(ids(tracker.completeGaster()), ['waste_of_time']);
+  assert.equal(tracker.score, 676);
+  assert.equal(tracker.completeGaster().changed, false);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(restored.score, 676);
+  assert.equal(restored.visit().changed, false);
+  assert.equal(restored.completeGaster().changed, false);
 });
 
 test('Hangman losses, abandonment, repeated final frames and reloads never duplicate wins or points', () => {
@@ -76,6 +137,23 @@ test('typing and survival use the best single run and exact thresholds', () => {
   tracker.start('dodge', 'merciless');
   assert.deepEqual(ids(dodge(29, 'merciless')), []);
   assert.deepEqual(ids(dodge(30, 'merciless')), ['dodge_merciless']);
+});
+
+test('King’s Wrath practice wins do not grant full-fight Pumpkin King achievements', () => {
+  const tracker = new Tracker();
+  tracker.visit();
+  for (const difficulty of ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants']) {
+    tracker.start('wrath', difficulty);
+    const result = tracker.observe({ mode: 'wrath', difficulty, over: true, won: true,
+      score: 10000, damage_taken: 0, lives: 15, max_lives: 15 });
+    assert.ok(ids(result).includes(`wrath_${difficulty}`));
+    assert.ok(result.earned.every(item => item.group === "The King's Wrath"));
+  }
+  assert.equal(tracker.data.stats.pumpkinWins, 0);
+  assert.equal(tracker.data.stats.pumpkinFlawlessWins, 0);
+  assert.equal(tracker.data.stats.gamesPlayed, 0);
+  assert.equal(tracker.data.unlocked.pumpkin_full_health, undefined);
+  assert.equal(tracker.data.unlocked.sampler, undefined);
 });
 
 test('boss victories respect the selected mode and sampler requires all five games', () => {
@@ -231,7 +309,10 @@ test('secret achievements award the requested tiers once and persist with existi
   }
   assert.equal(tracker.score, 820);
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
-  for (const secret of ['cube', 'dingdong', 'cubie', 'boo', 'starlight', 'unknown']) assert.equal(restored.secret(secret).changed, false);
+  for (const secret of ['dingdong', 'cubie', 'boo', 'starlight', 'unknown']) assert.equal(restored.secret(secret).changed, false);
+  assert.equal(restored.data.stats.cubePets, 1);
+  assert.deepEqual(ids(restored.secret('cube')), []);
+  assert.equal(restored.data.stats.cubePets, 2);
   assert.equal(restored.score, 820);
 });
 
@@ -399,7 +480,7 @@ test('all added milestones unlock exactly at their threshold, including five new
   assert.equal(tracker.data.stats.pumpkinFlawlessWins, 4);
   assert.equal(points.rainbow, 2430);
   assert.ok(points.rainbow > points.diamond);
-  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 6);
+  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 14);
 });
 
 test('retiering recalculates existing profile scores without changing dates or re-awarding medals', () => {

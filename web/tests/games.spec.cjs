@@ -28,6 +28,45 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+test('Pumpkin King classic colors and smoother artwork keep blue and orange eye cues readable', async ({ page }, testInfo) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/app.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace('const pyodide = await loadPyodide(',
+      'const pyodide = window.testKingRuntime = await loadPyodide(') });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="pumpkin"]').click();
+  await page.locator('[data-difficulty="baby"]').click();
+  await page.evaluate(() => {
+    active = false;
+    document.querySelector('#achievement-celebrations').replaceChildren();
+    document.querySelector('#achievement-toast').hidden = true;
+    testKingRuntime.runPython('from bridge import session\nfrom pumpkin_king import Stage\nsession.game.begin_attack(0)');
+  });
+  for (const [rule, color] of [['blue', '#42c9ff'], ['orange', '#ff9d32']]) {
+    const coloredEyes = await page.evaluate(({ rule, color }) => {
+      testKingRuntime.runPython(`session.game.stage = Stage('color', 100, '${rule}')\nsession.game.stage_age = .25`);
+      snapshot = send('tick', { dt: 0, keys: [] });
+      render();
+      return snapshot.commands.filter(command => command.kind === 'polygon' && command.fill === color).length;
+    }, { rule, color });
+    expect(coloredEyes).toBeGreaterThanOrEqual(2);
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`classic-pumpkin-${rule}.png`) });
+  }
+  for (const stage of ['raise', 'fire']) {
+    await page.evaluate(stage => {
+      testKingRuntime.runPython(`session.game.stage = Stage('${stage}', .65, 'both')\nsession.game.stage_age = .3\nsession.game.x = 150`);
+      snapshot = send('tick', { dt: 0, keys: [] });
+      render();
+    }, stage);
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`classic-pumpkin-${stage}.png`) });
+  }
+  expect(errors).toEqual([]);
+});
+
 test("home fits the viewport and Hangman scores survive reload", async ({
   page,
 }, testInfo) => {
@@ -153,6 +192,179 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
 });
 
+test("The King's Wrath has a yellow crown and loads all eight practice modes", async ({ page }, testInfo) => {
+  await expect(page.locator('[data-game]:visible')).toHaveCount(6);
+  const card = page.locator('[data-game="wrath"]');
+  await expect(card).toContainText("The King's Wrath");
+  expect(await card.locator('svg path').evaluate(el => getComputedStyle(el).fill)).toBe('rgb(255, 224, 102)');
+  await page.evaluate(() => {
+    document.querySelector('#achievement-toast').hidden = true;
+    document.querySelector('#achievement-celebrations').replaceChildren();
+  });
+  await page.locator('.game-grid').screenshot({ path: testInfo.outputPath('six-games-yellow-crown.png') });
+  for (const target of [card.locator('svg path'), card.locator('.card-title')]) {
+    await target.click();
+    await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
+    await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+    await page.locator('[data-game="hangman"]').click();
+  }
+  await card.press('Enter');
+  await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
+  await expect(page.locator('#difficulty-title')).toHaveText('Choose an attack to load');
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#welcome-art svg')).toBeVisible();
+  await page.locator('#welcome').screenshot({ path: testInfo.outputPath('wrath-attack-picker.png') });
+  const attacks = {
+    color_memory: 'WATCH THE EYES', bone_gauntlet: 'BONE GAUNTLET', rotating_rings: 'ROTATING RINGS',
+    magenta_fingers: 'MAGENTA FINGERS', chaos: 'CHAOS', royal_slams: 'HAND RISING', haunted_quadrants: 'TOP LEFT',
+  };
+  for (const [attack, label] of Object.entries(attacks)) {
+    await page.locator(`[data-difficulty="${attack}"]`).click();
+    await expect(page.locator('#game-canvas')).toBeVisible();
+    await expect(page.locator('#player-health')).toBeVisible();
+    const state = await page.evaluate(() => {
+      active = false;
+      return { mode: snapshot.mode, attack: snapshot.difficulty,
+        hp: snapshot.max_lives, label: snapshot.label, music: musicPlayer.theme };
+    });
+    expect(state).toMatchObject({ mode: 'wrath', attack, hp: 15, music: 'pumpkin' });
+    expect(state.label).toContain('GET READY — 3');
+    expect(state.label).not.toContain('AWAKENING');
+    for (const seconds of [2, 1, 0]) {
+      await page.evaluate(() => {
+        for (let frame = 0; frame < 20; frame++) snapshot = send('tick', { dt: .05, keys: [] });
+        render();
+      });
+      expect(await page.evaluate(() => snapshot.label)).toContain(seconds ? `GET READY — ${seconds}` : label);
+    }
+    if (testInfo.project.name === 'mobile') {
+      await expect(page.locator('#touch-fire')).toBeVisible();
+      await expect(page.locator('#touch-counter')).toBeVisible();
+    }
+    await page.locator('#exit').click();
+    await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  }
+  await page.locator('[data-difficulty="haunted_quadrants"]').click();
+  await page.locator('#pause').click();
+  expect(await page.evaluate(() => snapshot.paused)).toBe(true);
+  expect(await page.evaluate(() => JSON.stringify(send('tick', { dt: .05, keys: ['Up', 'f', 'e'] })) === JSON.stringify(snapshot))).toBe(true);
+  await page.locator('#overlay-action').click();
+  expect(await page.evaluate(() => snapshot.paused)).toBe(false);
+  await page.evaluate(() => {
+    // Keep the real bridge and renderer; advance only the practice run.
+    snapshot = send('start', { mode: 'wrath', difficulty: 'haunted_quadrants' });
+    active = false;
+    for (let frame = 0; frame < 200; frame++) snapshot = send('tick', { dt: .05, keys: [] });
+    render();
+  });
+  expect(await page.evaluate(() => snapshot.label)).toContain('GET READY — 3');
+  expect(await page.evaluate(() => snapshot.over)).toBe(false);
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-repeat-countdown.png') });
+  await page.locator('[data-game="pumpkin"]').click();
+  await expect(page.locator('#difficulty-title')).toHaveText('Choose a difficulty to play');
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(4);
+  await page.locator('[data-difficulty="baby"]').click();
+  expect(await page.evaluate(() => snapshot.label)).toContain('AWAKENING');
+});
+
+test("The King's Wrath Random Order shuffles all attacks and keeps the preparation countdown", async ({ page }, testInfo) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace('self.game = KingsWrath(attack=difficulty)',
+      'self.game = KingsWrath(attack=difficulty, rng=random.Random(12))\n            self.game.hurt = lambda *args, **kwargs: None');
+    await route.fulfill({ response, body });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="wrath"]').click();
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await page.locator('[data-difficulty="random_order"]').click();
+  await page.evaluate(() => { active = false; });
+  await expect(page.locator('#player-health-value')).toHaveText('15 / 15');
+  expect(await page.evaluate(() => snapshot.label)).toContain('GET READY — 3 · NEXT:');
+  const result = await page.evaluate(() => {
+    const order = [snapshot.label.split('NEXT: ')[1]];
+    for (let frame = 0; frame < 2200 && order.length < 8; frame++) {
+      snapshot = send('tick', { dt: .05, keys: [] });
+      const next = snapshot.label.split('NEXT: ')[1];
+      if (next && next !== order.at(-1)) order.push(next);
+    }
+    render();
+    return { order, difficulty: snapshot.difficulty, over: snapshot.over,
+      completed: snapshot.attacks_completed, fullDeck: Boolean(saved.achievements.unlocked.wrath_full_deck) };
+  });
+  expect(result.order).toHaveLength(8);
+  expect(new Set(result.order.slice(0, 7)).size).toBe(7);
+  expect(result.order[7]).not.toBe(result.order[6]);
+  expect(result).toMatchObject({ difficulty: 'random_order', over: false, completed: 7, fullDeck: true });
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-random-order.png') });
+  await page.locator('#exit').click();
+  await expect(page.locator('[data-difficulty="random_order"]')).toBeVisible();
+});
+
+test("The King's Wrath Random Order saves separate records and offers global rankings", async ({ page }) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace('self.game = KingsWrath(attack=difficulty)',
+      'self.game = KingsWrath(attack=difficulty)\n            from boss_crush import Projectile\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]');
+    await route.fulfill({ response, body });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#player').fill('Shuffle player');
+  await page.locator('[data-game="wrath"]').click();
+  await page.locator('[data-difficulty="random_order"]').click();
+  await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+  const profile = await page.evaluate(() => saved);
+  expect(profile.scores['wrath:random_order'][0].player).toBe('Shuffle player');
+  expect(profile.achievements.unlocked.wrath_random_order).toBeTruthy();
+  expect(profile.achievements.unlocked.wrath_flawless).toBeTruthy();
+  expect(profile.achievements.unlocked.wrath_perfect_shuffle).toBeUndefined();
+  expect(profile.achievements.stats.pumpkinWins).toBe(0);
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#leaderboard-game')).toHaveValue('wrath');
+  await expect(page.locator('#leaderboard-difficulty')).toHaveValue('random_order');
+  await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  expect(await page.evaluate(() => saved.scores['wrath:random_order'][0].player)).toBe('Shuffle player');
+});
+
+test("The King's Wrath keeps practice records and wins separate from the full fight", async ({ page }) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace('self.game = KingsWrath(attack=difficulty)',
+      'self.game = KingsWrath(attack=difficulty)\n            from boss_crush import Projectile\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]');
+    await route.fulfill({ response, body });
+  });
+  await page.evaluate(() => {
+    const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+    profile.scores['pumpkin:baby'] = [{ player: 'Original player', score: 1234 }];
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#player').fill('Practice player');
+  await page.locator('[data-game="wrath"]').click();
+  await page.locator('[data-difficulty="bone_gauntlet"]').click();
+  await expect(page.locator('#overlay-title')).toHaveText('You did it!');
+  const profile = await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')));
+  expect(profile.scores['wrath:bone_gauntlet'][0].player).toBe('Practice player');
+  expect(profile.scores['pumpkin:baby']).toEqual([{ player: 'Original player', score: 1234 }]);
+  expect(profile.achievements.stats.pumpkinWins).toBe(0);
+  expect(profile.achievements.unlocked.pumpkin_full_health).toBeUndefined();
+  expect(profile.achievements.unlocked.pumpkin_flawless).toBeUndefined();
+  await page.locator('#overlay-action').click();
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#leaderboard-game')).toHaveValue('wrath');
+  await expect(page.locator('label[for="leaderboard-difficulty"]')).toHaveText('Attack');
+  await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  expect(await page.evaluate(() => saved.scores['wrath:bone_gauntlet'][0].player)).toBe('Practice player');
+});
+
 test("Pumpkin King offers four HP choices with separate scores", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("microgame-madness.v1", JSON.stringify({
     player: "Mode Tester",
@@ -267,12 +479,12 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
-  await expect(page.locator('.achievement-card')).toHaveCount(71);
+  await expect(page.locator('.achievement-card')).toHaveCount(116);
   await page.locator('#achievement-filter').selectOption('earned');
   await expect(page.locator('.achievement-card:visible')).toHaveCount(1);
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   await page.locator('#achievement-filter').selectOption('locked');
-  await expect(page.locator('.achievement-card:visible')).toHaveCount(70);
+  await expect(page.locator('.achievement-card:visible')).toHaveCount(115);
   await page.locator('#achievements-tab').press('ArrowLeft');
   await expect(page.locator('#scores-tab')).toBeFocused();
   await expect(page.locator('#scores-panel')).toBeVisible();
@@ -526,7 +738,160 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
     wounded = false;
   }
   await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#profile-score')).toHaveText(String(baseScore + reward));
+});
+
+async function mockGlobalLeaderboards(page, service) {
+  await page.route('**/leaderboard-config.json', route => route.fulfill({
+    json: { url: 'https://leaderboard.test', key: 'sb_publishable_browser_test' },
+  }));
+  await page.route('https://leaderboard.test/**', async route => {
+    const request = route.request();
+    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'apikey,authorization,content-type',
+      'access-control-allow-methods': 'POST,OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (service.offline) return route.fulfill({ status: 503, headers, json: {} });
+    const body = request.postDataJSON();
+    if (request.url().includes('/auth/')) {
+      const id = body.refresh_token || `guest-${++service.guests}`;
+      return route.fulfill({ headers, json: { access_token: id, refresh_token: id, expires_in: 3600, user: { id } } });
+    }
+    const key = `${body.p_mode}:${body.p_difficulty}`;
+    const identity = (request.headers().authorization || '').replace('Bearer ', '');
+    if (request.url().endsWith('/submit_leaderboard_score')) {
+      const id = `${key}:${identity}`, previous = service.scores.get(id);
+      const score = Math.max(previous?.score || 0, body.p_score);
+      service.scores.set(id, { key, identity, player: body.p_player, score });
+      return route.fulfill({ headers, json: score });
+    }
+    service.requested.add(key);
+    const rows = [...service.scores.values()].filter(row => row.key === key).sort((a, b) => b.score - a.score);
+    return route.fulfill({ headers, json: rows.slice(0, 10).map((row, i) => ({
+      rank: i + 1, player: row.player, score: row.score, is_you: row.identity === identity,
+    })) });
+  });
+}
+async function finishHangman(page, name) {
+  await page.locator('#player').fill(name);
+  await page.locator('[data-difficulty="easy"]').click();
+  for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+    if (await page.locator('#overlay').isVisible()) break;
+    const button = page.getByRole('button', { name: `Guess ${letter.toUpperCase()}`, exact: true });
+    if (await button.isEnabled()) await button.click();
+  }
+  await expect(page.locator('#overlay')).toBeVisible();
+}
+
+test('unconfigured global rankings leave local scores and achievements usable', async ({ page }) => {
+  const before = await page.evaluate(() => localStorage.getItem('microgame-madness.v1'));
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#leaderboard-status')).toContainText('aren’t connected yet');
+  await page.locator('#achievements-tab').click();
+  await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
+  expect(await page.evaluate(() => localStorage.getItem('microgame-madness.v1'))).toBe(before);
+});
+
+test('global rankings can browse all 24 modes without starting a round', async ({ page }) => {
+  const service = { scores: new Map(), guests: 0, requested: new Set() };
+  await mockGlobalLeaderboards(page, service);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#global-tab').click();
+  const modes = await page.evaluate(() => Leaderboards.difficulties);
+  for (const [mode, values] of Object.entries(modes)) {
+    await page.locator('#leaderboard-game').selectOption(mode);
+    for (const difficulty of values) {
+      await page.locator('#leaderboard-difficulty').selectOption(difficulty);
+      await expect(page.locator('#leaderboard-status')).toHaveText('No scores yet. Set the first record!');
+      await expect.poll(() => service.requested.has(`${mode}:${difficulty}`)).toBe(true);
+    }
+  }
+  expect(service.requested.size).toBe(24);
+  expect(service.guests).toBe(0);
+  await page.locator('#global-tab').press('End');
+  await expect(page.locator('#global-tab')).toBeFocused();
+  await page.locator('#global-tab').press('ArrowRight');
+  await expect(page.locator('#scores-tab')).toBeFocused();
+  expect(await page.evaluate(() => active)).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('global scores are shared across independent browsers and preserve the original local profile', async ({ page, context }, testInfo) => {
+  const service = { scores: new Map(), guests: 0, requested: new Set() };
+  await page.evaluate(() => {
+    const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+    profile.scores['hangman:hard'] = [{ player: 'Old champion', score: 5 }];
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
+  });
+  await mockGlobalLeaderboards(page, service);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  const originalPoints = await page.locator('#profile-score').textContent();
+  await finishHangman(page, 'First browser');
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#global-scores')).toContainText('First browser (you)');
+  // A browser context has independent localStorage and its own cloud identity.
+  const otherContext = await context.browser().newContext();
+  try {
+    const other = await otherContext.newPage();
+    await other.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
+      const file = path.basename(new URL(route.request().url()).pathname);
+      return route.fulfill({ path: path.resolve('node_modules/pyodide', file), headers: { 'access-control-allow-origin': '*' } });
+    });
+    await mockGlobalLeaderboards(other, service);
+    await other.goto(page.url());
+    await expect(other.locator('#runtime-status')).toContainText('All games ready');
+    await other.locator('#global-tab').click();
+    await expect(other.locator('#global-scores')).toContainText('First browser');
+    await finishHangman(other, 'Second browser');
+    await expect(other.locator('#global-scores')).toContainText('Second browser (you)');
+    await page.locator('#leaderboard-refresh').click();
+    await expect(page.locator('#global-scores')).toContainText('Second browser');
+    expect(service.guests).toBe(2);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).scores['hangman:hard']))
+      .toEqual([{ player: 'Old champion', score: 5 }]);
+    expect(Number(await page.locator('#profile-score').textContent())).toBeGreaterThanOrEqual(Number(originalPoints));
+    await page.locator('#global-panel').screenshot({ path: testInfo.outputPath('global-leaderboard.png') });
+  } finally { await otherContext.close(); }
+});
+
+test('global outages keep games playable and queued scores retry after reload', async ({ page }) => {
+  const service = { scores: new Map(), guests: 0, requested: new Set(), offline: true };
+  await mockGlobalLeaderboards(page, service);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await finishHangman(page, 'Offline player');
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#leaderboard-submission')).toContainText('Saved locally');
+  await expect(page.locator('#leaderboard-status')).toContainText('unavailable');
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  service.offline = false;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#global-scores')).toContainText('Offline player (you)');
+  expect(service.guests).toBe(1);
+});
+
+test("arcade music shuffles all fifteen songs automatically before repeating", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.locator('[data-game="hangman"]').click();
+  await expect.poll(() => page.evaluate(() => audioContext?.state)).toBe("running");
+  const heard = [];
+  for (let i = 0; i < 15; i++) {
+    const track = await page.evaluate(() => musicPlayer.track);
+    heard.push(track);
+    expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
+    // Exercise real Web Audio natural-end events without waiting ten minutes.
+    await page.evaluate(() => musicPlayer.current.source.playbackRate.setValueAtTime(1000, audioContext.currentTime));
+    await expect.poll(() => page.evaluate(() => musicPlayer.track)).not.toBe(track);
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  }
+  expect([...heard].sort()).toEqual(await page.evaluate(() => ArcadeMusic.tracks.map(track => track.id).sort()));
+  expect(new Set(heard).size).toBe(15);
+  expect(errors).toEqual([]);
 });
 
 test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and visibility", async ({ page }) => {
@@ -719,6 +1084,42 @@ test('DINGDONG can repeat, does not block play, and preserves mute and pause cho
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
 });
 
+test('Cubie pets persist across reloads and the 100th pet awards crystal once', async ({ page }, testInfo) => {
+  await page.locator('#sound').click();
+  const cube = page.getByRole('button', { name: 'Pet Cubie' });
+  if (testInfo.project.name === 'mobile') await cube.tap({ force: true });
+  else await cube.click({ force: true });
+  for (let i = 1; i < 49; i++) await cube.press('Enter');
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="cube_pet_100"]');
+  await expect(card).toContainText('Locked · 49 / 100');
+  await expect(page.locator('#profile-score')).toHaveText('100');
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#sound').click();
+  for (let i = 49; i < 99; i++) await cube.press('Space');
+  await page.locator('#achievements-tab').click();
+  await expect(card).toContainText('Locked · 99 / 100');
+  await expect(page.locator('#profile-score')).toHaveText('100');
+  await cube.press('Enter');
+  await expect(card).toHaveAttribute('data-tier', 'crystal');
+  await expect(card).toHaveClass(/earned/);
+  await expect(card).toContainText("Cubie's Best Friend");
+  await expect(card).toContainText('Unlocked');
+  await expect(page.locator('#profile-score')).toHaveText('370');
+  await expect(page.locator('#achievement-toast')).toContainText("Cubie's Best Friend");
+  await expect(page.locator('#achievement-toast')).toContainText('crystal achievement · +270 points');
+  for (let i = 0; i < 5; i++) await cube.press('Enter');
+  await expect(page.locator('#profile-score')).toHaveText('370');
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#achievements-tab').click();
+  await expect(card).toHaveClass(/earned/);
+  await expect(page.locator('#profile-score')).toHaveText('370');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.cubePets)).toBe(105);
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+});
+
 test('secret achievements persist, and the cube blushes and squeaks with mouse, touch, and keyboard', async ({ page }, testInfo) => {
   const cube = page.getByRole('button', { name: 'Pet Cubie' });
   await expect(cube).toBeVisible();
@@ -814,7 +1215,8 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     };
   });
   for (const [id, tier, color] of [['play_boss', 'bronze', '#b87545'], ['boss_mean_flawless', 'silver', '#a9bacb'],
-    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#55ddff'], ['pumpkin_flawless_5', 'rainbow', '#ff5470']]) {
+    ['cube_pet', 'gold', '#ffd34d'], ['dingdong', 'crystal', '#b67dff'], ['pumpkin_flawless', 'diamond', '#55ddff'],
+    ['pumpkin_flawless_5', 'rainbow', '#ff5470'], ['core_flawless', 'empyrorite', '#2cf5a0']]) {
     const soundedImmediately = await page.evaluate(id => {
       const item = Achievements.catalog.find(item => item.id === id);
       const before = window.awardSounds.length;
@@ -856,19 +1258,19 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     expect(opacity.held).toBe(1);
     expect(opacity.fading).toBeCloseTo(.5, 2);
   }
-  await expect(page.locator('.achievement-confetti')).toHaveCount(6);
+  await expect(page.locator('.achievement-confetti')).toHaveCount(7);
   await page.screenshot({ path: testInfo.outputPath('all-tier-confetti.png') });
   await expect(page.locator('#achievement-celebrations')).toHaveCSS('pointer-events', 'none');
   expect(await page.evaluate(() => window.awardSounds.every(osc => osc.type === 'sine' && osc.frequency.value === 1568))).toBe(true);
   await page.evaluate(() => updateAchievements(achievementTracker.secret('cube')));
-  expect(await page.evaluate(() => window.awardSounds.length)).toBe(6);
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(7);
   await expect(page.locator('.achievement-confetti')).toHaveCount(0, { timeout: 6500 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.locator('#sound').click();
   await page.locator('[data-difficulty="easy"]').click();
   await expect(page.locator('.achievement-confetti[data-tier="bronze"]')).toBeVisible();
   await expect(page.locator('.achievement-confetti i').first()).toHaveCSS('animation-name', 'none');
-  expect(await page.evaluate(() => window.awardSounds.length)).toBe(6);
+  expect(await page.evaluate(() => window.awardSounds.length)).toBe(7);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -1005,6 +1407,263 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
 });
 
 
+test('Gaster reloads once, waits five seconds, and reveals the redacted award only after audio ends', async ({ page }, testInfo) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  const card = page.locator('[data-achievement="waste_of_time"]');
+  await page.locator('#achievements-tab').click();
+  await expect(card).toHaveClass(/redacted/);
+  await expect(card).toHaveAttribute('aria-label', 'Redacted achievement');
+  await expect(card).toHaveText('[REDACTED]');
+  await expect(card.locator('progress, .achievement-tier')).toHaveCount(0);
+  expect(await card.getAttribute('data-tier')).toBeNull();
+  await expect(page.locator('.achievement-legend')).not.toContainText(/black/i);
+  await card.scrollIntoViewIfNeeded();
+  await card.screenshot({ path: testInfo.outputPath('redacted-achievement.png') });
+  await page.locator('#player').click();
+  const reloaded = page.waitForEvent('load');
+  await page.locator('#player').fill('  gAsTeR  ');
+  await reloaded;
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  expect(await page.evaluate(() => performance.getEntriesByType('navigation')[0].type)).toBe('reload');
+  expect(await page.evaluate(() => history.state?.gasterSequence)).toBeUndefined();
+  await expect(page.locator('#profile-score')).toHaveText('10');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+  await expect(page.locator('#gaster-blackout')).toBeHidden();
+  await page.evaluate(() => {
+    window.gasterTimings = [];
+    new MutationObserver(() => window.gasterTimings.push(performance.now()))
+      .observe(document.querySelector('#gaster-blackout'), { attributes: true, attributeFilter: ['hidden'] });
+    window.secretProbe = audioContext.createAnalyser();
+    audioMaster.connect(window.secretProbe);
+  });
+  await expect.poll(() => page.evaluate(() => audioContext.state)).toBe('running');
+  await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
+  const blackout = await page.locator('#gaster-blackout').evaluate(el => ({
+    background: getComputedStyle(el).backgroundColor,
+    width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height,
+    viewportWidth: innerWidth, viewportHeight: innerHeight,
+    inert: document.body.inert,
+  }));
+  expect(blackout.background).toBe('rgb(0, 0, 0)');
+  expect(blackout.width).toBe(blackout.viewportWidth);
+  expect(blackout.height).toBe(blackout.viewportHeight);
+  expect(blackout.inert).toBe(true);
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await expect.poll(() => page.evaluate(() => {
+    const data = new Float32Array(window.secretProbe.fftSize);
+    window.secretProbe.getFloatTimeDomainData(data);
+    return Math.max(...data.map(Math.abs));
+  })).toBeGreaterThan(.05);
+  await expect(card).toHaveClass(/redacted/);
+  await expect(page.locator('#profile-score')).toHaveText('10');
+  await page.screenshot({ path: testInfo.outputPath('gaster-blackout.png') });
+  await expect(page.locator('#gaster-blackout')).toBeHidden({ timeout: 8500 });
+  const timings = await page.evaluate(() => window.gasterTimings);
+  expect(timings[0]).toBeGreaterThanOrEqual(4900);
+  expect(timings[0]).toBeLessThan(6000);
+  expect(timings[1] - timings[0]).toBeGreaterThan(6500);
+  expect(timings[1] - timings[0]).toBeLessThan(7300);
+  expect(await page.evaluate(() => document.body.inert)).toBe(false);
+  await expect(page.locator('#profile-score')).toHaveText('676');
+  await expect(page.locator('#achievement-toast')).toContainText('WASTE OF TIME');
+  await expect(page.locator('#achievement-toast')).toContainText('+666 points');
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  await page.locator('#achievements-tab').click();
+  await expect(card).toHaveClass(/earned/);
+  await expect(card).not.toHaveClass(/redacted/);
+  await expect(card).toHaveAttribute('data-tier', 'black');
+  await expect(card).toContainText('black · +666 points');
+  await expect(card.locator('.wingdings')).toHaveText('💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎');
+  await expect(page.locator('.achievement-legend')).not.toContainText(/black/i);
+  await card.scrollIntoViewIfNeeded();
+  await card.screenshot({ path: testInfo.outputPath('waste-of-time.png') });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('676');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+  await page.waitForTimeout(5500);
+  await expect(page.locator('#gaster-blackout')).toBeHidden();
+  await page.locator('#achievements-tab').click();
+  await expect(card).toHaveClass(/earned/);
+  expect(errors).toEqual([]);
+});
+
+test('Gaster respects mute and blocked storage and freezes a running game', async ({ page }) => {
+  await page.addInitScript(() => {
+    for (const property of ['localStorage', 'sessionStorage'])
+      Object.defineProperty(window, property, { get() { throw new Error('Storage blocked'); } });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#sound').click();
+  const reloaded = page.waitForEvent('load');
+  await page.locator('#player').fill('gaster');
+  await reloaded;
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => {
+    window.gasterGameRemaining = [];
+    new MutationObserver(() => window.gasterGameRemaining.push(snapshot.remaining))
+      .observe(document.querySelector('#gaster-blackout'), { attributes: true, attributeFilter: ['hidden'] });
+  });
+  await page.waitForTimeout(await page.evaluate(() => Math.max(0, 4100 - performance.now())));
+  await page.locator('[data-game="keyboard"]').click();
+  await page.locator('[data-difficulty="progressive"]').click();
+  await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 2500 });
+  const remaining = await page.evaluate(() => snapshot.remaining);
+  expect(remaining).toBeGreaterThan(.5);
+  await expect(page.locator('#gaster-blackout')).toBeHidden({ timeout: 7500 });
+  await expect(page.locator('#profile-score')).toHaveText('686');
+  expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+  const frozen = await page.evaluate(() => window.gasterGameRemaining);
+  expect(frozen).toHaveLength(2);
+  expect(frozen[1]).toBe(frozen[0]);
+  expect(await page.evaluate(() => snapshot.over)).toBe(false);
+  await page.locator('#exit').click();
+});
+
+test('Gaster recovers from unavailable audio and interrupted sequences cannot unlock the award', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.AudioContext = class { constructor() { throw new Error('Audio disabled'); } };
+  });
+  const reloaded = page.waitForEvent('load');
+  await page.locator('#player').fill('GASTER');
+  await reloaded;
+  await expect(page.locator('#sound')).toHaveText('Sound unavailable');
+  await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('10');
+  await page.waitForTimeout(5500);
+  await expect(page.locator('#gaster-blackout')).toBeHidden();
+  await page.locator('#player').fill('Player');
+  const secondReload = page.waitForEvent('load');
+  await page.locator('#player').fill('gaster');
+  await secondReload;
+  await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
+  await expect(page.locator('#gaster-blackout')).toBeHidden({ timeout: 7500 });
+  await expect(page.locator('#profile-score')).toHaveText('676');
+  expect(errors).toEqual([]);
+});
+
+test('ROCKNROY randomly selects all five original songs, returns to arcade, and awards Game Tester once', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.locator('#player').click();
+  if (await page.locator('#achievement-toast').isVisible())
+    await page.locator('#achievement-toast button').click();
+  const tracks = await page.evaluate(() => ArcadeMusic.rockTracks.map(track => track.id));
+  expect(tracks).toHaveLength(5);
+  for (let i = 0; i < tracks.length; i++) {
+    if (i) await page.locator('#player').fill('Player');
+    await page.evaluate(i => {
+      window.originalRockRandom = Math.random;
+      Math.random = () => (i + .5) / 5;
+    }, i);
+    await page.locator('#player').fill('  rOcKnRoY  ');
+    await page.evaluate(() => { Math.random = window.originalRockRandom; });
+    await expect.poll(() => page.evaluate(() => musicPlayer.theme)).toBe(tracks[i]);
+    expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
+    await expect(page.locator('#profile-score')).toHaveText('2440');
+    await expect(page.locator('#name-surprise')).toBeHidden();
+    if (!i) {
+      await expect(page.locator('#achievement-toast')).toContainText('Game Tester');
+      await expect(page.locator('#achievement-toast')).toContainText('rainbow achievement · +2430 points');
+      await expect(page.locator('.achievement-confetti[data-tier="rainbow"] i')).toHaveCount(40);
+      await page.evaluate(() => {
+        window.rockProbe = audioContext.createAnalyser();
+        audioMaster.connect(window.rockProbe);
+      });
+      await expect.poll(() => page.evaluate(() => {
+        const samples = new Float32Array(window.rockProbe.fftSize);
+        window.rockProbe.getFloatTimeDomainData(samples);
+        return Math.max(...samples.map(Math.abs));
+      })).toBeGreaterThan(.01);
+    }
+    // Exercise the real source's natural end event without waiting a minute
+    // per song. No manual onended callback or replacement audio buffer.
+    await page.evaluate(() => musicPlayer.current.source.playbackRate.setValueAtTime(100, audioContext.currentTime));
+    await expect.poll(() => page.evaluate(() => musicPlayer.oneShot)).toBe(null);
+    await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+    expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
+    expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
+  }
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="name_rocknroy"]');
+  await expect(card).toHaveClass(/earned/);
+  await expect(card).toHaveAttribute('data-tier', 'rainbow');
+  await expect(card).toContainText('Game Tester');
+  expect(errors).toEqual([]);
+});
+
+test('ROCKNROY respects mute, visibility and game pause, and can replace a name effect', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.locator('#sound').click();
+  await page.locator('#player').fill('ROCKNROY');
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+  expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+  await page.locator('#sound').click();
+  const song = await page.evaluate(() => musicPlayer.oneShot);
+  expect(song).toMatch(/^rock_/);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  const offset = await page.evaluate(() => musicPlayer.offset);
+  await page.evaluate(() => {
+    delete document.hidden;
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(offset);
+  expect(await page.evaluate(() => musicPlayer.oneShot)).toBe(song);
+  await page.locator('#sound').click();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await page.locator('#sound').click();
+  expect(await page.evaluate(() => musicPlayer.oneShot)).toBe(song);
+  await page.locator('#player').fill('BOO');
+  await expect(page.locator('#name-surprise')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await page.locator('#player').fill('ROCKNROY');
+  await expect(page.locator('#name-surprise')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  await page.locator('[data-game="pumpkin"]').click();
+  await page.locator('[data-difficulty="baby"]').click();
+  expect(await page.evaluate(() => musicPlayer.theme)).toMatch(/^rock_/);
+  await page.locator('#pause').click();
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await page.locator('#pause').click();
+  expect(await page.evaluate(() => musicPlayer.theme)).toMatch(/^rock_/);
+  await page.locator('#exit').click();
+  await page.evaluate(() => musicPlayer.current.source.playbackRate.setValueAtTime(100, audioContext.currentTime));
+  await expect.poll(() => page.evaluate(() => musicPlayer.theme)).toBe('arcade');
+  await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  expect(errors).toEqual([]);
+});
+
+test('Game Tester still unlocks when browser audio is unavailable', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.AudioContext = class { constructor() { throw new Error('Audio disabled'); } };
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#player').fill('ROCKNROY');
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+  await expect(page.locator('#sound')).toHaveText('Sound unavailable');
+  await expect(page.locator('#name-surprise')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test('new name secrets replace effects cleanly and award once across reloads', async ({ page }, testInfo) => {
   await page.locator('#player').click();
   for (const [name, secret, message, score] of [
@@ -1054,56 +1713,118 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
 });
 
 
-test('Pumpkin quadrant scares show warnings, half HP, fifteen laughs, and pause without advancing', async ({ page }, testInfo) => {
+for (const mode of ['pumpkin', 'wrath'])
+test(`${mode} Haunted Quadrants gives two seconds to position with laughing faces, then eighteen slower scares`, async ({ page }, testInfo) => {
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
-    const body = (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)',
+    let body = (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)',
       'self.game = PumpkinKing(difficulty=difficulty)\n            self.game.begin_attack(6)\n            self.game.x, self.game.y = -150, 30');
+    body = body.replace('self.game = KingsWrath(attack=difficulty)',
+      'self.game = KingsWrath(attack=difficulty)\n            self.game.x, self.game.y = -150, 30');
     await route.fulfill({ response, body });
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('#player').click();
-  await page.evaluate(() => {
-    selectGame('pumpkin'); startGame('baby'); active = false;
+  await page.evaluate(mode => {
+    selectGame(mode); startGame(mode === 'pumpkin' ? 'baby' : 'haunted_quadrants'); active = false;
     window.scareSounds = [];
     const original = playSound;
     playSound = event => { if (event === 'scare') window.scareSounds.push(event); original(event); };
     document.querySelector('#achievement-celebrations').replaceChildren();
     document.querySelector('#achievement-toast').hidden = true;
-  });
+  }, mode);
   const tick = frames => page.evaluate(frames => {
     for (let i = 0; i < frames; i++) { snapshot = send('tick', { dt: .05, keys: [] }); render(); }
     return { lives: snapshot.lives, label: snapshot.label, damage: snapshot.damage_taken,
       warnings: snapshot.commands.filter(c => c.kind === 'text' && c.text === '!'),
+      introFaces: snapshot.commands.filter(c => c.kind === 'polygon' && c.coords.length > 20
+        && ['#9e8cff', '#7cdae6', '#b8a3f4'].includes(c.fill)).length,
       faces: snapshot.commands.filter(c => c.fill === '#e7d9ff').length,
       lines: snapshot.commands.filter(c => c.fill === '#d9b8f5').length };
   }, frames);
   let state = await tick(0);
+  if (mode === 'wrath') {
+    expect(state.label).toContain('GET READY — 3');
+    expect(state.introFaces).toBe(0);
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-three-second-countdown.png') });
+    state = await tick(20);
+    expect(state.label).toContain('GET READY — 2');
+    state = await tick(20);
+    expect(state.label).toContain('GET READY — 1');
+    state = await tick(19);
+    expect(state.label).toContain('GET READY — 1');
+    await page.evaluate(() => { snapshot = send('pause'); render(); });
+    expect(await tick(20)).toEqual(state);
+    await page.evaluate(() => { snapshot = send('pause'); render(); });
+    state = await tick(1);
+  }
+  expect(state.label).toContain('GET IN POSITION');
+  expect(state.label).toContain('TOP LEFT FIRST');
+  expect(state.introFaces).toBe(20);
+  expect(state.warnings).toHaveLength(0);
+  expect(state.lives).toBe(15);
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-haunted-positioning.png`) });
+  const firstArt = await page.evaluate(() => JSON.stringify(snapshot.commands));
+  state = await tick(39); // 1.95 seconds: the first quadrant is still harmless.
+  expect(state.label).toContain('GET IN POSITION');
+  expect(state.damage).toBe(0);
+  expect(await page.evaluate(() => JSON.stringify(snapshot.commands))).not.toBe(firstArt);
+  await page.evaluate(() => { snapshot = send('pause'); render(); });
+  const frozen = await tick(20);
+  expect(frozen).toEqual(state);
+  expect(await page.evaluate(() => window.scareSounds.length)).toBe(0);
+  await page.evaluate(() => { snapshot = send('pause'); render(); });
+  state = await tick(1); // Exactly two seconds begins the first warning.
+  expect(state.introFaces).toBe(0);
   expect(state.warnings).toHaveLength(3);
   expect(state.warnings[0].fill).toBe('#ff4d55');
   expect(state.lines).toBe(2);
   state = await tick(2);
   expect(state.warnings[0].fill).toBe('#ffe45c');
   expect(state.lives).toBe(15);
-  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('scare-warning.png') });
-  state = await tick(2);
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-scare-warning.png`) });
+  state = await tick(1);
   expect(state.warnings).toHaveLength(0);
   expect(state.faces).toBe(3);
   expect(state.lives).toBe(14.5);
   expect(state.damage).toBe(.5);
   await expect(page.locator('#player-health')).toContainText('14.5 / 15');
   expect(await page.evaluate(() => damageFlashAnimation !== null)).toBe(true);
-  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('scare-faces.png') });
-  await page.evaluate(() => { snapshot = send('pause'); render(); });
-  const frozen = await tick(20);
-  expect(frozen).toEqual(state);
-  expect(await page.evaluate(() => window.scareSounds.length)).toBe(1);
-  await page.evaluate(() => { snapshot = send('pause'); render(); });
-  state = await tick(96);
-  expect(state.label).toContain('BREATHE');
+  await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-scare-faces.png`) });
+  state = await tick(97);
+  expect(state.label).toContain(mode === 'wrath' ? 'GET READY — 3' : 'BREATHE');
   expect(state.faces).toBe(0);
   expect(state.lines).toBe(0);
-  expect(state.lives).toBe(13);
-  expect(await page.evaluate(() => window.scareSounds.length)).toBe(15);
+  expect(state.lives).toBe(12.5);
+  expect(await page.evaluate(() => window.scareSounds.length)).toBe(18);
+  if (mode === 'wrath') {
+    state = await tick(60);
+    expect(state.label).toContain('GET IN POSITION');
+    expect(state.introFaces).toBe(20);
+    expect(state.damage).toBe(2.5);
+  }
+});
+
+
+test("ROCKNROY and The King's Wrath work together and restore the boss theme", async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.locator('#player').click();
+  await page.locator('#player').fill('ROCKNROY');
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+  await page.locator('[data-game="wrath"]').click();
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await page.locator('[data-difficulty="color_memory"]').click();
+  await expect(page.locator('#game-canvas')).toBeVisible();
+  expect(await page.evaluate(() => snapshot.mode)).toBe('wrath');
+  expect(await page.evaluate(() => musicPlayer.theme)).toMatch(/^rock_/);
+  await page.evaluate(() => musicPlayer.current.source.playbackRate.setValueAtTime(100, audioContext.currentTime));
+  await expect.poll(() => page.evaluate(() => musicPlayer.theme)).toBe('pumpkin');
+  expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(true);
+  expect(await page.evaluate(() => achievementTracker.data.unlocked.name_rocknroy)).toBeTruthy();
+  await page.locator('#exit').click();
+  expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  expect(errors).toEqual([]);
 });

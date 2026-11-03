@@ -1,12 +1,20 @@
 # Microgame Madness
 
-Five games, two ways to play: a Python desktop/terminal collection and a browser arcade powered by the **same Python game rules**.
+Six browser games, a secret unlockable boss, and a Python desktop/terminal collection, powered by the **same Python game rules**.
 
 - **Hangman:** guess words on easy, medium, or hard difficulty.
 - **Key Rush / Timed Keyboard Challenge:** type increasingly difficult sequences before time runs out.
 - **Turtle Dodge:** survive falling blocks across four difficulty levels.
 - **Boss Crush:** dodge and shoot through four boss difficulties.
 - **The Pumpkin King:** survive a transformation and seven attacks, including a timed counter move. Choose “Come On, Are You Really That Bad at the Game?” for 23 HP, Baby Mode for 15 HP, Coward Mode for 10 HP, or Impossible Phase 2 for 5 HP; each has separate high scores. Touching the King’s head, arms, or hands kills instantly in every mode, including during the awakening and damage immunity. The roar warns of mouth fire; fire and arm-lift smashes deal 1 HP per hit with normal damage immunity. Projectiles and rings deal their usual damage.
+
+- **The King’s Wrath (browser):** a separate yellow-crown minigame that loads any of the Pumpkin King’s seven attacks with 15 HP. Every attack begins with a three-second 3–2–1 countdown, including repeats. Haunted Quadrants adds its two-second positioning break afterward, for five seconds before the scares begin. Choose Color Memory, Bone Gauntlet, Rotating Rings, Magenta Fingers, Chaos, Royal Slams, or Haunted Quadrants (the spook attack). The chosen attack repeats with the same three-second countdown until you win or die. Choose **Random Order** to play all seven attacks once in a shuffled order, then reshuffle. Adjacent attacks never repeat, including between shuffles. Random Order keeps the same 15 HP, countdowns, and combat rules, with separate local and global scores. Combat, movement, healing, and score time pause during this countdown. Arrows move, F shoots, E counters, and D pauses; Escape returns to the attack picker. Local and global records are separate for each practice attack. Practice victories do not award full-fight Pumpkin King achievements.
+
+## Singularity Core (browser rough draft)
+
+**Secret browser boss — Singularity Core (rough draft):** enter `GRAVITRON` in the arcade’s player-name field to unlock the robotic black hole. The new game card stays unlocked in this browser after reloading or changing your name. Start with 10 HP. A galactic healing pack appears after every third completed attack (3, 6, 9, 12, and 15). Teleport to its glowing cross to recover 1 HP, up to the 10-HP maximum. Packs appear at reachable nodes away from the turtle and expire after nine seconds; pausing freezes their lifetime. Healing never erases damage history. Hold an arrow to teleport immediately to that edge of the containment box; hold two arrows for a corner. Release the arrows to return to the center. D pauses and Escape exits. The Core is invulnerable throughout all 15 survival protocols. After the last one, release and press F (or tap the enabled Laser button) to fire the annihilation laser and win. Scores are saved locally for this draft.
+
+The protocols are Railgun Array, Accretion Sweep, Collapsing Horizons, Target Lock, Event Lattice, Binary Stars, Gravity Guillotine, Photon Rain, Crossfire Engine, Dark Matter Mines, Polarity Inversion, Orbital Saws, Echo Protocol, Lens Fracture, and Total Collapse. Amber outlines warn of attacks; pink hazards deal damage. This is a tougher endurance fight than Pumpkin King, with only 0.42 seconds of damage immunity and healing available after every three attacks. Railgun Array gives 0.72 seconds of warning before each lane fires, 0.4 seconds longer than before; later protocols keep their own warning timings. The Core has a procedural animated accretion disk, mechanical armor, and an original cinematic boss theme: sustained low strings, legato brass, choir-like pads, resonant drums, and spacious reverb in a roughly 49-second arrangement. Its theme loops and preserves its position through mute, pause, and hidden tabs. The fight ends with a final laser destruction animation. Timing and patterns live in `singularity_core.py`; artwork lives in `singularity_core_view.py` for later tuning.
 
 ## Play the Python version
 
@@ -26,22 +34,24 @@ Controls: letters for Hangman; type the displayed sequence for Key Rush; arrow k
 
 ```sh
 python3 scripts/build_web.py
-python3 -m http.server 8000 --bind 127.0.0.1 --directory dist
+python3 -m http.server 8770 --bind 127.0.0.1 --directory dist
 ```
 
-Open **http://localhost:8000** in a modern browser. Use an HTTP server rather than opening `index.html` directly. The first load downloads the pinned Pyodide 0.29.3 runtime from jsDelivr and requires an internet connection. Browser games need no Python installation on the player's machine.
+Open **http://localhost:8770** in a modern browser. Use an HTTP server rather than opening `index.html` directly. The first load downloads the pinned Pyodide 0.29.3 runtime from jsDelivr and requires an internet connection. Browser games need no Python installation on the player's machine.
 
-The web interface provides game selection, desktop keyboard input, touch controls, and local high scores. Choose a game, then click a difficulty in the play area to start each round. Play again returns to the difficulty choices; resuming a paused game keeps the current round. Selecting a game brings the play area into view, and arcade games resize to fit the available screen height with their controls. Boss fights show your current/max HP and a health bar above the arena, including while paused. Key Rush is the web name for the timed keyboard challenge. Scores are per browser and device; they do not sync with the Python version. If browser storage is blocked, scores last only for the current visit. Browser audio starts enabled. The first click or key press unlocks an original looping arcade chiptune, as required by browser autoplay rules. Starting any Pumpkin King difficulty crossfades to a faster Halloween boss theme; exiting or finishing the fight returns to the arcade theme. Music pauses with the game or a hidden tab, resumes from the same position, and the Sound toggle mutes both music and effects. Synthesized Pumpkin King attack cues remain louder than the music. No external music downloads or desktop audio player are needed.
+The web interface provides game selection, desktop keyboard input, touch controls, and local high scores. Choose a game, then click a difficulty (or a practice attack in The King’s Wrath) in the play area to start each round. Play again returns to the difficulty choices; resuming a paused game keeps the current round. Selecting a game brings the play area into view, and arcade games resize to fit the available screen height with their controls. Boss fights show your current/max HP and a health bar above the arena, including while paused. Key Rush is the web name for the timed keyboard challenge. Local scores are per browser and device; they do not sync with the Python version. The **Global** tab has separate top-ten rankings for all 24 game/difficulty or practice-mode combinations when the shared leaderboard is connected. Browse any difficulty without starting a round. Completed rounds publish your best score under your nickname; lower scores never replace a record. Global rankings do not change your local achievement profile or profile points. If browser storage is blocked, scores last only for the current visit. Browser audio starts enabled. The first click or key press unlocks a shuffled playlist of fifteen original arcade chiptunes, as required by browser autoplay rules. The original Pixel Promenade is joined by Pocket Comet, Clockwork Mischief, Moonlit Checkpoint, Soda Circuit, Polite Little Ghost, Very Small Hero, Crystal Staircase, Midnight Overdrive, and Home in Eight Bits. The new songs pair playful, offbeat RPG melodies with pulse leads, triangle bass, fast arpeggios, and noise drums; each has its own melody, harmony, tempo, and arrangement. Pixel Parade, Moonlit Circuit, Turbo Tokens, Bubblebyte Bay, and High Score Horizon join the merged playlist. Every song plays once before the playlist reshuffles, with a random first song and no consecutive repeats across shuffles. Starting any Pumpkin King difficulty or The King’s Wrath attack crossfades to the looping Halloween boss theme; exiting or finishing the fight returns to the next arcade song. Music pauses with the game or a hidden tab, resumes the same song from the same position, and the Sound toggle mutes both music and effects. Synthesized Pumpkin King attack cues remain louder than the music. No external music downloads or desktop audio player are needed.
 
-The browser also has **71 achievements**. A first visit unlocks **Welcome to Microgame Madness!** automatically. Open the **Achievements** subtab beside Scores to browse requirements, progress, and unlocked medals. New awards immediately play a ding and fill the screen with tier-colored confetti for four seconds, followed by a one-second fade. Notifications appear at the top left; simultaneous notifications appear one at a time while celebrations start immediately. Muting also mutes the ding; the automatic welcome ding waits for the first browser audio-unlocking interaction. Reduced-motion settings keep the confetti still. Bronze medals add **10 profile points**, silver **30**, gold **90**, crystal **270**, diamond **810**, and rainbow **2,430**, once per achievement. Rainbow is the highest tier, above Diamond. Profile points are separate from game scores.
+The browser also has **116 achievements**. A first visit unlocks **Welcome to Microgame Madness!** automatically. Open the **Achievements** subtab beside Scores to browse requirements, progress, and unlocked medals. New awards immediately play a ding and fill the screen with tier-colored confetti for four seconds, followed by a one-second fade. Notifications appear at the top left; simultaneous notifications appear one at a time while celebrations start immediately. Muting also mutes the ding; the automatic welcome ding waits for the first browser audio-unlocking interaction. Reduced-motion settings keep the confetti still. Bronze medals add **10 profile points**, silver **30**, gold **90**, crystal **270**, diamond **810**, rainbow **2,430**, and Empyrorite **7,290**, once per achievement. Empyrorite is the highest regular tier, above Rainbow. Profile points are separate from game scores. One secret achievement stays fully redacted until its event finishes; its special tier appears only on the revealed card, outside the regular tier legend.
 
-Hangman awards include **Hang in There!** for starting a game, **Good Game** for a win, **You've Got the Hang of It!!** for a hard win, **Word Wizard** for 5 wins, and **Professional Prodigy** for 10 wins. Additional achievements reward perfect guesses, typing rounds, survival times, playing every game, and boss victories in specific modes. Wins accumulate across visits; typing and survival milestones require a single run. Existing high scores and earned medals are preserved. Win counts track games completed since achievements were introduced; new cumulative milestones recognize that saved progress.
+Hangman awards include **Hang in There!** for starting a game, **Good Game** for a win, **You've Got the Hang of It!!** for a hard win, **Word Wizard** for 5 wins, and **Professional Prodigy** for 10 wins. Additional achievements reward perfect guesses, typing rounds, survival times, playing all five original games, and boss victories in specific modes. Wins accumulate across visits; typing and survival milestones require a single run. Existing high scores and earned medals are preserved. Win counts track games completed since achievements were introduced; new cumulative milestones recognize that saved progress.
 
 **Gerson Boom** (rainbow, +2,430) requires surviving 360 seconds in one Turtle Dodge game. **Domination!** (silver, +30) requires beating the Mean boss without taking damage. **Cruel and Unscathed** (silver, +30) and **Flawless Nightmare** (crystal, +270) reward zero-damage wins against the Cruel and Nightmare bosses respectively; healing does not erase damage. **Walking Dictionary** and **Speed of Type** remain gold (+90 each). **King of Suffering** (diamond) requires a Pumpkin King victory in any mode with zero damage taken throughout the fight; healing cannot undo a hit. **Close One** (silver) requires entering a six-pixel proximity zone around a Turtle Dodge block and safely leaving it without collision. **I'm Still Standing!** (crystal) requires 120 seconds in a single Turtle Dodge game. Other crystal and diamond challenges include longer typing runs, 50/100 Hangman wins, perfect guesses, repeated boss victories, 120 seconds on Merciless, and a no-hit Impossible Boss Crush win.
 
-Locked achievement cards are fully grayscale, with dimmer borders and sparkles; unlocking restores their tier colors and full shine without changing text readability. Bronze, silver, and gold use thick rounded metallic borders; crystal, diamond, and rainbow use thinner prismatic hexagons. Rainbow medals and their confetti use a full spectrum of colors. Visible cards gently shine and sparkle, and reduced-motion preferences disable the animation.
+Locked achievement cards are grayscale with dimmer borders and sparkles, except Empyrorite cards, which retain a subdued emerald tint. Unlocking restores full tier colors and shine without changing text readability. Bronze, silver, and gold use thick rounded metallic borders; crystal, diamond, and rainbow use thinner prismatic hexagons. Rainbow medals and their confetti use a full spectrum of colors. Visible cards gently shine and sparkle, and reduced-motion preferences disable the animation.
 
-Secret achievements include **DINGDONG** (crystal, “WHO YOU ARE.”) for triggering the name effect and **Awwwwww!** (gold) for clicking, tapping, or keyboard-activating Cubie. Cubie blushes and squeaks when sound is enabled. Enter **CUBIE** for a green greeting and **On a First-Name Basis** (gold), **BOO** for a purple scare and **Boo to You Too!** (gold), or **STARLIGHT** for a starfield and **Written in the Stars** (crystal). Names ignore case and surrounding spaces. Each effect lasts four seconds and pauses music, then restores your sound/pause settings; awards only count once. Cubie’s sparkles and orbit animate, with reduced-motion support. **Down to the Wire** (gold) rewards a Hangman win with exactly one wrong guess remaining.
+Secret achievements include **DINGDONG** (crystal, “WHO YOU ARE.”) for triggering the name effect and **Awwwwww!** (gold) for clicking, tapping, or keyboard-activating Cubie. **Cubie’s Best Friend** (crystal, +270) rewards petting Cubie 100 times. Pet counts carry across visits; clicking, tapping, and keyboard activation each count as one pet. Entering Cubie’s name does not count as petting. Cubie blushes and squeaks when sound is enabled. Enter **CUBIE** for a green greeting and **On a First-Name Basis** (gold), **BOO** for a purple scare and **Boo to You Too!** (gold), or **STARLIGHT** for a starfield and **Written in the Stars** (crystal). Names ignore case and surrounding spaces. Each effect lasts four seconds and pauses music, then restores your sound/pause settings; awards only count once. Cubie’s sparkles and orbit animate, with reduced-motion support. **Down to the Wire** (gold) rewards a Hangman win with exactly one wrong guess remaining.
+
+Enter **ROCKNROY** to play one randomly chosen original rock song and unlock **Game Tester** (rainbow, +2,430 profile points) once. The five songs are **Afterburn**, **Neon Overdrive**, **Static Revolt**, **Midnight Circuit**, and **Victory Voltage**. Each has its own tempo, guitar riffs, bass, drums, and a complete ending, running about 45–70 seconds. The song plays once, then the usual arcade music returns (or the Pumpkin King theme if a boss fight is still running). Mute, game pause, and hidden tabs pause the song and preserve its position. Re-enter the name after changing it to choose another song; achievements never award twice. Songs are synthesized locally with no external audio downloads.
 
 **Untouchable Streak** (crystal, +270) rewards five consecutive Boss Crush wins without damage, across any difficulties. Damage, a loss, leaving an unfinished fight, or reloading during a fight resets the streak; completed streak progress survives reloads and other games. **Fit for a King** (crystal, +270) rewards a Pumpkin King victory at full HP in any mode, including health restored by healing. Collecting a healing item flashes the screen green, even at full HP.
 
@@ -52,11 +62,19 @@ Rainbow achievements each award **2,430 points**:
 | Achievement | Requirement |
 | --- | --- |
 | Gerson Boom | Survive 360 seconds in one Turtle Dodge game. |
+| Game Tester | Enter ROCKNROY as the player name. |
 | Rainbow Lexicon | Win 250 Hangman games. |
 | Spectrum Speed | Complete 75 rounds in one Key Rush game. |
 | Beyond Mercy | Survive 240 seconds in one Merciless game. |
 | Unbreakable Spectrum | Win 15 consecutive Boss Crush fights without damage. |
 | Sovereign of Suffering | Win 5 Pumpkin King fights without damage, in any mode. |
+| My Fingers Hurt | Survive all 15 Core protocols and destroy Singularity Core with the final laser. |
+| Callus Protocol | Defeat Singularity Core 3 times. |
+| One Finger Left | Destroy Singularity Core with exactly 1 HP remaining. |
+| Gravity Is Optional | Defeat Singularity Core 10 times. |
+| Resident of the Throne Room | Win 25 King’s Wrath fights in any modes. |
+| Shuffled Survivor | Survive 21 attacks in one Random Order fight. |
+| Chaos, Perfected | Survive all seven Random Order attacks, then win without damage throughout the fight. |
 
 Other new milestones reward five perfect Hangman wins, a perfect hard Hangman win, 180 seconds in Turtle Dodge, 25 Boss Crush victories, 25 Pumpkin King victories, a win in the 23-HP Pumpkin King mode, and ten consecutive no-damage Boss Crush victories.
 
@@ -74,6 +92,41 @@ Opening the updated game automatically recalculates existing profile scores usin
 Achievements belong to one local browser profile. Changing the player nickname keeps that profile; clearing browser storage removes its progress. If storage is blocked, achievements work for the current visit only.
 
 
+## New-feature achievements and Empyrorite
+
+Forty-two additional achievements cover Singularity Core, The King’s Wrath, and new Merciless and Boss Crush mastery challenges. Singularity Core has an unlock reward, a first-fight reward, one milestone for each of its 15 protocols, repeat victories, a 1-HP victory, and clean survival challenges. **My Fingers Hurt** is the Rainbow (+2,430) reward for completing the final laser victory. Surviving the protocols alone does not count as a win.
+
+The King’s Wrath rewards winning each of its eight modes, completing all seven individual practice fights, 5/25 victories, a no-damage victory, one/three complete Random Order sets, and 25 successful magenta-finger counters across fights. Random Order set milestones must happen in one run. Practice victories remain separate from Pumpkin King achievements.
+
+**Empyrorite** is a celestial green crystal tier worth **7,290 profile points per achievement**. Its cards have an emerald interior, a brighter faceted frame, a crystal insignia, starry highlights, and matching green crystal celebrations. Its tint remains visible while locked; earned cards gain a stronger emerald glow. Reduced-motion settings stop the shine and sparkle animations.
+
+| Empyrorite achievement | Requirement |
+| --- | --- |
+| Hands of Empyrorite | Destroy Singularity Core without taking any damage throughout the fight. |
+| Beyond the Last Mercy | Survive 300 seconds in one Merciless Turtle Dodge game. |
+| Sovereign of the Arena | Win 20 consecutive undamaged Boss Crush fights on Cruel, Nightmare, or Impossible. Mean fights neither advance nor reset this streak. Damage, losses, and abandoned qualifying fights reset it. |
+
+**Chaos, Perfected** is now Rainbow (+2,430), with its existing requirement and unlock date preserved. Its profile points automatically update to the current tier without awarding the badge again. The three Empyrorite rewards each give +7,290 points.
+
+New progress comes from actual completed attacks, successful counters, and finishing victories. Damage history, rather than restored HP, decides no-damage awards. Repeated frames and reloading cannot duplicate an award. Existing medals, dates, scores, and high scores stay intact. Saved GRAVITRON unlocks receive Access Granted on the next visit; older wins without recorded outcome evidence are not inferred from high scores.
+
+## Connect the global leaderboards
+
+The global leaderboard uses Supabase alongside the existing static website, so players keep the same website address and browser profile. Until a backend is configured, the Global tab reports that rankings are not connected; local scores, achievements, music, and all games still work.
+
+1. Create or connect a Supabase project and apply the SQL files in `supabase/migrations/` in filename order (or run each once in the SQL Editor).
+2. Enable **Allow anonymous sign-ins** in that project's Authentication settings. Players get a guest leaderboard identity on their first completed round; browsing rankings does not create an account.
+3. Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` before running `npm run build`. For GitHub Pages, set repository **Actions variables** with those names. Use the project's publishable key (or legacy `anon` key), never a secret or `service_role` key. The build checks this before replacing `dist/`.
+4. Build and publish the site as usual. Only the public connection settings enter `dist/leaderboard-config.json`; the SQL migration and test tooling stay outside the published package.
+
+Every browser profile has one record per difficulty, even after changing its nickname. Identical nicknames from different profiles are separate players. Rankings show the best ten scores, with earlier records breaking ties; player identifiers and authentication tokens are not exposed in rankings. Changing browsers, clearing site storage, or using another origin creates a separate guest identity. Existing local scores and achievements are never overwritten or uploaded as historical records; newly completed rounds supply global scores.
+
+Failed submissions keep the highest pending score for each difficulty in a separate browser-storage key. Reopening the page, reconnecting, or pressing **Refresh** retries them under the same identity. If storage is unavailable, the queue and identity last only for the current visit. An expired session refreshes its existing identity; a failed refresh does not silently replace the player.
+
+These are casual rankings from browser-computed scores. The database validates game/difficulty pairs, score ranges, ownership, and monotonic bests, but does not replay runs to prove they were played honestly. Competitive anti-cheat would require server-verified gameplay. Protect anonymous signup with the rate limits and abuse controls appropriate to your Supabase deployment.
+
+The development-only PGlite dependency runs the actual migration in PostgreSQL during `npm test`, checking access controls, player isolation, score validation, and every mode. It is never shipped to players.
+
 ## Maintain both versions
 
 Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is generated from the canonical source files.
@@ -85,11 +138,15 @@ Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is 
 | `dodge_model.py` | Turtle movement, blocks, collisions, scoring |
 | `boss_crush.py` | Boss combat, attacks, healing, difficulty |
 | `pumpkin_king.py` | Phase 2 timing, attacks, counters, collision rules |
+| `kings_wrath.py` | Immediate attack selection and repeating Pumpkin King practice patterns |
+| `singularity_core.py` | Secret boss teleport rules, 15 survival protocols, damage, and locked laser finisher |
+| `singularity_core_view.py` | Procedural Core machinery, containment grid, warnings, and laser artwork |
 | `pumpkin_king_view.py` | Pumpkin King procedural artwork shared by both renderers |
 | `hangman.py`, `keyboard_challenge.py`, `turtle_dodge.py` | Desktop/terminal input and presentation |
 | `scores.py` | Desktop score persistence |
 | `web/bridge.py` | Browser session adapter and Canvas drawing commands |
-| `web/music.js` | Original chiptune scores, synthesis, looping, and music transitions |
+| `web/leaderboards.js`, `supabase/migrations/` | Shared rankings client, guest identity, retry queue, and database access rules |
+| `web/music.js` | Original chiptune and rock scores, synthesis, shuffled playback, and music transitions |
 | `web/achievements.js` | Achievement catalog, progress rules, and profile points |
 | `web/app.js`, `web/index.html`, `web/style.css` | Web input, Canvas presentation, browser scores, layout |
 | `scripts/build_web.py` | Allowlisted packaging of the web interface and shared Python sources |
@@ -136,6 +193,10 @@ gh workflow run pages.yml --repo MattyGPT/Microgame-Madness
 
 Deployment progress is available in the repository's **Actions → Publish browser game** workflow. Setting `PAGES_ENABLED` to `false` skips future deployments while still running checks; it does not remove an already published site.
 
+The Pumpkin King keeps his original orange body, dark face, shifting orange/gold arms with rainbow rims, yellow hands, and red-orange-yellow flames. Rounded body and finger corners, continuous curved arms, softened flame edges, and stronger color saturation make the original design smoother and more vibrant. This renderer is shared by the full fight, The King’s Wrath, and the Python desktop version. Blue and orange eye cues, hit feedback, and the physical collision geometry stay tied to the shared game rules.
+
 The Impossible Boss Crush boss shares the Pumpkin King’s pre-transformation pumpkin face: black features on a white body, with only its eyes flashing yellow when struck.
 
-The Pumpkin King’s seventh attack, **Haunted Quadrants**, divides the arena with a plus sign for exactly five seconds. Fifteen scares appear every ⅓ second (50% faster than the original attack) in clockwise order: top left, top right, bottom right, bottom left. Each slot starts with about 0.133 seconds of flashing red/yellow exclamation marks, then three spooky faces and a short laugh. The active section deals 0.5 HP once per appearance, even if you enter it after the faces appear. The dividing lines and warnings do not deal damage; head/arm contact remains lethal. Healing restores HP normally but never erases the half-point damage history.
+**Color Memory** gives you 0.2 seconds at the start of every blue or orange phase before its movement rule can hurt you, in every Pumpkin King difficulty and The King’s Wrath. Bullets during this attack and its color breaks now spawn every 0.6 seconds, a 25% lower firing rate.
+
+The Pumpkin King’s seventh attack, **Haunted Quadrants**, opens with a two-second positioning break in both the full fight and The King’s Wrath, including every practice repeat. In The King’s Wrath, the three-second countdown comes first, stacking with this break for five seconds before the active scares. Twenty animated purple-cyan faces grin, open their jagged mouths, and laugh while a countdown previews the top-left quadrant as the first danger zone. You can move during this break; the faces do not deal damage. The active pattern then divides the arena with a plus sign for exactly five seconds. Eighteen scares appear about every 0.278 seconds, a 25% lower rate than before, in clockwise order: top left, top right, bottom right, bottom left. Each slot starts with about 0.111 seconds of flashing red/yellow exclamation marks, then three spooky faces and a short laugh. The active section deals 0.5 HP once per appearance, even if you enter it after the faces appear. The dividing lines and warnings do not deal damage; head/arm contact remains lethal. Healing restores HP normally but never erases the half-point damage history.

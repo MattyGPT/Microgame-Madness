@@ -257,7 +257,8 @@ h1 em {
 }
 .achievement-confetti[data-tier="crystal"] i,
 .achievement-confetti[data-tier="diamond"] i,
-.achievement-confetti[data-tier="rainbow"] i {
+.achievement-confetti[data-tier="rainbow"] i,
+.achievement-confetti[data-tier="empyrorite"] i {
   clip-path: polygon(50% 0, 100% 35%, 75% 100%, 25% 100%, 0 35%);
 }
 .achievement-confetti[data-tier="rainbow"] i {
@@ -295,6 +296,13 @@ h1 em {
     linear-gradient(135deg, #142e70cc, #6b248dcc);
   background-size: 180px 160px, 250px 220px, 320px 260px, 100% 100%;
 }
+#gaster-blackout {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: #000;
+}
+body.gaster-active { overflow: hidden; cursor: none; }
 @media (prefers-reduced-motion: reduce) {
   .pixel-face, .pixel-face i { animation: none; }
   #damage-flash, #healing-flash {
@@ -397,7 +405,7 @@ h1 em {
 }
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .game-card {
@@ -491,6 +499,11 @@ h1 em {
   text-shadow: 6px 0 #99683c;
   transform: rotate(-9deg);
 }
+.wrath-art { color: #ffe066; }
+.singularity-art svg { width: 100px; height: 80px; filter: drop-shadow(0 0 12px #a488ff66); }
+.singularity-card { background: linear-gradient(135deg, #121625, #242039); }
+.wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
+#welcome-art svg { display: block; width: 56px; height: 56px; margin: auto; }
 .card-title {
   font:
     500 17px "Space Grotesk",
@@ -787,6 +800,15 @@ select:disabled {
   color: var(--muted);
   line-height: 1.5;
 }
+.global-filters { padding-top: 20px; }
+.global-filters label { display: block; margin: 0 0 8px; font-size: 11px; color: var(--muted); }
+.global-filters select { margin-bottom: 16px; }
+#leaderboard-refresh { font-size: 10px; padding: 6px 9px; }
+#leaderboard-status, #leaderboard-submission, .global-note { font-size: 11px; line-height: 1.6; color: var(--muted); }
+#global-scores li { gap: 12px; }
+#global-scores li span { overflow-wrap: anywhere; min-width: 0; }
+#global-scores li strong { flex-shrink: 0; }
+#global-scores .is-you { color: var(--lime); }
 .sidebar-note {
   font-size: 12px;
   color: var(--muted);
@@ -1079,24 +1101,6 @@ select:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
-  .game-card:last-child {
-    grid-column: span 2;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .game-card:last-child .card-art {
-    grid-column: 2;
-    grid-row: 1/4;
-    height: 80px;
-  }
-  .game-card:last-child .card-title {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .game-card:last-child .card-description {
-    grid-column: 1;
-    grid-row: 3;
-  }
   .card-art {
     height: 75px;
   }
@@ -1262,6 +1266,8 @@ select:disabled {
 [data-tier="crystal"] { --medal: #d8a6ff; --prism-a: #a34ff0; --prism-b: #74e9ef; --prism-c: #f6b5ff; }
 [data-tier="diamond"] { --medal: #a9f4ff; --prism-a: #51a5ff; --prism-b: #eeebff; --prism-c: #7bffe0; }
 [data-tier="rainbow"] { --medal: #ffd0f0; --prism-a: #ff5470; --prism-b: #6ee89b; --prism-c: #56c7ff; }
+[data-tier="empyrorite"] { --medal: #a4ffdb; --prism-a: #08764d; --prism-b: #e3fff3; --prism-c: #2cf5a0; }
+[data-tier="black"] { --medal: #d6d6d6; --metal-dark: #000; --metal-light: #454545; }
 .profile-summary { margin-top: 22px; }
 #profile-score { color: var(--lime); font-size: 28px; }
 #achievement-count, .achievement-legend, #achievement-empty {
@@ -1312,6 +1318,21 @@ select:disabled {
   box-shadow: inset 0 1px 1px #fff3, inset 0 -1px 2px #0009;
 }
 .achievement-card.earned .achievement-content { background: linear-gradient(145deg, #303936, #171e20 70%); }
+.achievement-card[data-tier="black"] .achievement-content { background: #050505; }
+.achievement-card.redacted { background: #080808; animation: none; }
+.achievement-card.redacted::before, .achievement-card.redacted::after { display: none; }
+.achievement-card.redacted .achievement-content { background: #101010; }
+.redacted strong { color: #777; font: 12px monospace; letter-spacing: 2px; }
+.redacted-bar { display: block; height: 9px; margin-top: 14px; background: #030303; }
+.redacted-bar:nth-of-type(2) { width: 78%; }
+.redacted-bar:nth-of-type(3) { width: 56%; }
+.achievement-card p.wingdings {
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols", "Apple Symbols", sans-serif;
+  font-variant-emoji: text;
+  font-size: 17px;
+  letter-spacing: 2px;
+  overflow-wrap: anywhere;
+}
 .achievement-card:not(.earned) {
   /* Dark gray frames and subdued progress; keep the descriptions readable. */
   filter: grayscale(1);
@@ -1325,7 +1346,7 @@ select:disabled {
   background-blend-mode: multiply;
 }
 .achievement-card:not(.earned)::before, .achievement-card:not(.earned)::after { filter: brightness(.25); }
-.achievement-card:is([data-tier="crystal"], [data-tier="diamond"], [data-tier="rainbow"]) {
+.achievement-card:is([data-tier="crystal"], [data-tier="diamond"], [data-tier="rainbow"], [data-tier="empyrorite"]) {
   --gem-shape: polygon(22px 0, calc(100% - 22px) 0, 100% 50%, calc(100% - 22px) 100%, 22px 100%, 0 50%);
   border-radius: 0;
   padding: 2px;
@@ -1334,7 +1355,7 @@ select:disabled {
     var(--prism-b) 27%, #fff 32%, var(--prism-c) 40%, var(--prism-a) 56%,
     var(--medal) 70%, #fff 77%, var(--prism-b) 85%, var(--prism-a));
 }
-.achievement-card:is([data-tier="crystal"], [data-tier="diamond"], [data-tier="rainbow"]) .achievement-content {
+.achievement-card:is([data-tier="crystal"], [data-tier="diamond"], [data-tier="rainbow"], [data-tier="empyrorite"]) .achievement-content {
   border-radius: 0;
   clip-path: polygon(21px 0, calc(100% - 21px) 0, 100% 50%, calc(100% - 21px) 100%, 21px 100%, 0 50%);
   padding: 22px 26px;
@@ -1350,6 +1371,47 @@ select:disabled {
   background: linear-gradient(#1c2424, #1c2424) padding-box,
     linear-gradient(120deg, #ff5470, #ffe663, #6ee89b, #56c7ff, #bc8bff) border-box;
 }
+/* Empyrorite keeps an emerald tint while locked and glows strongly when earned. */
+.empyrorite-legend { color: #a4ffdb; font-weight: 600; }
+.empyrorite-gem { float: right; width: 46px; height: 46px; margin: 0 -6px 5px 8px; filter: drop-shadow(0 0 6px #38f7ae88); }
+.achievement-card[data-tier="empyrorite"] {
+  --medal: #a4ffdb;
+  --prism-a: #08764d;
+  --prism-b: #e3fff3;
+  --prism-c: #2cf5a0;
+  padding: 3px;
+  filter: drop-shadow(0 0 6px #1de7a033);
+  background-color: transparent;
+  background-blend-mode: normal;
+}
+.achievement-card[data-tier="empyrorite"] .achievement-content {
+  background:
+    radial-gradient(circle at 17% 14%, #d5ffeb99 0 1px, transparent 2px),
+    radial-gradient(circle at 86% 82%, #9fffe399 0 1px, transparent 2px),
+    linear-gradient(135deg, #174b39, #102e27 68%, #173f34);
+  box-shadow: inset 0 1px 2px #a4ffdb66, inset 0 -1px 3px #001f16;
+}
+.achievement-card[data-tier="empyrorite"].earned {
+  filter: drop-shadow(0 0 10px #2cf5a066);
+  background-image: linear-gradient(120deg, #058653, #80ffd0 17%, #f0fff8 27%, #2cf5a0 35%,
+    #048a60 47%, #baffdf 60%, #ffffff 68%, #0dca90 82%, #058653);
+}
+.achievement-card[data-tier="empyrorite"].earned .achievement-content {
+  background:
+    radial-gradient(circle at 14% 12%, #effffbbb 0 1px, transparent 2px),
+    radial-gradient(circle at 83% 78%, #c7ffe6aa 0 1.5px, transparent 2.5px),
+    conic-gradient(from 30deg at 83% 19%, #51ffb522, #073e2900 17%, #baffda19 35%, #083d2900 55%, #51ffb522),
+    linear-gradient(135deg, #1d704e, #0c3c2d 64%, #15573e);
+}
+.achievement-card[data-tier="empyrorite"] p { color: #cee6db; }
+.achievement-card[data-tier="empyrorite"] .achievement-state { color: #b4d8c6; }
+.achievement-card[data-tier="empyrorite"].earned .achievement-state { color: #a4ffdb; }
+.achievement-toast[data-tier="empyrorite"] {
+  background: linear-gradient(130deg, #1e684a, #0c3225);
+  border: 2px solid #9affd0;
+  box-shadow: 0 0 25px #2cf5a04d, inset 0 1px 1px #e3fff366;
+}
+.achievement-toast .empyrorite-gem { float: none; width: 40px; height: 44px; margin: 0; }
 .achievement-card::before, .achievement-card::after {
   content: "";
   position: absolute;
@@ -1363,6 +1425,10 @@ select:disabled {
 }
 .achievement-card::before { top: -3px; right: 29px; }
 .achievement-card::after { bottom: -3px; left: 29px; animation-delay: -2.5s; }
+.achievement-card[data-tier="empyrorite"]::before,
+.achievement-card[data-tier="empyrorite"]::after { width: 16px; height: 16px; animation-duration: 3.2s; }
+.achievement-card[data-tier="empyrorite"]:not(.earned)::before,
+.achievement-card[data-tier="empyrorite"]:not(.earned)::after { filter: brightness(.75); }
 .achievement-card.in-view, .achievement-card.in-view::before, .achievement-card.in-view::after { animation-play-state: running; }
 @keyframes medal-shine { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
 @keyframes medal-sparkle { 0%, 100% { opacity: .35; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.15); } }
@@ -1410,7 +1476,7 @@ select:disabled {
 @media (max-width: 700px) {
   .sidebar .setup { grid-row: auto; }
   .profile-summary { margin-top: 0; }
-  .profile-tabs, #scores-panel, #achievements-panel, #storage-note { grid-column: 1 / -1; }
+  .profile-tabs, #scores-panel, #achievements-panel, #global-panel, #storage-note { grid-column: 1 / -1; }
   #scores-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
   #scores-panel .score-panel { border-bottom: 0; }
 }

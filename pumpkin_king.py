@@ -19,6 +19,8 @@ SLAM_ORDER = ("left", "right", "left", "right", "right", "both")
 RAISE_TIME, SLAM_TIME, SLAM_REST = 0.5, 0.15, 0.15  # 0.8s between impacts.
 ATTACK_BREAK = 1.0
 COLOR_BREAK = 0.75
+COLOR_GRACE_TIME = 0.2
+COLOR_BULLET_INTERVAL = 0.45 / 0.75  # 25% fewer bullets per second.
 EYE_FLASH_COUNT = 6
 EYE_FLASH_ON = 0.8
 EYE_FLASH_GAP = 0.2
@@ -27,8 +29,9 @@ COUNTER_WINDOW, COUNTER_COOLDOWN, COUNTER_RANGE = 0.16, 0.65, 38
 HEAL_EVERY, HEAL_LASTS = 16, 9
 RING_SEGMENTS, RING_THICKNESS = 160, 12
 RING_FALL_SPEED, RING_GAP = 145, 48
-# 1.5× the original scare rate; retain the full five-second attack.
-SCARE_PERIOD, SCARE_WARNING, SCARE_DURATION = 0.5 / 1.5, 0.2 / 1.5, 5.0
+# Reduce the previous scare rate by 25%, keeping five seconds of active scares.
+SCARE_PERIOD, SCARE_WARNING, SCARE_DURATION = (0.5 / 2.4) / 0.75, (0.2 / 2.4) / 0.75, 5.0
+SCARE_PREP_TIME = 2.0
 SCARE_QUADRANTS = ((-150, 120), (150, 120), (150, -120), (-150, -120))
 ATTACK_NAMES = ("COLOR MEMORY", "BONE GAUNTLET", "ROTATING RINGS",
                 "MAGENTA FINGERS — tap E at impact", "CHAOS", "ROYAL SLAMS", "HAUNTED QUADRANTS")
@@ -138,6 +141,8 @@ class PumpkinKing(BossCrush):
             return "MOUTH FIRE — GET OUT OF THE CENTER!"
         if name == "break":
             return "BREATHE — next attack in 1 second"
+        if name == "scare_ready":
+            return f"GET IN POSITION — TOP LEFT FIRST · {max(0, SCARE_PREP_TIME-self.stage_age):.1f}s"
         if name == "scares":
             quadrant = ("TOP LEFT", "TOP RIGHT", "BOTTOM RIGHT", "BOTTOM LEFT")[self.scare_beat % 4]
             return f"{quadrant} — {'WARNING! MOVE CLEAR' if self.scare_warning else 'SPOOKY FACES!'} · ½ HP"
@@ -161,7 +166,7 @@ class PumpkinKing(BossCrush):
                 if i < len(self.sequence) - 1:
                     stages.append(Stage("color_gap", COLOR_BREAK))
         elif index == 6:
-            stages = [Stage("scares", SCARE_DURATION)]
+            stages = [Stage("scare_ready", SCARE_PREP_TIME), Stage("scares", SCARE_DURATION)]
         elif index == 5:
             stages = slam_stages()
         else:
@@ -177,8 +182,8 @@ class PumpkinKing(BossCrush):
         self.stage_age = 0.0
         if self.stage.name == "scares":
             self.scare_sounded = self.scare_hit = -1
-        if self.stage.name in ("roar", "laugh"):
-            self.sound_events.append(self.stage.name)
+        if self.stage.name in ("roar", "laugh", "scare_ready"):
+            self.sound_events.append("laugh" if self.stage.name == "scare_ready" else self.stage.name)
         if self.stage.name == "slam":
             self.sound_events.append("slam")
         if self.stage.name in ("break", "title"):
@@ -189,7 +194,7 @@ class PumpkinKing(BossCrush):
 
     @property
     def scare_beat(self):
-        return min(int((self.stage_age + 1e-9) / SCARE_PERIOD), int(SCARE_DURATION / SCARE_PERIOD) - 1)
+        return min(int((self.stage_age + 1e-9) / SCARE_PERIOD), math.ceil(SCARE_DURATION / SCARE_PERIOD) - 1)
 
     @property
     def scare_warning(self):
@@ -277,7 +282,7 @@ class PumpkinKing(BossCrush):
             from_left = self.rng.choice((True, False))
             self.bullets.append(Projectile(-297 if from_left else 297, self.rng.uniform(-210, 70),
                                           170 if from_left else -170, self.rng.uniform(-25, 25)))
-            return 0.45
+            return COLOR_BULLET_INTERVAL
         if name == "bones":
             gap = self.rng.uniform(-140, 25)
             left = self.volley % 2 == 0
@@ -386,7 +391,8 @@ class PumpkinKing(BossCrush):
                 self.spawn_in -= step
                 if self.spawn_in <= 0:
                     self.spawn_in += self._spawn()
-            if self.screen_rule == "blue" and moving or self.screen_rule == "orange" and not moving:
+            if self.stage_age + 1e-9 >= COLOR_GRACE_TIME and (
+                    self.screen_rule == "blue" and moving or self.screen_rule == "orange" and not moving):
                 self.hurt()
             for rectangle in self.hazard_rectangles():
                 if hits_player(self.x, self.y, *rectangle):

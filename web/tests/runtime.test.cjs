@@ -29,6 +29,9 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     ["pumpkin", "coward"],
     ["pumpkin", "baby"],
     ["pumpkin", "come_on"],
+    ["singularity", "gravitron"],
+    ...['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order']
+      .map(attack => ['wrath', attack]),
   ]) {
     let state = JSON.parse(
       handle(JSON.stringify({ action: "start", mode, difficulty, now: 0 })),
@@ -52,7 +55,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
       );
       assert.equal(typeof state.score, "number");
     }
-    if (["dodge", "boss", "pumpkin"].includes(mode))
+    if (["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(mode))
       assert.ok(state.commands.length);
   }
   assert.equal(
