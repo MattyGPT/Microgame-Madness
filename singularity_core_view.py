@@ -182,9 +182,9 @@ def draw_core(game):
     text(223, -74, "10 HP", "#c6c6e6", 12)
     text(223, -92, "PACK / 3 ATTACKS", CYAN, 8)
     if game.stage == "practice_ready":
-        text(0, cy+28, "GET READY", CYAN, 15)
-        text(0, cy+7, ATTACKS[game.attack_index].name, "#d4d8ef", 11)
-        text(0, cy-20, str(max(1, math.ceil(game.ready_time-game.stage_age))), VIOLET, 23)
+        text(0, cy+90, "GET READY", CYAN, 15)
+        text(0, cy+68, ATTACKS[game.attack_index].name, "#d4d8ef", 11)
+        text(0, cy+41, str(max(1, math.ceil(game.ready_time-game.stage_age))), VIOLET, 23)
     elif game.stage == "intro":
         text(0, cy+26, "CONTAINMENT ONLINE", CYAN, 15)
         text(0, cy+5, "HOLD ARROWS · RELEASE TO CENTER", "#d4d8ef", 10)

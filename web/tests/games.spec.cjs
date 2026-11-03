@@ -1553,8 +1553,7 @@ test('ROCKNROY randomly selects all five original songs, returns to arcade, and 
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.locator('#player').click();
-  if (await page.locator('#achievement-toast').isVisible())
-    await page.locator('#achievement-toast button').click();
+  await expect(page.locator('#achievement-toast')).toBeHidden();
   const tracks = await page.evaluate(() => ArcadeMusic.rockTracks.map(track => track.id));
   expect(tracks).toHaveLength(5);
   for (let i = 0; i < tracks.length; i++) {

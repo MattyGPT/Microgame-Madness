@@ -126,7 +126,22 @@ const modes = {
     localOnly: true,
     difficulties: {
       gravitron: ["Enter containment", "Harder than the King. Two arrows jump to a corner. The Core cannot be damaged until every attack ends."],
+      practice: ["Practice attacks (temporary)", "Choose any of the 15 attacks and repeat it while tuning the fight."],
     },
+  },
+  core_practice: {
+    title: "Singularity Core Practice",
+    category: "TEMPORARY / ATTACK PRACTICE",
+    art: "◎",
+    heading: "Choose a protocol. Perfect your escape.",
+    copy: "Repeat any of the Core’s 15 attacks with 10 HP and a three-second countdown before each repeat. Galactic healing packs appear every three repeats. Practice does not award achievements or save records.",
+    accent: "#65f5ff",
+    controls: "Hold arrows to teleport · Release to center · D pauses · Esc picks another attack",
+    choiceLabel: "Choose one of the 15 attacks",
+    localOnly: true,
+    temporary: true,
+    // Loaded from the shared Python attacks so edits also update this picker.
+    difficulties: {},
   },
 };
 let selected = "hangman";
@@ -418,6 +433,13 @@ function rankings() {
   );
 }
 function showScores() {
+  if (modes[selected].temporary) {
+    $("best").textContent = "—";
+    const row = document.createElement("li");
+    row.textContent = "Temporary practice — records are not saved.";
+    $("scores-list").replaceChildren(row);
+    return;
+  }
   const scores = rankings().sort(
     (a, b) => b.score - a.score || a.player.localeCompare(b.player),
   );
@@ -445,6 +467,7 @@ function showScores() {
 function saveRound() {
   if (roundSaved || !snapshot) return;
   roundSaved = true;
+  if (modes[selected].temporary) return;
   const list = rankings();
   const previous = list.find((entry) => entry.player === currentPlayer);
   if (previous) previous.score = Math.max(previous.score, snapshot.score);
@@ -578,7 +601,7 @@ function showGameArea() {
 }
 function selectGame(mode) {
   if (loadFailed) return;
-  if (mode === "singularity" && !saved.unlocks.singularity) return;
+  if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   if (active && selected === "keyboard") saveRound();
@@ -592,7 +615,7 @@ function selectGame(mode) {
   const config = modes[mode];
   document.documentElement.style.setProperty("--accent", config.accent);
   document.querySelectorAll("[data-game]").forEach((button) => {
-    const chosen = button.dataset.game === mode;
+    const chosen = button.dataset.game === (mode === "core_practice" ? "singularity" : mode);
     button.classList.toggle("selected", chosen);
     button.setAttribute("aria-pressed", String(chosen));
   });
@@ -651,6 +674,11 @@ function selectGame(mode) {
 function startGame(difficulty) {
   if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
     return;
+  if (selected === "singularity" && difficulty === "practice") {
+    selectGame("core_practice");
+    showGameArea();
+    return;
+  }
   resetDamageFeedback();
   selectedDifficulty = difficulty;
   if (!modes[selected].localOnly) {
@@ -675,7 +703,8 @@ function startGame(difficulty) {
     fail(error);
     return;
   }
-  updateAchievements(achievementTracker.start(selected, selectedDifficulty));
+  if (!modes[selected].temporary)
+    updateAchievements(achievementTracker.start(selected, selectedDifficulty));
   active = true;
   lastFrame = performance.now();
   $("welcome").hidden = true;
@@ -683,13 +712,13 @@ function startGame(difficulty) {
   $("exit").hidden = false;
   $("hangman-game").hidden = selected !== "hangman";
   $("keyboard-game").hidden = selected !== "keyboard";
-  const arcade = ["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(selected);
+  const arcade = ["dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected);
   $("arena").classList.toggle("arcade", arcade);
   $("game-canvas").hidden = !arcade;
   $("game-canvas").setAttribute("aria-label", `${modes[selected].title}. ${modes[selected].controls}`);
   $("touch-controls").hidden =
     !arcade || !matchMedia("(pointer: coarse)").matches;
-  $("touch-fire").hidden = selected === "dodge";
+  $("touch-fire").hidden = ["dodge", "core_practice"].includes(selected);
   $("touch-fire").textContent = selected === "singularity" ? "Laser" : "Fire";
   $("touch-counter").hidden = !["pumpkin", "wrath"].includes(selected);
   setLocked(true);
@@ -714,7 +743,7 @@ function resetDamageFeedback() {
   healingFlashAnimation = null;
 }
 function updateDamageFeedback(s) {
-  if (!["boss", "pumpkin", "wrath", "singularity"].includes(selected)) return;
+  if (!["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) return;
   if (previousBossHealth && s.healing_collected > previousBossHealth.healing) {
     healingFlashAnimation?.cancel();
     healingFlashAnimation = $("healing-flash").animate(
@@ -735,8 +764,8 @@ function updateDamageFeedback(s) {
 function render() {
   const s = snapshot;
   updateDamageFeedback(s);
-  updateAchievements(achievementTracker.observe(s));
-  const hasHealth = ["boss", "pumpkin", "wrath", "singularity"].includes(selected);
+  if (!modes[selected].temporary) updateAchievements(achievementTracker.observe(s));
+  const hasHealth = ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected);
   $("player-health").hidden = !hasHealth;
   if (hasHealth) {
     const health = `${s.lives} / ${s.max_lives}`;
@@ -802,6 +831,8 @@ function render() {
       title = "Time’s up!";
       copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
     }
+    if (selected === "core_practice")
+      copy = `${s.death_message} Choose another attack or try this one again.`;
     if (selected === "singularity" && s.won) {
       title = "Singularity erased.";
       copy = `All 15 protocols survived. ${s.lives} / 10 HP remaining. The annihilation laser finished the Core.`;
@@ -884,7 +915,7 @@ function draw(s) {
       : "#45534b";
   ctx.lineWidth = 2;
   ctx.strokeRect(left, -top, right - left, top - bottom);
-  if (s.hp !== null && selected !== "singularity") {
+  if (s.hp !== null && !["singularity", "core_practice"].includes(selected)) {
     ctx.fillStyle = "#344039";
     ctx.fillRect(-110, -264, 220, 6);
     ctx.fillStyle = modes[selected].accent;
@@ -1070,7 +1101,7 @@ window.addEventListener("keydown", (event) => {
     type(event.key);
     return;
   }
-  if (["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(selected)) {
+  if (["dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) {
     if (
       event.key === " " &&
       !active &&
@@ -1156,7 +1187,7 @@ $("sound").onclick = () => {
 function syncMusic() {
   if (!musicPlayer) return;
   const state = {
-    theme: active && selected === "singularity" ? "singularity"
+    theme: active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin" : "arcade",
     playing: soundOn && !gasterActive && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
   };
@@ -1321,6 +1352,10 @@ async function initialize() {
       "import sys\nsys.path.insert(0, '/game')\nfrom bridge import handle",
     );
     handle = pyodide.globals.get("handle");
+    const practice = send("core_practice_options");
+    modes.core_practice.difficulties = Object.fromEntries(practice.attacks.map(attack => [
+      attack.id, [`${String(attack.number).padStart(2, "0")} · ${attack.name}`, attack.hint],
+    ]));
     ready = true;
     $("runtime-status").textContent = "● All games ready";
     setLocked(false);

@@ -20,6 +20,8 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     "import sys\nsys.path.insert(0, '/game')\nfrom bridge import handle",
   );
   const handle = py.globals.get("handle");
+  const practice = JSON.parse(handle(JSON.stringify({ action: "core_practice_options" })));
+  assert.equal(practice.attacks.length, 15);
   for (const [mode, difficulty] of [
     ["hangman", "easy"],
     ["keyboard", "progressive"],
@@ -30,6 +32,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     ["pumpkin", "baby"],
     ["pumpkin", "come_on"],
     ["singularity", "gravitron"],
+    ...practice.attacks.map(attack => ["core_practice", attack.id]),
     ...['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order']
       .map(attack => ['wrath', attack]),
   ]) {
@@ -55,7 +58,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
       );
       assert.equal(typeof state.score, "number");
     }
-    if (["dodge", "boss", "pumpkin", "wrath", "singularity"].includes(mode))
+    if (["dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(mode))
       assert.ok(state.commands.length);
   }
   assert.equal(
