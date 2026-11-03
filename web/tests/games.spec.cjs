@@ -28,6 +28,11 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
+test.afterEach(async ({ page }) => {
+  // Finish mocked network responses before the page fixture closes.
+  await page.unrouteAll({ behavior: 'wait' });
+});
+
 test('Pumpkin King classic colors and smoother artwork keep blue and orange eye cues readable', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -625,6 +630,7 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
     await page.getByRole('button', { name: 'Dismiss achievement notification' }).first().click();
   await expect(page.locator('#achievement-toast')).toContainText('diamond achievement · +810 points');
   await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#profile-score')).toHaveText('1130');
 });
 
