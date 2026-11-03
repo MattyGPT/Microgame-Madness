@@ -74,7 +74,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
 
 test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebration, and persistence', async ({ page }, testInfo) => {
   await page.locator('#achievements-tab').click();
-  await expect(page.locator('.achievement-card')).toHaveCount(117);
+  await expect(page.locator('.achievement-card')).toHaveCount(await page.evaluate(() => Achievements.catalog.length));
   await expect(page.locator('.achievement-legend')).toContainText('Empyrorite +7290');
   const card = page.locator('[data-achievement="core_flawless"]');
   await card.scrollIntoViewIfNeeded();

@@ -589,14 +589,14 @@ test('real Turtle Dodge evidence unlocks Close One and the crystal survival rewa
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('450');
+  await expect(page.locator('#profile-score')).toHaveText('540'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="dodge_close"]')).toContainText('Unlocked');
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText("I'm Still Standing!");
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText('crystal · +270 points');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('450');
+  await expect(page.locator('#profile-score')).toHaveText('540');
 });
 
 test('King of Suffering rejects a healed win and awards 810 for a true no-hit win', async ({ page }) => {
@@ -706,7 +706,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('3660');
+  await expect(page.locator('#profile-score')).toHaveText('3750'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="dodge_360"]');
@@ -714,7 +714,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(card).toContainText('rainbow · +2430 points');
   await expect(card).toContainText('Unlocked');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('3660');
+  await expect(page.locator('#profile-score')).toHaveText('3750');
 });
 
 for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 80, 30], ['cruel', 'silver', 110, 30], ['nightmare', 'crystal', 230, 270], ['impossible', 'diamond', 590, 810]])

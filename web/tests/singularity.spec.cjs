@@ -118,7 +118,7 @@ test('temporary Core picker repeats all 15 shared attacks without saving progres
   await page.locator('[data-difficulty="gravitron"]').click();
   expect(await page.evaluate(() => snapshot.mode)).toBe('singularity');
   expect(await page.evaluate(() => testRuntime.runPython('session.game.stage'))).toBe('intro');
-  await expect(page.locator('[data-game]:visible')).toHaveCount(8);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(9);
   expect(errors).toEqual([]);
 });
 
@@ -157,7 +157,7 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
 test('GRAVITRON unlock persists and keyboard and touch teleport immediately', async ({ page }, testInfo) => {
   const card = page.locator('[data-game="singularity"]');
   await expect(card).toBeHidden();
-  await expect(page.locator('[data-game]:visible')).toHaveCount(7);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(8);
   await unlock(page);
   await expect(page.locator('#player-health-value')).toHaveText('10 / 10');
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('singularity');
@@ -193,7 +193,7 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(card).toBeVisible();
-  await expect(page.locator('[data-game]:visible')).toHaveCount(8);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(9);
   await card.click();
   await page.locator('#welcome').screenshot({ path: testInfo.outputPath('core-unlocked.png') });
 });
