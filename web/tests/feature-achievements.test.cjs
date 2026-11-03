@@ -9,15 +9,15 @@ const wrath = (difficulty, extra) => ({ mode: 'wrath', difficulty, over: false, 
   attacks_completed: 0, counter_hits: 0, damage_taken: 0, lives: 15, max_lives: 15, ...extra });
 
 test('catalog includes Determination, the named Rainbow wins, and three Empyrorite rewards', () => {
-  assert.equal(catalog.length, 128);
-  assert.equal(new Set(catalog.map(item => item.id)).size, 128);
-  assert.equal(catalog.slice(74).length, 54);
+  assert.equal(catalog.length, 143);
+  assert.equal(new Set(catalog.map(item => item.id)).size, 143);
+  assert.equal(catalog.slice(74).length, 69);
   const victory = catalog.find(item => item.id === 'core_win');
   assert.equal(victory.title, 'My Fingers Hurt');
   assert.equal(victory.tier, 'rainbow');
   assert.equal(points.empyrorite, 7290);
   assert.equal(points.empyrorite, points.rainbow * 3);
-  assert.equal(catalog.filter(item => item.tier === 'empyrorite').length, 3);
+  assert.equal(catalog.filter(item => item.tier === 'empyrorite').length, 4);
   assert.equal(catalog.find(item => item.id === 'wrath_perfect_shuffle').tier, 'rainbow');
 });
 
@@ -36,8 +36,8 @@ test('Core protocol rewards track completed attacks and the real finishing laser
   }
   assert.ok(tracker.data.unlocked.core_steady);
   const before = tracker.score;
-  assert.deepEqual(ids(tracker.observe(coreWin())), ['core_win', 'core_flawless']);
-  assert.equal(tracker.score - before, 2430 + 7290);
+  assert.deepEqual(ids(tracker.observe(coreWin())), ['core_win', 'core_flawless', 'collect_empyrorite']);
+  assert.equal(tracker.score - before, 2430 + 7290 * 2);
   assert.equal(tracker.data.stats.coreWins, 1);
   assert.equal(tracker.observe(coreWin()).changed, false);
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
@@ -174,7 +174,7 @@ test('old medals keep their dates and points, and Empyrorite scores persist with
     const restored = new Tracker({ stats: { visits: 1 }, unlocked: { welcome: date, [id]: date } });
     const reward = id === 'wrath_perfect_shuffle' ? points.rainbow : points.empyrorite;
     assert.equal(restored.score, reward + points.bronze);
-    assert.deepEqual(ids(restored.visit()), []);
+    assert.deepEqual(ids(restored.visit()), id === 'wrath_perfect_shuffle' ? [] : ['collect_empyrorite']);
     assert.equal(restored.data.unlocked[id], date);
   }
 });
@@ -194,7 +194,7 @@ test('Merciless Empyrorite requires 300 seconds in one run, not another mode or 
   tracker.start('dodge', 'merciless');
   const before = tracker.score;
   assert.ok(ids(tracker.observe({ mode: 'dodge', difficulty: 'merciless', elapsed: 300, over: false })).includes(item.id));
-  assert.equal(tracker.score - before, 7290);
+  assert.equal(tracker.score - before, 7290 * 2);
   assert.equal(tracker.observe({ mode: 'dodge', difficulty: 'merciless', elapsed: 300, over: false }).changed, false);
   assert.equal(new Tracker(JSON.parse(JSON.stringify(tracker.data))).data.unlocked[item.id], tracker.data.unlocked[item.id]);
 });
@@ -209,7 +209,7 @@ test('Boss Crush Empyrorite requires twenty consecutive undamaged wins on Cruel 
     const before = tracker.score;
     tracker.observe({ mode: 'boss', difficulty, over: true, won: true, damage_taken: 0 });
     assert.equal(Boolean(tracker.data.unlocked[item.id]), wins === 20);
-    if (wins === 20) assert.equal(tracker.score - before, 7290);
+    if (wins === 20) assert.equal(tracker.score - before, 7290 * 2);
   }
   for (const state of [{ won: false, damage_taken: 0 }, { won: true, damage_taken: 1, healing_collected: 1 },
     { won: true, damage_taken: undefined }]) {

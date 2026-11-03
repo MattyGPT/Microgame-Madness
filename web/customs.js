@@ -2,7 +2,22 @@
 
 // Art is authored locally; achievement IDs are the sole unlock authority.
 const CubieCustoms = (() => {
+  const achievementCatalog = typeof module !== "undefined" && module.exports
+    ? require("./achievements.js").catalog : Achievements.catalog;
+  const tierLabels = {
+    bronze: "Bronze", silver: "Silver", gold: "Gold", crystal: "Crystal",
+    diamond: "Diamond", rainbow: "Rainbow", empyrorite: "Empyrorite", black: "Black",
+  };
+  const tierOrder = Object.keys(tierLabels);
   const flavorText = {
+    gaster: "Probably nothing.",
+    medal_bronze: "Twenty small victories. One very proud little square.",
+    medal_silver: "Fifteen silver linings, polished into one outfit.",
+    medal_gold: "Ten golden moments. Please keep fingerprints to a minimum.",
+    medal_crystal: "Five bright memories, caught inside a crystal.",
+    medal_diamond: "Three impossible-looking victories. One unbreakable grin.",
+    medal_rainbow: "Two rainbows walked into a closet. Cubie walked out.",
+    medal_empyrorite: "One legendary achievement. An emerald glow that never forgets.",
     classic: "The original little square with a very big heart.",
     pumpkin: "Won the crown. Kept the pumpkin. Refuses to become pie.",
     bookworm: "Just one more chapter. And maybe a tiny bookmark nap.",
@@ -41,9 +56,14 @@ const CubieCustoms = (() => {
   const catalog = [];
   const square = '<rect x="20" y="28" width="80" height="80" rx="13.8"/>';
   function add(id, name, achievement, color, detail, body = square, layers = {}) {
-    catalog.push({ id, name, flavor: flavorText[id], achievements: achievement ? [].concat(achievement) : [], color, detail, body, ...layers });
+    const achievements = achievement ? [].concat(achievement) : [];
+    // A Custom with alternative unlocks uses its easiest qualifying tier.
+    // Its category stays the same regardless of which unlock the player earns.
+    const tier = achievements.map(id => achievementCatalog.find(a => a.id === id).tier)
+      .sort((a, b) => tierOrder.indexOf(a) - tierOrder.indexOf(b))[0];
+    catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
-  add("classic", "Classic Cubie", null, "#c6f783", "");
+  add("classic", "Classic Cubie", "welcome", "#c6f783", "");
   add("pumpkin", "Pumpkin Cubie", ["pumpkin_baby", "pumpkin_coward", "pumpkin_phase2", "pumpkin_come_on"], "#ff992f",
     '<path d="M55 34q4-12 0-23l9-4q8 15 1 27" fill="#507b37"/><path d="m59 13 3 15" fill="none" stroke="#88ad50" stroke-width="3" stroke-linecap="round"/>' +
     '<path d="M65 27q7-18 24-14-2 17-24 14" fill="#7da94b"/><path d="m67 25 15-8" stroke="#517b37" stroke-width="2"/>' +
@@ -163,7 +183,44 @@ const CubieCustoms = (() => {
     '<path d="M20 29h28v16H20M75 89h25v17H75" fill="#f4c988"/><path d="M23 41h24M78 93h19" stroke="#795f8a" stroke-width="3" stroke-dasharray="3 3"/><path d="M26 84l14 10M27 90l11-5" stroke="#795f8a" stroke-width="3"/>');
   add("heart", "Best Friend Cubie", "cube_pet_100", "#ffb6c6",
     '<path d="M45 17c-13-13-24 7 15 21 39-14 28-34 15-21L60 28z" fill="#ec6e97"/><ellipse cx="30" cy="80" rx="9" ry="5" fill="#ee8aa8"/><ellipse cx="90" cy="80" rx="9" ry="5" fill="#ee8aa8"/>');
-  const unlocked = (item, medals) => !item.achievements.length || item.achievements.some(id => !!medals[id]);
+  add("gaster", "Gaster Cubie", "waste_of_time", "#eeeef2",
+    '<path d="M38 28l5 12-7 9 6 9M85 104l-5-13 7-8-5-11" fill="none" stroke="#22232d" stroke-width="3"/>' +
+    '<path d="M20 96l18-9 22 12 22-12 18 9v12H20Z" fill="#242530"/>' +
+    '<g fill="#f5f5fa" stroke="#242530" stroke-width="2"><ellipse cx="5" cy="78" rx="10" ry="13"/><ellipse cx="115" cy="78" rx="10" ry="13"/></g>' +
+    '<g fill="#242530"><ellipse cx="5" cy="78" rx="4" ry="5"/><ellipse cx="115" cy="78" rx="4" ry="5"/></g>');
+  add("medal_bronze", "Bronze Cubie", "collect_bronze", "#c58b59",
+    '<path d="M26 35h68v65H26Z" fill="none" stroke="#e6b98b" stroke-width="3"/>' +
+    '<path d="m28 99 64-64" stroke="#f6ce9d" stroke-width="5" opacity=".35"/>' +
+    '<g fill="#7b4e35"><circle cx="29" cy="37" r="3"/><circle cx="91" cy="37" r="3"/><circle cx="29" cy="99" r="3"/><circle cx="91" cy="99" r="3"/></g>');
+  add("medal_silver", "Silver Cubie", "collect_silver", "#c9d5df",
+    '<path d="M26 33h29L27 96Z" fill="#f2f8ff"/><path d="M94 40v61H65Z" fill="#92a5b7"/>' +
+    '<path d="M32 31h56M32 35h48M32 39h40M32 99h57M40 103h49" stroke="#f5faff" stroke-width="1.5"/>' +
+    '<path d="m102 14 2 7 7 2-7 2-2 7-2-7-7-2 7-2Z" fill="#e8f4ff"/>');
+  add("medal_gold", "Golden Cubie", "collect_gold", "#f3c94d",
+    '<path d="M26 34h34L26 82Z" fill="#fff0a6"/><path d="M95 54v46H62Z" fill="#ce921f"/>' +
+    '<path d="M29 101h58M25 37v32" stroke="#fff2b2" stroke-width="3"/>' +
+    '<path d="m13 12 3 9 9 3-9 3-3 9-3-9-9-3 9-3Zm91 79 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#ffe9a0"/>');
+  add("medal_crystal", "Crystal Cubie", "collect_crystal", "#ba9aeb",
+    '<path d="m25 36 30-8-15 28Zm70 0-30-8 15 28ZM25 101l15-19 20 22Zm70 0L80 82l-20 22Z" fill="#e6d7ff"/>' +
+    '<path d="M40 28 30 7 20 29M58 28 62 0 74 28M83 28 99 10 100 35" fill="#9f7ad1" stroke="#d5b7ff" stroke-width="2"/>' +
+    '<path d="M27 58v30M91 49v28" stroke="#f6edff" stroke-width="3"/>');
+  add("medal_diamond", "Diamond Cubie", "collect_diamond", "#84deee",
+    '<path d="M20 42 40 28h40l20 14-20 13H40Z" fill="#d4faff"/>' +
+    '<path d="m20 42 20 13-10 35-10-15Zm80 0L80 55l10 35 10-15ZM30 90l30 18 30-18-30 7Z" fill="#42b7d4"/>' +
+    '<path d="m40 28 20 14 20-14M40 55l20-13 20 13" fill="none" stroke="#fff" stroke-width="2"/>' +
+    '<path d="m105 13 2 7 7 2-7 2-2 7-2-7-7-2 7-2Z" fill="#c5faff"/>');
+  add("medal_rainbow", "Rainbow Cubie", "collect_rainbow", "#ec9cc4",
+    '<path d="M34 28h14L20 56V42Z" fill="#ffd781"/><path d="M48 28h18L20 74V56Z" fill="#c6ee91"/>' +
+    '<path d="M66 28h18L20 92V74Z" fill="#8ce0dd"/><path d="M84 28h4q12 0 12 12L32 108q-12 0-12-16Z" fill="#99b9ef"/>' +
+    '<path d="M100 40v20l-48 48H32Z" fill="#b8a1e9"/><path d="M100 60v20l-28 28H52Z" fill="#f3a7cd"/>' +
+    '<path d="m13 10 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#fff1be"/>');
+  add("medal_empyrorite", "Empyrorite Cubie", "collect_empyrorite", "#42dbab",
+    '<path d="M20 42 40 28h40l20 14-16 15H36Z" fill="#a6ffda"/>' +
+    '<path d="m20 42 16 15-7 36-9-17Zm80 0L84 57l7 36 9-17ZM29 93l31 15 31-15-31 7Z" fill="#168970"/>' +
+    '<path d="m60 2 11 14-11 14-11-14Z" fill="#72ffbf" stroke="#dcffe8" stroke-width="2"/>' +
+    '<path d="M8 47 2 67l6 20M112 47l6 20-6 20" fill="none" stroke="#93ffd0" stroke-width="3"/>' +
+    '<path d="M38 33h44M27 60v17" stroke="#edfff3" stroke-width="2"/>');
+  const unlocked = (item, medals) => item.id === "classic" || item.achievements.some(id => !!medals[id]);
   function selected(id, medals) {
     const item = catalog.find(item => item.id === id);
     return item && unlocked(item, medals) ? item : catalog[0];
@@ -183,7 +240,18 @@ const CubieCustoms = (() => {
     return '#' + rgb.map((channel, index) => Math.round(channel * .54 + [2, 6, 0][index])
       .toString(16).padStart(2, '0')).join('');
   }
+  let artId = 0;
   function svg(item) {
+    let detail = item.detail;
+    if (item.id === 'medal_rainbow') {
+      const clipId = `rainbow-body-${++artId}`;
+      const colors = ['#ffd781', '#c6ee91', '#8ce0dd', '#99b9ef', '#b8a1e9', '#f3a7cd'];
+      const stripes = Array.from({ length: 36 }, (_, i) =>
+        `<rect x="${(i - 18) * 18}" y="-240" width="18.1" height="480" fill="${colors[i % colors.length]}"/>`).join('');
+      detail = `<defs><clipPath id="${clipId}">${item.body}</clipPath></defs>` +
+        `<g clip-path="url(#${clipId})"><g transform="rotate(45 60 68)"><g class="cubie-rainbow-stripes">${stripes}</g></g></g>` +
+        '<path d="m13 10 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#fff1be"/>';
+    }
     const [x, y, width, height] = bodyBounds[item.id] || [20, 28, 80, 80];
     const fit = `scale(${145 / width} ${145 / height}) translate(${-x} ${-y})`;
     const silhouette = (color, offset, className) =>
@@ -195,11 +263,11 @@ const CubieCustoms = (() => {
       silhouette(item.id === 'classic' ? '#6d8b44' : sideColor(item.color), 13, 'cubie-side') +
       `<g class="cubie-underbody" transform="${fit}" stroke-linejoin="round">${item.underBody || ''}</g>` +
       silhouette(item.color, 0, 'cubie-front') +
-      `<g class="cubie-trim" transform="${fit}" stroke-linejoin="round">${item.detail}</g>` +
+      `<g class="cubie-trim" transform="${fit}" stroke-linejoin="round">${detail}</g>` +
       `<g fill="${item.faceColor || '#17251a'}" class="cubie-eyes"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g>` +
       `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${item.faceColor || '#17251a'}"/>` +
       '</g></svg>';
   }
-  return { catalog, unlocked, selected, svg };
+  return { catalog, tierLabels, unlocked, selected, svg };
 })();
 if (typeof module !== "undefined") module.exports = CubieCustoms;

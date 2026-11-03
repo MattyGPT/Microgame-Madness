@@ -516,11 +516,11 @@ test("real Hangman wins award the requested medals once and persist across reloa
     for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
     if (round === 0) await expect(page.locator('#profile-score')).toHaveText('50');
-    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('200');
-    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('290');
+    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('210');
+    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('300');
     await page.locator('#overlay-action').click();
   }
-  await expect(page.locator('#profile-score')).toHaveText('470');
+  await expect(page.locator('#profile-score')).toHaveText('480');
   await page.locator('#achievements-tab').click();
   await page.locator('#achievement-filter').selectOption('earned');
   for (const id of ['play_hangman', 'hangman_win', 'hangman_hard', 'hangman_5', 'hangman_10'])
@@ -530,14 +530,14 @@ test("real Hangman wins award the requested medals once and persist across reloa
   await page.screenshot({ path: testInfo.outputPath('achievement-collection.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('470');
+  await expect(page.locator('#profile-score')).toHaveText('480');
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="hangman_25"]')).toContainText('10 / 25');
   await page.locator('#scores-tab').click();
   await page.locator('#player').fill('New nickname');
   await page.locator('[data-difficulty="hard"]').click();
   await page.locator('#exit').click();
-  await expect(page.locator('#profile-score')).toHaveText('470');
+  await expect(page.locator('#profile-score')).toHaveText('480');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.hangmanWins)).toBe(10);
 });
 
@@ -589,14 +589,14 @@ test('real Turtle Dodge evidence unlocks Close One and the crystal survival rewa
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('540'); // Includes Shell Endurance at 90 seconds.
+  await expect(page.locator('#profile-score')).toHaveText('550'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="dodge_close"]')).toContainText('Unlocked');
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText("I'm Still Standing!");
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText('crystal · +270 points');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('540');
+  await expect(page.locator('#profile-score')).toHaveText('550');
 });
 
 test('King of Suffering rejects a healed win and awards 810 for a true no-hit win', async ({ page }) => {
@@ -625,14 +625,14 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
   wounded = false;
   await win();
   await expect(page.locator('[data-achievement="pumpkin_flawless"]')).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('1130');
+  await expect(page.locator('#profile-score')).toHaveText('1140');
   // Queued notifications keep the new tier and its reward as well.
   while (!(await page.locator('#achievement-toast').innerText()).includes('King of Suffering'))
     await page.getByRole('button', { name: 'Dismiss achievement notification' }).first().click();
   await expect(page.locator('#achievement-toast')).toContainText('diamond achievement · +810 points');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
-  await expect(page.locator('#profile-score')).toHaveText('1130');
+  await expect(page.locator('#profile-score')).toHaveText('1140');
 });
 
 test('all six medal tiers have readable colored frames and reduced-motion support', async ({ page }, testInfo) => {
@@ -706,7 +706,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('3750'); // Includes Shell Endurance at 90 seconds.
+  await expect(page.locator('#profile-score')).toHaveText('3760'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="dodge_360"]');
@@ -714,7 +714,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(card).toContainText('rainbow · +2430 points');
   await expect(card).toContainText('Unlocked');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('3750');
+  await expect(page.locator('#profile-score')).toHaveText('3760');
 });
 
 for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 80, 30], ['cruel', 'silver', 110, 30], ['nightmare', 'crystal', 230, 270], ['impossible', 'diamond', 590, 810]])
@@ -727,7 +727,7 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
       + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
     await route.fulfill({ response, body: (await response.text()).replace('self.game = BossCrush(difficulty)', setup) });
   });
-  for (const score of [baseScore, baseScore + reward]) {
+  for (const score of [baseScore, baseScore + reward + 10]) {
     await page.reload();
     await expect(page.locator('#runtime-status')).toContainText('All games ready');
     await page.locator('[data-game="boss"]').click();
@@ -746,7 +746,7 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
   }
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
-  await expect(page.locator('#profile-score')).toHaveText(String(baseScore + reward));
+  await expect(page.locator('#profile-score')).toHaveText(String(baseScore + reward + 10));
 });
 
 async function mockGlobalLeaderboards(page, service) {
@@ -1390,29 +1390,29 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="cube_pet_100"]');
   await expect(card).toContainText('Locked · 49 / 100');
-  await expect(page.locator('#profile-score')).toHaveText('100');
+  await expect(page.locator('#profile-score')).toHaveText('110');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('#sound').click();
   for (let i = 49; i < 99; i++) await cube.press('Space');
   await page.locator('#achievements-tab').click();
   await expect(card).toContainText('Locked · 99 / 100');
-  await expect(page.locator('#profile-score')).toHaveText('100');
+  await expect(page.locator('#profile-score')).toHaveText('110');
   await cube.press('Enter');
   await expect(card).toHaveAttribute('data-tier', 'crystal');
   await expect(card).toHaveClass(/earned/);
   await expect(card).toContainText("Cubie's Best Friend");
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('370');
+  await expect(page.locator('#profile-score')).toHaveText('380');
   await expect(page.locator('#achievement-toast')).toContainText("Cubie's Best Friend");
   await expect(page.locator('#achievement-toast')).toContainText('crystal achievement · +270 points');
   for (let i = 0; i < 5; i++) await cube.press('Enter');
-  await expect(page.locator('#profile-score')).toHaveText('370');
+  await expect(page.locator('#profile-score')).toHaveText('380');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
-  await expect(page.locator('#profile-score')).toHaveText('370');
+  await expect(page.locator('#profile-score')).toHaveText('380');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.cubePets)).toBe(105);
   await expect(page.locator('#achievement-toast')).toBeHidden();
 });
@@ -1630,7 +1630,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   const card = page.locator('[data-achievement="boss_clean_streak"]');
   await expect(card).toHaveAttribute('data-tier', 'crystal');
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('2360');
+  await expect(page.locator('#profile-score')).toHaveText('2370');
   instantWin = false;
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
@@ -1640,7 +1640,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   expect(await page.evaluate(() => achievementTracker.data.stats.bossCleanStreak)).toBe(0);
-  await expect(page.locator('#profile-score')).toHaveText('2360');
+  await expect(page.locator('#profile-score')).toHaveText('2370');
   // Exiting a different unfinished run must persist the reset immediately too.
   await page.evaluate(() => { achievementTracker.data.stats.bossCleanStreak = 4; persist(); });
   await page.locator('[data-game="boss"]').click();
@@ -1686,7 +1686,7 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await expect(page.locator('#overlay-title')).toHaveText('You did it!');
-  await expect(page.locator('#profile-score')).toHaveText('7340');
+  await expect(page.locator('#profile-score')).toHaveText('9770');
   const confetti = page.locator('.achievement-confetti[data-tier="rainbow"]');
   await expect(confetti.locator('i')).toHaveCount(40);
   expect(await confetti.evaluate(el => new Set([...el.children].map(piece => piece.style.getPropertyValue('--confetti-color'))).size)).toBe(6);
@@ -1699,7 +1699,7 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
   await expect(page.locator('[data-achievement="pumpkin_flawless_5"]')).toHaveAttribute('data-tier', 'rainbow');
   await expect(page.locator('[data-achievement="pumpkin_flawless_5"]')).toContainText('Unlocked');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('7340');
+  await expect(page.locator('#profile-score')).toHaveText('9770');
   await expect(page.locator('#achievement-toast')).toBeHidden();
 });
 
@@ -2211,8 +2211,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(34);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 34 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(42);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 42 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
@@ -2283,4 +2283,86 @@ test('locked Customs can be previewed with flavor text without equipping', async
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+});
+
+test('Gaster and tier Customs migrate earned medals, preview, equip, and persist', async ({ page }, testInfo) => {
+  await page.evaluate(() => {
+    const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+    const date = '2026-11-03T12:00:00.000Z';
+    profile.achievements = {
+      stats: { visits: 1 },
+      unlocked: Object.fromEntries(Achievements.catalog.filter(a => !a.collectionTier).map(a => [a.id, date])),
+    };
+    localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="customs"]').click();
+  await expect(page.locator('#customs-count')).toHaveText('42 / 42 Customs unlocked');
+  for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
+    ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
+    const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
+    await expect(tile).toContainText(threshold + ' / ' + threshold);
+    await expect(tile.locator('.custom-equip')).toBeEnabled();
+    await tile.locator('.custom-preview-button').click();
+    await expect(page.locator('#customs-status')).toContainText('Preview only · Unlocked');
+    await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+  }
+  const gaster = page.locator('.custom-tile[data-custom="gaster"]');
+  await expect(gaster).toContainText('Some things are better left unexplained.');
+  await gaster.locator('.custom-preview-button').click();
+  await expect(page.locator('#customs-equipped-name')).toHaveText('Gaster Cubie');
+  await expect(page.locator('#customs-flavor')).toHaveText('Probably nothing.');
+  await gaster.locator('.custom-equip').click();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'gaster');
+  // Show the eight new designs together for visual inspection.
+  await page.evaluate(() => {
+    document.querySelectorAll('.custom-tile').forEach(tile => {
+      tile.hidden = tile.dataset.custom !== 'gaster' && !tile.dataset.custom.startsWith('medal_');
+    });
+    document.querySelectorAll('#achievement-toast button').forEach(button => button.click());
+    document.querySelector('#achievement-celebrations').replaceChildren();
+  });
+  await page.locator('#customs-room').screenshot({ path: testInfo.outputPath('gaster-and-tier-customs.png') });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'gaster');
+  await page.locator('[data-game="customs"]').click();
+  await page.getByRole('button', { name: 'Wear Empyrorite Cubie', exact: true }).click();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'medal_empyrorite');
+});
+
+test('every Custom shows its tier on the card and preview with matching outlines', async ({ page }, testInfo) => {
+  await page.locator('[data-game="customs"]').click();
+  const customs = await page.evaluate(() => CubieCustoms.catalog.map(item => ({
+    id: item.id, name: item.name, tier: item.tier, label: CubieCustoms.tierLabels[item.tier],
+  })));
+  for (const item of customs) {
+    const tile = page.locator('.custom-tile[data-custom="' + item.id + '"]');
+    await expect(tile).toHaveAttribute('data-tier', item.tier);
+    await expect(tile.locator('.custom-tier')).toHaveText(item.label + ' Custom');
+    await expect(tile).toHaveCSS('border-top-width', '2px');
+  }
+  for (const tier of ['bronze', 'silver', 'gold', 'crystal', 'diamond', 'rainbow', 'empyrorite', 'black']) {
+    const id = tier === 'black' ? 'gaster' : 'medal_' + tier;
+    const tile = page.locator('.custom-tile[data-custom="' + id + '"]');
+    await tile.locator('.custom-preview-button').click();
+    await expect(page.locator('.customs-preview')).toHaveAttribute('data-tier', tier);
+    await expect(page.locator('#customs-preview-tier')).toHaveText(tier[0].toUpperCase() + tier.slice(1) + ' Custom');
+    await expect(tile.locator('.custom-equip')).toBeDisabled();
+    const cardBorder = await tile.evaluate(el => getComputedStyle(el).borderTopColor);
+    await expect(page.locator('.customs-preview')).toHaveCSS('border-top-color', cardBorder);
+    if (tier === 'rainbow') expect(await tile.evaluate(el => getComputedStyle(el).backgroundImage)).toContain('linear-gradient');
+  }
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
+  // Keep only the eight tier examples in the visual review capture.
+  await page.evaluate(() => {
+    document.querySelectorAll('.custom-tile').forEach(tile => {
+      tile.hidden = tile.dataset.custom !== 'gaster' && !tile.dataset.custom.startsWith('medal_');
+    });
+  });
+  await page.locator('#achievement-toast').waitFor({ state: 'hidden' });
+  await page.locator('#customs-room').screenshot({ path: testInfo.outputPath('cubie-tiers.png') });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

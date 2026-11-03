@@ -99,11 +99,11 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   await page.evaluate(() => updateAchievements(achievementTracker.update(stats => { stats.coreFlawlessWins = 1; })));
   await expect(card).toHaveClass(/earned/);
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText(String(before + 7290));
+  await expect(page.locator('#profile-score')).toHaveText(String(before + 7290 * 2));
   expect((await style()).background).not.toBe(locked.background);
-  await expect(page.locator('#achievement-toast .achievement-toast')).toHaveAttribute('data-tier', 'empyrorite');
+  await expect(page.locator('#achievement-toast .achievement-toast[data-achievement-id="core_flawless"]')).toHaveAttribute('data-tier', 'empyrorite');
   await expect(page.locator('#achievement-toast')).toContainText('empyrorite achievement · +7290 points');
-  await expect(page.locator('#achievement-toast .empyrorite-gem')).toHaveCount(1);
+  await expect(page.locator('#achievement-toast .empyrorite-gem')).toHaveCount(2);
   const confetti = page.locator('.achievement-confetti[data-tier="empyrorite"]');
   await expect(confetti.locator('i')).toHaveCount(40);
   expect(await confetti.locator('i').first().evaluate(el => el.style.getPropertyValue('--confetti-color'))).toBe('#2cf5a0');
@@ -113,7 +113,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   const date = await page.evaluate(() => saved.achievements.unlocked.core_flawless);
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
-  await expect(page.locator('#profile-score')).toHaveText(String(before + 7290));
+  await expect(page.locator('#profile-score')).toHaveText(String(before + 7290 * 2));
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBe(date);
   await page.locator('#achievements-tab').click();
   await card.scrollIntoViewIfNeeded();

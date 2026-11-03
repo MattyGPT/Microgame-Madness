@@ -581,6 +581,8 @@ let previewCustomId = null;
 function previewCustom(item) {
   previewCustomId = item.id;
   $("customs-equipped-name").textContent = item.name;
+  document.querySelector(".customs-preview").dataset.tier = item.tier;
+  $("customs-preview-tier").textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
   $("customs-flavor").textContent = item.flavor;
   $("customs-preview-art").innerHTML = CubieCustoms.svg(item);
   const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked);
@@ -608,6 +610,7 @@ function renderCustoms() {
     const card = document.createElement("article");
     card.className = "custom-tile" + (unlocked ? "" : " custom-locked");
     card.dataset.custom = item.id;
+    card.dataset.tier = item.tier;
     card.dataset.equipped = String(wearing);
     const art = document.createElement("button");
     art.type = "button";
@@ -618,12 +621,18 @@ function renderCustoms() {
     art.onclick = () => previewCustom(item);
     const title = document.createElement("h5");
     title.textContent = item.name;
+    const tier = document.createElement("span");
+    tier.className = "custom-tier";
+    tier.textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
     const requirement = document.createElement("p");
-    if (!item.achievements.length) requirement.textContent = "Your original arcade buddy. Always yours.";
+    if (item.id === "classic") requirement.textContent = "Your original arcade buddy. Always yours.";
+    else if (item.id === "gaster") requirement.textContent = "Some things are better left unexplained.";
     else if (item.id === "pumpkin") requirement.textContent = "Defeat the Pumpkin King in any mode.";
     else {
       const achievement = Achievements.catalog.find(a => a.id === item.achievements[0]);
       requirement.textContent = `${achievement.title} — ${achievement.description}`;
+      if (achievement.collectionTier)
+        requirement.textContent += ` (${achievementTracker.progress(achievement)} / ${achievement.target})`;
     }
     const button = document.createElement("button");
     button.type = "button";
@@ -642,7 +651,7 @@ function renderCustoms() {
       $("customs-status").textContent = `Now wearing ${item.name}.`;
       $("customs-grid").querySelector(`[data-custom="${item.id}"] .custom-equip`)?.focus({ preventScroll: true });
     };
-    card.append(art, title, requirement, button);
+    card.append(art, title, tier, requirement, button);
     return card;
   });
   $("customs-grid").replaceChildren(...cards);

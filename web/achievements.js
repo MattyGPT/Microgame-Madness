@@ -154,6 +154,25 @@ const Achievements = (() => {
   add("boss_50", "Arena All-Star", "rainbow", "Boss Crush", "Win 50 Boss Crush games.", "bossWins", 50);
   add("pumpkin_50", "Endless Harvest", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 50 times in any mode.", "pumpkinWins", 50);
   add("wrath_win_10", "Royal Regular", "crystal", "The King's Wrath", "Win 10 practice fights, in any modes.", "wrathWins", 10);
+  // More entry-level milestones make the twenty-bronze collection attainable.
+  add("hangman_win_2", "Another Word", "bronze", "Hangman", "Win 2 Hangman games.", "hangmanWins", 2);
+  add("typing_3", "Three-Key Rhythm", "bronze", "Key Rush", "Complete 3 rounds in one Key Rush game.", "typingBest", 3);
+  add("dodge_10", "First Ten Seconds", "bronze", "Turtle Dodge", "Survive 10 seconds in one Turtle Dodge game.", "dodgeBest", 10);
+  add("cube_pet_10", "Getting Acquainted", "bronze", "Arcade", "Pet Cubie 10 times.", "cubePets", 10);
+  add("boss_win_2", "Back for Seconds", "bronze", "Boss Crush", "Win 2 Boss Crush games.", "bossWins", 2);
+  add("pumpkin_win_2", "Second Harvest", "bronze", "Pumpkin King", "Defeat the Pumpkin King 2 times in any mode.", "pumpkinWins", 2);
+  add("wrath_counter_1", "A Royal Reply", "bronze", "The King's Wrath", "Successfully counter a magenta finger in King's Wrath.", "wrathCounterHits");
+  add("dodge_merciless_15", "A Little Less Mercy", "bronze", "Turtle Dodge", "Survive 15 seconds in one Merciless game.", "mercilessBest", 15);
+  // These must follow ordinary medals so the threshold-crossing event awards
+  // its collector medal immediately. A collector never counts itself.
+  for (const [tier, target, title] of [
+    ["bronze", 20, "Bronze Collection"], ["silver", 15, "Silver Collection"],
+    ["gold", 10, "Golden Collection"], ["crystal", 5, "Crystal Collection"],
+    ["diamond", 3, "Diamond Collection"], ["rainbow", 2, "Rainbow Collection"],
+    ["empyrorite", 1, "Empyrorite Collection"],
+  ]) add(`collect_${tier}`, title, tier, "Arcade",
+    `Earn ${target} ${tier} achievement${target === 1 ? "" : "s"} to unlock ${tier === "gold" ? "Golden" : tier[0].toUpperCase() + tier.slice(1)} Cubie. This collection medal does not count toward its own requirement.`,
+    `collection_${tier}`, target, { collectionTier: tier });
   const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
@@ -172,7 +191,12 @@ const Achievements = (() => {
       // Derive totals from current tiers, so retiering updates old profiles too.
       return catalog.reduce((sum, item) => sum + (this.data.unlocked[item.id] ? points[item.tier] : 0), 0);
     }
-    progress(item) { return Math.min(item.target, this.data.stats[item.stat]); }
+    progress(item) {
+      const value = item.collectionTier
+        ? catalog.filter(medal => medal.tier === item.collectionTier && medal.id !== item.id && this.data.unlocked[medal.id]).length
+        : this.data.stats[item.stat];
+      return Math.min(item.target, value);
+    }
     update(change) {
       const before = JSON.stringify(this.data);
       change(this.data.stats);

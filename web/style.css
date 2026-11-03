@@ -1686,6 +1686,14 @@ select:disabled {
 
 /* Cubie's closet: each Custom keeps the same eyes and smile. */
 .cubie-custom-art { display: block; width: 100%; height: 100%; overflow: visible; }
+.cubie-rainbow-stripes { animation: cubie-rainbow-slide 5s linear infinite; }
+@keyframes cubie-rainbow-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(108px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-rainbow-stripes { animation: none; }
+}
 .cubie-float { animation: custom-float 3.8s ease-in-out infinite; transform: rotate(-14deg); transform-origin: center; }
 .cubie-eyes { animation: mascot-blink 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes custom-float { 0%, 100% { transform: translateY(0) rotate(-14deg); } 50% { transform: translateY(-9px) rotate(-12deg); } }
@@ -1734,3 +1742,44 @@ select:disabled {
 .custom-preview-button span { display: block; margin-top: 12px; font-size: 11px; }
 .custom-preview-button:hover, .custom-preview-button[aria-pressed="true"] { border-color: #c6f78366; color: var(--lime); }
 .custom-preview-button:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+/* Custom tiers stay visible for both locked and unlocked outfits. */
+.custom-tile[data-tier], .customs-preview[data-tier] {
+  border: 2px solid var(--medal);
+}
+.custom-tier {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0 0 12px;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: #0003;
+  color: var(--medal);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+#customs-preview-tier { margin: 4px 0 6px; font-size: 11px; }
+.custom-tile[data-equipped="true"] { box-shadow: inset 0 0 0 2px #ffffff18; }
+.custom-tile[data-tier="rainbow"], .customs-preview[data-tier="rainbow"] {
+  border-color: transparent;
+  background: linear-gradient(#1c2325, #1c2325) padding-box,
+    linear-gradient(125deg, #ff657f, #ffce70, #a5ec87, #74dfe7, #a3a4ff, #ed9cdd) border-box;
+}
+[data-tier="rainbow"] > .custom-tier,
+.customs-preview[data-tier="rainbow"] .custom-tier {
+  background: linear-gradient(110deg, #f58d9e, #f4d48e, #b3eab0, #a9d7fa, #d7b6f1);
+  color: #20232a;
+  border-color: transparent;
+}
+.custom-tile[data-tier="empyrorite"], .customs-preview[data-tier="empyrorite"] {
+  border-color: #39df9e;
+}
+.custom-tile[data-tier="black"], .customs-preview[data-tier="black"] {
+  border-color: #050505;
+  box-shadow: 0 0 0 1px #76767e, inset 0 0 0 1px #393942;
+  background: #141418;
+}
+[data-tier="black"] .custom-tier { background: #050505; border-color: #65656e; }
