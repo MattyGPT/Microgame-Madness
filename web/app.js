@@ -222,6 +222,8 @@ function unlockSingularity(navigate = true) {
 }
 const achievementCards = new Map();
 const achievementQueue = [];
+const activeAchievementToasts = new Map();
+let achievementToastLimit = 3;
 const celebrationTimers = new Map();
 const confettiColors = {
   bronze: ["#b87545", "#e6ac7c", "#ffcf9e"],
@@ -280,14 +282,30 @@ function celebrateAchievements(earned) {
     }, 5000));
   }
 }
-let toastTimer;
-function showAchievementToast() {
-  clearTimeout(toastTimer);
-  const toast = $("achievement-toast");
-  toast.hidden = true;
-  toast.replaceChildren();
-  const item = achievementQueue.shift();
-  if (!item) return;
+function dismissAchievementToast(toast) {
+  clearTimeout(activeAchievementToasts.get(toast));
+  activeAchievementToasts.delete(toast);
+  toast.remove();
+  showAchievementToasts();
+}
+function showAchievementToasts(earned = []) {
+  if (!activeAchievementToasts.size && !achievementQueue.length)
+    achievementToastLimit = 3;
+  if (activeAchievementToasts.size + achievementQueue.length + earned.length > 3)
+    achievementToastLimit = 2;
+  achievementQueue.push(...earned);
+  const stack = $("achievement-toast");
+  while (achievementQueue.length && activeAchievementToasts.size < achievementToastLimit) {
+    const toast = createAchievementToast(achievementQueue.shift());
+    stack.append(toast);
+    activeAchievementToasts.set(toast, setTimeout(() => dismissAchievementToast(toast), 4500));
+  }
+  stack.hidden = !activeAchievementToasts.size;
+}
+function createAchievementToast(item) {
+  const toast = document.createElement("article");
+  toast.className = "achievement-toast";
+  toast.dataset.achievementId = item.id;
   toast.dataset.tier = item.tier;
   const badge = document.createElement("span");
   badge.className = "medal";
@@ -303,12 +321,9 @@ function showAchievementToast() {
   const close = document.createElement("button");
   close.textContent = "×";
   close.setAttribute("aria-label", "Dismiss achievement notification");
-  close.onclick = showAchievementToast;
+  close.onclick = () => dismissAchievementToast(toast);
   toast.append(badge, detail, close);
-  // Restart the fade for each queued award without moving keyboard focus.
-  void toast.offsetWidth;
-  toast.hidden = false;
-  toastTimer = setTimeout(showAchievementToast, 4500);
+  return toast;
 }
 function renderAchievements() {
   const unlocked = achievementTracker.data.unlocked;
@@ -377,8 +392,7 @@ function updateAchievements(result) {
   persist();
   renderAchievements();
   celebrateAchievements(result.earned);
-  achievementQueue.push(...result.earned);
-  if ($("achievement-toast").hidden) showAchievementToast();
+  showAchievementToasts(result.earned);
 }
 function initializeAchievements() {
   const visibleCards = new IntersectionObserver(entries => {
@@ -1188,7 +1202,11 @@ function syncMusic() {
   if (!musicPlayer) return;
   const state = {
     theme: active && ["singularity", "core_practice"].includes(selected) ? "singularity"
-      : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin" : "arcade",
+      : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
+      : active && selected === "keyboard" ? "keyrush"
+      : active && selected === "hangman" ? "hangman"
+      : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
+      : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !nameSurpriseActive && !document.hidden && !snapshot?.paused && !loadFailed,
   };
   if (pendingRockSong) {

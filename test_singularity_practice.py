@@ -33,7 +33,7 @@ class SingularityPracticeTests(unittest.TestCase):
                                   full.x, full.y, full.elapsed, full.spawn_in))
 
     def test_countdown_freezes_movement_combat_healing_and_score(self):
-        game = SingularityPractice("railgun_array")
+        game = SingularityPractice("railgun_array", random.Random(42))
         game.hurt()
         game.spawn_healing()
         game.sound_events.clear()

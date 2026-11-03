@@ -15,9 +15,66 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
 });
 
+test('Determination tracks real losses across reloads and awards crystal on the fiftieth loss', async ({ page }, testInfo) => {
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace('random.choice(rules["words"])', '"cat"') });
+  });
+  await page.evaluate(() => { saved.achievements.stats.totalLosses = 48; persist(); });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('#achievements-tab').click();
+  const card = page.locator('[data-achievement="determination"]');
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toHaveAttribute('data-tier', 'crystal');
+  await expect(card).toContainText('Lose 50 minigame rounds in total.');
+  await expect(card).toContainText('Locked · 48 / 50');
+  await expect(card).toContainText('+270 points');
+  await card.screenshot({ path: testInfo.outputPath('determination-locked.png') });
+  async function loseHangman() {
+    await page.locator('[data-game="hangman"]').click();
+    await page.locator('[data-difficulty="easy"]').click();
+    for (const letter of 'BDEFGHIJKLMNOPQRSUVWXYZ') {
+      if (await page.locator('#overlay').isVisible()) break;
+      await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
+    }
+    await expect(page.locator('#overlay')).toBeVisible();
+  }
+  await loseHangman();
+  await expect(card).toContainText('Locked · 49 / 50');
+  expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(49);
+  const before = Number(await page.locator('#profile-score').textContent());
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-difficulty="easy"]').click();
+  await page.locator('#exit').click();
+  expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(49);
+  await page.locator('#player').fill('Still Trying');
+  await loseHangman();
+  await expect(page.locator('#profile-score')).toHaveText(String(before + 270));
+  const toast = page.locator('.achievement-toast[data-achievement-id="determination"]');
+  await expect(toast).toHaveAttribute('data-tier', 'crystal');
+  await expect(toast).toContainText('Determination');
+  await expect(toast).toContainText('crystal achievement · +270 points');
+  await toast.screenshot({ path: testInfo.outputPath('determination-toast.png') });
+  await page.locator('#achievements-tab').click();
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toHaveClass(/earned/);
+  await expect(card).toContainText('Unlocked');
+  expect(await card.locator('progress').evaluate(progress => progress.value)).toBe(50);
+  await card.screenshot({ path: testInfo.outputPath('determination-earned.png') });
+  const date = await page.evaluate(() => saved.achievements.unlocked.determination);
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#profile-score')).toHaveText(String(before + 270));
+  expect(await page.evaluate(() => saved.achievements.unlocked.determination)).toBe(date);
+  expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(50);
+  await expect(page.locator('#achievement-toast')).toBeHidden();
+});
+
 test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebration, and persistence', async ({ page }, testInfo) => {
   await page.locator('#achievements-tab').click();
-  await expect(page.locator('.achievement-card')).toHaveCount(116);
+  await expect(page.locator('.achievement-card')).toHaveCount(117);
   await expect(page.locator('.achievement-legend')).toContainText('Empyrorite +7290');
   const card = page.locator('[data-achievement="core_flawless"]');
   await card.scrollIntoViewIfNeeded();
@@ -44,7 +101,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   await expect(card).toContainText('Unlocked');
   await expect(page.locator('#profile-score')).toHaveText(String(before + 7290));
   expect((await style()).background).not.toBe(locked.background);
-  await expect(page.locator('#achievement-toast')).toHaveAttribute('data-tier', 'empyrorite');
+  await expect(page.locator('#achievement-toast .achievement-toast')).toHaveAttribute('data-tier', 'empyrorite');
   await expect(page.locator('#achievement-toast')).toContainText('empyrorite achievement · +7290 points');
   await expect(page.locator('#achievement-toast .empyrorite-gem')).toHaveCount(1);
   const confetti = page.locator('.achievement-confetti[data-tier="empyrorite"]');

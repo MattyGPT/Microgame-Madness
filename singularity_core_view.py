@@ -2,13 +2,14 @@
 
 import math
 
-from singularity_core import ATTACKS, BOX_CENTER, BOX_HALF, INTRO_DURATION, NODES, NODE_KEYS
+from singularity_core import ATTACKS, BOX_CENTER, BOX_HALF, ECHO_STEPS, INTRO_DURATION, NODES
 
 
 CYAN = "#65f5ff"
 VIOLET = "#a488ff"
 HOT = "#ff527e"
 AMBER = "#ffcf74"
+SAFE = "#8affba"
 
 
 def draw_core(game):
@@ -69,18 +70,22 @@ def draw_core(game):
         active = hazard.active
         blink = int(hazard.age * 16) % 2
         color = HOT if active else AMBER if blink else "#a68047"
+        if hazard.harmless:
+            color = CYAN if active else VIOLET
         if not active and (hazard.vx or hazard.vy):
             # Incoming walls and rain announce their entry at the box border.
             x = max(-142, min(142, x))
             y = max(cy-142, min(cy+142, y))
         if hazard.kind in ("circle", "orbit"):
             if active:
-                oval(x, y, hazard.size+5, fill="#ff527e24")
-                oval(x, y, hazard.size, fill="#ff527e", outline="#ffe4ef", width=1.5)
+                oval(x, y, hazard.size+5, fill="#65f5ff24" if hazard.harmless else "#ff527e24")
+                oval(x, y, hazard.size, fill="#65f5ff30" if hazard.harmless else HOT,
+                     outline=CYAN if hazard.harmless else "#ffe4ef", width=1.5)
                 if hazard.size > 14:
-                    oval(x, y, hazard.size*.6, fill="#9b264b")
+                    oval(x, y, hazard.size*.6, fill="#163f54" if hazard.harmless else "#9b264b")
             else:
-                oval(x, y, hazard.size, fill="#ffcf7412", outline=color, width=1.5)
+                oval(x, y, hazard.size, fill="#65f5ff12" if hazard.harmless else "#ffcf7412",
+                     outline=color, width=1.5)
                 line(x-8, y, x+8, y, 1, color)
                 line(x, y-8, x, y+8, 1, color)
         elif hazard.kind == "ring":
@@ -100,6 +105,11 @@ def draw_core(game):
             else:
                 line(x-dx, y-dy, x+dx, y+dy, hazard.height, "#ffcf7417")
                 line(x-dx, y-dy, x+dx, y+dy, 2, color)
+    if game.echo_preview:
+        x, y = NODES[game.memory[game.echo_step]]
+        oval(x, y, 36, fill="#8affba18")
+        oval(x, y, 29, outline=SAFE, width=3)
+        oval(x, y, 24, outline="#e1ffec", width=1)
     commands.append(dict(kind="clip_end", coords=[]))
 
     # Galactic med packs: a nebula halo, orbiting stars, and a luminous cross.
@@ -192,13 +202,14 @@ def draw_core(game):
     elif game.stage == "break":
         text(0, cy+10, "PROTOCOL SURVIVED", CYAN, 14)
         text(0, cy-12, f"{game.attacks_completed} / 15", "#d4d8ef", 12)
-    elif game.stage == "attack" and game.attack_index == 12 and game.stage_age < 2.1:
-        text(0, cy+28, "MEMORIZE", AMBER, 13)
-        text(0, cy, "  ".join(NODE_KEYS[n] for n in game.memory), "#f2e7c6", 20)
     elif game.laser_ready:
         text(0, cy+30, "SHIELD OFFLINE", HOT, 16)
         text(0, cy+7, "PRESS F TO FIRE", CYAN, 17)
         text(0, cy-17, "ANNIHILATION LASER READY", "#d9d7fa", 10)
+    if game.echo_step is not None:
+        text(223, -125, "SAFE PREVIEW" if game.echo_preview else "YOUR TURN",
+             SAFE if game.echo_preview else HOT, 9)
+        text(223, -145, f"{game.echo_step + 1} / {ECHO_STEPS}", "#d4d8ef", 12)
     if destroying:
         width = 22 + 9*math.sin(t*38)
         line(game.x, game.y+14, bx, by, width+30, "#a488ff44")

@@ -1443,12 +1443,18 @@ select:disabled {
 .achievement-card progress::-webkit-progress-value { background: var(--medal); border-radius: 5px; }
 .achievement-state { color: var(--muted); font-size: 10px; }
 .earned .achievement-state { color: var(--medal); }
-.achievement-toast {
+.achievement-toasts {
   position: fixed;
   top: max(12px, env(safe-area-inset-top));
   left: max(12px, env(safe-area-inset-left));
   width: min(365px, calc(100vw - 24px));
   z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.achievement-toast {
   display: flex;
   align-items: center;
   gap: 12px;

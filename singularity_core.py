@@ -13,7 +13,6 @@ BOX_HALF = 150
 TELEPORT_DISTANCE = 126
 NODES = tuple((x * TELEPORT_DISTANCE, BOX_CENTER[1] + y * TELEPORT_DISTANCE)
               for y in (-1, 0, 1) for x in (-1, 0, 1))
-NODE_KEYS = ("↙", "↓", "↘", "←", "RELEASE", "→", "↖", "↑", "↗")
 INTRO_DURATION = 2.6
 ATTACK_BREAK = .65
 HIT_IMMUNITY = .42
@@ -22,6 +21,10 @@ RAILGUN_WARNING = .72  # An extra 0.4 seconds to read the first protocol's lanes
 HEAL_EVERY_ATTACKS = 3
 HEAL_LASTS = 9.0
 HEAL_SIZE = 24
+POLARITY_SPEED = 1.1 * 1.1
+ECHO_STEPS = 4
+ECHO_INTERVAL = .86
+ECHO_PREVIEW_DURATION = ECHO_STEPS * ECHO_INTERVAL
 
 
 @dataclass(frozen=True)
@@ -40,12 +43,13 @@ ATTACKS = (
     Attack("EVENT LATTICE", 7, .68, "The marked nodes will burn. Read the changing grid."),
     Attack("BINARY STARS", 8, 1.02, "Two orbiting stars and repeated center detonations."),
     Attack("GRAVITY GUILLOTINE", 7, .89, "Teleport through the sweeping walls."),
-    Attack("PHOTON RAIN", 8, .19, "Dense falling photons. Keep switching lanes."),
+    Attack("PHOTON RAIN", 8, .19 / .9, "Dense falling photons. Keep switching lanes."),
     Attack("CROSSFIRE ENGINE", 7, .65, "Crossed beams erase rows and columns."),
     Attack("DARK MATTER MINES", 7, 1.08, "Three nodes are mined at a time. Find open ground."),
-    Attack("POLARITY INVERSION", 7, .76, "Alternate between the center and the edges."),
+    Attack("POLARITY INVERSION", 7, .76 / POLARITY_SPEED, "Alternate between the center and the edges."),
     Attack("ORBITAL SAWS", 8, 1.03, "Perimeter blades circle while the center pulses."),
-    Attack("ECHO PROTOCOL", 8, .86, "Memorize the five safe positions, then repeat them."),
+    Attack("ECHO PROTOCOL", ECHO_PREVIEW_DURATION + ECHO_STEPS * ECHO_INTERVAL, ECHO_INTERVAL,
+           f"Watch the safe preview on the box, then repeat its {ECHO_STEPS} positions."),
     Attack("LENS FRACTURE", 8, .82, "Three slanted lasers split the box."),
     Attack("TOTAL COLLAPSE", 10, .64, "Rings, tracking blasts, and one safe node. Survive."),
 )
@@ -68,6 +72,7 @@ class Hazard:
     orbit_x: float = 0
     orbit_y: float = 0
     age: float = 0
+    harmless: bool = False
 
     @property
     def active(self):
@@ -152,6 +157,18 @@ class SingularityCore:
         return self.stage == "exposed" and not self.shielded and self.alive and not self.won
 
     @property
+    def echo_preview(self):
+        return (self.stage == "attack" and self.attack_index == 12
+                and self.stage_age < ECHO_PREVIEW_DURATION - 1e-9)
+
+    @property
+    def echo_step(self):
+        if self.stage != "attack" or self.attack_index != 12:
+            return None
+        age = self.stage_age if self.echo_preview else self.stage_age - ECHO_PREVIEW_DURATION
+        return min(ECHO_STEPS - 1, int((max(0, age) + 1e-9) / ECHO_INTERVAL))
+
+    @property
     def score(self):
         progress = self.attacks_completed
         if self.stage == "attack":
@@ -171,8 +188,9 @@ class SingularityCore:
         if self.stage == "break":
             return f"{self.attacks_completed} / 15 COMPLETE · NEXT: {ATTACKS[self.attack_index + 1].name}"
         attack = ATTACKS[self.attack_index]
-        if self.attack_index == 12 and self.stage_age < 2.1:
-            hint = "REMEMBER: " + "  ".join(NODE_KEYS[node] for node in self.memory)
+        if self.attack_index == 12:
+            hint = ("SAFE PREVIEW — watch the glowing safe positions on the box."
+                    if self.echo_preview else f"YOUR TURN — repeat the {ECHO_STEPS} positions.")
         else:
             hint = attack.hint
         return f"{self.attack_index + 1:02d} / 15 · {attack.name} — {hint}"
@@ -185,8 +203,7 @@ class SingularityCore:
         self.hazards.clear()
         self.sound_events.append("core_protocol")
         if index == 12:
-            self.memory = self.rng.sample(range(9), 5)
-            self.spawn_in = 2.1
+            self.memory = self.rng.sample(range(9), ECHO_STEPS)
 
     def hurt(self):
         if self.invulnerable > 1e-9 or not self.alive:
@@ -221,8 +238,9 @@ class SingularityCore:
                 remaining.append(pickup)
         self.healing_pickups = remaining
 
-    def _node_blast(self, node, warning=.32, duration=.24, radius=33):
-        self.hazards.append(Hazard("circle", *NODES[node], radius, warning, duration))
+    def _node_blast(self, node, warning=.32, duration=.24, radius=33, harmless=False):
+        self.hazards.append(Hazard("circle", *NODES[node], radius, warning, duration,
+                                   harmless=harmless))
 
     def _beam(self, angle, x=0, y=BOX_CENTER[1], warning=.32, duration=.25, spin=0):
         self.hazards.append(Hazard("beam", x, y, 460, warning, duration,
@@ -282,7 +300,7 @@ class SingularityCore:
             nodes = range(9) if beat % 2 == 0 else (4,)
             for node in nodes:
                 if beat % 2 or node != 4:
-                    self._node_blast(node, .35, .31, 36)
+                    self._node_blast(node, .35 / POLARITY_SPEED, .31 / POLARITY_SPEED, 36)
         elif i == 11:
             if beat == 0:
                 for angle in (0, math.pi / 2, math.pi, math.pi * 1.5):
@@ -290,10 +308,13 @@ class SingularityCore:
                                                angle=angle, spin=-2.8, orbit_x=128, orbit_y=128))
             self._node_blast(4, .35, .42, 42)
         elif i == 12:
-            if beat < len(self.memory):
+            if beat < 2 * len(self.memory):
+                # Demonstrate the exact pattern safely, then replay it at the same tempo.
+                preview = beat < len(self.memory)
+                safe = self.memory[beat % len(self.memory)]
                 for node in range(9):
-                    if node != self.memory[beat]:
-                        self._node_blast(node, .32, .39)
+                    if node != safe:
+                        self._node_blast(node, .32, .39, harmless=preview)
         elif i == 13:
             angle = .35 + beat * .43
             for offset in (-90, 0, 90):
@@ -377,7 +398,7 @@ class SingularityCore:
             kept = []
             for hazard in self.hazards:
                 hazard.update(step)
-                if hazard.active and hazard.touches(self.x, self.y):
+                if hazard.active and not hazard.harmless and hazard.touches(self.x, self.y):
                     self.hurt()
                 if hazard.age < hazard.warning + hazard.duration:
                     kept.append(hazard)

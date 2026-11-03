@@ -23,7 +23,71 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 116);
+  assert.equal(catalog.length, 117);
+});
+
+test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
+  let tracker = new Tracker();
+  tracker.visit();
+  const item = catalog.find(item => item.id === 'determination');
+  assert.equal(item.title, 'Determination');
+  assert.equal(item.tier, 'crystal');
+  assert.equal(item.target, 50);
+  const modes = [['hangman', 'easy'], ['keyboard', 'progressive'], ['dodge', 'merciless'],
+    ['boss', 'mean'], ['pumpkin', 'baby'], ['wrath', 'random_order'], ['singularity', 'gravitron']];
+  for (let lost = 0; lost < 49; lost++) {
+    const [mode, difficulty] = modes[lost % modes.length];
+    tracker.start(mode, difficulty);
+    const state = { mode, difficulty, over: true, won: false, damage_taken: 1 };
+    assert.deepEqual(ids(tracker.observe(state)), []);
+    assert.equal(tracker.data.stats.totalLosses, lost + 1);
+    assert.equal(tracker.progress(item), lost + 1);
+    assert.equal(tracker.observe(state).changed, false);
+  }
+  assert.equal(tracker.data.unlocked.determination, undefined);
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  tracker.visit();
+  assert.equal(tracker.progress(item), 49);
+  tracker.start('dodge', 'easy');
+  const before = tracker.score;
+  assert.deepEqual(ids(tracker.observe({ mode: 'dodge', difficulty: 'easy', over: true, won: false })), ['determination']);
+  assert.equal(tracker.data.stats.totalLosses, 50);
+  assert.equal(tracker.score - before, 270);
+  const date = tracker.data.unlocked.determination;
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(tracker.score, before + 270);
+  assert.equal(tracker.data.unlocked.determination, date);
+  assert.equal(tracker.observe({ mode: 'dodge', difficulty: 'easy', over: true, won: false }).changed, false);
+  tracker.start('dodge', 'easy');
+  assert.deepEqual(ids(tracker.observe({ mode: 'dodge', difficulty: 'easy', over: true, won: false })), []);
+  assert.equal(tracker.data.stats.totalLosses, 51);
+  assert.equal(tracker.progress(item), 50);
+  assert.equal(tracker.data.unlocked.determination, date);
+  assert.equal(tracker.score, before + 270);
+});
+
+test('Determination ignores wins, active rounds, quitting, stale results, and temporary practice', () => {
+  const tracker = new Tracker({ stats: { hangmanWins: 3 } });
+  assert.equal(tracker.data.stats.totalLosses, 0);
+  assert.equal(tracker.data.stats.hangmanWins, 3);
+  tracker.observe({ mode: 'hangman', difficulty: 'easy', over: true, won: false });
+  tracker.start('hangman', 'easy');
+  tracker.observe({ mode: 'hangman', difficulty: 'easy', over: false, won: false });
+  tracker.observe({ mode: 'hangman', difficulty: 'hard', over: true, won: false });
+  tracker.abandon();
+  tracker.observe({ mode: 'hangman', difficulty: 'easy', over: true, won: false });
+  tracker.start('hangman', 'easy');
+  tracker.observe({ mode: 'hangman', difficulty: 'easy', over: true, won: true });
+  tracker.start('keyboard', 'progressive');
+  tracker.observe({ mode: 'keyboard', difficulty: 'progressive', score: 4, over: false, won: false });
+  tracker.start('core_practice', 'photon_rain');
+  tracker.observe({ mode: 'core_practice', difficulty: 'photon_rain', over: true, won: false });
+  tracker.start('boss', 'mean');
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  restored.visit();
+  restored.observe({ mode: 'boss', difficulty: 'mean', over: true, won: false });
+  assert.equal(restored.data.stats.totalLosses, 0);
+  assert.equal(restored.data.unlocked.determination, undefined);
 });
 
 test('100 Cubie pets accumulate across visits and award crystal exactly once', () => {

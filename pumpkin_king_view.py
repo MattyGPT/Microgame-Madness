@@ -10,11 +10,12 @@ import tempfile
 import wave
 from pathlib import Path
 
-from pumpkin_king import Finger, KING_WIDTH, KING_HEIGHT, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME
+from pumpkin_king import Finger, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME
 
 COLORS = {"normal": "#fff5e5", "blue": "#42c9ff", "orange": "#ff9d32", "magenta": "#ff42de"}
 BACKGROUND = "#111827"
 HAUNT_FACE_COLORS = ("#9e8cff", "#7cdae6", "#b8a3f4")
+STAR_RIMS = ("#61eaff", "#ba7cff", "#ff83d7")
 
 # Shared by the original shell face and the Impossible Boss Crush face.
 PUMPKIN_FACE_FEATURES = (
@@ -132,15 +133,111 @@ class KingView:
                                  (1-t)**2*start[1]+2*(1-t)*t*y+t*t*end[1]))
         self.poly(softened, color)
 
+    def ribbon(self, points, width, color):
+        """A smooth strip, using the same primitives in Tk and the browser."""
+        edge_a, edge_b = [], []
+        for i, (x, y) in enumerate(points):
+            before, after = points[max(0, i-1)], points[min(len(points)-1, i+1)]
+            dx, dy = after[0]-before[0], after[1]-before[1]
+            length = max(.001, math.hypot(dx, dy))
+            nx, ny = -dy/length*width/2, dx/length*width/2
+            edge_a.append((x+nx, y+ny))
+            edge_b.append((x-nx, y-ny))
+        self.poly(edge_a+edge_b[::-1], color)
+
+    def _star(self, x, y, radius, rim, t):
+        radius *= .75+.25*math.sin(t)
+        for size, color in ((radius+1, rim), (radius*.68, "#ffffff")):
+            self.poly([(x+math.cos(i*math.pi/4)*size*(1 if i%2 == 0 else .25),
+                        y+math.sin(i*math.pi/4)*size*(1 if i%2 == 0 else .25)) for i in range(8)], color)
+
+    def _spectral_flames(self, game, side, segments):
+        sign = -1 if side == "left" else 1
+        t = game.elapsed
+        # These decorative wisps follow the shoulder and raised-arm pose.
+        for index, (x, y, _, _, progress) in enumerate(segments[::3]):
+            if progress > .85:
+                continue
+            phase = index*1.9+sign*.7
+            height = 25+8*math.sin(t*3+phase)+12*(1-progress)
+            base = y+(40+progress*20)/2-3
+            if base >= 238:
+                continue
+            for layer in range(3):
+                hue = (.36, .76, .89)[(index+layer)%3]+.025*math.sin(t*2+phase)
+                rgb = colorsys.hsv_to_rgb(hue, .78+.13*math.sin(t*3+phase+layer), 1)
+                color = "#"+"".join(f"{round(channel*255):02x}" for channel in rgb)
+                if layer == 0:
+                    color = mix("#173b3a", color, .45)
+                left, right = [], []
+                for step in range(15):
+                    p = step/14
+                    sway = math.sin(p*5-t*4+phase)*p*8+sign*p*p*9
+                    width = (11-layer*3)*(1-p)**.8*(.8+.2*math.sin(p*8-t*4+phase))
+                    py = min(238, base+p*height*(1-layer*.12))
+                    left.append((x+sway-width, py))
+                    right.append((x+sway+width, py))
+                self.poly(left+right[::-1], color)
+            self.oval(x+math.sin(t*3+phase)*3, min(233, base+8), 2, 9, "#d1fff2")
+
+    def _folded_ribs(self, game, side, segments):
+        if not segments or not game.transformed:
+            return
+        sign = -1 if side == "left" else 1
+        extent, shoulder_y, lift = game.arm_pose(side)
+        # Three ribs fan sideways, tucked against the underside of each arm.
+        # During awakening they unfold from the sides of the head.
+        fold = min(1, game.stage_age/.9) if game.stage.name == "shatter" and not game.intro_done else 1
+        for rib in range(3):
+            end = (.47+rib*.17)*extent*fold
+            points = []
+            for i in range(17):
+                p = end*i/16
+                x = game.boss_x+sign*(27+p*262)
+                y = shoulder_y+10-p*65+math.sin(p*math.pi)*18+lift*p
+                y -= (40+p*20)/2+3+rib*3+math.sin(i/16*math.pi)*4
+                y += (16+rib*3)*math.exp(-i/2.5)
+                points.append((x, y))
+            self.ribbon(points, 6.5, "#352f4b")
+            self.ribbon(points, 3.7, "#c9c1ba")
+            self.ribbon([(x, y+.8) for x, y in points], 1.2, "#efffe2")
+
+    def _claws(self, game, side):
+        sign = -1 if side == "left" else 1
+        for x, y, _, height in game.hand_rectangles(side):
+            top, bottom = y+height/2, y-height/2
+            # A clean knuckle rim and small dark slit suggest a claw emerging
+            # through the hand, without blood or spray.
+            self.oval(x, top-1, 12, 10, "#a987aa")
+            self.oval(x, top-2, 9, 5, "#382037")
+            shape = ((x-4, top+1), (x+4, top), (x+5, y+7),
+                     (x+sign*4, y-5), (x-sign*3, bottom+5),
+                     (x-sign*5, bottom), (x-sign, y-7), (x-4, y+4))
+            wobble = 1.15+.035*math.sin(game.elapsed*3+x)
+            self.soft_poly([(x+(px-x)*wobble, y+(py-y)*1.04) for px, py in shape], "#285d46")
+            self.soft_poly(shape, "#690f35")
+            inner = [(x+(px-x)*.69, py+1) for px, py in shape]
+            self.soft_poly(inner, "#ed294b")
+            self.ribbon(((x-1, top-3), (x+1, y+9), (x+sign*1.8, y)), 1.4, "#ff9d9a")
+            self.oval(x-sign*3, top+1, 4, 2, "#e4b7c5")
+
     def _arm(self, game, side):
         segments = list(game.arm_segments(side))
         t = game.elapsed
-        def color_at(progress, outer):
-            hue = (t*.15+progress*.8)%1 if outer else (.08+progress*.12+math.sin(t*2+progress*5)*.08)%1
-            rgb = colorsys.hsv_to_rgb(hue, .9 if outer else .95, 1)
+        def color_at(progress):
+            hue = (t*.15+progress*.8)%1
+            rgb = colorsys.hsv_to_rgb(hue, .9, 1)
             return '#'+''.join(f'{int(channel*255):02x}' for channel in rgb)
-        # Keep the original shifting orange/gold arms and rainbow rims, joining
-        # their cross sections into smooth ribbons instead of rectangular steps.
+        if not segments:
+            return
+        self._spectral_flames(game, side, segments)
+        # The rainbow outer ribbon keeps its original dimensions and colors.
+        # Only the inner ribbon becomes a drifting miniature galaxy.
+        for width, color in ((6, "#174b3b"), (2.8, "#4bc878")):
+            for edge in (-1, 1):
+                points = [(x, y+edge*(height/2+2)+math.sin(t*3+p*13)*1.6)
+                          for x, y, _, height, p in segments]
+                self.ribbon(points, width, color)
         for outer in (True, False):
             for first, second in zip(segments, segments[1:]):
                 x1, y1, _, h1, p1 = first
@@ -149,31 +246,184 @@ class KingView:
                     h1, h2 = 29+p1*14, 29+p2*14
                 overlap = .6 if x2 > x1 else -.6
                 self.poly(((x1-overlap, y1+h1/2), (x2+overlap, y2+h2/2),
-                           (x2+overlap, y2-h2/2), (x1-overlap, y1-h1/2)), color_at((p1+p2)/2, outer))
+                           (x2+overlap, y2-h2/2), (x1-overlap, y1-h1/2)),
+                          color_at((p1+p2)/2) if outer else "#10132f")
             caps = segments[:1] if len(segments) == 1 else segments[:1]+segments[-1:]
             for x, y, width, height, progress in caps:
-                self.oval(x, y, width, height if outer else 29+progress*14, color_at(progress, outer))
-        for x, y, width, height in game.hand_rectangles(side):
-            self.rounded_rect(x, y, width, height, 4,
-                              "#ff42de" if game.stage.name == "fingers" else "#ffc14d")
+                self.oval(x, y, width, height if outer else 29+progress*14,
+                          color_at(progress) if outer else "#10132f")
+        for band, color in enumerate(("#312151", "#44316b", "#254461")):
+            points = [(x, y+math.sin(p*11-t*.65+band)*6+(band-1)*5)
+                      for x, y, _, _, p in segments]
+            self.ribbon(points, 6-band, color)
+        for index in range(14):
+            segment = segments[(index*7+2)%len(segments)]
+            x, y, _, _, p = segment
+            y += math.sin(index*8.31)*((29+p*14)/2-4)
+            self._star(x+math.sin(index*2.1)*3, y, 1.4+index%3*.5,
+                       STAR_RIMS[index%3], t*3+index*2)
+        for index in range(3):
+            p = (t*.075+index*.29)%.87+.07
+            extent, shoulder_y, lift = game.arm_pose(side)
+            if p > extent:
+                continue
+            sign = -1 if side == "left" else 1
+            x = game.boss_x+sign*(45+p*242)
+            y = shoulder_y+10-p*65+math.sin(p*math.pi)*18+lift*p
+            rim = STAR_RIMS[index]
+            self.poly(((x-sign*16, y+4), (x+sign*2, y+1), (x+sign*3, y-2), (x-sign*13, y-3)), rim)
+            self.poly(((x-sign*12, y+1), (x+sign*2, y), (x-sign*5, y-1)), "#ffffff")
+            self.oval(x, y, 3, 3, "#ffffff")
+        self._folded_ribs(game, side, segments)
+        self._claws(game, side)
 
-    def _face(self, x, y, scale, shell, glow, t):
+    def _outlined_feature(self, points, fill, outline="#ef284b", thickness=1.2):
+        cx = sum(x for x, _ in points)/len(points)
+        cy = sum(y for _, y in points)/len(points)
+        expanded = []
+        for x, y in points:
+            length = max(.01, math.hypot(x-cx, y-cy))
+            expanded.append((x+(x-cx)/length*thickness, y+(y-cy)/length*thickness))
+        self.soft_poly(expanded, outline)
+        self.soft_poly(points, fill)
+
+    def _fire_crown(self, x, y, t):
+        """Living flames form the crown itself, with tall outer points."""
+        base = y+34
+        for index, offset in enumerate((-39, -26, -13, 0, 13, 26, 39)):
+            phase = index*1.73
+            height = 18+29*(abs(offset)/39)**1.5+3*math.sin(t*5+phase)
+            for layer, color in enumerate(("#783525", "#ec3f1d", "#ff8c22", "#ffe17a")):
+                left, right = [], []
+                for step in range(19):
+                    p = step/18
+                    curl = (math.sin(t*4-p*5+phase)*6+offset/39*p*5)*p
+                    width = (13-layer*2.7)*(1-p)**.8*(.9+.1*math.sin(p*9-t*6+phase))
+                    px = x+offset+curl
+                    py = min(238, base+p*height*(1-layer*.11))
+                    left.append((px-width, py))
+                    right.append((px+width, py))
+                self.poly(left+right[::-1], color)
+        for index in range(5):
+            rise = (t*.55+index*.213)%1
+            px = x-33+index*16+math.sin(t*2+index)*3
+            py = min(236, base+12+rise*45)
+            color = mix(BACKGROUND, "#ffd57b", (1-rise)*.85)
+            self.oval(px, py, 1.5, 2.5, color)
+
+    def _face(self, x, y, scale, shell, glow, t, game=None):
         if shell:
             self.rounded_rect(x, y, 72, 42, 6, "#ffffff")
+            for polygon in PUMPKIN_FACE_FEATURES:
+                self.poly([(x+px*scale, y+py*scale) for px, py in polygon], glow)
+            return
+        name = game.stage.name
+        hit = game.hit_flash > 0
+        roar = name in ("roar", "fire")
+        laughing = name in ("laugh", "scare_ready", "scares") or not game.alive
+        # An inverted, nearly equilateral carved pumpkin, with a living green
+        # contour. All detail is procedural and follows the combat animation.
+        silhouette = ((-50, 40), (50, 40), (0, -43))
+        for spread, color in ((7, "#183d37"), (4, "#2c8154"), (1.8, "#8eff9c")):
+            points = []
+            for index, (px, py) in enumerate(silhouette):
+                wobble = spread+math.sin(t*3.3+index*2.1)*1.5
+                points.append((x+px*(1+wobble/50), y+py*(1+wobble/43)))
+            self.soft_poly(points, color)
+        self.soft_poly([(x+px, y+py) for px, py in silhouette], "#8b301e")
+        self.soft_poly(((x-46, y+37), (x+46, y+37), (x, y-38)), "#ff8a21")
+        self.soft_poly(((x-39, y+33), (x+36, y+33), (x, y-31)), "#ffab31")
+        for offset in (-28, -14, 0, 14, 28):
+            end_y = y-32+abs(offset)*1.3
+            self.ribbon(((x+offset, y+33), (x+offset*.75, y+11), (x+offset*.28, end_y)),
+                        1.5, "#e87920")
+        self._fire_crown(x, y, t)
+        # Keep the whole Color Memory sequence readable, including its gaps:
+        # neither idle blinking nor hit reactions may close the eyes.
+        gaze = max(-2, min(2, (game.x-x)/100))
+        color_memory = game.attack_index == 0
+        blink = .12 if t%4.7 > 4.56 and not color_memory and not game.eye_rule and not roar else 1
+        for side in (-1, 1):
+            eye = ((side*37, 23), (side*7, 17), (side*11, 7), (side*30, 12))
+            if hit and not color_memory:
+                eye = ((side*35, 17), (side*9, 13), (side*13, 10), (side*30, 13))
+            points = [(x+px+gaze, y+16+(py-16)*blink) for px, py in eye]
+            self._outlined_feature(points, glow, thickness=1.6)
+            if glow == "#38201c" and blink > .2:
+                self.oval(x+side*20+gaze, y+15, 2, 4, "#ff5c48")
+        self._outlined_feature(((x-4, y+7), (x+4, y+7), (x, y-1)), "#38201c")
+        if roar:
+            jaw = 3*math.sin(t*22)
+            mouth = [(x+math.cos(i*math.tau/20)*12,
+                      y-9+math.sin(i*math.tau/20)*(14+jaw)) for i in range(20)]
         else:
-            for layer, color in ((0, "#d83a18"), (1, "#ff7519"), (2, "#ffd04a")):
-                points = [(x-50+layer*5, y-35), (x+50-layer*5, y-35)]
-                for i in range(10, -1, -1):
-                    px = x-50+layer*5+i*(100-layer*10)/10
-                    peak = 20+16*math.sin(t*9+i*2+layer)+14*(i%2)
-                    points.append((px, min(235, y+28+peak-layer*8)))
-                self.soft_poly(points, color)
-            self.rounded_rect(x, y, KING_WIDTH, KING_HEIGHT, 12, "#ff9d25")
-            for i in range(5):
-                self.rounded_rect(x-40+i*20, y, 3, 66, 1.5, "#f77719")
-        for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
-            color = glow if shell or index < 2 else "#38201c"
-            self.poly([(x+px*scale, y+py*scale) for px, py in polygon], color)
+            opening = 3+3*math.sin(t*18) if laughing else 0
+            mouth = [(x-28, y+4), (x-18, y-7), (x, y-12), (x+18, y-7), (x+28, y+4)]
+            mouth += [(x+19, y-10-opening), (x+8, y-23-opening*.5),
+                      (x, y-27), (x-8, y-23-opening*.5), (x-19, y-10-opening)]
+            if hit:
+                mouth = [(x-18, y-6), (x, y-3), (x+18, y-6), (x+9, y-13), (x-9, y-13)]
+        self._outlined_feature(mouth, "#251727", thickness=1.5)
+        if not hit:
+            for side in (-1, 1):
+                self.soft_poly(((x+side*15, y-6), (x+side*10, y-9), (x+side*11, y-15)), "#ffe9a6")
+        if game.hp < game.config.hp*.25:
+            for side in (-1, 1):
+                self.ribbon(((x+side*33, y+29), (x+side*11, y+23)), 2.5, "#9e2433")
+
+    def draw_boss(self, game):
+        """Rounded Boss Crush bodies and faces, shared by both front ends."""
+        self.counts, self.used = {}, set()
+        if not game.won:
+            x, y, t = game.boss_x, game.boss_y, game.elapsed
+            hit = game.hit_flash > 0
+            danger = game.lunge_state in ("warning", "lunging")
+            defeated_player = not game.alive
+            attacking = game.volley > 0 and game.attack_in > game.config.interval-.17
+            color = game.config.color
+            if hit and game.difficulty != "impossible":
+                color = mix(color, "#fff5ac", .7)
+            self.rounded_rect(x, y, 72, 42, 10, mix(game.config.color, "#101323", .76))
+            self.rounded_rect(x, y+1, 66, 36, 8, color)
+            self.rounded_rect(x-6, y+13, 43, 2, 1, mix(color, "#ffffff", .4))
+            gaze = max(-2, min(2, (game.x-x)/110))
+            blink = .13 if t%4.1 > 3.97 and not danger and not hit else 1
+            if game.difficulty == "impossible":
+                for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
+                    points = []
+                    for px, py in polygon:
+                        if index < 2:
+                            py = 9+(py-9)*(.5 if hit else blink)
+                            px += gaze
+                        elif index == 3:
+                            py += math.sin(t*12)*(2 if defeated_player else .6)
+                            if hit:
+                                py = -10+(py+10)*.35
+                            elif danger:
+                                py = -9+(py+9)*1.3
+                        points.append((x+px, y+py))
+                    self.poly(points, "#fff351" if index < 2 and hit else "#000000")
+            else:
+                for side in (-1, 1):
+                    ex = x+side*17+gaze
+                    if hit:
+                        self.ribbon(((ex-5, y+9), (ex+4, y+4), (ex-5, y+1)), 2.6, "#261b32")
+                    else:
+                        self.oval(ex, y+5, 9, 12*blink, "#261b32")
+                        if blink > .5:
+                            self.oval(ex+gaze*.4, y+7, 2.5, 3, "#fff4dd")
+                    self.ribbon(((x+side*26, y+15), (x+side*10, y+(10 if danger else 13))), 2.3, "#342039")
+                if hit or danger or attacking:
+                    self.oval(x, y-10, 13 if hit else 20, 11 if hit else 15, "#261b32")
+                else:
+                    curve = 1.8 if defeated_player else 1
+                    self.ribbon([(x-13+i*26/12, y-10+curve*(abs(i-6)/6)**2*5+
+                                  math.sin(t*3)*.6) for i in range(13)], 3, "#261b32")
+            if game.hp < game.config.hp*.25:
+                self.oval(x+27, y+9+math.sin(t*5)*1.5, 3, 6, "#c7f8ff")
+        for key in self.previous-self.used:
+            self.canvas.itemconfigure(self.items[key], state="hidden")
+        self.previous = self.used
 
     def _laughing_face(self, x, y, scale, color, t, phase):
         tilt = .12 * math.sin(t * 1.8 + phase)
@@ -281,8 +531,9 @@ class KingView:
                 glow = "#111827" if name == "shell" else mix("#111827", "#ffef42", progress if name == "glow" else 1)
                 self._face(body_x, body_y, 1, True, glow, game.elapsed)
             else:
-                glow = COLORS.get(game.eye_rule, "#fff351" if game.hit_flash > 0 else "#38201c")
-                self._face(body_x, body_y, 1.65, False, glow, game.elapsed)
+                hit_eyes = game.hit_flash > 0 and game.attack_index != 0
+                glow = COLORS.get(game.eye_rule, "#fff351" if hit_eyes else "#38201c")
+                self._face(body_x, body_y, 1.65, False, glow, game.elapsed, game)
                 if name == "shatter" and not game.intro_done:
                     for i in range(22):
                         angle = i*2.399

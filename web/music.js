@@ -218,6 +218,66 @@ const ArcadeMusic = (() => {
         [86, 81, 78, 74, 78, 81, 86, 90], [91, 86, 83, 79, 81, 83, 79, 0],
       ],
     },
+    dodge_easy: song("Shellside Stroll", 112, "C G Am F C Em F G Am F C G Dm F G C", [
+      "E5 - G5 A5 G5 E5 D5 -", "D5 G5 B5 - A5 G5 D5 -",
+      "E5 A5 C6 B5 A5 E5 C5 -", "F5 A5 G5 F5 - E5 C5 -",
+      "G5 E5 C5 - D5 E5 G5 -", "B4 E5 G5 A5 G5 E5 D5 -",
+      "A5 G5 F5 C5 F5 - G5 A5", "B5 A5 G5 D5 E5 F5 G5 -",
+      "C5 E5 A5 - G5 E5 C5 -", "C5 F5 A5 G5 F5 - E5 C5",
+      "E5 G5 C6 - B5 A5 G5 E5", "D5 G5 B5 A5 G5 - E5 D5",
+      "F5 A5 D6 C6 A5 F5 E5 -", "A5 F5 C5 - D5 F5 G5 A5",
+      "G5 B5 D6 B5 A5 G5 F5 D5", "E5 G5 C6 - G5 E5 C5 -",
+    ], { groove: "skip", swing: .12, lead: "triangle", gate: 1.05, bassOctave: 3 }),
+    dodge_normal: song("Falling Forecast", 132, "Am F Dm E Am G Dm E Am C F E Dm Am E Am", [
+      "E5 F5 E5 - A4 C5 B4 A4", "C5 F5 E5 C5 A4 - C5 E5",
+      "D5 A4 D5 F5 E5 D5 C5 A4", "B4 E5 G#5 F5 E5 D5 B4 -",
+      "A4 C5 E5 A5 G5 E5 D5 C5", "D5 G5 F5 D5 B4 D5 G5 -",
+      "A5 F5 E5 D5 A4 C5 D5 F5", "G#5 E5 D5 B4 E5 - G#5 B5",
+      "E5 F5 E5 C5 B4 A4 E4 -", "G5 E5 C5 D5 E5 G5 E5 -",
+      "A5 F5 E5 C5 A4 C5 F5 E5", "G#5 B5 A5 G#5 E5 D5 B4 -",
+      "F5 E5 D5 A4 C5 D5 E5 F5", "E5 C5 A4 B4 C5 E5 D5 C5",
+      "B4 D5 E5 G#5 B5 A5 G#5 E5", "A5 E5 C5 A4 B4 G#4 A4 -",
+    ], { groove: "classic", gate: .9 }),
+    dodge_hard: song("Pressure Current", 156, "Cm Ab Fm G Cm Bdim Ab G Fm Cm Ab G Fm Ab G Cm", [
+      "G4 C5 Eb5 C5 F#5 G5 F#5 G5", "Ab5 G5 Eb5 C5 Eb5 G5 Ab5 G5",
+      "F5 C5 F5 Ab5 G5 F5 Eb5 C5", "B4 D5 G5 F5 D5 B4 D5 F5",
+      "C5 Eb5 G5 C6 B5 G5 Eb5 D5", "B4 D5 F5 B5 A5 F5 D5 B4",
+      "Ab5 C6 Ab5 G5 Eb5 C5 Eb5 G5", "B5 G5 F5 D5 B4 D5 F5 G5",
+      "F5 G5 Ab5 G5 F5 C5 Eb5 F5", "G5 Eb5 C5 D5 Eb5 F#5 G5 -",
+      "Ab5 G5 Eb5 C5 Eb5 G5 Ab5 B5", "B5 D6 B5 G5 F5 D5 B4 G4",
+      "Ab5 F5 C5 F5 Ab5 G5 F5 Eb5", "C6 Ab5 G5 Eb5 C5 Eb5 G5 Ab5",
+      "B5 G5 F5 D5 G5 F5 D5 B4", "C5 G4 C5 Eb5 G5 F#5 G5 C5",
+    ], { groove: "drive", pulse: "narrow", tremolo: true, gate: .8 }),
+    dodge_merciless: song("No Safe Shore", 180, "F#m Gdim F#m C#7 F#m D Gdim C#7 F#m Gdim D C#7 Gdim F#m C#7 F#m", [
+      "F#4 G4 F#4 C5 F#4 G4 A4 G4", "G4 Bb4 Db5 Bb4 G4 F#4 G4 Db5",
+      "F#4 C#5 F#4 G4 A4 G#4 F#4 C5", "C#5 E#5 G#5 B5 G#5 E#5 D5 C#5",
+      "F#4 F#4 G4 F#4 C5 B4 A4 G4", "D5 F#5 A5 F#5 E5 D5 C#5 A4",
+      "G4 Db5 Bb4 G4 F#4 G4 Bb4 Db5", "C#5 D5 C#5 G#4 B4 G#4 E#4 C#4",
+      "F#4 G4 F#4 C5 G4 F#4 E4 C#4", "G4 Bb4 Db5 E5 Db5 Bb4 G4 F#4",
+      "D5 C#5 A4 F#4 D4 F#4 A4 C#5", "C#5 E#5 G#5 B5 A5 G#5 E#5 C#5",
+      "G4 F#4 G4 Bb4 Db5 Bb4 G4 Db5", "F#4 C5 B4 A4 G4 F#4 G4 F#4",
+      "E#5 G#5 B5 G#5 E#5 D5 C#5 E#5", "F#5 C#5 A4 F#4 G4 F#4 C#4 F#4",
+    ], { groove: "pursuit", pulse: "narrow", tremolo: true, gate: .7, bassGate: .22 }),
+    hangman: song("Letter by Letter", 120, "Fmaj7 C Dm Bb Fmaj7 Am Gm C Dm Am Bb F Gm Bb C F", [
+      "A4 - C5 D5 - C5 A4 -", "G4 C5 E5 - D5 C5 G4 -",
+      "A4 - F5 E5 D5 - A4 C5", "D5 F5 Bb5 - A5 F5 D5 -",
+      "C5 A4 C5 E5 G5 - E5 C5", "E5 C5 A4 - B4 C5 E5 -",
+      "Bb4 D5 G5 F5 - D5 Bb4 -", "C5 E5 G5 - F5 D5 C5 -",
+      "F5 - E5 D5 A4 C5 D5 -", "E5 C5 A4 C5 E5 - D5 C5",
+      "D5 F5 Bb5 A5 F5 D5 C5 -", "C5 A4 F4 A4 C5 D5 C5 -",
+      "Bb4 D5 G5 A5 Bb5 A5 G5 D5", "F5 D5 Bb4 - C5 D5 F5 -",
+      "E5 G5 C6 Bb5 G5 E5 D5 C5", "A4 C5 F5 - E5 C5 F5 -",
+    ], { groove: "hush", lead: "triangle", gate: 1.25, bassOctave: 3 }),
+    keyrush: song("Keystroke Sprint", 160, "Em C G D Em Am C B Em G C D Am C B Em", [
+      "E5 B5 G5 B5 F#5 G5 E5 -", "G5 E5 C5 E5 G5 A5 G5 -",
+      "D5 G5 B5 D6 B5 A5 G5 F#5", "F#5 A5 D6 C6 A5 F#5 E5 D5",
+      "E5 G5 B5 E6 D6 B5 G5 E5", "A5 E5 C6 B5 A5 G5 E5 -",
+      "G5 C6 E6 D6 C6 G5 E5 G5", "F#5 D#5 B4 D#5 F#5 A5 B5 -",
+      "B4 E5 D5 B4 G4 F#4 E4 B3", "D5 G5 B5 G5 A5 B5 A5 G5",
+      "E5 G5 C6 B5 A5 G5 E5 -", "F#5 A5 D5 E5 F#5 E5 D5 A4",
+      "C6 A5 E5 A5 C6 B5 A5 G5", "G5 E5 C5 E5 G5 C6 B5 A5",
+      "F#5 D#5 B4 F#5 A5 F#5 D#5 B4", "E5 G5 B5 E6 B5 G5 E5 -",
+    ], { groove: "drive", pulse: "narrow", gate: .85 }),
     pumpkin: {
       title: "The Pumpkin King",
       bpm: 156,
@@ -238,13 +298,43 @@ const ArcadeMusic = (() => {
       ],
     },
   };
-  const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !["pumpkin", "singularity"].includes(id))
+  const dodgeTracks = Object.freeze(Object.entries(scores).filter(([id]) => id.startsWith("dodge_"))
+    .map(([id, score]) => Object.freeze({ id, difficulty: id.slice(6), title: score.title, bpm: score.bpm })));
+  const bossTracks = [
+    { id: "boss_mean", difficulty: "mean", title: "First Blood Circuit", bpm: 128,
+      drive: 2, chugs: 8, hats: 8, palmMute: .42,
+      roots: [40, 43, 45, 40, 36, 43, 38, 35], kicks: [0, 1.5, 2, 3],
+      riffs: [[0, 3, 5, 7, 5, 3, 0, null], [0, 0, 7, 5, 3, 0, 2, 3],
+        [12, 10, 7, 10, 12, null, 15, 12], [7, 10, 12, 7, 5, 3, 2, 0]] },
+    { id: "boss_cruel", difficulty: "cruel", title: "Iron Verdict", bpm: 148,
+      drive: 3, chugs: 8, hats: 16, palmMute: .32,
+      roots: [38, 38, 41, 43, 38, 36, 34, 37], kicks: [0, .5, 1.5, 2, 2.75, 3.5],
+      riffs: [[0, 0, 1, 0, 7, 5, 3, 0], [7, 6, 5, 3, 0, null, 3, 5],
+        [12, 13, 12, 7, 10, 12, 15, 13], [7, 10, 13, 12, 10, 7, 6, 0]] },
+    { id: "boss_nightmare", difficulty: "nightmare", title: "Nightmare Engine", bpm: 168,
+      drive: 4.2, chugs: 16, hats: 16, palmMute: .18,
+      roots: [36, 37, 36, 31, 32, 36, 35, 31], kicks: [0, .25, .75, 1.5, 2, 2.25, 2.75, 3.5],
+      riffs: [[0, 0, 1, 7, 0, 6, 5, 1], [0, 3, 1, 0, 6, 7, 6, 0],
+        [12, 13, 12, 6, 7, 10, 13, 12], [7, 6, 3, 1, 0, 1, 6, 7]] },
+    { id: "boss_impossible", difficulty: "impossible", title: "Crown of Ruin", bpm: 188,
+      drive: 5, chugs: 16, hats: 16, palmMute: .20,
+      roots: [38, 34, 43, 45, 38, 41, 34, 45], kicks: [0, .25, .5, 1, 1.5, 2, 2.25, 2.5, 3, 3.5],
+      // The King's opening D-minor hook, played by a tight guitar/bass/drum band.
+      riffs: [scores.pumpkin.melody[0].map(pitch => pitch ? pitch - 62 : null),
+        [12, 11, 12, 15, 19, 18, 15, 12], [12, 15, 19, 24, 19, 15, 12, 11],
+        [19, 18, 15, 12, 11, 12, 15, 19]] },
+  ].map(track => Object.freeze({ ...track, loop: true }));
+  const loopThemes = ["pumpkin", "singularity", "keyrush", "hangman",
+    ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id)];
+  const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
     .map(([id, score]) => Object.freeze({ id, title: score.title, bpm: score.bpm })));
   const grooves = {
     classic: { bass: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5], kicks: [0, 2], hats: 8 },
     drive: { bass: [0, .5, 1, 1.5, 2, 2.5, 3, 3.5], kicks: [0, 1.5, 2, 2.75], hats: 16 },
     skip: { bass: [0, .75, 1.5, 2, 2.75, 3.5], kicks: [0, 1.5, 2.5], hats: 8 },
     hush: { bass: [0, 2, 3.5], kicks: [0, 2.5], hats: 4 },
+    pursuit: { bass: Array.from({ length: 16 }, (_, index) => index / 4),
+      kicks: [0, .5, 1.5, 2, 2.5, 3.5], hats: 16 },
   };
   const waveTables = new Map();
   function pulseWave(narrow, frequency, sampleRate) {
@@ -285,7 +375,7 @@ const ArcadeMusic = (() => {
     return rockTracks[Math.floor(random() * rockTracks.length)];
   }
   function composeRock(track, sampleRate) {
-    const beat = 60 / track.bpm, duration = 32 * 4 * beat + 1.2;
+    const beat = 60 / track.bpm, duration = 32 * 4 * beat + (track.loop ? 0 : 1.2);
     const samples = new Float32Array(Math.round(duration * sampleRate));
     let seed = 9317 + track.bpm;
     function noise() {
@@ -299,7 +389,7 @@ const ArcadeMusic = (() => {
         const t = i / sampleRate;
         const phase = 2 * Math.PI * (frequency * t + (lead ? .035 * Math.sin(t * 32) : 0));
         const string = Math.sin(phase) + .5 * Math.sin(phase * 2) + .25 * Math.sin(phase * 3);
-        const wave = Math.tanh(string * 2.4) + .15 * Math.sin(phase * 1.003);
+        const wave = Math.tanh(string * (track.drive || 2.4)) + .15 * Math.sin(phase * 1.003);
         const envelope = Math.min(1, t / .003, (length - t) / .035)
           * Math.exp(-t * (lead ? .9 : 2.5));
         samples[offset + i] += wave * envelope * amplitude;
@@ -332,7 +422,7 @@ const ArcadeMusic = (() => {
       const start = bar * 4 * beat, root = track.roots[bar % 8];
       const chorus = (bar >= 12 && bar < 20) || (bar >= 24 && bar < 30);
       const bridge = bar >= 20 && bar < 24;
-      if (bar === 31) {
+      if (bar === 31 && !track.loop) {
         // A resolved, sustained ending rather than cutting off a looping riff.
         for (const interval of [0, 7, 12]) guitar(track.roots[0] + interval, start, 4 * beat + 1, .085);
         guitar(track.roots[0] + 36, start, 4 * beat, .13, true);
@@ -340,15 +430,18 @@ const ArcadeMusic = (() => {
         drum(start, "kick"); drum(start, "crash");
         continue;
       }
-      for (let n = 0; n < 8; n++) {
-        const when = start + n * beat / 2;
+      const chugs = track.chugs || 8;
+      for (let n = 0; n < chugs; n++) {
+        const when = start + n * 4 * beat / chugs;
         if (!bridge || n % 2 === 0)
           for (const [string, interval] of [0, 7, 12].entries())
-            guitar(root + interval, when + string * .006, beat * (chorus ? .7 : .36), chorus ? .075 : .06);
-        bass(root - 12 + (n % 4 === 3 ? 7 : 0), when, beat * .43);
-        drum(when, "hat", n % 2 ? .65 : 1);
+            guitar(root + interval, when + string * .006,
+              beat * (track.palmMute || (chorus ? .7 : .36)), chorus ? .075 : .06);
+        bass(root - 12 + (n % 4 === 3 ? 7 : 0), when, beat * (chugs === 16 ? .21 : .43));
       }
-      if (bar >= 4) {
+      for (let n = 0; n < (track.hats || 8); n++)
+        drum(start + n * 4 * beat / (track.hats || 8), "hat", n % 2 ? .65 : 1);
+      if (bar >= (track.loop ? 0 : 4)) {
         const riff = track.riffs[(chorus ? 2 : 0) + bar % 2];
         riff.forEach((note, n) => {
           if (note !== null) guitar(root + 24 + note, start + n * beat / 2, beat * (bridge ? .8 : .43), .15, true);
@@ -360,10 +453,26 @@ const ArcadeMusic = (() => {
         for (const n of [3.25, 3.5, 3.75]) drum(start + n * beat, "snare", .65);
       if ([0, 4, 12, 20, 24, 30].includes(bar)) drum(start, "crash");
     }
+    let previousInput = 0, previousOutput = 0, peak = 0;
+    const dcPole = Math.exp(-2 * Math.PI * 12 / sampleRate);
     for (let i = 0; i < samples.length; i++) {
-      const fade = Math.min(1, i / (sampleRate * .005), (samples.length - 1 - i) / (sampleRate * .25));
-      samples[i] = .8 * Math.tanh(samples[i] / .8) * fade;
+      const fade = Math.min(1, i / (sampleRate * .005),
+        (samples.length - 1 - i) / (sampleRate * (track.loop ? .008 : .25)));
+      let value = .8 * Math.tanh(samples[i] / .8);
+      if (track.loop) {
+        // Dense palm-muted riffs need DC removal without thinning the audible bass.
+        const filtered = value - previousInput + dcPole * previousOutput;
+        previousInput = value;
+        previousOutput = filtered;
+        value = filtered;
+      }
+      samples[i] = value * fade;
+      peak = Math.max(peak, Math.abs(samples[i]));
     }
+    if (track.loop && peak > .8)
+      for (let i = 0; i < samples.length; i++) samples[i] *= .8 / peak;
+    samples[0] = 0;
+    samples[samples.length - 1] = 0;
     return samples;
   }
   function composeCinematicCore(sampleRate) {
@@ -491,7 +600,7 @@ const ArcadeMusic = (() => {
   }
   function compose(track, sampleRate = 22050) {
     if (track === "singularity") return composeCinematicCore(sampleRate);
-    const rock = rockTracks.find(song => song.id === track);
+    const rock = rockTracks.find(song => song.id === track) || bossTracks.find(song => song.id === track);
     if (rock) return composeRock(rock, sampleRate);
     const score = scores[track];
     if (!score) throw new Error(`Unknown music theme: ${track}`);
@@ -544,7 +653,7 @@ const ArcadeMusic = (() => {
       const swing = n => n + (n % 2 ? score.swing || 0 : 0);
       score.melody[bar].forEach((pitch, n) => tone(pitch, start + swing(n) * beat / 2, beat * .42 * (score.gate || 1), .21, "lead"));
       groove.bass.forEach((position, n) => tone(root + (n % 4 === 3 ? 12 : n % 2 ? 7 : 0),
-        start + position * beat, beat * (score.groove === "hush" ? .85 : .4), .24, "bass"));
+        start + position * beat, beat * (score.bassGate || (score.groove === "hush" ? .85 : .4)), .24, "bass"));
       for (let n = 0; n < groove.hats; n++)
         drum(start + (n + (n % 2 ? score.swing || 0 : 0)) * 4 * beat / groove.hats, "hat", score.groove === "hush" ? .55 : 1);
       for (let n = 0; n < 16; n++)
@@ -668,7 +777,7 @@ const ArcadeMusic = (() => {
       this.setState(state);
     }
     setState({ theme, playing }) {
-      if (!["arcade", "pumpkin", "singularity"].includes(theme)) throw new Error(`Unknown music theme: ${theme}`);
+      if (theme !== "arcade" && !loopThemes.includes(theme)) throw new Error(`Unknown music theme: ${theme}`);
       this.state = { theme, playing };
       theme = this.oneShot || theme;
       this.playing = playing;
@@ -699,11 +808,11 @@ const ArcadeMusic = (() => {
       this.start();
     }
     start() {
-      if (!this.track) this.track = this.oneShot || (["pumpkin", "singularity"].includes(this.theme) ? this.theme : this.nextTrack());
+      if (!this.track) this.track = this.oneShot || (loopThemes.includes(this.theme) ? this.theme : this.nextTrack());
       const source = this.context.createBufferSource();
       const gain = this.context.createGain();
       source.buffer = this.buffer(this.track);
-      source.loop = ["pumpkin", "singularity"].includes(this.theme);
+      source.loop = loopThemes.includes(this.theme);
       gain.gain.setValueAtTime(0, this.context.currentTime);
       gain.gain.linearRampToValueAtTime(.22, this.context.currentTime + .18);
       source.connect(gain);
@@ -728,6 +837,6 @@ const ArcadeMusic = (() => {
       source.start(this.context.currentTime, this.offset);
     }
   }
-  return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, rockTracks, pickRockTrack };
+  return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack };
 })();
 if (typeof module !== "undefined") module.exports = ArcadeMusic;

@@ -327,8 +327,7 @@ class BossCrush:
                 if (abs(shot.x - self.boss_x) <= (BOSS_WIDTH + SHOT_WIDTH) / 2
                         and abs(shot.y - self.boss_y) <= (BOSS_HEIGHT + SHOT_HEIGHT) / 2):
                     self.hp = max(0, self.hp - 5)
-                    if self.difficulty == "impossible":
-                        self.hit_flash = BOSS_HIT_FLASH
+                    self.hit_flash = BOSS_HIT_FLASH
                 elif shot.y - SHOT_HEIGHT / 2 <= self.top:
                     shots.append(shot)
             self.shots = shots

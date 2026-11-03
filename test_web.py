@@ -87,7 +87,7 @@ class BrowserAdapterTests(unittest.TestCase):
         shell_features = [c for c in shell["commands"] if c["kind"] == "polygon"][:4]
         original = self.start("boss", "impossible")
         features = [c for c in original["commands"] if c["kind"] == "polygon"][:4]
-        self.assertEqual([c["coords"] for c in features], [list(c["coords"]) for c in shell_features])
+        self.assertEqual([list(c["coords"]) for c in features], [list(c["coords"]) for c in shell_features])
         self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
         game = self.session.game
         game.shots = [Projectile(game.boss_x, game.boss_y, 0, 520)]
@@ -95,11 +95,39 @@ class BrowserAdapterTests(unittest.TestCase):
         features = [c for c in struck["commands"] if c["kind"] == "polygon"][:4]
         self.assertLess(struck["hp"], original["hp"])
         self.assertEqual([c["fill"] for c in features], ["#fff351"] * 2 + ["#000000"] * 2)
-        self.assertEqual(struck["commands"][0]["fill"], "#ffffff")
+        self.assertTrue(any(c["fill"] == "#ffffff" and c["kind"] in ("rectangle", "oval")
+                            for c in struck["commands"]))
+        self.assertNotEqual([c["coords"] for c in features[:2]],
+                            [c["coords"] for c in original["commands"] if c["kind"] == "polygon"][:2])
         for _ in range(20):
             recovered = self.session.dispatch({"action": "tick", "dt": .05})
         features = [c for c in recovered["commands"] if c["kind"] == "polygon"][:4]
         self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
+
+    def test_color_memory_eyes_stay_open_in_gaps_and_when_shot(self):
+        from pumpkin_king import Stage
+        for mode, difficulty in (("pumpkin", "baby"), ("wrath", "color_memory")):
+            self.start(mode, difficulty)
+            game = self.session.game
+            game.begin_attack(0)
+            game.sequence = ["blue", "orange"] * 3
+            open_eyes = None
+            for name, side, age, color in (("memory", "", .25, "#42c9ff"),
+                                           ("memory", "", .9, "#38201c"),
+                                           ("recall_ready", "", .1, "#38201c"),
+                                           ("color", "orange", .25, "#ff9d32"),
+                                           ("color_gap", "", .25, "#38201c")):
+                for hit in (0, .12):
+                    with self.subTest(mode=mode, stage=name, hit=hit):
+                        game.stage, game.stage_age = Stage(name, 6, side), age
+                        game.elapsed, game.hit_flash = 4.65, hit  # Idle blink window.
+                        commands = self.session.snapshot()["commands"]
+                        eyes = [c["coords"] for c in commands
+                                if c["kind"] == "polygon" and c["fill"] == color][:2]
+                        self.assertEqual(len(eyes), 2)
+                        if open_eyes is None:
+                            open_eyes = eyes
+                        self.assertEqual(eyes, open_eyes)
 
     def test_every_arcade_difficulty_matches_desktop_model_replay(self):
         cases = [("dodge", key, DodgeGame(difficulty=key, rng=random.Random(12))) for key in DIFFICULTIES]

@@ -8,7 +8,8 @@ import sys
 import time
 import textwrap
 
-from dodge_model import BLOCK_SIZE, CELL, DIFFICULTIES, DodgeGame, PLAYER_POLYGON
+from dodge_model import (BLOCK_SIZE, BLOCK_OUTLINE_WIDTH, CELL, DIFFICULTIES, DodgeGame,
+                         PLAYER_POLYGON, block_outline_color)
 from boss_crush import (BOSS_DIFFICULTIES, BOSS_WIDTH, BOSS_HEIGHT,
                         HEAL_SIZE, SHOT_WIDTH, SHOT_HEIGHT, BossCrush)
 from scores import SCORE_FILE, ScoreError, load_scores, save_score
@@ -123,9 +124,9 @@ class TurtleDodge:
         self.screen.tracer(0)
         self.game = create_game(difficulty)
         self.king_view = None
-        if difficulty in PUMPKIN_DIFFICULTIES:
+        if isinstance(self.game, BossCrush):
             from pumpkin_king_view import KingView
-            self.king_view = KingView(canvas)
+            self.king_view = KingView(canvas, audio=isinstance(self.game, PumpkinKing))
         self.state = "ready"
         self.keys = set()
         self.saved = False
@@ -146,7 +147,7 @@ class TurtleDodge:
         self.player.showturtle()
         self.blocks = self.pen()
         self.blocks.shape("square")
-        self.blocks.shapesize(BLOCK_SIZE / 20, outline=0)
+        self.blocks.shapesize(BLOCK_SIZE / 20, outline=BLOCK_OUTLINE_WIDTH)
         self.boss = self.pen()
         self.boss.shape("square")
         register_pumpkin_shape(turtle, self.screen)
@@ -264,23 +265,7 @@ class TurtleDodge:
                 self.lunge_warning.goto(x + offset, min(game.top - 48, y + 16))
                 self.lunge_warning.write("!", align="center", font=("Arial", 32, "bold"))
         self.boss.clearstamps()
-        if not game.won:
-            if game.difficulty == "impossible":
-                self.boss.shape("white_jack_o_lantern_hit" if game.hit_flash > 0 else "white_jack_o_lantern")
-                self.boss.setheading(90)
-                self.boss.shapesize(1, 1, outline=0)
-                self.boss.goto(game.boss_x, game.boss_y)
-                self.boss.stamp()
-            else:
-                self.boss.shapesize(BOSS_HEIGHT / 20, BOSS_WIDTH / 20, outline=0)
-                self.boss.color(game.config.color)
-                self.boss.goto(game.boss_x, game.boss_y)
-                self.boss.stamp()
-                self.boss.shapesize(0.3, 0.4, outline=0)
-                self.boss.color("#111827")
-                for offset in (-16, 16):
-                    self.boss.goto(game.boss_x + offset, game.boss_y - 3)
-                    self.boss.stamp()
+        self.king_view.draw_boss(game)
         self.boss.shape("square")
         self.boss.setheading(0)
         self.boss.color("#374151")
@@ -353,7 +338,7 @@ class TurtleDodge:
             self.draw_boss()
         else:
             for block in self.game.blocks:
-                self.blocks.color(block.color)
+                self.blocks.color(block_outline_color(block.color), block.color)
                 for x, y in block.centers():
                     if self.game.bottom - CELL / 2 <= y <= self.game.top + CELL / 2:
                         self.blocks.goto(x, y)

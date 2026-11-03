@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => testRuntime.runPython('from bridge import session'));
   await page.evaluate(() => {
     document.querySelector('#achievement-celebrations').style.display = 'none';
-    document.querySelector('#achievement-toast').hidden = true;
+    document.querySelector('#achievement-toast').style.display = 'none';
   });
 });
 
@@ -245,6 +245,51 @@ test('galactic Core packs spawn after three attacks, heal on teleport, and prese
   await expect(page.locator('#overlay-title')).toHaveText('Singularity erased.');
   expect(await page.evaluate(() => saved.achievements.unlocked.core_win)).toBeTruthy();
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBeUndefined();
+});
+
+test('Echo Protocol safely demonstrates all four positions on the box before its live replay', async ({ page }, testInfo) => {
+  for (const mode of ['singularity', 'core_practice']) {
+    if (mode === 'singularity') await unlock(page);
+    else {
+      await choosePractice(page);
+      await page.locator('[data-difficulty="echo_protocol"]').click();
+    }
+    await page.evaluate(mode => {
+      active = false;
+      testRuntime.runPython('from singularity_core import ECHO_INTERVAL, ECHO_PREVIEW_DURATION, NODES');
+      testRuntime.runPython(mode === 'singularity' ? 'session.game.begin_attack(12)' : 'session.game.update(3, set())');
+    }, mode);
+    for (let step = 0; step < 4; step++) {
+      const preview = await page.evaluate(step => {
+        testRuntime.runPython(`session.game.update(${step} * ECHO_INTERVAL + .4 - session.game.stage_age, set())`);
+        snapshot = send('tick', { dt: 0 });
+        render();
+        return { hp: snapshot.lives, damage: snapshot.damage_taken,
+          step: testRuntime.runPython('session.game.echo_step'),
+          preview: testRuntime.runPython('session.game.echo_preview'),
+          holograms: snapshot.commands.filter(c => c.fill === '#65f5ff30').length,
+          safePositions: snapshot.commands.filter(c => c.outline === '#8affba').length };
+      }, step);
+      expect(preview).toEqual({ hp: 10, damage: 0, step, preview: true, holograms: 8, safePositions: 1 });
+      await expect(page.locator('#game-instruction')).toContainText('SAFE PREVIEW');
+      await expect(page.locator('#game-instruction')).not.toContainText('REMEMBER:');
+      if (step === 1)
+        await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-echo-safe-preview.png`) });
+    }
+    const live = await page.evaluate(() => {
+      testRuntime.runPython("target = NODES[(session.game.memory[0] + 1) % 9]\nheld = ({'Left'} if target[0] < 0 else {'Right'} if target[0] > 0 else set())\nif target[1] != -70:\n    held.add('Down' if target[1] < -70 else 'Up')\nsession.game.update(ECHO_PREVIEW_DURATION - session.game.stage_age, held)\nsession.game.update(.34, held)");
+      snapshot = send('tick', { dt: 0 });
+      render();
+      return { hp: snapshot.lives, damage: snapshot.damage_taken,
+        preview: testRuntime.runPython('session.game.echo_preview'),
+        safePositions: snapshot.commands.filter(c => c.outline === '#8affba').length,
+        liveHazards: snapshot.commands.filter(c => c.kind === 'oval' && c.fill === '#ff527e').length };
+    });
+    expect(live).toEqual({ hp: 9, damage: 1, preview: false, safePositions: 0, liveHazards: 8 });
+    await expect(page.locator('#game-instruction')).toContainText('YOUR TURN');
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-echo-live-replay.png`) });
+    await page.keyboard.press('Escape');
+  }
 });
 
 test('all 15 Core attacks render and only the final laser wins', async ({ page }, testInfo) => {

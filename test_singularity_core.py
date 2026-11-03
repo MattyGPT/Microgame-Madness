@@ -4,13 +4,119 @@ import math
 import random
 import unittest
 
-from singularity_core import (ATTACKS, BOX_CENTER, HEAL_LASTS, INTRO_DURATION, LASER_DURATION,
+from singularity_core import (ATTACKS, BOX_CENTER, ECHO_INTERVAL, ECHO_PREVIEW_DURATION,
+                              ECHO_STEPS, HEAL_LASTS, INTRO_DURATION, LASER_DURATION,
                               NODES, TELEPORT_DISTANCE, Hazard, SingularityCore)
-from singularity_core_view import draw_core
+from singularity_core_view import SAFE, draw_core
 from web.bridge import BrowserGame
 
 
 class SingularityCoreTests(unittest.TestCase):
+    @staticmethod
+    def node_keys(node):
+        x, y = NODES[node]
+        keys = {"Left"} if x < 0 else {"Right"} if x > 0 else set()
+        if y != BOX_CENTER[1]:
+            keys.add("Down" if y < BOX_CENTER[1] else "Up")
+        return keys
+
+    def test_photon_rain_fires_ten_percent_fewer_bullets_at_the_same_speed(self):
+        game = SingularityCore()
+        game.begin_attack(7)
+        game.invulnerable = 1000
+        game.update(7.5, set())
+        # The old .19-second rhythm fired 40 three-photon volleys in this span.
+        self.assertEqual(game.beat * 3, 108)
+        self.assertAlmostEqual(1 / ATTACKS[7].interval, .9 / .19)
+        self.assertTrue(game.hazards)
+        self.assertTrue(all(h.size == 7 and h.vy == -280 for h in game.hazards))
+
+    def test_polarity_inversion_has_another_ten_percent_faster_pulses_and_warnings(self):
+        game = SingularityCore()
+        game.begin_attack(10)
+        game.update(.28, {"Left"})
+        self.assertEqual(game.lives, 10)
+        self.assertAlmostEqual(game.hazards[0].warning * 1.21, .35)
+        self.assertAlmostEqual(game.hazards[0].duration * 1.21, .31)
+        game.update(.02, {"Left"})
+        self.assertEqual(game.lives, 9)
+        game.update(.34, set())
+        self.assertEqual(game.beat, 2)  # Second pulse now precedes the previous .691s rhythm.
+        self.assertAlmostEqual(1 / ATTACKS[10].interval, 1.1 / (.76 / 1.1))
+        self.assertEqual(ATTACKS[10].duration, 7)
+
+    def test_echo_preview_cannot_damage_any_of_the_nine_teleport_positions(self):
+        for node in range(9):
+            with self.subTest(node=node):
+                game = SingularityCore(random.Random(42))
+                game.begin_attack(12)
+                self.assertTrue(game.echo_preview)
+                game.update(.5, self.node_keys(node))
+                self.assertTrue(any(h.active for h in game.hazards))
+                self.assertTrue(all(h.harmless for h in game.hazards))
+                game.update(ECHO_PREVIEW_DURATION - .5, self.node_keys(node))
+                self.assertFalse(game.echo_preview)
+                self.assertEqual((game.lives, game.damage_taken), (10, 0))
+
+    def test_echo_replays_exactly_four_demonstrated_positions_at_the_same_pace(self):
+        game = SingularityCore(random.Random(42))
+        game.begin_attack(12)
+        game.invulnerable = 1000
+        self.assertEqual(len(game.memory), 4)
+        self.assertEqual(len(set(game.memory)), 4)
+        self.assertAlmostEqual(ECHO_PREVIEW_DURATION, 3.44)
+        self.assertAlmostEqual(ATTACKS[12].duration, 6.88)
+        preview_patterns = []
+        for phase in range(2):
+            for step in range(ECHO_STEPS):
+                target = phase * ECHO_PREVIEW_DURATION + step * ECHO_INTERVAL + .5
+                game.update(target - game.stage_age, set())
+                self.assertEqual(game.echo_step, step)
+                self.assertEqual(game.echo_preview, phase == 0)
+                self.assertEqual(len(game.hazards), 8)
+                self.assertTrue(all(h.active and h.harmless == (phase == 0) for h in game.hazards))
+                positions = {(h.x, h.y) for h in game.hazards}
+                self.assertEqual(positions, set(NODES) - {NODES[game.memory[step]]})
+                if phase == 0:
+                    preview_patterns.append(positions)
+                else:
+                    self.assertEqual(positions, preview_patterns[step])
+
+    def test_echo_live_replay_hurts_wrong_nodes_and_matching_the_demo_is_safe(self):
+        wrong = SingularityCore(random.Random(42))
+        wrong.begin_attack(12)
+        wrong_keys = self.node_keys((wrong.memory[0] + 1) % 9)
+        wrong.update(ECHO_PREVIEW_DURATION, wrong_keys)
+        self.assertEqual(wrong.lives, 10)
+        wrong.update(.34, wrong_keys)
+        self.assertEqual((wrong.lives, wrong.damage_taken), (9, 1))
+        self.assertTrue(all(not h.harmless for h in wrong.hazards))
+        correct = SingularityCore(random.Random(42))
+        correct.begin_attack(12)
+        correct.update(ECHO_PREVIEW_DURATION, set())
+        for node in correct.memory:
+            correct.update(ECHO_INTERVAL, self.node_keys(node))
+        self.assertEqual((correct.lives, correct.damage_taken, correct.attacks_completed), (10, 0, 1))
+
+    def test_echo_renders_an_animated_safe_box_preview_instead_of_text_directions(self):
+        game = SingularityCore(random.Random(42))
+        game.begin_attack(12)
+        for step in range(ECHO_STEPS):
+            game.update(step * ECHO_INTERVAL + .4 - game.stage_age, set())
+            commands = draw_core(game)
+            safe = [command for command in commands if command.get("outline") == SAFE]
+            x, y = NODES[game.memory[step]]
+            self.assertEqual([command["coords"] for command in safe], [[x-29, -y-29, x+29, -y+29]])
+            self.assertEqual(sum(c.get("fill") == "#65f5ff30" for c in commands), 8)
+            text = [command.get("text", "") for command in commands]
+            self.assertIn("SAFE PREVIEW", text)
+            self.assertNotIn("MEMORIZE", text)
+            self.assertNotIn("REMEMBER:", game.pattern_label)
+        game.update(ECHO_PREVIEW_DURATION + .4 - game.stage_age, set())
+        commands = draw_core(game)
+        self.assertFalse(any(command.get("outline") == SAFE for command in commands))
+        self.assertIn("YOUR TURN", [command.get("text") for command in commands])
+
     def test_spawns_centered_and_teleports_without_travel_or_release_delay(self):
         game = SingularityCore()
         self.assertEqual((game.x, game.y), BOX_CENTER)

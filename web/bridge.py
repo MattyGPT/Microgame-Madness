@@ -5,14 +5,14 @@ import random
 
 from hangman_model import DIFFICULTY, HangmanGame, hangman_picture
 from keyboard_model import KeyboardRound, make_round
-from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_SIZE
-from boss_crush import BossCrush, BOSS_WIDTH, BOSS_HEIGHT
+from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_SIZE, BLOCK_OUTLINE_WIDTH, block_outline_color
+from boss_crush import BossCrush
 from pumpkin_king import PumpkinKing
 from kings_wrath import KingsWrath
 from singularity_core import ATTACKS, SingularityCore
 from singularity_practice import PRACTICE_ATTACKS, SingularityPractice
 from singularity_core_view import draw_core
-from pumpkin_king_view import KingView, PUMPKIN_FACE_FEATURES
+from pumpkin_king_view import KingView
 
 
 class DrawCanvas:
@@ -159,8 +159,11 @@ class BrowserGame:
                           lives=getattr(game, "lives", None), max_lives=getattr(game, "max_lives", None),
                           hp=getattr(game, "hp", None), max_hp=game.config.hp if isinstance(game, BossCrush) else None)
             commands = []
-            def rect(x, y, width, height, color):
-                commands.append({"kind": "rectangle", "coords": [x-width/2, -y-height/2, x+width/2, -y+height/2], "fill": color})
+            def rect(x, y, width, height, color, outline="", outline_width=1):
+                command = {"kind": "rectangle", "coords": [x-width/2, -y-height/2, x+width/2, -y+height/2], "fill": color}
+                if outline:
+                    command.update(outline=outline, width=outline_width)
+                commands.append(command)
             if isinstance(game, SingularityCore):
                 result.update(sounds=game.sound_events[:], hp=game.hp, max_hp=1,
                               attacks_completed=game.attacks_completed, attack_total=15,
@@ -173,18 +176,8 @@ class BrowserGame:
                 self.view.draw(game)
                 commands = self.canvas.commands()
             elif isinstance(game, BossCrush):
-                if game.difficulty == "impossible":
-                    rect(game.boss_x, game.boss_y, BOSS_WIDTH, BOSS_HEIGHT, game.config.color)
-                    for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
-                        commands.append({"kind": "polygon", "coords": [v for x, y in polygon
-                                         for v in (game.boss_x+x, -game.boss_y-y)],
-                                         "fill": "#fff351" if index < 2 and game.hit_flash > 0 else "#000000"})
-                else:
-                    color = "#fff351" if game.hit_flash else game.config.color
-                    rect(game.boss_x, game.boss_y, BOSS_WIDTH, BOSS_HEIGHT, color)
-                    for offset in (-18, 18):
-                        rect(game.boss_x+offset, game.boss_y+5, 10, 10, "#111827")
-                    rect(game.boss_x, game.boss_y-10, 28, 4, "#111827")
+                self.view.draw_boss(game)
+                commands = self.canvas.commands()
                 if game.lunge_state == "warning" and game.lunge_target:
                     x, y = game.lunge_target
                     commands.append({"kind": "oval", "coords": [x-32, -y-32, x+32, -y+32], "fill": "", "outline": "#ff4565", "width": 3})
@@ -202,8 +195,9 @@ class BrowserGame:
                     rect(pickup.x, pickup.y, 12, 4, "#ffffff")
             else:
                 for block in game.blocks:
+                    outline = block_outline_color(block.color)
                     for x, y in block.centers():
-                        rect(x, y, BLOCK_SIZE, BLOCK_SIZE, block.color)
+                        rect(x, y, BLOCK_SIZE, BLOCK_SIZE, block.color, outline, BLOCK_OUTLINE_WIDTH)
             commands.append({"kind": "polygon", "coords": [v for x, y in PLAYER_POLYGON for v in (game.x+x, -game.y-y)],
                              "fill": "#ffffff" if getattr(game, "invulnerable", 0) else "#a3ff80"})
             result["commands"] = commands

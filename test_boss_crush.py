@@ -36,12 +36,17 @@ class BossTests(unittest.TestCase):
         self.assertEqual(game.hp, game.config.hp)
 
     def test_shot_hits_once_and_reduces_hp(self):
-        game = self.game()
-        game.shots = [Projectile(0, game.boss_y - 25, 0, 520)]
-        game.update(0.05, set())
-        self.assertEqual(game.hp, game.config.hp - 5)
-        self.assertEqual(game.shots, [])
-        self.assertEqual(game.score, 50)
+        for difficulty in BOSS_DIFFICULTIES:
+            with self.subTest(difficulty=difficulty):
+                game = self.game(difficulty)
+                game.shots = [Projectile(0, game.boss_y - 25, 0, 520)]
+                game.update(0.05, set())
+                self.assertEqual(game.hp, game.config.hp - 5)
+                self.assertEqual(game.shots, [])
+                self.assertEqual(game.score, 50)
+                self.assertGreater(game.hit_flash, 0)
+                game.update(.15, set())
+                self.assertEqual(game.hit_flash, 0)
 
     def test_winning_stops_combat_and_awards_bonus(self):
         game = self.game()

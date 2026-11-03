@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
-const { compose, composeGaster, gasterDuration, tracks, arcadeTracks, rockTracks, pickRockTrack, Player } = require('../music.js');
+const { compose, composeGaster, gasterDuration, tracks, arcadeTracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, Player } = require('../music.js');
 
 test('the arcade playlist adds five distinct chiptunes with bounded levels and quiet endings', () => {
   assert.equal(arcadeTracks.length, 15);
@@ -178,6 +178,139 @@ test('mute, pause and replacement preserve a single rock song and restore the cu
   assert.equal(player.oneShot, null);
   assert.equal(player.theme, 'pumpkin');
   assert.equal(player.voices.size, 1);
+});
+
+test('Key Rush has an original 48-second theme with safe audio levels outside the arcade shuffle', () => {
+  assert.ok(tracks.every(track => track.id !== 'keyrush'));
+  const samples = compose('keyrush');
+  assert.equal(samples.length, 48 * 22050);
+  let peak = 0, energy = 0, mean = 0;
+  for (const value of samples) {
+    assert.ok(Number.isFinite(value));
+    peak = Math.max(peak, Math.abs(value));
+    energy += value * value;
+    mean += value;
+  }
+  assert.ok(peak > .2 && peak < .9);
+  assert.ok(Math.sqrt(energy / samples.length) > .08);
+  assert.ok(Math.abs(mean / samples.length) < .005);
+  assert.equal(samples[0], 0);
+  assert.equal(samples.at(-1), 0);
+  assert.notEqual(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'),
+    createHash('sha256').update(Buffer.from(compose('arcade').buffer)).digest('hex'));
+});
+
+test('Hangman has an original 64-second theme with safe audio levels outside the arcade shuffle', () => {
+  assert.ok(tracks.every(track => track.id !== 'hangman'));
+  const samples = compose('hangman');
+  assert.equal(samples.length, 64 * 22050);
+  let peak = 0, energy = 0, mean = 0;
+  for (const value of samples) {
+    assert.ok(Number.isFinite(value));
+    peak = Math.max(peak, Math.abs(value));
+    energy += value * value;
+    mean += value;
+  }
+  assert.ok(peak > .2 && peak < .9);
+  assert.ok(Math.sqrt(energy / samples.length) > .08);
+  assert.ok(Math.abs(mean / samples.length) < .005);
+  assert.equal(samples[0], 0);
+  assert.equal(samples.at(-1), 0);
+  const hash = data => createHash('sha256').update(Buffer.from(data.buffer)).digest('hex');
+  assert.notEqual(hash(samples), hash(compose('arcade')));
+  assert.notEqual(hash(samples), hash(compose('keyrush')));
+});
+
+test('Turtle Dodge has four distinct themes with rising tempos and bounded, click-free audio', () => {
+  assert.deepEqual(dodgeTracks.map(track => track.difficulty), ['easy', 'normal', 'hard', 'merciless']);
+  assert.equal(new Set(dodgeTracks.map(track => track.title)).size, 4);
+  const fingerprints = new Set();
+  for (const [index, track] of dodgeTracks.entries()) {
+    assert.ok(!tracks.some(arcade => arcade.id === track.id));
+    if (index) assert.ok(track.bpm > dodgeTracks[index - 1].bpm);
+    const samples = compose(track.id);
+    assert.ok(Math.abs(samples.length / 22050 - 128 * 60 / track.bpm) < 1 / 22050);
+    let peak = 0, energy = 0, mean = 0;
+    for (const value of samples) {
+      assert.ok(Number.isFinite(value));
+      peak = Math.max(peak, Math.abs(value));
+      energy += value * value;
+      mean += value;
+    }
+    assert.ok(peak > .2 && peak < .9);
+    assert.ok(Math.sqrt(energy / samples.length) > .08);
+    assert.ok(Math.abs(mean / samples.length) < .005);
+    assert.equal(samples[0], 0);
+    assert.equal(samples.at(-1), 0);
+    fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
+  }
+  assert.equal(fingerprints.size, 4);
+});
+
+test('Boss Crush rock themes get heavier and Impossible quotes the Pumpkin King opening motif', () => {
+  assert.deepEqual(bossTracks.map(track => track.difficulty), ['mean', 'cruel', 'nightmare', 'impossible']);
+  assert.equal(new Set(bossTracks.map(track => track.title)).size, 4);
+  const fingerprints = new Set();
+  for (const [index, track] of bossTracks.entries()) {
+    assert.ok(!tracks.some(arcade => arcade.id === track.id));
+    assert.ok(!rockTracks.some(secret => secret.id === track.id));
+    if (index) {
+      assert.ok(track.bpm > bossTracks[index - 1].bpm);
+      assert.ok(track.drive > bossTracks[index - 1].drive);
+      assert.ok(track.chugs >= bossTracks[index - 1].chugs);
+    }
+    const samples = compose(track.id);
+    assert.ok(Math.abs(samples.length / 22050 - 128 * 60 / track.bpm) < 1 / 22050);
+    let peak = 0, energy = 0, mean = 0;
+    for (const value of samples) {
+      assert.ok(Number.isFinite(value));
+      peak = Math.max(peak, Math.abs(value));
+      energy += value * value;
+      mean += value;
+    }
+    assert.ok(peak > .3 && peak < .81);
+    assert.ok(Math.sqrt(energy / samples.length) > .08);
+    assert.ok(Math.abs(mean / samples.length) < .01);
+    assert.equal(samples[0], 0);
+    assert.equal(samples.at(-1), 0);
+    fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
+  }
+  assert.equal(fingerprints.size, 4);
+  assert.deepEqual(bossTracks.find(track => track.difficulty === 'impossible').riffs[0]
+    .map(pitch => pitch === null ? 0 : pitch + 62), [74, 77, 81, 77, 74, 73, 74, 0]);
+});
+
+for (const [theme, title] of [['keyrush', 'Key Rush'], ['hangman', 'Hangman'],
+  ...dodgeTracks.map(track => [track.id, `Turtle Dodge ${track.difficulty}`]),
+  ...bossTracks.map(track => [track.id, `Boss Crush ${track.difficulty}`])])
+test(`${title} loops, resumes its position, and returns after a secret song without leaking voices`, () => {
+  const ctx = context(), player = new Player(ctx);
+  player.setState({ theme, playing: true });
+  assert.equal(player.track, theme);
+  assert.equal(player.current.source.loop, true);
+  const first = player.current;
+  const duration = first.source.buffer.duration;
+  for (let frame = 0; frame < 100; frame++) player.setState({ theme, playing: true });
+  assert.equal(player.current, first);
+  ctx.advance(duration + 2.5); // Continue beyond a full loop.
+  player.setState({ theme, playing: false });
+  assert.ok(Math.abs(player.offset - 2.5) < 1e-9);
+  ctx.advance(duration + 3);
+  assert.equal(player.voices.size, 0);
+  player.setState({ theme, playing: true });
+  assert.ok(Math.abs(player.current.offset - 2.5) < 1e-9);
+  assert.equal(player.current.source.buffer, first.source.buffer);
+  player.playOnce(rockTracks[0].id);
+  const rock = player.current;
+  ctx.advance(rock.started + rock.source.buffer.duration + .01);
+  assert.equal(player.theme, theme);
+  assert.equal(player.current.source.loop, true);
+  assert.equal(player.voices.size, 1);
+  player.setState({ theme: 'arcade', playing: true });
+  ctx.advance(ctx.currentTime + .2);
+  assert.equal(player.voices.size, 1);
+  assert.equal(player.current.source.loop, false);
+  assert.notEqual(player.track, theme);
 });
 
 test('Singularity has a separate looping theme with pause and return to the arcade', () => {

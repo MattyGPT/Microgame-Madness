@@ -8,10 +8,10 @@ const coreWin = extra => core({ over: true, won: true, attacks_completed: 15, hp
 const wrath = (difficulty, extra) => ({ mode: 'wrath', difficulty, over: false, won: false,
   attacks_completed: 0, counter_hits: 0, damage_taken: 0, lives: 15, max_lives: 15, ...extra });
 
-test('forty-two new achievements include the named Rainbow wins and three Empyrorite rewards', () => {
-  assert.equal(catalog.length, 116);
-  assert.equal(new Set(catalog.map(item => item.id)).size, 116);
-  assert.equal(catalog.slice(74).length, 42);
+test('catalog includes Determination, the named Rainbow wins, and three Empyrorite rewards', () => {
+  assert.equal(catalog.length, 117);
+  assert.equal(new Set(catalog.map(item => item.id)).size, 117);
+  assert.equal(catalog.slice(74).length, 43);
   const victory = catalog.find(item => item.id === 'core_win');
   assert.equal(victory.title, 'My Fingers Hurt');
   assert.equal(victory.tier, 'rainbow');

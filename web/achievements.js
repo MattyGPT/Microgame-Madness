@@ -142,6 +142,7 @@ const Achievements = (() => {
   add("wrath_counter_25", "The King's Rebuttal", "crystal", "The King's Wrath", "Successfully counter 25 magenta fingers in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 25);
   add("dodge_merciless_300", "Beyond the Last Mercy", "empyrorite", "Turtle Dodge", "Survive 300 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 300);
   add("boss_clean_streak_20", "Sovereign of the Arena", "empyrorite", "Boss Crush", "Win 20 consecutive Boss Crush fights on Cruel or harder without damage. Mean fights are ignored. Damage, losses, and abandoned qualifying fights reset the streak.", "bossSovereignStreak", 20);
+  add("determination", "Determination", "crystal", "Arcade", "Lose 50 minigame rounds in total.", "totalLosses", 50);
   const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
@@ -251,6 +252,8 @@ const Achievements = (() => {
         }
         if (!s.over) return;
         round.finished = true;
+        if (s.over === true && s.won === false && (games.includes(s.mode) || core || wrath))
+          stats.totalLosses++;
         if (s.mode === "boss") {
           stats.bossRunActive = 0;
           stats.bossCleanStreak = s.won && s.damage_taken === 0 ? stats.bossCleanStreak + 1 : 0;

@@ -6,6 +6,7 @@ import random
 
 CELL = 28
 BLOCK_SIZE = CELL * 0.94
+BLOCK_OUTLINE_WIDTH = 2
 NEAR_MISS_MARGIN = 6
 LEFT, RIGHT, BOTTOM, TOP = -300, 300, -240, 240
 # The same north-facing outline is used for drawing and collision detection.
@@ -29,6 +30,16 @@ SHAPES = (
     ((0, 0), (1, 0), (2, 0), (2, 1)),  # L
 )
 COLORS = ("#48d9ef", "#ffd166", "#bb86fc", "#69db7c", "#ff6b8a", "#659bff", "#ffa552")
+
+
+def block_outline_color(color):
+    """Keep each tile's border in the same hue, at half its brightness."""
+    color = {"red": "#ff0000", "yellow": "#ffff00", "blue": "#0000ff",
+             "green": "#008000", "orange": "#ffa500", "cyan": "#00ffff",
+             "purple": "#800080", "white": "#ffffff"}.get(color, color)
+    if not color.startswith("#") or len(color) != 7:
+        return "#243047"
+    return "#" + "".join(f"{int(color[index:index+2], 16) // 2:02x}" for index in (1, 3, 5))
 
 
 @dataclass(frozen=True)
