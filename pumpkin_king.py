@@ -446,7 +446,10 @@ class PumpkinKing(BossCrush):
                 danger = isinstance(bullet, Finger) or bullet.dangerous(moving)
                 if danger and any(hits_player(self.x, self.y, *rect) for rect in bullet.rectangles()):
                     self.hurt()
-                    continue
+                    if bullet.bone:
+                        bullet.spent = True
+                    else:
+                        continue
                 if self.left-bullet.width/2 <= bullet.x <= self.right+bullet.width/2 and self.bottom-bullet.height/2 <= bullet.y <= self.top+bullet.height/2:
                     bullets.append(bullet)
             self.bullets = bullets

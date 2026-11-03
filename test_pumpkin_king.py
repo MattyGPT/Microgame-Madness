@@ -346,6 +346,24 @@ class KingTests(unittest.TestCase):
             game.update(0.25, keys)
             self.assertEqual(game.lives, expected)
 
+    def test_hit_bone_stays_visible_but_cannot_damage_again(self):
+        game = self.game("bones")
+        game.spawn_in = 100
+        bone = Projectile(game.x, game.y, 0, 0, width=22, height=26, bone=True)
+        game.bullets = [bone]
+        before = game.lives
+        game.update(.01, set())
+        self.assertIn(bone, game.bullets)
+        self.assertTrue(bone.spent)
+        self.assertEqual(game.lives, before-1)
+        game.invulnerable = 0
+        game.update(.01, set())
+        self.assertEqual(game.lives, before-1)
+        self.assertFalse(bone.dangerous(True))
+        bone.vx = 340
+        game.update(2, set())
+        self.assertNotIn(bone, game.bullets)
+
     def test_bones_have_gaps_and_move_fast(self):
         game = self.game("bones")
         game._spawn()

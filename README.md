@@ -18,6 +18,8 @@ Pumpkin King healing pickups are candies: wrapped bonbons, peppermints, lollipop
 
 After finishing 20 minigame rounds, Cubie appears in a large one-time popup hinting that entering **GRAVITRON** somewhere on the website unlocks a secret, without revealing where. **Okay** dismisses the popup and resumes play. Gameplay and timers freeze while it is open. Wins and losses count once each; exiting early, jukebox selections, and temporary practice do not count. The completion counter and shown flag stay in this browser profile across reloads; previous starts do not count toward completions.
 
+Chaos and Color Memory bullets appear as small ghosts with rounded heads, trailing hems, and circular eyes and mouths, retaining their white, blue, or orange rule colors. This artwork is shared with The King’s Wrath; bullet movement and collision rules are unchanged.
+
 ## Singularity Core (browser rough draft)
 
 **Temporary attack practice:** after unlocking the Core, choose **Practice attacks (temporary)** in its menu. Pick any of the 15 protocols to repeat it with 10 HP, a frozen three-second countdown before each repeat, and a galactic healing pack every three completed repeats. Hold arrows to teleport, release to return to center, D pauses, and Escape returns to the attack picker. Practice uses the full fight’s shared attack code, so tuning a pattern changes both modes. Attack practice never unlocks the final laser. Choose **Watch final cutscene** in the same picker to replay the annihilation laser finale immediately; D pauses and Escape returns to the picker. Neither practice option awards achievements or saves records. The temporary wrapper lives in `singularity_practice.py` and will be removed when requested.

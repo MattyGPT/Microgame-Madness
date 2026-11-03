@@ -63,6 +63,7 @@ class Projectile:
     rule: str = "normal"
     bone: bool = False
     delay: float = 0.0
+    spent: bool = False
 
     def rectangles(self):
         """Visible pieces of a bone; collision and rendering share these shapes."""
@@ -74,6 +75,8 @@ class Projectile:
                 (self.x, self.y + self.height / 2 - cap / 2, self.width, cap)]
 
     def dangerous(self, moving):
+        if self.spent:
+            return False
         return self.rule == "normal" or (self.rule == "blue" and moving) or (self.rule == "orange" and not moving)
 
 

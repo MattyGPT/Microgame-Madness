@@ -189,6 +189,35 @@ class KingView:
                 for index in range(int(abs(cap_y-edge)/42)):
                     py = edge+direction*(15+index*42)
                     self.ribbon(((x-3, py-5), (x+1, py), (x-1, py+5)), 1.2, "#8f8292")
+                # Spent sections keep their shape beneath a ragged red stain.
+                for bone in run:
+                    if not getattr(bone, "spent", False):
+                        continue
+                    low = max(min(edge, cap_y), bone.y-bone.height/2-1)
+                    high = min(max(edge, cap_y), bone.y+bone.height/2+1)
+                    if high > low:
+                        self.rect(x, (low+high)/2, 16, high-low, "#991b30")
+                        # Stable irregular patches travel with the bone; no
+                        # random redraw flicker or new collision geometry.
+                        for patch in range(5):
+                            px = x-6+patch*3
+                            phase = bone.y*.17+patch*2.399
+                            top = high-(1+math.sin(phase))*2
+                            bottom = low+(1+math.cos(phase))*3
+                            self.poly(((px-2, top-2), (px, top), (px+2, top-3),
+                                       (px+1.5, bottom+4), (px+.5, bottom),
+                                       (px-1, bottom+1), (px-2, bottom+5)),
+                                      "#dc2941" if patch%2 else "#b50e28")
+                            self.oval(px, bottom+1, 2.5, 4, "#be1530")
+                        self.ribbon(((x-4, high-4), (x-3, high-7),
+                                     (x-4, max(low+2, high-11))), 1, "#f46570")
+                    tip_bone = run[-1] if points_up else run[0]
+                    if bone is tip_bone:
+                        for side in (-1, 1):
+                            self.oval(x+side*5, cap_y, 12, 12, "#991b30")
+                            self.oval(x+side*5-1, cap_y+1, 7, 6, "#cf2039")
+                            self.oval(x+side*6, cap_y-3, 3, 5, "#b50e28")
+                            self.oval(x+side*5-2, cap_y+3, 3, 2, "#f46570")
 
     def _attack_atmosphere(self, game):
         """Quiet stage decoration; only the existing hazards represent danger."""
@@ -291,12 +320,17 @@ class KingView:
             self._finger_claw(x, y, h, -1 if bullet.vx > 0 else 1, t,
                               magenta=True, width=w)
         else:
-            # Keep the full rectangular collision silhouette, with an inset
-            # luminous core rather than misleading round-only projectiles.
-            self.rect(x, y, w, h, color)
-            self.rect(x, y, max(1, w-3), max(1, h-3), mix(color, "#32213e", .3))
-            self.poly(((x, y+h*.38), (x+w*.3, y), (x, y-h*.38), (x-w*.3, y)),
-                      mix(color, "#ffffff", .7))
+            # Little ghosts with domed heads, trailing hems, and round faces.
+            # Chaos and Color Memory share these bullets and their rule colors.
+            self.oval(x, y+h*.12, w, h*.76, color)
+            hem = ((-.5, .12), (.5, .12), (.5, -.5),
+                   (.25, -.3), (0, -.5), (-.25, -.3), (-.5, -.5))
+            self.poly([(x+px*w, y+py*h) for px, py in hem], color)
+            eye_size = min(w, h)*.19
+            for side in (-1, 1):
+                self.oval(x+side*w*.21, y+h*.15, eye_size, eye_size, "#182030")
+            mouth_size = min(w, h)*.23
+            self.oval(x, y-h*.14, mouth_size, mouth_size, "#182030")
 
     def _runic_ring(self, ring, t):
         for index, (x, y, w, h, rule) in enumerate(ring.pieces()):
