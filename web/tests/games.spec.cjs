@@ -520,10 +520,10 @@ test("real Hangman wins award the requested medals once and persist across reloa
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
     if (round === 0) await expect(page.locator('#profile-score')).toHaveText('50');
     if (round === 1) await expect(page.locator('#profile-score')).toHaveText('210');
-    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('320');
+    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('360');
     await page.locator('#overlay-action').click();
   }
-  await expect(page.locator('#profile-score')).toHaveText('500');
+  await expect(page.locator('#profile-score')).toHaveText('570');
   await page.locator('#achievements-tab').click();
   await page.locator('#achievement-filter').selectOption('earned');
   for (const id of ['play_hangman', 'hangman_win', 'hangman_hard', 'hangman_5', 'hangman_10'])
@@ -533,14 +533,14 @@ test("real Hangman wins award the requested medals once and persist across reloa
   await page.screenshot({ path: testInfo.outputPath('achievement-collection.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('500');
+  await expect(page.locator('#profile-score')).toHaveText('570');
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="hangman_25"]')).toContainText('10 / 25');
   await page.locator('#scores-tab').click();
   await page.locator('#player').fill('New nickname');
   await page.locator('[data-difficulty="hard"]').click();
   await page.locator('#exit').click();
-  await expect(page.locator('#profile-score')).toHaveText('500');
+  await expect(page.locator('#profile-score')).toHaveText('570');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.hangmanWins)).toBe(10);
 });
 
@@ -592,14 +592,14 @@ test('real Turtle Dodge evidence unlocks Close One and the crystal survival rewa
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('560'); // Includes Shell Endurance at 90 seconds.
+  await expect(page.locator('#profile-score')).toHaveText('600'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="dodge_close"]')).toContainText('Unlocked');
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText("I'm Still Standing!");
   await expect(page.locator('[data-achievement="dodge_120"]')).toContainText('crystal · +270 points');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('560');
+  await expect(page.locator('#profile-score')).toHaveText('600');
 });
 
 test('King of Suffering rejects a healed win and awards 810 for a true no-hit win', async ({ page }) => {
@@ -709,7 +709,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator('#profile-score')).toHaveText('3770'); // Includes Shell Endurance at 90 seconds.
+  await expect(page.locator('#profile-score')).toHaveText('3810'); // Includes Shell Endurance at 90 seconds.
   await page.locator('#pause').click();
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="dodge_360"]');
@@ -717,7 +717,7 @@ test('Gerson Boom unlocks at 360 seconds with 2430 points and survives reload', 
   await expect(card).toContainText('rainbow · +2430 points');
   await expect(card).toContainText('Unlocked');
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('3770');
+  await expect(page.locator('#profile-score')).toHaveText('3810');
 });
 
 for (const [difficulty, tier, baseScore, reward] of [['mean', 'silver', 80, 30], ['cruel', 'silver', 110, 30], ['nightmare', 'crystal', 230, 270], ['impossible', 'diamond', 590, 810]])
@@ -1396,29 +1396,29 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="cube_pet_100"]');
   await expect(card).toContainText('Locked · 49 / 100');
-  await expect(page.locator('#profile-score')).toHaveText('120');
+  await expect(page.locator('#profile-score')).toHaveText('130');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('#sound').click();
   for (let i = 49; i < 99; i++) await cube.press('Space');
   await page.locator('#achievements-tab').click();
   await expect(card).toContainText('Locked · 99 / 100');
-  await expect(page.locator('#profile-score')).toHaveText('120');
+  await expect(page.locator('#profile-score')).toHaveText('160');
   await cube.press('Enter');
   await expect(card).toHaveAttribute('data-tier', 'crystal');
   await expect(card).toHaveClass(/earned/);
   await expect(card).toContainText("Cubie's Best Friend");
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('390');
+  await expect(page.locator('#profile-score')).toHaveText('430');
   await expect(page.locator('#achievement-toast')).toContainText("Cubie's Best Friend");
   await expect(page.locator('#achievement-toast')).toContainText('crystal achievement · +270 points');
   for (let i = 0; i < 5; i++) await cube.press('Enter');
-  await expect(page.locator('#profile-score')).toHaveText('390');
+  await expect(page.locator('#profile-score')).toHaveText('430');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
-  await expect(page.locator('#profile-score')).toHaveText('390');
+  await expect(page.locator('#profile-score')).toHaveText('430');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.cubePets)).toBe(105);
   await expect(page.locator('#achievement-toast')).toBeHidden();
 });
@@ -1636,7 +1636,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   const card = page.locator('[data-achievement="boss_clean_streak"]');
   await expect(card).toHaveAttribute('data-tier', 'crystal');
   await expect(card).toContainText('Unlocked');
-  await expect(page.locator('#profile-score')).toHaveText('2370');
+  await expect(page.locator('#profile-score')).toHaveText('2400');
   instantWin = false;
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
@@ -1646,7 +1646,7 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   expect(await page.evaluate(() => achievementTracker.data.stats.bossCleanStreak)).toBe(0);
-  await expect(page.locator('#profile-score')).toHaveText('2370');
+  await expect(page.locator('#profile-score')).toHaveText('2400');
   // Exiting a different unfinished run must persist the reset immediately too.
   await page.evaluate(() => { achievementTracker.data.stats.bossCleanStreak = 4; persist(); });
   await page.locator('[data-game="boss"]').click();
