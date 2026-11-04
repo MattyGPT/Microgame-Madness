@@ -227,11 +227,14 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
     await page.locator(`[data-difficulty="${attack}"]`).click();
     await expect(page.locator('#game-canvas')).toBeVisible();
     await expect(page.locator('#player-health')).toBeVisible();
-    const state = await page.evaluate(() => {
+    const state = await page.evaluate(attack => {
+      // Start from the exact countdown boundary after the UI assertions.
+      // Real animation frames may advance while CI waits for those assertions.
       active = false;
+      snapshot = send('start', { mode: 'wrath', difficulty: attack });
       return { mode: snapshot.mode, attack: snapshot.difficulty,
         hp: snapshot.max_lives, label: snapshot.label, music: musicPlayer.theme };
-    });
+    }, attack);
     expect(state).toMatchObject({ mode: 'wrath', attack, hp: 15, music: 'pumpkin' });
     expect(state.label).toContain('GET READY — 3');
     expect(state.label).not.toContain('AWAKENING');
