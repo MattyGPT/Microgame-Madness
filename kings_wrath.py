@@ -56,6 +56,8 @@ class KingsWrath(PumpkinKing):
     def _next_stage(self):
         if not self.queue:
             self.attacks_completed += 1
+            if self.alive:
+                self.attack_survivals[self.attack_index] += 1
             self.begin_attack(self._choose_attack())
         else:
             super()._next_stage()

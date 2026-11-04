@@ -65,6 +65,8 @@ class SingularityPractice(SingularityCore):
             self.sound_events.append("core_protocol")
         elif self.stage == "attack":
             self.attacks_completed += 1
+            if self.alive:
+                self.attack_survivals[self.attack_index] += 1
             if self.attacks_completed % HEAL_EVERY_ATTACKS == 0:
                 self.spawn_healing()
             self._prepare()

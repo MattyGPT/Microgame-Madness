@@ -540,7 +540,7 @@ body.gaster-active { overflow: hidden; cursor: none; }
 .singularity-card { background: linear-gradient(135deg, #121625, #242039); }
 .wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
 /* Quiet, independent idle motions keep the arcade selection alive. */
-.word-art .word-question { animation: arcade-question 3.4.8s ease-in-out infinite; }
+.word-art .word-question { animation: arcade-question 3s ease-in-out infinite; }
 .keys-art i { animation: arcade-key-left 3.2s ease-in-out infinite; }
 .keys-art i:nth-child(2) { animation: arcade-key-middle 3.8s ease-in-out -1.2s infinite; }
 .keys-art i:nth-child(3) { animation: arcade-key-right 3.4s ease-in-out -.7s infinite; }
@@ -569,10 +569,8 @@ body.gaster-active { overflow: hidden; cursor: none; }
   50% { transform: translateY(-1px) rotate(1.5deg); }
 }
 @keyframes arcade-question {
-  0%, 52%, 100% { transform: rotate(9deg); }
-  63% { transform: translateY(-5px) rotate(-1deg); }
-  74% { transform: rotate(18deg); }
-  85% { transform: translateY(-2px) rotate(4deg); }
+  0%, 65%, 100% { transform: rotate(9deg) scale(1); }
+  82% { transform: rotate(9deg) scale(1.16); }
 }
 @keyframes arcade-key-left {
   0%, 100% { transform: translate(0, 0) rotate(-8deg); }
@@ -1686,6 +1684,17 @@ select:disabled {
 
 /* Cubie's closet: each Custom keeps the same eyes and smile. */
 .cubie-custom-art { display: block; width: 100%; height: 100%; overflow: visible; }
+.cubie-empyrorite {
+  filter: drop-shadow(0 0 4px #54ffb566) drop-shadow(0 0 10px #12c78e33);
+  animation: cubie-empyrorite-glow 3.8s ease-in-out infinite;
+}
+@keyframes cubie-empyrorite-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px #54ffb54d) drop-shadow(0 0 8px #12c78e26); }
+  50% { filter: drop-shadow(0 0 10px #9effd9b3) drop-shadow(0 0 22px #22e7a76b); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-empyrorite { animation: none; }
+}
 .cubie-rainbow-stripes { animation: cubie-rainbow-slide 5s linear infinite; }
 @keyframes cubie-rainbow-slide {
   from { transform: translateX(0); }
@@ -1783,3 +1792,51 @@ select:disabled {
   background: #141418;
 }
 [data-tier="black"] .custom-tier { background: #050505; border-color: #65656e; }
+
+/* Light travels around the fixed ring, disappearing behind Cubie's body. */
+.cubie-gravity-flow {
+  stroke-dasharray: 8 42;
+  animation: cubie-gravity-flow 4.8s linear infinite;
+}
+@keyframes cubie-gravity-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-gravity-flow { animation: none; }
+}
+
+/* The flame roots stay tucked behind Comet Cubie as the tips flicker. */
+.cubie-comet-flame {
+  transform-box: view-box;
+  transform-origin: 54px 64px;
+  animation: cubie-comet-flicker .9s ease-in-out infinite;
+}
+.comet-middle { animation-duration: .7s; animation-delay: -.25s; }
+.comet-core { animation-duration: .55s; animation-delay: -.4s; }
+@keyframes cubie-comet-flicker {
+  0%, 100% { transform: scale(1) skewX(0deg); }
+  25% { transform: scale(1.06, .95) skewX(-3deg); }
+  55% { transform: scale(.94, 1.09) skewX(3deg); }
+  80% { transform: scale(1.08, 1.04) skewX(-2deg); }
+}
+.cubie-comet-embers { animation: cubie-comet-embers 1.2s ease-out infinite; }
+@keyframes cubie-comet-embers {
+  0% { transform: translate(4px, 5px); opacity: 0; }
+  20% { opacity: .9; }
+  100% { transform: translate(-11px, -15px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-comet-flame, .cubie-comet-embers { animation: none; }
+}
+
+/* Cubie Cash shop */
+#shop-room { padding: clamp(16px, 3vw, 32px); text-align: left; }
+.shop-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+#shop-balance { padding: 12px 18px; border: 1px solid #5d91dc; border-radius: 24px; background: #102c65; color: #c3e2ff; }
+#shop-room > p, #shop-room details { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 16px 0; }
+#shop-room summary { cursor: pointer; color: #a8d0ff; }
+#shop-rates p { margin: 10px 0; }
+#shop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+.shop-price { color: #a8d0ff; font-size: 12px; margin-bottom: 12px; }
+@media (max-width: 700px) { #shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

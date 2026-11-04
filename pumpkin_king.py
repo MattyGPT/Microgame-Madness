@@ -106,6 +106,7 @@ class PumpkinKing(BossCrush):
         self.sound_events = []
         self.intro_done = False
         self.attack_index = -1
+        self.attack_survivals = [0] * len(ATTACK_NAMES)
         self.sequence = []
         self.spawn_in = 0.0
         self.scare_sounded = -1
@@ -190,6 +191,8 @@ class PumpkinKing(BossCrush):
             return
         self.stage = self.queue.popleft()
         self.stage_age = 0.0
+        if self.stage.name == "break" and self.attack_index >= 0 and self.alive:
+            self.attack_survivals[self.attack_index] += 1
         if self.stage.name == "scares":
             self.scare_sounded = self.scare_hit = -1
         if self.stage.name in ("roar", "laugh", "scare_ready"):

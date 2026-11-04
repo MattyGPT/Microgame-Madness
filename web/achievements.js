@@ -163,6 +163,58 @@ const Achievements = (() => {
   add("pumpkin_win_2", "Second Harvest", "bronze", "Pumpkin King", "Defeat the Pumpkin King 2 times in any mode.", "pumpkinWins", 2);
   add("wrath_counter_1", "A Royal Reply", "bronze", "The King's Wrath", "Successfully counter a magenta finger in King's Wrath.", "wrathCounterHits");
   add("dodge_merciless_15", "A Little Less Mercy", "bronze", "Turtle Dodge", "Survive 15 seconds in one Merciless game.", "mercilessBest", 15);
+  add("hangman_win_3", "Third Word's the Charm", "bronze", "Hangman", "Win 3 Hangman games.", "hangmanWins", 3);
+  add("hangman_hard_3", "Taking the Hard Way", "bronze", "Hangman", "Win 3 hard Hangman games.", "hardWins", 3);
+  add("hangman_perfect_3", "Clean Spelling", "bronze", "Hangman", "Win 3 Hangman games without a wrong guess.", "perfectWins", 3);
+  add("typing_2", "Double Tap", "bronze", "Key Rush", "Complete 2 rounds in one Key Rush game.", "typingBest", 2);
+  add("dodge_20", "Twenty-Second Turtle", "bronze", "Turtle Dodge", "Survive 20 seconds in one Turtle Dodge game.", "dodgeBest", 20);
+  add("cube_pet_25", "Quarter-Century Cuddles", "bronze", "Arcade", "Pet Cubie 25 times.", "cubePets", 25);
+  add("wrath_win_2", "Second Rehearsal", "bronze", "The King's Wrath", "Win 2 practice fights, in any modes.", "wrathWins", 2);
+  add("dodge_close_3", "Three Close Shaves", "bronze", "Turtle Dodge", "Make 3 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 3);
+  add("typing_4", "Four on the Floor", "bronze", "Key Rush", "Complete 4 rounds in one Key Rush game.", "typingBest", 4);
+  add("hangman_hard_5", "Tough Words", "silver", "Hangman", "Win 5 hard Hangman games.", "hardWins", 5);
+  add("dodge_close_10", "Thread the Shell", "gold", "Turtle Dodge", "Make 10 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 10);
+  add("hangman_perfect_10", "Ten out of Ten", "crystal", "Hangman", "Win 10 Hangman games without a wrong guess.", "perfectWins", 10);
+  add("hangman_hard_perfect_15", "Precision Dictionary", "diamond", "Hangman", "Win 15 hard Hangman games without a wrong guess.", "hardPerfectWins", 15);
+  add("wrath_counter_100", "Return to Sender", "rainbow", "The King's Wrath", "Successfully counter 100 magenta fingers in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 100);
+  add("core_flawless_3", "Perfect Gravity", "empyrorite", "Singularity Core", "Destroy Singularity Core 3 times without taking any damage. Each victory must be flawless.", "coreFlawlessWins", 3);
+  // Unicode Wingdings equivalents of RUNRUNRUNRUNRUN, matching the Gaster symbols above.
+  add("gaster_remix", "Signal Recognized", "black", "Arcade",
+    "☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎", "gasterRemixHeard", 1, { wingdings: true });
+  const attackRewards = [];
+  for (const [family, target, group, entries] of [
+    ['pumpkin', 10, 'Pumpkin King', [
+      ['color_memory', 'Color Memory', 'Color Connoisseur', 'gold', 'Prism Cubie'],
+      ['bone_gauntlet', 'Bone Gauntlet', 'Bone Veteran', 'gold', 'Bonekeeper Cubie'],
+      ['rotating_rings', 'Rotating Rings', 'Ring Regular', 'gold', 'Ringmaster Cubie'],
+      ['magenta_fingers', 'Magenta Fingers', 'Hands Off, Again!', 'gold', 'Counter Cubie'],
+      ['chaos', 'Chaos', 'Calm in the Chaos', 'gold', 'Chaos Cubie'],
+      ['royal_slams', 'Royal Slams', 'Ten Royal Rebounds', 'gold', 'Royal Guard Cubie'],
+      ['haunted_quadrants', 'Haunted Quadrants', 'Unhauntable', 'gold', 'Haunted Cubie'],
+    ]],
+    ['core', 3, 'Singularity Core', [
+      ['railgun_array', 'Railgun Array', 'Off the Rails', 'silver', 'Railgun Cubie'],
+      ['accretion_sweep', 'Accretion Sweep', 'Sweep Specialist', 'silver', 'Accretion Cubie'],
+      ['collapsing_horizons', 'Collapsing Horizons', 'Beyond the Horizon', 'silver', 'Horizon Cubie'],
+      ['target_lock', 'Target Lock', 'Lock Breaker', 'silver', 'Target Cubie'],
+      ['event_lattice', 'Event Lattice', 'Grid Graduate', 'gold', 'Lattice Cubie'],
+      ['binary_stars', 'Binary Stars', 'Double-Star Survivor', 'gold', 'Binary Cubie'],
+      ['gravity_guillotine', 'Gravity Guillotine', 'A Cut Above', 'gold', 'Guillotine Cubie'],
+      ['photon_rain', 'Photon Rain', 'Light Shower', 'gold', 'Photon Cubie'],
+      ['crossfire_engine', 'Crossfire Engine', 'Crossfire Certified', 'crystal', 'Crossfire Cubie'],
+      ['dark_matter_mines', 'Dark Matter Mines', 'Mind the Mines', 'crystal', 'Dark Matter Cubie'],
+      ['polarity_inversion', 'Polarity Inversion', 'Positive Outlook', 'crystal', 'Polarity Cubie'],
+      ['orbital_saws', 'Orbital Saws', 'Saw It Coming', 'crystal', 'Sawblade Cubie'],
+      ['echo_protocol', 'Echo Protocol', 'Third Echo', 'diamond', 'Echo Cubie'],
+      ['lens_fracture', 'Lens Fracture', 'Through the Looking Glass', 'diamond', 'Prismatic Lens Cubie'],
+      ['total_collapse', 'Total Collapse', 'Still Standing, Three Times', 'diamond', 'Collapse Cubie'],
+    ]],
+  ]) entries.forEach(([key, attack, title, tier, customName], index) => {
+    const id = `survive_${family}_${key}`;
+    add(id, title, tier, group, `Survive ${attack} ${target} times.` +
+      (family === 'pumpkin' ? " Counts across Pumpkin King and The King's Wrath." : ''), id, target);
+    attackRewards.push({ id, family, index, key, attack, target, customName });
+  });
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -237,11 +289,17 @@ const Achievements = (() => {
         if (name === "gravitron") stats.name_gravitron = 1;
       });
     }
+    hearMusic(track, custom, audible) {
+      if (!audible || track !== "gaster_remix" || custom !== "gaster"
+        || !this.data.unlocked.waste_of_time) return { earned: [], changed: false };
+      return this.update(stats => { stats.gasterRemixHeard = 1; });
+    }
     completeGaster() {
       return this.update(stats => { stats.gasterCompleted = 1; });
     }
     start(mode, difficulty) {
-      this.round = { mode, difficulty, finished: false, counterHits: 0 };
+      this.round = { mode, difficulty, finished: false, counterHits: 0, survivals: [] };
+      if (mode === 'core_practice') return { earned: [], changed: false };
       return this.update(stats => {
         if (stats.bossRunActive) stats.bossCleanStreak = 0;
         if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
@@ -260,15 +318,32 @@ const Achievements = (() => {
       const sovereignBroken = sovereignFight && s.damage_taken > 0 && this.data.stats.bossSovereignStreak > 0;
       const core = s.mode === "singularity" && s.difficulty === "gravitron";
       const wrath = s.mode === "wrath" && wrathModes.includes(s.difficulty);
+      const corePractice = s.mode === 'core_practice' && attackRewards.some(reward => reward.family === 'core' && reward.key === s.difficulty);
+      const family = core || corePractice ? 'core' : s.mode === 'pumpkin' || wrath ? 'pumpkin' : null;
+      const survivalCounts = Array.isArray(s.attack_survivals) && s.attack_survivals.length === (family === 'core' ? 15 : 7)
+        ? s.attack_survivals.map(count) : [];
+      const newSurvivals = family && survivalCounts.some((value, index) => value > (round.survivals[index] || 0));
       const protocols = Math.min(15, count(s.attacks_completed));
       const randomSets = wrath && s.difficulty === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
       const counters = wrath ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
       const newCoreProgress = core && (protocols > this.data.stats.coreProtocolsBest ||
         s.damage_taken === 0 && protocols > this.data.stats.coreCleanProtocolsBest);
       const newWrathProgress = wrath && (counters > 0 || randomSets > this.data.stats.wrathRandomSetsBest);
-      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken && !sovereignBroken && !newCoreProgress && !newWrathProgress)
+      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken && !sovereignBroken && !newCoreProgress && !newWrathProgress && !newSurvivals)
         return { earned: [], changed: false };
       return this.update(stats => {
+        if (newSurvivals) {
+          for (const reward of attackRewards.filter(reward => reward.family === family)) {
+            const previous = round.survivals[reward.index] || 0;
+            const current = survivalCounts[reward.index];
+            stats[reward.id] += Math.max(0, current - previous);
+            round.survivals[reward.index] = Math.max(previous, current);
+          }
+        }
+        if (s.mode === 'core_practice') {
+          if (s.over) round.finished = true;
+          return;
+        }
         if (streakBroken) stats.bossCleanStreak = 0;
         if (sovereignBroken) stats.bossSovereignStreak = 0;
         if (core) {
@@ -342,6 +417,6 @@ const Achievements = (() => {
       });
     }
   }
-  return { catalog, points, Tracker };
+  return { catalog, points, Tracker, attackRewards };
 })();
 if (typeof module !== "undefined") module.exports = Achievements;

@@ -17,6 +17,7 @@
     ></script>
     <script src="./achievements.js" defer></script>
     <script src="./customs.js" defer></script>
+    <script src="./shop.js" defer></script>
     <script src="./music.js" defer></script>
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
@@ -161,6 +162,12 @@
           <span class="card-title">Custom Cubie <span>↗</span></span>
           <span class="card-description">Big achievements. Little outfits.</span>
         </button>
+        <button class="game-card" data-game="shop" aria-pressed="false" style="--accent: #80b9ff">
+          <span class="card-top">10 <span>CUBIE CASH</span></span>
+          <span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 120" width="90" height="90"><circle cx="63" cy="64" r="43" fill="#081f54"/><circle cx="57" cy="57" r="43" fill="#143e92" stroke="#80b9ff" stroke-width="3"/><circle cx="57" cy="57" r="33" fill="none" stroke="#396cbe" stroke-width="2"/><text x="57" y="73" text-anchor="middle" font-size="48" font-weight="bold" fill="#c3e2ff">C</text></svg></span>
+          <span class="card-title">Cubie Shop <span>↗</span></span>
+          <span class="card-description">Play. Earn. Find a new you.</span>
+        </button>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
         <div class="game-main">
@@ -200,6 +207,13 @@
                 aria-labelledby="difficulty-title"
               ></div>
             </div>
+            <section id="shop-room" aria-label="Cubie Shop" hidden>
+              <div class="shop-heading"><div><p class="eyebrow">CUBIE CASH</p><h3>Little outfits. Big personality.</h3></div><strong id="shop-balance" aria-live="polite"></strong></div>
+              <p>Earn Cash by playing, then collect exclusive Customs. Every purchase stays in your closet.</p>
+              <p id="shop-progress"></p><p id="shop-status" role="status" aria-live="polite"></p>
+              <details><summary>How to earn Cubie Cash</summary><p>Score × game multiplier × difficulty bonus = converted score. Every 100 converted score earns 1 Cubie Cash. Partial Cash carries over between rounds. Finished rounds earn Cash once, even if you lose; Key Rush also pays when you exit. Temporary Core practice does not award Cash.</p><div id="shop-rates"></div></details>
+              <div id="shop-grid"></div>
+            </section>
             <section id="customs-room" aria-label="Cubie's Customs" hidden>
               <div class="customs-preview">
                 <div id="customs-preview-art"></div>

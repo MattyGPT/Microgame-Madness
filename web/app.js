@@ -2,11 +2,17 @@
 
 const $ = (id) => document.getElementById(id);
 const modes = {
+  shop: {
+    title: "Cubie Shop", category: "10 / CUBIE CASH", art: "C",
+    heading: "Little outfits. Big personality.", copy: "Play games to earn Cubie Cash and collect exclusive Customs.",
+    accent: "#80b9ff", controls: "100 converted score = 1 Cubie Cash · Harder modes earn more",
+    localOnly: true, temporary: true, difficulties: {},
+  },
   customs: {
     title: "Custom Cubie", category: "09 / CUBIE'S CLOSET", art: "",
     heading: "A Custom for every adventure.",
-    copy: "Earn achievements, unlock Customs, and dress up your arcade buddy.",
-    accent: "#c6f783", controls: "Earn achievements to unlock Customs · Choose an unlocked Custom to wear it",
+    copy: "Earn achievements or visit the Cubie Shop to dress up your arcade buddy.",
+    accent: "#c6f783", controls: "Earn achievements or buy shop Customs · Choose an unlocked Custom to wear it",
     localOnly: true, temporary: true, difficulties: {},
   },
   jukebox: {
@@ -150,7 +156,7 @@ const modes = {
     category: "TEMPORARY / ATTACK PRACTICE",
     art: "◎",
     heading: "Choose a protocol. Perfect your escape.",
-    copy: "Repeat any of the Core’s 15 attacks with 10 HP and a three-second countdown before each repeat. Galactic healing packs appear every three repeats. Or watch the final cutscene immediately. Practice does not award achievements or save records.",
+    copy: "Repeat any of the Core’s 15 attacks with 10 HP and a three-second countdown before each repeat. Galactic healing packs appear every three repeats. Attack survivals count toward Cubie rewards; scores and full-fight records are not saved. Or watch the final cutscene immediately.",
     accent: "#65f5ff",
     controls: "Hold arrows to teleport · Release to center · D pauses · Esc picks another attack",
     choiceLabel: "Choose an attack or watch the finale",
@@ -162,6 +168,8 @@ const modes = {
 };
 // Each sleeve has its own palette; related songs share a visual motif.
 const songSleeves = {
+  hyperspeed: ["#ffde70", "#f26a99", "bolt"],
+  velvet_tokens: ["#d7b5f5", "#737bb4", "moon"],
   arcade: ["#c6f783", "#5cb8a5", "pixels"],
   megalo_remix: ["#72dfff", "#5267ed", "heart"],
   freedom_remix: ["#ffe77e", "#ec73d8", "star"],
@@ -221,7 +229,7 @@ const sleevePaths = {
   sunrise: "M13 39a19 19 0 0 1 38 0 M6 39h52 M12 47h40 M21 55h22 M32 4v7 M8 15l6 6 M56 15l-6 6",
   shell: "M49 35a17 20 0 1 1-34 0 17 20 0 0 1 34 0Z M25 27h14l5 13-12 9-12-9Z M25 27l-5-8 M39 27l5-8 M32 49v6 M26 15V8h12v7 M15 29l-8-5 M49 29l8-5",
   rain: "M12 12h10v10H12Z M39 9h12v12H39Z M29 32h10v10H29Z M13 32v12 M49 32v19 M28 51v8",
-  letters: "M9 45 21 14l12 31 M14 33h14 M40 16h14 M47 16v29 M40 45h14",
+  letters: "M5 45 12 19l7 26 M8 35h8 M26 45V19h6c10 0 10 13 0 13h-6 M32 32c11 0 11 13 0 13h-6 M59 22c-13-12-17 32 0 20",
   keys: "M8 14h48v36H8Z M16 23h5 M29 23h5 M42 23h5 M16 32h5 M29 32h5 M42 32h5 M23 41h18",
   pumpkin: "M32 17q-22-12-25 13t25 23q22 2 25-23T32 17Z M32 17q-5-11 5-13 M17 28l7 7H14Z M47 28l3 7H40Z M17 42l8 6 7-4 7 4 8-6",
   orbit: "M48 32a16 16 0 1 1-32 0 16 16 0 0 1 32 0Z M14 23C-12 37 9 54 36 43S72 11 46 22 M6 14h4 M8 12v4",
@@ -272,6 +280,7 @@ let snapshot = null;
 let handle = null;
 let lastFrame = 0;
 let roundSaved = false;
+let lastCashReward = 0;
 let currentPlayer = "Player";
 const keys = new Set();
 const storageKey = "microgame-madness.v1";
@@ -281,6 +290,7 @@ try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
+    saved.shop = value.shop;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";
     saved.unlocks.singularity = value.unlocks?.singularity === true;
     saved.minigamesCompleted = Number.isSafeInteger(value.minigamesCompleted) && value.minigamesCompleted >= 0
@@ -299,6 +309,7 @@ try {
   storageAvailable = false;
 }
 const achievementTracker = new Achievements.Tracker(saved.achievements);
+saved.shop = CubieShop.restore(saved.shop, CubieCustoms.catalog);
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
@@ -564,7 +575,7 @@ function initializeAchievements() {
   renderAchievements();
 }
 function applyCubieCustom() {
-  const item = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked);
+  const item = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned);
   saved.cubieCustom = item.id;
   const cube = $("cube");
   cube.querySelector(".cubie-custom-art")?.remove();
@@ -576,6 +587,7 @@ function applyCubieCustom() {
   hint.querySelector(".cubie-custom-art")?.remove();
   hint.classList.toggle("custom-equipped", item.id !== "classic");
   if (item.id !== "classic") hint.insertAdjacentHTML("beforeend", CubieCustoms.svg(item));
+  renderNowPlaying();
 }
 let previewCustomId = null;
 function previewCustom(item) {
@@ -585,27 +597,27 @@ function previewCustom(item) {
   $("customs-preview-tier").textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
   $("customs-flavor").textContent = item.flavor;
   $("customs-preview-art").innerHTML = CubieCustoms.svg(item);
-  const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked);
+  const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned);
   $("customs-status").textContent = item.id === equipped.id ? `Now wearing ${item.name}.`
-    : CubieCustoms.unlocked(item, achievementTracker.data.unlocked)
+    : CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned)
       ? "Preview only · Unlocked. Choose Wear Custom to equip."
-      : "Preview only · Locked. Earn its achievement to wear this Custom.";
+      : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
   $("customs-grid").querySelectorAll(".custom-preview-button").forEach(button => {
     button.setAttribute("aria-pressed", String(button.dataset.preview === item.id));
   });
 }
 function renderCustoms() {
   const medals = achievementTracker.data.unlocked;
-  const equipped = CubieCustoms.selected(saved.cubieCustom, medals);
-  const count = CubieCustoms.catalog.filter(item => CubieCustoms.unlocked(item, medals)).length;
+  const equipped = CubieCustoms.selected(saved.cubieCustom, medals, saved.shop.owned);
+  const count = CubieCustoms.catalog.filter(item => CubieCustoms.unlocked(item, medals, saved.shop.owned)).length;
   $("customs-count").textContent = `${count} / ${CubieCustoms.catalog.length} Customs unlocked`;
 
   const filter = $("customs-filter").value;
   const cards = CubieCustoms.catalog.filter(item => {
-    const unlocked = CubieCustoms.unlocked(item, medals);
+    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned);
     return filter === "all" || (filter === "unlocked" ? unlocked : !unlocked);
   }).map(item => {
-    const unlocked = CubieCustoms.unlocked(item, medals);
+    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned);
     const wearing = equipped.id === item.id;
     const card = document.createElement("article");
     card.className = "custom-tile" + (unlocked ? "" : " custom-locked");
@@ -626,6 +638,7 @@ function renderCustoms() {
     tier.textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
     const requirement = document.createElement("p");
     if (item.id === "classic") requirement.textContent = "Your original arcade buddy. Always yours.";
+    else if (item.price) requirement.textContent = `Cubie Shop · ${item.price} Cubie Cash`;
     else if (item.id === "gaster") requirement.textContent = "Some things are better left unexplained.";
     else if (item.id === "pumpkin") requirement.textContent = "Defeat the Pumpkin King in any mode.";
     else {
@@ -642,7 +655,7 @@ function renderCustoms() {
     button.setAttribute("aria-label", `${wearing ? "Wearing" : unlocked ? "Wear" : "Locked:"} ${item.name}`);
     button.setAttribute("aria-pressed", String(wearing));
     button.onclick = () => {
-      if (!CubieCustoms.unlocked(item, achievementTracker.data.unlocked)) return;
+      if (!CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned)) return;
       saved.cubieCustom = item.id;
       previewCustomId = item.id;
       applyCubieCustom();
@@ -664,6 +677,58 @@ function renderCustoms() {
 }
 $("customs-filter").onchange = renderCustoms;
 
+function renderShop() {
+  $("shop-balance").textContent = `${CubieShop.balance(saved.shop).toLocaleString()} Cubie Cash`;
+  $("shop-progress").textContent = `${(saved.shop.units % 1000 / 10).toLocaleString()} / 100 converted score toward your next Cash.`;
+  $("shop-rates").replaceChildren(...Object.entries(CubieShop.rates).map(([mode, rate]) => {
+    const p = document.createElement("p");
+    p.textContent = `${modes[mode].title}: score × ${rate.base}. ` + Object.entries(rate.modes)
+      .map(([difficulty, bonus]) => `${modes[mode].difficulties[difficulty][0]} ×${bonus}`).join(" · ");
+    return p;
+  }));
+  $("shop-grid").replaceChildren(...CubieCustoms.catalog.filter(item => item.price).map(item => {
+    const owned = saved.shop.owned.includes(item.id);
+    const wearing = saved.cubieCustom === item.id;
+    const card = document.createElement("article");
+    card.className = "custom-tile";
+    card.dataset.custom = item.id;
+    card.dataset.tier = item.tier;
+    card.dataset.equipped = String(wearing);
+    const art = document.createElement("div");
+    art.className = "custom-swatch";
+    art.innerHTML = CubieCustoms.svg(item);
+    const name = document.createElement("h5");
+    name.textContent = item.name;
+    const tier = document.createElement("span");
+    tier.className = "custom-tier";
+    tier.textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
+    const flavor = document.createElement("p");
+    flavor.textContent = item.flavor;
+    const price = document.createElement("strong");
+    price.className = "shop-price";
+    price.textContent = owned ? "In your closet" : `${item.price} Cubie Cash`;
+    const button = document.createElement("button");
+    button.className = "custom-equip";
+    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Wear Custom" : `Buy · ${item.price} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Wear" : "Buy"} ${item.name}`);
+    button.onclick = () => {
+      if (saved.shop.owned.includes(item.id)) {
+        saved.cubieCustom = item.id;
+        applyCubieCustom();
+        $("shop-status").textContent = `Now wearing ${item.name}.`;
+      } else {
+        if (!CubieShop.buy(saved.shop, item)) return;
+        $("shop-status").textContent = `${item.name} is yours! Find it in your closet or choose Wear Custom.`;
+      }
+      persist();
+      renderShop();
+      $("shop-grid").querySelector(`[data-custom="${item.id}"] button`)?.focus({ preventScroll: true });
+    };
+    card.append(art, name, tier, flavor, price, button);
+    return card;
+  }));
+}
 function scoreKey() {
   return `${selected}:${selectedDifficulty}`;
 }
@@ -683,7 +748,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "customs" ? "Your Customs are earned through achievements. No scores here." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -716,6 +781,7 @@ function saveRound() {
   roundSaved = true;
   if (modes[selected].temporary) return;
   if (snapshot.over) countCompletedMinigame();
+  lastCashReward = CubieShop.reward(saved.shop, selected, selectedDifficulty, snapshot.score);
   const list = rankings();
   const previous = list.find((entry) => entry.player === currentPlayer);
   if (previous) previous.score = Math.max(previous.score, snapshot.score);
@@ -848,7 +914,7 @@ function showGameArea() {
   document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
 }
 function selectGame(mode) {
-  if (loadFailed && mode !== "customs") return;
+  if (loadFailed && !["customs", "shop"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
@@ -861,6 +927,7 @@ function selectGame(mode) {
   jukeboxPaused = false;
   $("jukebox-controls").hidden = mode !== "jukebox";
   $("customs-room").hidden = mode !== "customs";
+  $("shop-room").hidden = mode !== "shop";
   $("arena").classList.remove("arcade");
   $("player-health").hidden = true;
   const config = modes[mode];
@@ -903,7 +970,8 @@ function selectGame(mode) {
     "exit",
     "touch-controls",
   ].forEach((id) => ($(id).hidden = true));
-  $("welcome").hidden = mode === "customs";
+  $("welcome").hidden = ["customs", "shop"].includes(mode);
+  if (mode === "shop") renderShop();
   if (mode === "customs") renderCustoms();
   $("metric").textContent = "—";
   $("score").textContent = "0";
@@ -953,6 +1021,7 @@ function startGame(difficulty) {
   persist();
   showScores();
   roundSaved = false;
+  lastCashReward = 0;
   clearKeys();
   try {
     snapshot = send("start", {
@@ -963,7 +1032,7 @@ function startGame(difficulty) {
     fail(error);
     return;
   }
-  if (!modes[selected].temporary)
+  if (!modes[selected].temporary || selected === "core_practice")
     updateAchievements(achievementTracker.start(selected, selectedDifficulty));
   active = true;
   lastFrame = performance.now();
@@ -1024,7 +1093,7 @@ function updateDamageFeedback(s) {
 function render() {
   const s = snapshot;
   updateDamageFeedback(s);
-  if (!s.dying && !modes[selected].temporary) updateAchievements(achievementTracker.observe(s));
+  if (!s.dying && (!modes[selected].temporary || selected === "core_practice")) updateAchievements(achievementTracker.observe(s));
   const hasHealth = ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected);
   $("player-health").hidden = !hasHealth || s.arena_shattered;
   if (hasHealth) {
@@ -1095,6 +1164,7 @@ function render() {
       title = "Time’s up!";
       copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
     }
+    if (lastCashReward) copy += ` +${(lastCashReward / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 })} Cubie Cash earned.`;
     if (selected === "core_practice") {
       if (selectedDifficulty === "final_cutscene") {
         title = "Singularity erased.";
@@ -1352,7 +1422,7 @@ const arrowMap = {
 };
 window.addEventListener("keydown", (event) => {
   if (gasterActive || $("cubie-hint").open) return;
-  if (event.target.closest("#cube, .profile-tabs, #achievements-panel, #customs-room")) return;
+  if (event.target.closest("#cube, .profile-tabs, #achievements-panel, #customs-room, #shop-room")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -1497,6 +1567,7 @@ function renderNowPlaying() {
   indicator.hidden = !audible;
   const text = audible ? `♫ Now playing: ${track.title}` : "";
   if (indicator.textContent !== text) indicator.textContent = text;
+  updateAchievements(achievementTracker.hearMusic(track?.id, saved.cubieCustom, !!audible));
 }
 function renderJukebox() {
   const title = modes.jukebox.difficulties[selectedDifficulty]?.[0];

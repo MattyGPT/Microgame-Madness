@@ -60,12 +60,12 @@ test('practice final cutscene plays, pauses, and replays without rewards', async
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
 });
 
-test('temporary Core picker repeats all 15 shared attacks without saving progress', async ({ page }, testInfo) => {
+test('temporary Core picker records attack survivals without saving scores or full-fight awards', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await choosePractice(page);
   await page.screenshot({ path: testInfo.outputPath('core-practice-picker.png'), fullPage: true });
-  const profileBefore = await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores]));
+  const profileBefore = await page.evaluate(() => JSON.stringify([saved.achievements.unlocked, saved.scores]));
   const options = await page.evaluate(() => send('core_practice_options').attacks);
   for (const attack of options) {
     const choice = page.locator(`[data-difficulty="${attack.id}"]`);
@@ -110,7 +110,9 @@ test('temporary Core picker repeats all 15 shared attacks without saving progres
     render();
   });
   await expect(page.locator('#overlay')).toBeVisible();
-  expect(await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores]))).toBe(profileBefore);
+  expect(await page.evaluate(() => JSON.stringify([saved.achievements.unlocked, saved.scores]))).toBe(profileBefore);
+  expect(await page.evaluate(() => Achievements.attackRewards.filter(r => r.family === 'core')
+    .map(r => saved.achievements.stats[r.id]))).toEqual(Array(15).fill(1));
   await expect(page.locator('#scores-list')).toContainText('records are not saved');
   await page.locator('#overlay-action').click();
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
@@ -118,7 +120,7 @@ test('temporary Core picker repeats all 15 shared attacks without saving progres
   await page.locator('[data-difficulty="gravitron"]').click();
   expect(await page.evaluate(() => snapshot.mode)).toBe('singularity');
   expect(await page.evaluate(() => testRuntime.runPython('session.game.stage'))).toBe('intro');
-  await expect(page.locator('[data-game]:visible')).toHaveCount(9);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(10);
   expect(errors).toEqual([]);
 });
 
@@ -157,7 +159,7 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
 test('GRAVITRON unlock persists and keyboard and touch teleport immediately', async ({ page }, testInfo) => {
   const card = page.locator('[data-game="singularity"]');
   await expect(card).toBeHidden();
-  await expect(page.locator('[data-game]:visible')).toHaveCount(8);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(9);
   await unlock(page);
   await expect(page.locator('#player-health-value')).toHaveText('10 / 10');
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('singularity');
@@ -193,7 +195,7 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(card).toBeVisible();
-  await expect(page.locator('[data-game]:visible')).toHaveCount(9);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(10);
   await card.click();
   await page.locator('#welcome').screenshot({ path: testInfo.outputPath('core-unlocked.png') });
 });

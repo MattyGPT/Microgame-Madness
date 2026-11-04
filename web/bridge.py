@@ -163,6 +163,7 @@ class BrowserGame:
                           death_message=getattr(game, "death_message", None),
                           damage_taken=getattr(game, "damage_taken", None),
                           attacks_completed=getattr(game, "attacks_completed", 0),
+                          attack_survivals=list(getattr(game, "attack_survivals", [])),
                           counter_hits=getattr(game, "counter_hits", 0),
                           healing_collected=getattr(game, "healing_collected", 0),
                           near_misses=getattr(game, "near_misses", 0),

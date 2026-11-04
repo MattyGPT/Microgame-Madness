@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 21);
+  assert.equal(arcadeTracks.length, 23);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 21);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 23);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,12 @@ function context() {
   return ctx;
 }
 
-test('twenty-one distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 21);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 21);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 21);
+test('twenty-three distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 23);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 23);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 23);
+  assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
+  assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
   const fingerprints = new Set();
   for (const track of [...tracks, { id: 'pumpkin', bpm: 156 }]) {
@@ -158,7 +160,7 @@ test('twenty-one distinct arcade songs and the boss score have safe levels and q
     assert.ok(Math.abs(samples.length / 22050 - bars * 4 * 60 / track.bpm) < 1 / 22050);
     fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(fingerprints.size, 22);
+  assert.equal(fingerprints.size, 24);
   assert.throws(() => compose('missing'), /Unknown music/);
 });
 

@@ -152,6 +152,7 @@ class SingularityCore:
         self.stage_age = 0.0
         self.attack_index = -1
         self.attacks_completed = 0
+        self.attack_survivals = [0] * len(ATTACKS)
         self.hazards = []
         self.healing_pickups = []
         self.sound_events = []
@@ -369,6 +370,8 @@ class SingularityCore:
             self.begin_attack(0)
         elif self.stage == "attack":
             self.attacks_completed += 1
+            if self.alive:
+                self.attack_survivals[self.attack_index] += 1
             if self.attacks_completed % HEAL_EVERY_ATTACKS == 0:
                 self.spawn_healing()
             self.stage = "exposed" if not self.shielded else "break"
