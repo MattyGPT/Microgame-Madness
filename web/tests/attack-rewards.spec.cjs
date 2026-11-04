@@ -48,7 +48,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   expect(await page.evaluate(() => saved.achievements.stats.survive_pumpkin_bone_gauntlet)).toBe(10);
   await clearCelebrations(page);
   await page.locator('[data-game="customs"]').click();
-  const tile = page.locator('[data-custom="attack_pumpkin_bone_gauntlet"]');
+  const tile = page.locator('.custom-tile[data-custom="attack_pumpkin_bone_gauntlet"]');
   await expect(tile).toContainText('Bone Veteran');
   await expect(tile.locator('.custom-equip')).toBeEnabled();
   await tile.locator('.custom-equip').click();
@@ -74,7 +74,7 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   expect(await page.evaluate(() => saved.achievements.stats.coreWins)).toBe(0);
   await clearCelebrations(page);
   await page.locator('[data-game="customs"]').click();
-  const tile = page.locator('[data-custom="attack_core_photon_rain"]');
+  const tile = page.locator('.custom-tile[data-custom="attack_core_photon_rain"]');
   await expect(tile).toContainText('Survive Photon Rain 3 times.');
   await expect(tile).not.toContainText(/loader|temporary/);
   await tile.locator('.custom-equip').click();

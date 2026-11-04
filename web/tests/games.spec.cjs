@@ -131,9 +131,10 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   await expect(page.locator("#difficulty-choices button")).toHaveCount(1);
   await page.locator('[data-difficulty="progressive"]').click();
   const sequence = await page.locator("#sequence").innerText();
-  if (testInfo.project.name === "mobile")
-    await page.locator("#typing-input").fill(sequence);
-  else await page.keyboard.type(sequence);
+  if (testInfo.project.name === "mobile") {
+    for (const letter of sequence)
+      await page.getByRole('button', { name: `Type ${letter}`, exact: true }).tap();
+  } else await page.keyboard.type(sequence);
   await expect(page.locator("#score")).toHaveText("1");
   await page.locator("#exit").click();
   for (const mode of ["dodge", "boss", "pumpkin"]) {
