@@ -49,8 +49,14 @@
           </p>
         </div>
         <div class="hero-art">
-          <div class="orbit orbit-one" aria-hidden="true"></div>
-          <div class="orbit orbit-two" aria-hidden="true"></div>
+          <svg class="orbit orbit-one" viewBox="0 0 330 130" preserveAspectRatio="none" aria-hidden="true">
+            <ellipse class="orbit-track" cx="165" cy="65" rx="164.5" ry="64.5"/>
+            <ellipse class="orbit-particle" cx="165" cy="65" rx="164.5" ry="64.5" pathLength="100"/>
+          </svg>
+          <svg class="orbit orbit-two" viewBox="0 0 330 130" preserveAspectRatio="none" aria-hidden="true">
+            <ellipse class="orbit-track" cx="165" cy="65" rx="164.5" ry="64.5"/>
+            <ellipse class="orbit-particle" cx="165" cy="65" rx="164.5" ry="64.5" pathLength="100"/>
+          </svg>
           <span class="spark s1" aria-hidden="true">✦</span><span class="spark s2" aria-hidden="true">+</span>
           <button id="cube" class="pixel-face" type="button" aria-label="Pet Cubie"><i aria-hidden="true"></i><i aria-hidden="true"></i><b aria-hidden="true"></b></button>
           <span class="art-label"><strong>CUBIE</strong><br />INSERT FREE TIME ↙</span>
@@ -141,10 +147,18 @@
           <span class="card-top">07 <span>SECRET BOSS</span></span>
           <span class="card-art singularity-art" aria-hidden="true">
             <svg viewBox="0 0 100 80" focusable="false">
-              <ellipse cx="50" cy="40" rx="45" ry="13" fill="none" stroke="#a488ff" stroke-width="3" />
+              <ellipse class="core-orbit-ring" cx="50" cy="40" rx="45" ry="13" fill="none" stroke="#a488ff" stroke-width="3" />
               <path d="M27 16 42 10 58 10 73 16 82 32 82 48 73 64 58 70 42 70 27 64 18 48 18 32Z" fill="#202a44" stroke="#65f5ff" />
               <circle cx="50" cy="40" r="26" fill="#000107" stroke="#c3a5ff" stroke-width="2" />
-              <path d="M6 40Q50 67 94 40" fill="none" stroke="#65f5ff" stroke-width="3" />
+              <g transform="translate(50 40)" fill="#d9faff">
+                <g transform="rotate(0)"><path class="core-infall-star" style="--star-delay: 0s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+                <g transform="rotate(60)"><path class="core-infall-star" style="--star-delay: -.6s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+                <g transform="rotate(120)"><path class="core-infall-star" style="--star-delay: -1.2s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+                <g transform="rotate(180)"><path class="core-infall-star" style="--star-delay: -1.8s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+                <g transform="rotate(240)"><path class="core-infall-star" style="--star-delay: -2.4s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+                <g transform="rotate(300)"><path class="core-infall-star" style="--star-delay: -3s" d="M0-3 1-1 3 0 1 1 0 3-1 1-3 0-1-1Z"/></g>
+              </g>
+              <path class="core-orbit-ring" d="M6 40Q50 67 94 40" fill="none" stroke="#65f5ff" stroke-width="3" />
             </svg>
           </span>
           <span class="card-title">Singularity Core <span>↗</span></span>
@@ -164,7 +178,108 @@
         </button>
         <button class="game-card" data-game="shop" aria-pressed="false" style="--accent: #80b9ff">
           <span class="card-top">10 <span>CUBIE CASH</span></span>
-          <span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 120" width="90" height="90"><circle cx="63" cy="64" r="43" fill="#081f54"/><circle cx="57" cy="57" r="43" fill="#143e92" stroke="#80b9ff" stroke-width="3"/><circle cx="57" cy="57" r="33" fill="none" stroke="#396cbe" stroke-width="2"/><text x="57" y="73" text-anchor="middle" font-size="48" font-weight="bold" fill="#c3e2ff">C</text></svg></span>
+          <span class="card-art shop-card-art" aria-hidden="true">
+            <span class="shop-coin-scene">
+              <span class="shop-coin">
+                <!-- One rigid cylinder: two outward faces and 64 reeded edge facets. -->
+                <i class="shop-coin-ridge" style="--ridge: 0"></i>
+                <i class="shop-coin-ridge" style="--ridge: 1"></i>
+                <i class="shop-coin-ridge" style="--ridge: 2"></i>
+                <i class="shop-coin-ridge" style="--ridge: 3"></i>
+                <i class="shop-coin-ridge" style="--ridge: 4"></i>
+                <i class="shop-coin-ridge" style="--ridge: 5"></i>
+                <i class="shop-coin-ridge" style="--ridge: 6"></i>
+                <i class="shop-coin-ridge" style="--ridge: 7"></i>
+                <i class="shop-coin-ridge" style="--ridge: 8"></i>
+                <i class="shop-coin-ridge" style="--ridge: 9"></i>
+                <i class="shop-coin-ridge" style="--ridge: 10"></i>
+                <i class="shop-coin-ridge" style="--ridge: 11"></i>
+                <i class="shop-coin-ridge" style="--ridge: 12"></i>
+                <i class="shop-coin-ridge" style="--ridge: 13"></i>
+                <i class="shop-coin-ridge" style="--ridge: 14"></i>
+                <i class="shop-coin-ridge" style="--ridge: 15"></i>
+                <i class="shop-coin-ridge" style="--ridge: 16"></i>
+                <i class="shop-coin-ridge" style="--ridge: 17"></i>
+                <i class="shop-coin-ridge" style="--ridge: 18"></i>
+                <i class="shop-coin-ridge" style="--ridge: 19"></i>
+                <i class="shop-coin-ridge" style="--ridge: 20"></i>
+                <i class="shop-coin-ridge" style="--ridge: 21"></i>
+                <i class="shop-coin-ridge" style="--ridge: 22"></i>
+                <i class="shop-coin-ridge" style="--ridge: 23"></i>
+                <i class="shop-coin-ridge" style="--ridge: 24"></i>
+                <i class="shop-coin-ridge" style="--ridge: 25"></i>
+                <i class="shop-coin-ridge" style="--ridge: 26"></i>
+                <i class="shop-coin-ridge" style="--ridge: 27"></i>
+                <i class="shop-coin-ridge" style="--ridge: 28"></i>
+                <i class="shop-coin-ridge" style="--ridge: 29"></i>
+                <i class="shop-coin-ridge" style="--ridge: 30"></i>
+                <i class="shop-coin-ridge" style="--ridge: 31"></i>
+                <i class="shop-coin-ridge" style="--ridge: 32"></i>
+                <i class="shop-coin-ridge" style="--ridge: 33"></i>
+                <i class="shop-coin-ridge" style="--ridge: 34"></i>
+                <i class="shop-coin-ridge" style="--ridge: 35"></i>
+                <i class="shop-coin-ridge" style="--ridge: 36"></i>
+                <i class="shop-coin-ridge" style="--ridge: 37"></i>
+                <i class="shop-coin-ridge" style="--ridge: 38"></i>
+                <i class="shop-coin-ridge" style="--ridge: 39"></i>
+                <i class="shop-coin-ridge" style="--ridge: 40"></i>
+                <i class="shop-coin-ridge" style="--ridge: 41"></i>
+                <i class="shop-coin-ridge" style="--ridge: 42"></i>
+                <i class="shop-coin-ridge" style="--ridge: 43"></i>
+                <i class="shop-coin-ridge" style="--ridge: 44"></i>
+                <i class="shop-coin-ridge" style="--ridge: 45"></i>
+                <i class="shop-coin-ridge" style="--ridge: 46"></i>
+                <i class="shop-coin-ridge" style="--ridge: 47"></i>
+                <i class="shop-coin-ridge" style="--ridge: 48"></i>
+                <i class="shop-coin-ridge" style="--ridge: 49"></i>
+                <i class="shop-coin-ridge" style="--ridge: 50"></i>
+                <i class="shop-coin-ridge" style="--ridge: 51"></i>
+                <i class="shop-coin-ridge" style="--ridge: 52"></i>
+                <i class="shop-coin-ridge" style="--ridge: 53"></i>
+                <i class="shop-coin-ridge" style="--ridge: 54"></i>
+                <i class="shop-coin-ridge" style="--ridge: 55"></i>
+                <i class="shop-coin-ridge" style="--ridge: 56"></i>
+                <i class="shop-coin-ridge" style="--ridge: 57"></i>
+                <i class="shop-coin-ridge" style="--ridge: 58"></i>
+                <i class="shop-coin-ridge" style="--ridge: 59"></i>
+                <i class="shop-coin-ridge" style="--ridge: 60"></i>
+                <i class="shop-coin-ridge" style="--ridge: 61"></i>
+                <i class="shop-coin-ridge" style="--ridge: 62"></i>
+                <i class="shop-coin-ridge" style="--ridge: 63"></i>
+                <svg class="shop-coin-face shop-coin-front" viewBox="0 0 86 86">
+                  <defs>
+                    <linearGradient id="coin-front-metal" x2=".8" y2="1"><stop stop-color="#83bfff"/><stop offset=".42" stop-color="#255ca7"/><stop offset="1" stop-color="#102c68"/></linearGradient>
+                    <linearGradient id="coin-front-rim" x2=".8" y2="1"><stop stop-color="#d0eaff"/><stop offset=".5" stop-color="#6ba9ed"/><stop offset="1" stop-color="#285693"/></linearGradient>
+                  </defs>
+                  <circle cx="43" cy="43" r="42" fill="url(#coin-front-metal)" stroke="url(#coin-front-rim)" stroke-width="2"/>
+                  <circle cx="43" cy="43" r="35" fill="#19468d" stroke="#80b5ee" stroke-width="1.5"/>
+                  <circle cx="43" cy="44" r="32" fill="none" stroke="#0d2d66" stroke-width="1"/>
+                  <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#082960" stroke-width="7" transform="translate(1 2)"/>
+                  <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#c3e2ff" stroke-width="7"/>
+                  <path d="M16 27a32 32 0 0 1 38-14" fill="none" stroke="#d8efff" opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <svg class="shop-coin-face shop-coin-back" viewBox="0 0 86 86">
+                  <defs>
+                    <linearGradient id="coin-back-metal" x2=".8" y2="1"><stop stop-color="#83bfff"/><stop offset=".42" stop-color="#255ca7"/><stop offset="1" stop-color="#102c68"/></linearGradient>
+                    <linearGradient id="coin-back-rim" x2=".8" y2="1"><stop stop-color="#d0eaff"/><stop offset=".5" stop-color="#6ba9ed"/><stop offset="1" stop-color="#285693"/></linearGradient>
+                  </defs>
+                  <circle cx="43" cy="43" r="42" fill="url(#coin-back-metal)" stroke="url(#coin-back-rim)" stroke-width="2"/>
+                  <circle cx="43" cy="43" r="35" fill="#19468d" stroke="#80b5ee" stroke-width="1.5"/>
+                  <circle cx="43" cy="44" r="32" fill="none" stroke="#0d2d66" stroke-width="1"/>
+                  <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#082960" stroke-width="7" transform="translate(1 2)"/>
+                  <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#c3e2ff" stroke-width="7"/>
+                  <path d="M16 27a32 32 0 0 1 38-14" fill="none" stroke="#d8efff" opacity=".45" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </span>
+            <svg class="shop-coin-sparkles" viewBox="0 0 120 120" width="90" height="90">
+              <g fill="#e0f3ff">
+                <path class="shop-sparkle" d="M18.00 10.00L19.54 18.33L27.53 15.50L21.08 21.00L27.53 26.50L19.54 23.67L18.00 32.00L16.46 23.67L8.47 26.50L14.92 21.00L8.47 15.50L16.46 18.33Z"/>
+                <path class="shop-sparkle" d="M103.00 70.00L104.54 78.33L112.53 75.50L106.08 81.00L112.53 86.50L104.54 83.67L103.00 92.00L101.46 83.67L93.47 86.50L99.92 81.00L93.47 75.50L101.46 78.33Z"/>
+                <path class="shop-sparkle" d="M36.00 99.00L36.98 104.30L42.06 102.50L37.96 106.00L42.06 109.50L36.98 107.70L36.00 113.00L35.02 107.70L29.94 109.50L34.04 106.00L29.94 102.50L35.02 104.30Z"/>
+              </g>
+            </svg>
+          </span>
           <span class="card-title">Cubie Shop <span>↗</span></span>
           <span class="card-description">Play. Earn. Find a new you.</span>
         </button>
@@ -246,15 +361,22 @@
                 class="sequence"
                 aria-label="Sequence to type"
               ></div>
+              <div id="typing-touch" aria-label="Touch keyboard">
+                <div id="typing-keys"></div>
+                <div class="typing-key-row typing-key-tools"><button id="typing-shift" type="button" aria-pressed="false">⇧ Shift</button><button id="typing-symbols" type="button" aria-pressed="false">123 / Symbols</button></div>
+              </div>
+              <details class="typing-device"><summary>Use device keyboard</summary>
               <label class="typing-mobile-label"
-                >Tap to type
+                >Device keyboard (optional)
                 <input
                   id="typing-input"
                   autocomplete="off"
                   autocapitalize="off"
+                  autocorrect="off"
                   spellcheck="false"
                   aria-label="Type the displayed sequence"
               /></label>
+              </details>
               <p id="typing-feedback"></p>
               <div class="timer-track"><div id="timer-bar"></div></div>
             </div>
@@ -371,7 +493,7 @@
     <footer class="site-footer">
       <span>MICROGAME MADNESS</span>
       <p>Made for the joy of one more try.</p>
-      <span id="game-total">6 GAMES + JUKEBOX + CLOSET / ENDLESS REMATCHES</span>
+      <span id="game-total">6 GAMES + JUKEBOX + CLOSET + SHOP / ENDLESS REMATCHES</span>
     </footer>
     <dialog id="cubie-hint" aria-labelledby="cubie-hint-title" aria-describedby="cubie-hint-copy">
       <div class="cubie-hint-art" aria-hidden="true"><span class="pixel-face"><i></i><i></i><b></b></span></div>

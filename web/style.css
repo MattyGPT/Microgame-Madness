@@ -250,7 +250,7 @@ h1 em {
 .pixel-face.blushing::before, .pixel-face.blushing::after { opacity: .95; }
 @keyframes mascot-float {
   0%, 100% { transform: translateY(0) rotate(-14deg); }
-  50% { transform: translateY(-9px) rotate(-12deg); }
+  50% { transform: translateY(-11px) rotate(-11deg); }
 }
 @keyframes mascot-blink {
   0%, 91%, 97%, 100% { transform: scaleY(1); }
@@ -353,35 +353,44 @@ body.gaster-active { overflow: hidden; cursor: none; }
   }
 }
 .orbit {
+  --orbit-angle: -28deg;
   position: absolute;
   width: 330px;
   height: 130px;
   left: 45px;
   top: 56px;
-  border: 1px solid #394836;
-  border-radius: 50%;
-  transform: rotate(-28deg);
+  overflow: visible;
+  transform: rotate(var(--orbit-angle));
+  transform-origin: center;
   pointer-events: none;
-  animation: cubie-orbit 18s linear infinite;
+  animation: hero-ring-rotation 16.363636s linear infinite;
 }
 .orbit-two {
-  transform: rotate(31deg);
-  animation-name: cubie-orbit-reverse;
-  animation-duration: 24s;
+  --orbit-angle: 31deg;
+  animation-duration: 21.818182s;
+  animation-direction: reverse;
 }
-.orbit::after {
-  content: "";
-  position: absolute;
-  left: 17%;
-  top: 7%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--lime);
-  box-shadow: 0 0 9px #c6f78388;
+@keyframes hero-ring-rotation {
+  from { transform: rotate(var(--orbit-angle)); }
+  to { transform: rotate(calc(var(--orbit-angle) + 360deg)); }
 }
-@keyframes cubie-orbit { to { transform: rotate(332deg); } }
-@keyframes cubie-orbit-reverse { to { transform: rotate(-329deg); } }
+.orbit-track, .orbit-particle { fill: none; vector-effect: non-scaling-stroke; }
+.orbit-track { stroke: #394836; stroke-width: 1px; }
+/* A round dash shares the track's exact ellipse, keeping its center on the
+   ring at every angle and screen size. Duration / 1.1 means 10% faster. */
+.orbit-particle {
+  stroke: var(--lime);
+  stroke-width: 7px;
+  stroke-linecap: round;
+  stroke-dasharray: .001 99.999;
+  filter: drop-shadow(0 0 4px #c6f78388);
+  animation: hero-orbit-particle 16.363636s linear infinite;
+}
+.orbit-two .orbit-particle {
+  animation-duration: 21.818182s;
+  animation-direction: reverse;
+}
+@keyframes hero-orbit-particle { to { stroke-dashoffset: -100; } }
 @keyframes cubie-sparkle {
   0%, 100% { opacity: .4; transform: translateY(0) scale(.8) rotate(-10deg); }
   50% { opacity: 1; transform: translateY(-8px) scale(1.1) rotate(20deg); }
@@ -414,7 +423,7 @@ body.gaster-active { overflow: hidden; cursor: none; }
 }
 .art-label strong { color: var(--lime); line-height: 2; }
 @media (prefers-reduced-motion: reduce) {
-  .orbit, .spark { animation: none; }
+  .orbit, .orbit-particle, .spark { animation: none; }
 }
 .section-heading {
   display: flex;
@@ -536,9 +545,79 @@ body.gaster-active { overflow: hidden; cursor: none; }
   transform: rotate(-9deg);
 }
 .wrath-art { color: #ffe066; }
+.wrath-art svg {
+  stroke: #17191d;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
 .singularity-art svg { width: 100px; height: 80px; filter: drop-shadow(0 0 12px #a488ff66); }
 .singularity-card { background: linear-gradient(135deg, #121625, #242039); }
 .wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
+/* The whole cylinder turns together; no independently squashed face or edge. */
+.shop-card-art { position: relative; }
+.shop-coin-scene {
+  display: inline-block;
+  position: relative;
+  width: 90px;
+  height: 90px;
+  perspective: 450px;
+}
+.shop-coin {
+  position: absolute;
+  inset: 2px;
+  transform-style: preserve-3d;
+  transform: rotateX(-12deg) rotateY(-25deg);
+  animation: shop-coin-flip 5s ease-in-out infinite;
+}
+.shop-coin-face {
+  position: absolute;
+  inset: 0;
+  width: 86px;
+  height: 86px;
+  backface-visibility: hidden;
+}
+.shop-coin-front { transform: translateZ(5px); }
+.shop-coin-back { transform: rotateY(180deg) translateZ(5px); }
+.shop-coin-ridge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4.3px;
+  height: 10px;
+  background: linear-gradient(90deg, #153d76, #8cbcf0 36%, #447eb8 58%, #173c70);
+  backface-visibility: hidden;
+  transform: translate(-50%, -50%) rotateZ(calc(var(--ridge) * 5.625deg)) translateY(-42.95px) rotateX(90deg);
+}
+.shop-coin-sparkles {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  overflow: visible;
+  pointer-events: none;
+}
+.shop-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: shop-sparkle 3s ease-in-out infinite;
+}
+.shop-sparkle:nth-child(2) { animation-delay: -1s; }
+.shop-sparkle:nth-child(3) { animation-delay: -2s; }
+@keyframes shop-coin-flip {
+  0%, 65% { transform: rotateX(-12deg) rotateY(-25deg); }
+  100% { transform: rotateX(-12deg) rotateY(335deg); }
+}
+@keyframes shop-sparkle {
+  0%, 60%, 100% { opacity: 0; transform: scale(.35); }
+  30% { opacity: 1; transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-coin { animation: none; }
+  .shop-sparkle { opacity: .7; }
+}
 /* Quiet, independent idle motions keep the arcade selection alive. */
 .word-art .word-question { animation: arcade-question 3s ease-in-out infinite; }
 .keys-art i { animation: arcade-key-left 3.2s ease-in-out infinite; }
@@ -554,6 +633,26 @@ body.gaster-active { overflow: hidden; cursor: none; }
 .pumpkin-art { animation: arcade-pumpkin-shift 4s ease-in-out infinite; }
 .wrath-art svg { animation: arcade-crown-breathe 3.4s ease-in-out infinite; }
 .singularity-art svg { animation: arcade-core-hover 4.8s ease-in-out infinite; }
+.core-orbit-ring {
+  transform-origin: 50px 40px;
+  animation: core-ring-wobble 5s ease-in-out infinite;
+}
+@keyframes core-ring-wobble {
+  0%, 100% { transform: rotate(-12deg) scaleY(.85); }
+  50% { transform: rotate(12deg) scaleY(1.15); }
+}
+.core-infall-star {
+  opacity: 0;
+  animation: core-star-infall 3.6s linear var(--star-delay) infinite;
+}
+@keyframes core-star-infall {
+  0% { opacity: 0; transform: rotate(0deg) translateY(-35px) scale(.3); }
+  15% { opacity: 1; transform: rotate(15deg) translateY(-34px) scale(1); }
+  45% { opacity: 1; transform: rotate(65deg) translateY(-26px) scale(.85); }
+  70% { opacity: .9; transform: rotate(130deg) translateY(-16px) scale(.65); }
+  90% { opacity: .5; transform: rotate(220deg) translateY(-5px) scale(.3); }
+  100% { opacity: 0; transform: rotate(280deg) translateY(0) scale(0); }
+}
 .singularity-art circle {
   transform-box: fill-box;
   transform-origin: center;
@@ -1705,7 +1804,7 @@ select:disabled {
 }
 .cubie-float { animation: custom-float 3.8s ease-in-out infinite; transform: rotate(-14deg); transform-origin: center; }
 .cubie-eyes { animation: mascot-blink 4.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes custom-float { 0%, 100% { transform: translateY(0) rotate(-14deg); } 50% { transform: translateY(-9px) rotate(-12deg); } }
+@keyframes custom-float { 0%, 100% { transform: translateY(0) rotate(-14deg); } 50% { transform: translateY(-11px) rotate(-11deg); } }
 .custom-card-art .cubie-custom-art { width: 62px; height: 62px; }
 .pixel-face.custom-equipped { background: transparent; box-shadow: none; }
 .pixel-face.custom-equipped > i, .pixel-face.custom-equipped > b { display: none; }
@@ -1840,3 +1939,169 @@ select:disabled {
 #shop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
 .shop-price { color: #a8d0ff; font-size: 12px; margin-bottom: 12px; }
 @media (max-width: 700px) { #shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Avoid accidental selection without disabling scrolling or editable fields. */
+*, *::before, *::after { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+#typing-touch { display: none; }
+@media (pointer: coarse) {
+  #typing-touch { display: block; max-width: 460px; margin: 16px auto; }
+  .typing-key-row { display: flex; justify-content: center; gap: 3px; margin: 5px 0; }
+  .typing-key-row button { flex: 1; max-width: 42px; min-width: 0; min-height: 44px; padding: 0; border: 1px solid #8a7ba8; border-radius: 6px; background: #302b40; color: #f7f2ff; font: 18px monospace; touch-action: manipulation; }
+  .typing-key-row button:active, #typing-shift[aria-pressed="true"] { background: #b9a5f5; color: #171321; }
+  .typing-key-tools button { max-width: none; font-family: inherit; font-size: 13px; }
+  .typing-mobile-label { display: block; }
+  .typing-mobile-label input { display: block; width: 100%; max-width: 220px; margin: 8px auto; font-size: 16px; }
+  .keyboard-game { padding: 16px 10px; }
+  .sequence { margin: 14px 0; }
+}
+
+.typing-device { display: none; margin: 10px auto; font-size: 12px; color: var(--muted); }
+.typing-device summary { cursor: pointer; }
+@media (pointer: coarse) { .typing-device { display: block; } }
+
+/* Distinct ambient motion for premium Customs, shared by cards and equipped art. */
+.custom-sparkle { transform-box: fill-box; transform-origin: center; animation: custom-twinkle 3.1s ease-in-out infinite; }
+@keyframes custom-twinkle { 0%, 100% { opacity: .25; transform: scale(.55) rotate(0); } 45% { opacity: 1; transform: scale(1.4) rotate(35deg); } 70% { opacity: .5; transform: scale(.8) rotate(60deg); } }
+.whale-galaxy { transform-origin: 60px 67px; animation: whale-galaxy-turn 30s linear infinite; }
+@keyframes whale-galaxy-turn { to { transform: rotate(360deg); } }
+.whale-fin { animation: whale-fin-swim 3.6s ease-in-out infinite alternate; }
+.whale-fin-left { transform-origin: 24px 77px; }
+.whale-fin-right { transform-origin: 96px 77px; animation-direction: alternate-reverse; }
+@keyframes whale-fin-swim { from { transform: rotate(-13deg); } to { transform: rotate(13deg); } }
+.whale-tail { transform-origin: 85px 40px; animation: whale-tail-swim 4s ease-in-out infinite alternate; }
+@keyframes whale-tail-swim { to { transform: rotate(12deg); } }
+.whale-spout { animation: whale-spout-glow 3.4s ease-in-out infinite; }
+@keyframes whale-spout-glow { 50% { opacity: .5; transform: translateY(-4px); } }
+.empyrorite-halo { transform-origin: 60px 68px; animation: whale-galaxy-turn 24s linear infinite reverse; }
+.empyrorite-shard { animation: empyrorite-shard-float 3s ease-in-out infinite alternate; }
+@keyframes empyrorite-shard-float { to { transform: translateY(-8px); } }
+.empyrorite-sheen { animation: empyrorite-sheen-pass 5s ease-in-out infinite; }
+@keyframes empyrorite-sheen-pass { 0%, 12% { transform: translateX(0); } 65%, 100% { transform: translateX(160px); } }
+.sovereign-banner { transform-origin: 60px 25px; animation: sovereign-banner-wave 4s ease-in-out infinite alternate; }
+@keyframes sovereign-banner-wave { to { transform: skewY(5deg); } }
+.sovereign-aura { transform-origin: 60px 65px; animation: whale-galaxy-turn 35s linear infinite; }
+.peacock-fan { transform-origin: 60px 93px; animation: peacock-fan-sway 5s ease-in-out infinite alternate; }
+@keyframes peacock-fan-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+.globe-snow { animation: globe-snowfall 4s linear infinite; }
+@keyframes globe-snowfall { from { transform: translate(-3px, -65px); } to { transform: translate(3px, 76px); } }
+.custom-aurora { animation: custom-aurora-shift 5s ease-in-out infinite alternate; }
+@keyframes custom-aurora-shift { to { filter: hue-rotate(45deg) brightness(1.15); opacity: .85; } }
+@media (prefers-reduced-motion: reduce) {
+  .custom-sparkle, .whale-galaxy, .whale-fin, .whale-tail, .whale-spout,
+  .empyrorite-halo, .empyrorite-shard, .empyrorite-sheen, .sovereign-banner,
+  .sovereign-aura, .peacock-fan, .globe-snow, .custom-aurora { animation: none; }
+}
+
+/* First scowl at 8 seconds; repeat every 8 seconds, angry for 3. */
+.boss-art { animation: boss-angry-color 8s ease-in-out 8s infinite; }
+.boss-art span::before, .boss-art span::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  width: 18px;
+  height: 4px;
+  background: #242022;
+  opacity: 0;
+  animation: boss-angry-brows 8s ease-in-out 8s infinite;
+}
+.boss-art span::before { left: 1px; --boss-brow-angle: 22deg; }
+.boss-art span::after { right: 4px; --boss-brow-angle: -22deg; }
+@keyframes boss-angry-brows {
+  0%, 37.5%, 100% { opacity: 0; transform: translateY(-2px) rotate(0deg); }
+  4.375%, 33.125% { opacity: 1; transform: translateY(0) rotate(var(--boss-brow-angle)); }
+}
+@keyframes boss-angry-color {
+  0%, 37.5%, 100% { color: var(--accent); }
+  4.375%, 33.125% { color: #ff5c68; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boss-art, .boss-art span::before, .boss-art span::after { animation: none; }
+}
+
+/* Accessory motion: pivots use the original SVG coordinates so attachments
+   remain connected at every display size. Shared float/blink stays separate. */
+.cubie-motion { transform-box: view-box; }
+.motion-wing { animation: cubie-wingbeat .75s ease-in-out infinite alternate; }
+@keyframes cubie-wingbeat { from { transform: scaleX(1.05) rotate(-6deg); } to { transform: scaleX(.35) rotate(12deg); } }
+.motion-sway { animation: cubie-accessory-sway 3.4s ease-in-out infinite alternate; }
+@keyframes cubie-accessory-sway { from { transform: rotate(-8deg); } to { transform: rotate(9deg); } }
+.motion-paper { animation: cubie-paper-feed 4s ease-in-out infinite; }
+@keyframes cubie-paper-feed { 0%, 15%, 100% { transform: translateY(0); } 65%, 85% { transform: translateY(-7px); } }
+.motion-keys { animation: cubie-type-keys 1.5s steps(2, end) infinite; }
+@keyframes cubie-type-keys { 50% { stroke-dashoffset: 4; opacity: .6; } }
+.motion-energy { animation: cubie-energy 3.6s ease-in-out infinite; }
+@keyframes cubie-energy { 0%, 100% { opacity: .55; filter: drop-shadow(0 0 0 transparent); } 50% { opacity: 1; filter: drop-shadow(0 0 2px #ccedff99); } }
+.motion-tread { animation: cubie-tread .65s linear infinite; }
+@keyframes cubie-tread { to { stroke-dashoffset: -4; } }
+.motion-thrust { animation: cubie-thrust 1s ease-in-out infinite alternate; }
+@keyframes cubie-thrust { from { transform: scale(.9, .75); } to { transform: scale(1.12, 1.6); } }
+.motion-paddle { animation: cubie-paddle 2.5s ease-in-out infinite alternate; }
+@keyframes cubie-paddle { from { transform: rotate(-11deg); } to { transform: rotate(11deg); } }
+.motion-bells { animation: cubie-bells 4s ease-in-out infinite; }
+@keyframes cubie-bells { 0%, 35%, 100% { transform: rotate(0); } 55% { transform: rotate(-5deg); } 80% { transform: rotate(5deg); } }
+.motion-heart { animation: cubie-heart 2.4s ease-in-out infinite; }
+@keyframes cubie-heart { 0%, 35%, 100% { transform: scale(1); } 14% { transform: scale(1.2); } 25% { transform: scale(1.07); } }
+.motion-hover { animation: cubie-accessory-hover 3.6s ease-in-out infinite alternate; }
+@keyframes cubie-accessory-hover { to { transform: translateY(-8px); } }
+.motion-horizon { animation: cubie-horizon 4s ease-in-out infinite alternate; }
+@keyframes cubie-horizon { to { transform: scale(.89); opacity: .7; } }
+.motion-orbit-flow { stroke-dasharray: 14 86; animation: cubie-orbit-flow 4s linear infinite; }
+@keyframes cubie-orbit-flow { to { stroke-dashoffset: -100; } }
+.motion-spin { animation: cubie-accessory-spin 8s linear infinite; }
+@keyframes cubie-accessory-spin { to { transform: rotate(360deg); } }
+.motion-binary { transform: translate(-30px, 0); animation: cubie-binary-orbit 6s linear infinite; }
+.motion-binary:nth-child(2) { transform: translate(30px, 0); }
+@keyframes cubie-binary-orbit {
+  0% { transform: translate(-30.00px, -0.00px) scale(1.000); }
+  6.25% { transform: translate(-27.72px, -4.59px) scale(0.931); }
+  12.5% { transform: translate(-21.21px, -8.49px) scale(0.873); }
+  18.75% { transform: translate(-11.48px, -11.09px) scale(0.834); }
+  25% { transform: translate(-0.00px, -12.00px) scale(0.820); }
+  31.25% { transform: translate(11.48px, -11.09px) scale(0.834); }
+  37.5% { transform: translate(21.21px, -8.49px) scale(0.873); }
+  43.75% { transform: translate(27.72px, -4.59px) scale(0.931); }
+  50% { transform: translate(30.00px, -0.00px) scale(1.000); }
+  56.25% { transform: translate(27.72px, 4.59px) scale(1.069); }
+  62.5% { transform: translate(21.21px, 8.49px) scale(1.127); }
+  68.75% { transform: translate(11.48px, 11.09px) scale(1.166); }
+  75% { transform: translate(0.00px, 12.00px) scale(1.180); }
+  81.25% { transform: translate(-11.48px, 11.09px) scale(1.166); }
+  87.5% { transform: translate(-21.21px, 8.49px) scale(1.127); }
+  93.75% { transform: translate(-27.72px, 4.59px) scale(1.069); }
+  100% { transform: translate(-30.00px, 0.00px) scale(1.000); }
+}
+.motion-blade { animation: cubie-blade 4s ease-in-out infinite; }
+@keyframes cubie-blade { 0%, 85%, 100% { transform: translateY(0); } 55%, 65% { transform: translateY(-11px); } }
+.motion-rain { animation: cubie-raindrop 2.2s linear infinite; }
+@keyframes cubie-raindrop { 0% { transform: translateY(-6px); opacity: 0; } 20%, 75% { opacity: 1; } 100% { transform: translateY(16px); opacity: 0; } }
+.motion-echo { animation: cubie-echo 3.8s ease-in-out infinite; }
+@keyframes cubie-echo { 0%, 100% { opacity: .4; transform: translate(-5px, -5px); } 50% { opacity: 1; transform: translate(3px, 3px); } }
+.motion-clock { animation: cubie-accessory-spin 12s steps(12, end) infinite; }
+.motion-bell { animation: cubie-jelly-bell 2.8s ease-in-out infinite alternate; }
+@keyframes cubie-jelly-bell { to { transform: scale(1.06, .85); } }
+.motion-tentacle { animation: cubie-tentacle 2.8s ease-in-out infinite alternate; }
+@keyframes cubie-tentacle { from { transform: skewX(-15deg) scaleY(.92); } to { transform: skewX(15deg) scaleY(1.1); } }
+.motion-steam { animation: cubie-steam 3.8s ease-out infinite; }
+@keyframes cubie-steam { 0% { opacity: .25; transform: translate(0, 4px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(5px, -12px); } }
+.motion-mailflag { animation: cubie-mailflag 7s ease-in-out infinite; }
+@keyframes cubie-mailflag { 0%, 15%, 85%, 100% { transform: rotate(0); } 35%, 65% { transform: rotate(32deg); } }
+.motion-polish { animation: cubie-polish 5.2s ease-in-out infinite; }
+@keyframes cubie-polish { 0%, 25% { transform: translateX(0); } 75%, 100% { transform: translateX(160px); } }
+.motion-color { animation: cubie-color-shift 8s ease-in-out infinite alternate; }
+@keyframes cubie-color-shift { to { filter: hue-rotate(42deg) brightness(1.08); } }
+.cubie-custom-art[data-custom="ghost"] .cubie-front { animation: cubie-ghost-fade 4s ease-in-out infinite alternate; }
+@keyframes cubie-ghost-fade { to { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art, .cubie-custom-art * { animation: none !important; }
+}
+
+/* One full circuit, shared by the front and rear copy of each ring. */
+.cubie-ring-particles {
+  stroke-dasharray: 2 48;
+  animation: cubie-ring-circuit 4.8s linear infinite;
+}
+@keyframes cubie-ring-circuit { to { stroke-dashoffset: -100; } }
+@media (prefers-reduced-motion: reduce) {
+  .cubie-ring-particles { animation: none; }
+}

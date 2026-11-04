@@ -40,5 +40,15 @@ test('purchases deduct exactly once, persist ownership, and gate equipment', () 
   const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
   assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
   assert.deepEqual(Shop.restore({ units: -1, owned: ['gaster', item.id, item.id, '__proto__'] }, Customs.catalog), { units: 0, owned: [item.id] });
-  assert.equal(Customs.catalog.filter(c => c.price).length, 12);
+  assert.equal(Customs.catalog.filter(c => c.price).length, 48);
+});
+
+test('original shop prices increase tenfold without removing existing ownership', () => {
+  const prices = [150, 200, 250, 300, 400, 450, 600, 700, 850, 1000, 1300, 1800];
+  const items = Customs.catalog.filter(c => c.price);
+  assert.deepEqual(items.slice(0, 12).map(c => c.price), prices);
+  const wallet = Shop.restore({ units: 0, owned: ['shop_blue_mint'] }, Customs.catalog);
+  assert.equal(Customs.selected('shop_blue_mint', {}, wallet.owned).id, 'shop_blue_mint');
+  assert.equal(new Set(items.map(c => c.detail)).size, 48);
+  assert.equal(new Set(items.map(c => c.flavor)).size, 48);
 });

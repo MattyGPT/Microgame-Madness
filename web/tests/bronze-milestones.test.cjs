@@ -22,7 +22,7 @@ test('eight bronze milestones unlock at their exact threshold and preserve earne
     const returning = new Tracker({ stats: { [item.stat]: item.target } });
     assert.ok(returning.visit().earned.some(a => a.id === id));
   }
-  assert.equal(catalog.filter(a => a.tier === 'bronze').length, 30);
+  assert.equal(catalog.filter(a => a.tier === 'bronze').length, 35);
   assert.equal(catalog.find(a => a.id === 'collect_bronze').target, 20);
 });
 

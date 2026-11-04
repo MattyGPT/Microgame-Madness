@@ -215,6 +215,21 @@ const Achievements = (() => {
       (family === 'pumpkin' ? " Counts across Pumpkin King and The King's Wrath." : ''), id, target);
     attackRewards.push({ id, family, index, key, attack, target, customName });
   });
+  add("cube_pet_5", "High Five, Cubie!", "bronze", "Arcade", "Pet Cubie 5 times.", "cubePets", 5);
+  add("dodge_5", "Finding Your Feet", "bronze", "Turtle Dodge", "Survive 5 seconds in one Turtle Dodge game.", "dodgeBest", 5);
+  add("wrath_counter_3", "Three Royal Replies", "bronze", "The King's Wrath", "Successfully counter 3 magenta fingers across King's Wrath fights.", "wrathCounterHits", 3);
+  add("hangman_hard_2", "Double Difficulty", "bronze", "Hangman", "Win 2 hard Hangman games.", "hardWins", 2);
+  add("hangman_win_4", "Four Words Forward", "bronze", "Hangman", "Win 4 Hangman games.", "hangmanWins", 4);
+  add("hangman_win_7", "Lucky Letters", "silver", "Hangman", "Win 7 Hangman games.", "hangmanWins", 7);
+  add("hangman_perfect_4", "Spotless Spelling", "silver", "Hangman", "Win 4 Hangman games without a wrong guess.", "perfectWins", 4);
+  add("typing_7", "Seven-Key Stride", "silver", "Key Rush", "Complete 7 rounds in one Key Rush game.", "typingBest", 7);
+  add("dodge_45", "Three-Quarter Minute", "silver", "Turtle Dodge", "Survive 45 seconds in one Turtle Dodge game.", "dodgeBest", 45);
+  add("dodge_merciless_20", "Mercy Can Wait", "silver", "Turtle Dodge", "Survive 20 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 20);
+  add("dodge_close_5", "Narrow Escapes", "silver", "Turtle Dodge", "Make 5 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 5);
+  add("cube_pet_50", "Fifty Little Squeaks", "silver", "Arcade", "Pet Cubie 50 times.", "cubePets", 50);
+  add("boss_win_3", "Triple Trouble", "silver", "Boss Crush", "Win 3 Boss Crush games.", "bossWins", 3);
+  add("wrath_win_3", "Third Rehearsal", "silver", "The King's Wrath", "Win 3 King's Wrath practice fights, in any modes.", "wrathWins", 3);
+  add("wrath_counter_10", "Talk to the Hand", "silver", "The King's Wrath", "Successfully counter 10 magenta fingers across King's Wrath fights.", "wrathCounterHits", 10);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [

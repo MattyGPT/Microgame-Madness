@@ -9,9 +9,9 @@ const wrath = (difficulty, extra) => ({ mode: 'wrath', difficulty, over: false, 
   attacks_completed: 0, counter_hits: 0, damage_taken: 0, lives: 15, max_lives: 15, ...extra });
 
 test('catalog includes Determination, the named Rainbow wins, and the expanded Empyrorite rewards', () => {
-  assert.equal(catalog.length, 181);
-  assert.equal(new Set(catalog.map(item => item.id)).size, 181);
-  assert.equal(catalog.slice(74).length, 107);
+  assert.equal(catalog.length, 196);
+  assert.equal(new Set(catalog.map(item => item.id)).size, 196);
+  assert.equal(catalog.slice(74).length, 122);
   const victory = catalog.find(item => item.id === 'core_win');
   assert.equal(victory.title, 'My Fingers Hurt');
   assert.equal(victory.tier, 'rainbow');

@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 181);
+  assert.equal(catalog.length, 196);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
@@ -98,21 +98,21 @@ test('100 Cubie pets accumulate across visits and award crystal exactly once', (
   assert.equal(item.tier, 'crystal');
   assert.equal(item.target, 100);
   for (let pets = 1; pets <= 99; pets++) {
-    assert.deepEqual(ids(tracker.secret('cube')), pets === 1 ? ['cube_pet'] : pets === 10 ? ['cube_pet_10'] : pets === 25 ? ['cube_pet_25'] : []);
+    assert.deepEqual(ids(tracker.secret('cube')), pets === 1 ? ['cube_pet'] : pets === 5 ? ['cube_pet_5'] : pets === 50 ? ['cube_pet_50'] : pets === 10 ? ['cube_pet_10'] : pets === 25 ? ['cube_pet_25'] : []);
     assert.equal(tracker.progress(item), pets);
   }
-  assert.equal(tracker.score, 120);
+  assert.equal(tracker.score, 160);
   tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(tracker.visit().changed, false);
   assert.equal(tracker.progress(item), 99);
   assert.deepEqual(ids(tracker.secret('cube')), ['cube_pet_100']);
-  assert.equal(tracker.score, 390);
+  assert.equal(tracker.score, 430);
   const unlocked = tracker.data.unlocked.cube_pet_100;
   for (let i = 0; i < 5; i++) assert.deepEqual(ids(tracker.secret('cube')), []);
   assert.equal(tracker.data.stats.cubePets, 105);
   assert.equal(tracker.progress(item), 100);
   tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
-  assert.equal(tracker.score, 390);
+  assert.equal(tracker.score, 430);
   assert.equal(tracker.data.unlocked.cube_pet_100, unlocked);
   assert.deepEqual(ids(tracker.secret('cube')), []);
 });
@@ -168,15 +168,15 @@ test('Hangman losses, abandonment, repeated final frames and reloads never dupli
   assert.equal(tracker.score, 210);
   finish(tracker, 'hangman', 'medium');
   finish(tracker, 'hangman', 'easy');
-  assert.deepEqual(ids(finish(tracker, 'hangman', 'hard')), ['hangman_5']);
-  assert.equal(tracker.score, 310);
+  assert.deepEqual(ids(finish(tracker, 'hangman', 'hard')), ['hangman_5', 'hangman_hard_2']);
+  assert.equal(tracker.score, 330);
   tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
   assert.equal(tracker.observe({ mode: 'hangman', difficulty: 'hard', over: true, won: true }).changed, false);
   for (let i = 0; i < 4; i++) finish(tracker, 'hangman', 'easy');
   assert.deepEqual(ids(finish(tracker, 'hangman', 'hard')), ['hangman_10', 'hangman_hard_3']);
-  assert.equal(tracker.score, 410);
+  assert.equal(tracker.score, 460);
   for (let i = 0; i < 15; i++) finish(tracker, 'hangman', 'easy');
-  assert.equal(tracker.score, 500);
+  assert.equal(tracker.score, 550);
 });
 
 test('typing and survival use the best single run and exact thresholds', () => {
@@ -190,20 +190,20 @@ test('typing and survival use the best single run and exact thresholds', () => {
   tracker.start('keyboard', 'progressive');
   assert.deepEqual(ids(typing(5)), []);
   assert.equal(tracker.data.stats.typingBest, 5);
-  assert.deepEqual(ids(typing(10)), ['typing_10']);
+  assert.deepEqual(ids(typing(10)), ['typing_10', 'typing_7']);
   assert.deepEqual(ids(typing(14)), []);
   assert.deepEqual(ids(typing(15)), ['typing_15']);
   assert.deepEqual(ids(typing(20)), ['typing_20']);
   tracker.start('dodge', 'easy');
   const dodge = (elapsed, difficulty = 'easy') => tracker.observe({ mode: 'dodge', difficulty, elapsed, over: false });
-  assert.deepEqual(ids(dodge(14)), ['dodge_10']);
+  assert.deepEqual(ids(dodge(14)), ['dodge_10', 'dodge_5']);
   assert.deepEqual(ids(dodge(15)), ['dodge_15']);
   assert.deepEqual(ids(dodge(20)), ['dodge_20']);
   assert.deepEqual(ids(dodge(30)), ['dodge_30']);
-  assert.deepEqual(ids(dodge(60)), ['dodge_60']);
+  assert.deepEqual(ids(dodge(60)), ['dodge_60', 'dodge_45']);
   assert.equal(tracker.data.unlocked.dodge_merciless, undefined);
   tracker.start('dodge', 'merciless');
-  assert.deepEqual(ids(dodge(29, 'merciless')), ['dodge_merciless_15']);
+  assert.deepEqual(ids(dodge(29, 'merciless')), ['dodge_merciless_15', 'dodge_merciless_20']);
   assert.deepEqual(ids(dodge(30, 'merciless')), ['dodge_merciless']);
 });
 
@@ -228,7 +228,7 @@ test('boss victories respect the selected mode and sampler requires all five gam
   const tracker = new Tracker();
   assert.deepEqual(ids(finish(tracker, 'boss', 'mean')), ['boss_win']);
   assert.deepEqual(ids(finish(tracker, 'boss', 'cruel')), ['boss_cruel', 'boss_win_2']);
-  assert.deepEqual(ids(finish(tracker, 'boss', 'nightmare')), ['boss_nightmare']);
+  assert.deepEqual(ids(finish(tracker, 'boss', 'nightmare')), ['boss_nightmare', 'boss_win_3']);
   assert.deepEqual(ids(finish(tracker, 'boss', 'impossible')), ['boss_impossible']);
   assert.deepEqual(ids(finish(tracker, 'boss', 'mean')), ['boss_5']);
   assert.deepEqual(ids(finish(tracker, 'pumpkin', 'baby')), ['pumpkin_baby']);
@@ -304,7 +304,7 @@ test('every additional crystal and diamond challenge unlocks exactly at its thre
   finish(tracker, 'boss', 'mean', { damage_taken: 0 });
   finish(tracker, 'boss', 'impossible', { damage_taken: 1 });
   assert.equal(tracker.data.unlocked.boss_flawless, undefined);
-  assert.deepEqual(ids(finish(tracker, 'boss', 'impossible', { damage_taken: 0 })), ['boss_flawless']);
+  assert.deepEqual(ids(finish(tracker, 'boss', 'impossible', { damage_taken: 0 })), ['boss_flawless', 'boss_win_3']);
 });
 
 test('existing progress and medals migrate without losing points or repeating awards', () => {
@@ -423,8 +423,8 @@ test('Cruel and Nightmare flawless awards require zero-damage wins and persist o
     finish(tracker, 'boss', 'mean', { damage_taken: 0 });
     assert.equal(tracker.data.unlocked[id], undefined);
     const before = tracker.score;
-    assert.deepEqual(ids(finish(tracker, 'boss', difficulty, { damage_taken: 0 })), [id]);
-    assert.equal(tracker.score - before, reward);
+    assert.deepEqual(ids(finish(tracker, 'boss', difficulty, { damage_taken: 0 })), [id, 'boss_win_3']);
+    assert.equal(tracker.score - before, reward + points.silver);
     assert.equal(tracker.observe({ mode: 'boss', difficulty, over: true, won: true, damage_taken: 0 }).changed, false);
     const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
     assert.deepEqual(ids(finish(restored, 'boss', difficulty, { damage_taken: 0 })), []);
@@ -592,7 +592,10 @@ test('additional gameplay milestones recognize saved progress at the exact thres
   for (const id of ['hangman_hard_perfect_5', 'hangman_last_chance_5', 'typing_15',
     'dodge_90', 'boss_50', 'pumpkin_50', 'wrath_win_10',
     'typing_4', 'hangman_hard_5', 'dodge_close_10', 'hangman_perfect_10',
-    'hangman_hard_perfect_15', 'wrath_counter_100', 'core_flawless_3']) {
+    'hangman_hard_perfect_15', 'wrath_counter_100', 'core_flawless_3',
+    'cube_pet_5', 'dodge_5', 'wrath_counter_3', 'hangman_hard_2', 'hangman_win_4',
+    'hangman_win_7', 'hangman_perfect_4', 'typing_7', 'dodge_45', 'dodge_merciless_20',
+    'dodge_close_5', 'cube_pet_50', 'boss_win_3', 'wrath_win_3', 'wrath_counter_10']) {
     const item = catalog.find(item => item.id === id);
     let tracker = new Tracker({ stats: { [item.stat]: item.target - 1 } });
     tracker.visit();

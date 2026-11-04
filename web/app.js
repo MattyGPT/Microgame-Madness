@@ -344,9 +344,7 @@ $("cubie-hint-okay").onclick = () => {
   clearKeys();
   $("cubie-hint").close();
   syncMusic();
-  if (selected === "keyboard" && matchMedia("(pointer: coarse)").matches)
-    $("typing-input").focus();
-  else $("arena").focus({ preventScroll: true });
+  $("arena").focus({ preventScroll: true });
 };
 function unlockSingularity(navigate = true) {
   saved.unlocks.singularity = true;
@@ -354,7 +352,7 @@ function unlockSingularity(navigate = true) {
   persist();
   document.querySelector('[data-game="singularity"]').hidden = false;
   $("game-count").textContent = "08";
-  $("game-total").textContent = "7 GAMES + JUKEBOX + CLOSET / ENDLESS REMATCHES";
+  $("game-total").textContent = "7 GAMES + JUKEBOX + CLOSET + SHOP / ENDLESS REMATCHES";
   updateAchievements(achievementTracker.secret("gravitron"));
   if (navigate) {
     selectGame("singularity");
@@ -686,7 +684,7 @@ function renderShop() {
       .map(([difficulty, bonus]) => `${modes[mode].difficulties[difficulty][0]} ×${bonus}`).join(" · ");
     return p;
   }));
-  $("shop-grid").replaceChildren(...CubieCustoms.catalog.filter(item => item.price).map(item => {
+  $("shop-grid").replaceChildren(...CubieCustoms.catalog.filter(item => item.price).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
     const owned = saved.shop.owned.includes(item.id);
     const wearing = saved.cubieCustom === item.id;
     const card = document.createElement("article");
@@ -1041,6 +1039,11 @@ function startGame(difficulty) {
   $("exit").hidden = false;
   $("hangman-game").hidden = selected !== "hangman";
   $("keyboard-game").hidden = selected !== "keyboard";
+  if (selected === "keyboard") {
+    touchTypingUpper = false; touchTypingSymbols = false;
+    $("typing-input").value = "";
+    renderTypingKeys();
+  }
   const arcade = ["dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected);
   $("arena").classList.toggle("arcade", arcade);
   $("game-canvas").hidden = !arcade;
@@ -1053,9 +1056,7 @@ function startGame(difficulty) {
   setLocked(true);
   render();
   showGameArea();
-  if (selected === "keyboard" && matchMedia("(pointer: coarse)").matches)
-    $("typing-input").focus();
-  else $("arena").focus({ preventScroll: true });
+  $("arena").focus({ preventScroll: true });
 }
 function showOverlay(title, copy, button, kicker) {
   $("overlay-title").textContent = title;
@@ -1492,9 +1493,48 @@ document.addEventListener("visibilitychange", () => {
   }
   syncMusic();
 });
-$("typing-input").addEventListener("input", (event) => {
-  for (const char of event.target.value) type(char);
+let touchTypingUpper = false;
+let touchTypingSymbols = false;
+function renderTypingKeys() {
+  const rows = touchTypingSymbols ? ["1234567890", "!@#$%&", "*?+-="] : ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+  $("typing-keys").replaceChildren(...rows.map(row => {
+    const group = document.createElement("div");
+    group.className = "typing-key-row";
+    for (const raw of row) {
+      const key = touchTypingUpper && !touchTypingSymbols ? raw.toUpperCase() : raw;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = key;
+      button.dataset.typingKey = key;
+      button.setAttribute("aria-label", `Type ${key}`);
+      button.onpointerdown = event => event.preventDefault();
+      button.onclick = () => type(key);
+      group.append(button);
+    }
+    return group;
+  }));
+  $("typing-shift").setAttribute("aria-pressed", String(touchTypingUpper));
+  $("typing-shift").disabled = touchTypingSymbols;
+  $("typing-symbols").textContent = touchTypingSymbols ? "ABC" : "123 / Symbols";
+  $("typing-symbols").setAttribute("aria-pressed", String(touchTypingSymbols));
+}
+$("typing-shift").onclick = () => { touchTypingUpper = !touchTypingUpper; renderTypingKeys(); };
+$("typing-symbols").onclick = () => { touchTypingSymbols = !touchTypingSymbols; renderTypingKeys(); };
+function consumeTypingInput(event) {
+  if (event.isComposing) return;
+  const value = event.target.value;
   event.target.value = "";
+  for (const char of value) type(char);
+}
+$("typing-input").addEventListener("input", consumeTypingInput);
+$("typing-input").addEventListener("compositionend", consumeTypingInput);
+// Keep game surfaces from starting selection/long-press callouts. Editable
+// fields retain normal caret behavior so players can still enter their name.
+document.addEventListener("selectstart", event => {
+  if (!event.target.closest?.("input, textarea")) event.preventDefault();
+});
+document.addEventListener("contextmenu", event => {
+  if (matchMedia("(pointer: coarse)").matches && !event.target.closest?.("input, textarea")) event.preventDefault();
 });
 document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointerdown", (event) => {

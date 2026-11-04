@@ -1161,7 +1161,10 @@ test('Key Rush plays its own theme through typing rounds, mute, and hidden tabs,
     return Math.max(...samples.map(Math.abs));
   })).toBeGreaterThan(.001);
   const sequence = await page.locator('#sequence').textContent();
-  if (testInfo.project.name === 'mobile') await page.locator('#typing-input').fill(sequence);
+  if (testInfo.project.name === 'mobile') {
+    await page.locator('.typing-device summary').click();
+    await page.locator('#typing-input').fill(sequence);
+  }
   else await page.keyboard.type(sequence);
   await expect(page.locator('#score')).toHaveText('1');
   expect(await page.evaluate(() => musicPlayer.current === window.keyrushVoice)).toBe(true);
@@ -1994,16 +1997,29 @@ test('new name secrets replace effects cleanly and award once across reloads', a
 test('Cubie has moving sparkles and orbits with reduced-motion support', async ({ page }, testInfo) => {
   await expect(page.getByRole('button', { name: 'Pet Cubie' })).toBeVisible();
   await expect(page.locator('.art-label')).toContainText('CUBIE');
-  for (const selector of ['.orbit-one', '.orbit-two', '.spark.s1', '.spark.s2']) {
+  for (const selector of ['.orbit-one', '.orbit-two', '.orbit-one .orbit-particle', '.orbit-two .orbit-particle', '.spark.s1', '.spark.s2']) {
     const decoration = page.locator(selector);
     await expect(decoration).toBeVisible();
-    const before = await decoration.evaluate(el => getComputedStyle(el).transform);
-    await expect.poll(() => decoration.evaluate(el => getComputedStyle(el).transform)).not.toBe(before);
+    const property = selector.includes('orbit-particle') ? 'strokeDashoffset' : 'transform';
+    const before = await decoration.evaluate((el, p) => getComputedStyle(el)[p], property);
+    await expect.poll(() => decoration.evaluate((el, p) => getComputedStyle(el)[p], property)).not.toBe(before);
   }
+  const orbits = await page.locator('.orbit').evaluateAll(els => els.map(el => {
+    const track = el.querySelector('.orbit-track'), dot = el.querySelector('.orbit-particle');
+    return { centered: ['cx','cy','rx','ry'].every(a => track.getAttribute(a) === dot.getAttribute(a)),
+      duration: parseFloat(getComputedStyle(dot).animationDuration), direction: getComputedStyle(dot).animationDirection,
+      ringDuration: parseFloat(getComputedStyle(el).animationDuration), ringDirection: getComputedStyle(el).animationDirection };
+  }));
+  expect(orbits.every(o => o.centered)).toBe(true);
+  expect(orbits[0].duration).toBeCloseTo(18 / 1.1, 4);
+  expect(orbits[1].duration).toBeCloseTo(24 / 1.1, 4);
+  expect(orbits.map(o => o.direction)).toEqual(['normal', 'reverse']);
+  expect(orbits.map(o => o.ringDirection)).toEqual(['normal', 'reverse']);
+  expect(orbits.every(o => o.ringDuration === o.duration)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('.hero-art').screenshot({ path: testInfo.outputPath('cubie.png') });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  for (const selector of ['#cube', '.orbit-one', '.orbit-two', '.spark.s1', '.spark.s2'])
+  for (const selector of ['#cube', '.orbit-one', '.orbit-two', '.orbit-one .orbit-particle', '.orbit-two .orbit-particle', '.spark.s1', '.spark.s2'])
     expect(await page.locator(selector).evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   await page.locator('[data-game="boss"]').click();
   await page.locator('[data-difficulty="impossible"]').click();
@@ -2214,8 +2230,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(78);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 78 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(114);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 114 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
@@ -2301,7 +2317,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('66 / 78 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('66 / 114 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
@@ -2398,8 +2414,16 @@ test('Gaster remix achievement follows audible playback and equipment, not previ
 test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persists', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  const checkPriceOrder = async () => {
+    const order = await page.evaluate(() => ({
+      actual: [...document.querySelectorAll('#shop-grid .custom-tile')].map(el => el.dataset.custom),
+      expected: CubieCustoms.catalog.filter(c => c.price).sort((a,b) => a.price-b.price || a.name.localeCompare(b.name)).map(c => c.id),
+    }));
+    expect(order.actual).toEqual(order.expected);
+  };
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(12);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(48);
+  await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
   await expect(mint.locator('button')).toBeDisabled();
@@ -2411,11 +2435,11 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   // Exercise the real round-save boundary twice for the same round.
   await page.evaluate(() => {
     selectGame('hangman'); selectedDifficulty = 'hard';
-    snapshot = { score: 5, over: true }; roundSaved = false;
-    saveRound(); saveRound();
+    snapshot = { score: 5, over: true };
+    for (let i = 0; i < 10; i++) { roundSaved = false; saveRound(); saveRound(); }
   });
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-balance')).toHaveText('15 Cubie Cash');
+  await expect(page.locator('#shop-balance')).toHaveText('150 Cubie Cash');
   await mint.locator('button').click();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   await expect(mint.locator('button')).toHaveText('Wear Custom');
@@ -2427,9 +2451,50 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   await expect(mint.locator('button')).toHaveText('Equipped ✓');
+  await checkPriceOrder();
   await page.locator('#shop-room summary').click();
   await expect(page.locator('#shop-rates')).toContainText('Hangman: score × 100');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('#shop-room').screenshot({ path: testInfo.outputPath('cubie-shop.png') });
+  expect(errors).toEqual([]);
+});
+
+test('Key Rush touch keyboard handles case and symbols without opening the device keyboard', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Touchscreen controls');
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.route('**/python/bridge.py', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'sequence, seconds = make_round(self.completed + 1)', 'sequence, seconds = ("aA7?", 600)') });
+  });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.locator('[data-game="keyboard"]').click();
+  await page.locator('[data-difficulty="progressive"]').click();
+  await expect(page.locator('#typing-touch')).toBeVisible();
+  await expect(page.locator('#typing-input')).not.toBeFocused();
+  await page.locator('[data-typing-key="a"]').tap();
+  await page.locator('#typing-shift').tap();
+  await expect(page.locator('[data-typing-key="A"]')).toBeVisible();
+  await page.locator('[data-typing-key="A"]').tap();
+  await page.locator('#typing-symbols').tap();
+  await expect(page.locator('[data-typing-key="7"]')).toBeVisible();
+  await expect(page.locator('[data-typing-key="?"]')).toBeVisible();
+  await page.locator('[data-typing-key="7"]').tap();
+  await page.locator('[data-typing-key="?"]').tap();
+  await expect(page.locator('#score')).toHaveText('1');
+  await page.locator('#typing-symbols').tap();
+  await expect(page.locator('[data-typing-key="A"]')).toBeVisible();
+  await page.locator('#typing-shift').tap();
+  await expect(page.locator('[data-typing-key="a"]')).toBeVisible();
+  expect(await page.locator('#sequence').evaluate(el => getComputedStyle(el).userSelect)).toBe('none');
+  expect(await page.locator('#typing-input').evaluate(el => getComputedStyle(el).userSelect)).toBe('text');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.evaluate(() => {
+    document.querySelectorAll('#achievement-toast button').forEach(button => button.click());
+    document.querySelector('#achievement-celebrations').replaceChildren();
+  });
+  await page.locator('#keyboard-game').screenshot({ path: testInfo.outputPath('mobile-key-rush.png') });
   expect(errors).toEqual([]);
 });
