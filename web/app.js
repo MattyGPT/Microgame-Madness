@@ -259,6 +259,7 @@ let jukeboxPaused = false;
 let previousBossHealth = null;
 let damageFlashAnimation = null;
 let healingFlashAnimation = null;
+let coreOrigin;
 let nameSurpriseActive = false;
 let nameSurpriseTimer;
 let previousSecretName = "";
@@ -1316,7 +1317,7 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
-  if (active && !gasterActive && !$("cubie-hint").open && selected !== "hangman") {
+  if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman") {
     try {
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
@@ -1357,6 +1358,8 @@ $("player").oninput = () => {
   const name = $("player").value.trim().toLowerCase();
   if (name === "gravitron") {
     unlockSingularity();
+    initializeAudio();
+    coreOrigin.play();
     return;
   }
   if (name === "gaster") {
@@ -1422,7 +1425,7 @@ const arrowMap = {
   ArrowRight: "Right",
 };
 window.addEventListener("keydown", (event) => {
-  if (gasterActive || $("cubie-hint").open) return;
+  if (gasterActive || coreOrigin?.open || $("cubie-hint").open) return;
   if (event.target.closest("#cube, .profile-tabs, #achievements-panel, #customs-room, #shop-room")) return;
   const input = event.target.closest("input,select,textarea");
   if (input && event.target !== $("typing-input")) return;
@@ -1581,7 +1584,7 @@ function syncMusic() {
   if (sequencePlayer) {
     const kind = snapshot?.dying ? "death" : snapshot?.laser_firing ? "finale" : null;
     sequencePlayer.sync(active ? kind : null, kind === "death" ? snapshot.death_age : snapshot?.cinematic_age,
-      soundOn && !snapshot?.paused && !document.hidden && !gasterActive && !loadFailed);
+      soundOn && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
   }
   if (!musicPlayer) return;
   const state = {
@@ -1592,7 +1595,7 @@ function syncMusic() {
       : active && selected === "hangman" ? "hangman"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
-    playing: soundOn && !gasterActive && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
+    playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
   if (pendingRockSong) {
@@ -1802,6 +1805,11 @@ async function initialize() {
     fail(error);
   }
 }
+coreOrigin = new CoreOrigin.Film($("core-origin"), {
+  audio: () => ({ context: audioContext, destination: audioMaster, enabled: soundOn }),
+  toggleSound: () => $("sound").click(),
+  onChange: () => { clearKeys(); syncMusic(); },
+});
 initializeGlobalLeaderboards();
 initializeAchievements();
 applyCubieCustom();

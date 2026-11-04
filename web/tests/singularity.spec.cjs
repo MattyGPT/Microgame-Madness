@@ -29,12 +29,14 @@ test.beforeEach(async ({ page }) => {
 
 async function unlock(page) {
   await page.locator('#player').fill('GRAVITRON');
+  await page.locator('[data-origin-skip]').click();
   await expect(page.locator('#game-title')).toHaveText('Singularity Core');
   await page.locator('[data-difficulty="gravitron"]').click();
 }
 
 async function choosePractice(page) {
   await page.locator('#player').fill('GRAVITRON');
+  await page.locator('[data-origin-skip]').click();
   await page.locator('[data-difficulty="practice"]').click();
   await expect(page.locator('#game-title')).toHaveText('Singularity Core Practice');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);

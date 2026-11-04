@@ -65,7 +65,7 @@ def build():
         else:
             child.unlink()
     html = (ROOT / "web" / "index.html").read_text()
-    for name in ("style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "leaderboards.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "leaderboards.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')

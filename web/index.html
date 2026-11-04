@@ -11,6 +11,7 @@
     <title>Microgame Madness — Play a little. Lose track of time.</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./core-origin.css" />
     <script
       src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
       defer
@@ -21,6 +22,7 @@
     <script src="./music.js" defer></script>
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
+    <script src="./core-origin.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -495,6 +497,14 @@
       <p>Made for the joy of one more try.</p>
       <span id="game-total">6 GAMES + JUKEBOX + CLOSET + SHOP / ENDLESS REMATCHES</span>
     </footer>
+    <dialog id="core-origin" aria-labelledby="origin-heading" aria-describedby="origin-description">
+      <canvas aria-hidden="true"></canvas>
+      <div class="origin-header"><span>A MICROGAME MADNESS ORIGIN</span><span data-origin-chapter></span></div>
+      <div class="origin-title"><p>FROM THE ASHES OF A STAR</p><h2 id="origin-heading">SINGULARITY CORE</h2><span>Containment is only the beginning.</span></div>
+      <p id="origin-description" class="origin-description">A red giant absorbs five planets, collapses into a black hole, and draws nearby metal into eight armor plates. Singularity Core is born.</p>
+      <div class="origin-controls"><button type="button" data-origin-sound>Sound on</button><button type="button" data-origin-pause>Pause</button><button type="button" data-origin-skip>Skip film</button></div>
+      <div class="origin-progress" aria-hidden="true"></div>
+    </dialog>
     <dialog id="cubie-hint" aria-labelledby="cubie-hint-title" aria-describedby="cubie-hint-copy">
       <div class="cubie-hint-art" aria-hidden="true"><span class="pixel-face"><i></i><i></i><b></b></span></div>
       <p class="eyebrow">A SECRET FROM CUBIE</p>

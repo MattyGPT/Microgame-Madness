@@ -20,6 +20,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility:hidden!important; }' });
   await page.locator('#player').fill('GRAVITRON');
+  await page.locator('[data-origin-skip]').click();
   await page.evaluate(() => endingRuntime.runPython('from bridge import session'));
 });
 

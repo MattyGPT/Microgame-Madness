@@ -1,0 +1,16 @@
+#core-origin { position:fixed; inset:0; width:100vw; height:100dvh; max-width:none; max-height:none; margin:0; padding:0; border:0; overflow:hidden; background:#02040d; color:#eef0ff; }
+#core-origin::backdrop { background:#02040d; }
+#core-origin canvas { position:absolute; inset:0; width:100%; height:100%; }
+.origin-header { position:absolute; top:max(30px,env(safe-area-inset-top)); left:6vw; right:6vw; display:flex; justify-content:space-between; gap:24px; font:500 11px/1.6 monospace; letter-spacing:.22em; color:#a5a9ce; }
+.origin-header span:first-child { color:#d4d7ed; }
+.origin-title { position:absolute; top:69%; width:100%; padding:0 20px; box-sizing:border-box; text-align:center; opacity:0; pointer-events:none; }
+.origin-title p { color:#a5e9f1; font:500 10px/1.5 monospace; letter-spacing:.42em; margin:0 0 14px; }
+.origin-title h2 { font-family:Georgia,serif; font-size:clamp(29px,5vw,76px); font-weight:400; line-height:1.05; letter-spacing:.12em; margin:0; color:#e9e4ff; text-shadow:0 0 32px #9560ee88; }
+.origin-title span { display:block; font:400 11px/1.6 monospace; letter-spacing:.15em; color:#9c95b5; margin-top:18px; }
+.origin-controls { position:absolute; bottom:max(28px,env(safe-area-inset-bottom)); left:6vw; right:6vw; display:flex; justify-content:flex-end; gap:10px; }
+#core-origin button { background:#101427c9; border:1px solid #414763; border-radius:6px; color:#d9ddef; padding:10px 16px; font:500 12px/1.5 monospace; cursor:pointer; box-shadow:none; }
+#core-origin button:hover { background:#252c49; border-color:#a3aee0; }
+#core-origin button:focus-visible { outline:2px solid #9febff; outline-offset:4px; }
+.origin-progress { position:absolute; bottom:0; left:0; width:100%; height:2px; background:linear-gradient(90deg,#6953a6,#b5f6ff); transform-origin:left; }
+.origin-description { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+@media(max-width:600px) { .origin-header { font-size:9px; letter-spacing:.12em; flex-direction:column; gap:7px; } .origin-title { top:64%; } .origin-title h2 { font-size:clamp(25px,7vw,42px); } .origin-title span { font-size:9px; letter-spacing:.06em; } .origin-controls { justify-content:center; left:12px; right:12px; } #core-origin button { padding:10px 12px; } }
