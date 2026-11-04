@@ -278,7 +278,7 @@ class PackagingTests(unittest.TestCase):
                 client.write_text(client.read_text() + "\n// Next client release.\n")
                 build()
                 second = (output / "index.html").read_text()
-            for name in ("app.js", "style.css", "achievements.js", "customs.js", "music.js", "leaderboards.js"):
+            for name in ("app.js", "style.css", "achievements.js", "customs.js", "shop.js", "music.js", "leaderboards.js"):
                 with self.subTest(asset=name):
                     pattern = rf'"(\./{re.escape(name)}\?v=[a-f0-9]+)"'
                     before = re.search(pattern, first)
@@ -344,7 +344,7 @@ class PackagingTests(unittest.TestCase):
     def test_package_contains_only_allowlisted_browser_files(self):
         build()
         files = {str(p.relative_to(OUTPUT)) for p in OUTPUT.rglob("*") if p.is_file()}
-        expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "music.js", "effects.js", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
+        expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
         expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
         self.assertEqual(files, expected)
         for name in PYTHON_SOURCES:
