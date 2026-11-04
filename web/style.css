@@ -1963,6 +1963,19 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 /* Distinct ambient motion for premium Customs, shared by cards and equipped art. */
 .custom-sparkle { transform-box: fill-box; transform-origin: center; animation: custom-twinkle 3.1s ease-in-out infinite; }
 @keyframes custom-twinkle { 0%, 100% { opacity: .25; transform: scale(.55) rotate(0); } 45% { opacity: 1; transform: scale(1.4) rotate(35deg); } 70% { opacity: .5; transform: scale(.8) rotate(60deg); } }
+.seraph-wing { transform-origin: 35px 65px; animation: seraph-wing-lift 4s ease-in-out infinite alternate; }
+@keyframes seraph-wing-lift { from { transform: rotate(-5deg); } to { transform: rotate(7deg); } }
+.seraph-sunwheel { transform-origin: 60px 62px; animation: whale-galaxy-turn 60s linear infinite; }
+.seraph-halo { animation: seraph-halo-float 4s ease-in-out infinite; }
+@keyframes seraph-halo-float { 50% { transform: translateY(-3px); opacity: .75; } }
+.cartographer-astrolabe { transform-origin: 60px 67px; animation: whale-galaxy-turn 50s linear infinite; }
+.cartographer-compass { animation: whale-galaxy-turn 24s linear infinite reverse; }
+.cartographer-constellations { animation: constellation-glow 4s ease-in-out infinite; }
+@keyframes constellation-glow { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .seraph-wing, .seraph-sunwheel, .seraph-halo,
+  .cartographer-astrolabe, .cartographer-compass, .cartographer-constellations { animation: none; }
+}
 .whale-galaxy { transform-origin: 60px 67px; animation: whale-galaxy-turn 30s linear infinite; }
 @keyframes whale-galaxy-turn { to { transform: rotate(360deg); } }
 .whale-fin { animation: whale-fin-swim 3.6s ease-in-out infinite alternate; }
