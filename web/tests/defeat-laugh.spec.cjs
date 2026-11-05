@@ -49,7 +49,7 @@ test('defeated bosses visibly laugh after combat stops, with reduced motion supp
       laughRuntime.runPython('from bridge import session\nfrom arcade_effects import DEATH_DURATION\nsession.game.alive = False\nsession.death_age = DEATH_DURATION');
     }, {mode,difficulty});
     await expect.poll(() => page.evaluate(() => !active && snapshot.over)).toBe(true);
-    await expect.poll(() => page.evaluate(() => laughRuntime.runPython('getattr(session.game, "defeat_laugh_age", 0)')))).toBeGreaterThan(.1);
+    await expect.poll(() => page.evaluate(() => laughRuntime.runPython('getattr(session.game, "defeat_laugh_age", 0)'))).toBeGreaterThan(.1);
     const before = await page.evaluate(() => ({commands:JSON.stringify(snapshot.commands),score:snapshot.score}));
     await expect.poll(() => page.evaluate(() => JSON.stringify(snapshot.commands))).not.toBe(before.commands);
     expect(await page.evaluate(() => snapshot.score)).toBe(before.score);
