@@ -296,7 +296,7 @@ try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
-    saved.testerTon618 = value.testerTon618 === true || CubieCustoms.redeemTesterCode(value.player);
+    saved.testerTon618 = value.testerTon618 === true;
     saved.shop = value.shop;
     saved.turtleTrail = typeof value.turtleTrail === "string" ? value.turtleTrail : null;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";

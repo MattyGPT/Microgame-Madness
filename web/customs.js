@@ -440,7 +440,7 @@ const CubieCustoms = (() => {
       price: 4000, tier: "empyrorite", flavor: "Half hello, half system error. Do not shake the hand.",
     });
   // Code grants are permanent; the achievement remains an independent unlock.
-  const testerCodeActive = true;
+  const testerCodeActive = false;
   const redeemTesterCode = name => testerCodeActive && typeof name === "string"
     && name.trim().toLowerCase() === "gravitron618";
   const unlocked = (item, medals, owned = [], testerTon618 = false) => item.id === "classic"
