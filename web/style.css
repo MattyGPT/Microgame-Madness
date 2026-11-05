@@ -2118,3 +2118,61 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 @media (prefers-reduced-motion: reduce) {
   .cubie-ring-particles { animation: none; }
 }
+
+
+.ton-ring-flow { animation: ton-ring-spin 4s linear infinite; }
+
+.ton-inner-swirl { transform-origin: 60px 67px; animation: ton-gas-swirl 28s linear infinite; }
+
+.ton-inner-counter { animation-duration: 43s; animation-direction: reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ton-inner-swirl { animation: none; }
+}
+
+.ton-jet { transform-origin: 60px 33px; animation: ton-jet-breathe 4.6s ease-in-out infinite; }
+
+@keyframes ton-jet-breathe { 50% { transform: scaleX(.7); opacity: .65; } }
+
+.ton-jet-stream { animation: ton-jet-stream 1.3s linear infinite; }
+
+@keyframes ton-jet-stream { to { stroke-dashoffset: -14; } }
+
+.ton-infall { animation: ton-infall 5s linear infinite; }
+
+@keyframes ton-infall {
+  0% { transform: rotate(0deg) translateY(-64px) scale(.3); opacity: 0; }
+  25% { opacity: .9; }
+  85% { opacity: .8; }
+  100% { transform: rotate(100deg) translateY(-39px) scale(.1); opacity: 0; }
+}
+
+.ton-lens-shimmer { animation: ton-lens-shimmer 6s ease-in-out infinite; }
+
+@keyframes ton-lens-shimmer { 50% { opacity: .55; } }
+
+.ton-disk-flare { animation: ton-disk-flare 4.8s ease-in-out infinite; }
+
+@keyframes ton-disk-flare { 50% { transform: scale(1.3, .7); opacity: .55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ton-jet, .ton-jet-stream, .ton-infall, .ton-lens-shimmer, .ton-disk-flare { animation: none; }
+  .ton-infall { opacity: 0; }
+}
+
+@keyframes ton-ring-spin { to { stroke-dashoffset: -100; } }
+
+.ton-meteor { offset-rotate: auto; animation: ton-meteor-orbit 9s linear infinite; }
+
+@keyframes ton-meteor-orbit { to { offset-distance: 100%; } }
+
+.ton-gas { transform-origin: 60px 67px; animation: ton-gas-swirl 15s linear infinite; }
+
+@keyframes ton-gas-swirl { to { transform: rotate(360deg); } }
+
+.cubie-custom-art[data-custom="ton_618"] .cubie-eyes { filter: drop-shadow(0 0 3px #ff244f); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ton-ring-flow, .ton-meteor, .ton-gas { animation: none; }
+  .ton-meteor { offset-distance: 25%; }
+}

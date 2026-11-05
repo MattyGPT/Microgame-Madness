@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('114 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 114);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 114);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 114);
+test('115 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 115);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 115);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 115);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -79,4 +79,22 @@ test('Gaster Cubie requires completing the event, not just entering the name', (
   assert.equal(Customs.unlocked(custom, tracker.data.unlocked), false);
   tracker.completeGaster();
   assert.equal(Customs.unlocked(custom, tracker.data.unlocked), true);
+});
+
+test('TON 618 requires a flawless Core victory and recognizes saved achievements', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(item => item.id === 'ton_618');
+  assert.equal(item.tier, 'empyrorite');
+  const tracker = new Tracker();
+  const win = damage => {
+    tracker.start('singularity', 'gravitron');
+    tracker.observe({ mode: 'singularity', difficulty: 'gravitron', over: true,
+      won: true, attacks_completed: 15, hp: 0, shielded: false, lives: 10, damage_taken: damage });
+  };
+  win(1);
+  assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
+  win(0);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(Customs.unlocked(item, restored.data.unlocked), true);
+  assert.equal(Customs.selected('ton_618', restored.data.unlocked).id, 'ton_618');
 });

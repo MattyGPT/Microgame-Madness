@@ -291,6 +291,7 @@ try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
+    saved.testerTon618 = CubieCustoms.testerCodeActive && value.testerTon618 === true;
     saved.shop = value.shop;
     saved.turtleTrail = typeof value.turtleTrail === "string" ? value.turtleTrail : null;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";
@@ -576,7 +577,7 @@ function initializeAchievements() {
   renderAchievements();
 }
 function applyCubieCustom() {
-  const item = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned);
+  const item = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
   saved.cubieCustom = item.id;
   const cube = $("cube");
   cube.querySelector(".cubie-custom-art")?.remove();
@@ -598,9 +599,9 @@ function previewCustom(item) {
   $("customs-preview-tier").textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
   $("customs-flavor").textContent = item.flavor;
   $("customs-preview-art").innerHTML = CubieCustoms.svg(item);
-  const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned);
+  const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
   $("customs-status").textContent = item.id === equipped.id ? `Now wearing ${item.name}.`
-    : CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned)
+    : CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
       ? "Preview only · Unlocked. Choose Wear Custom to equip."
       : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
   $("customs-grid").querySelectorAll(".custom-preview-button").forEach(button => {
@@ -609,16 +610,16 @@ function previewCustom(item) {
 }
 function renderCustoms() {
   const medals = achievementTracker.data.unlocked;
-  const equipped = CubieCustoms.selected(saved.cubieCustom, medals, saved.shop.owned);
-  const count = CubieCustoms.catalog.filter(item => CubieCustoms.unlocked(item, medals, saved.shop.owned)).length;
+  const equipped = CubieCustoms.selected(saved.cubieCustom, medals, saved.shop.owned, saved.testerTon618);
+  const count = CubieCustoms.catalog.filter(item => CubieCustoms.unlocked(item, medals, saved.shop.owned, saved.testerTon618)).length;
   $("customs-count").textContent = `${count} / ${CubieCustoms.catalog.length} Customs unlocked`;
 
   const filter = $("customs-filter").value;
   const cards = CubieCustoms.catalog.filter(item => {
-    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned);
+    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned, saved.testerTon618);
     return filter === "all" || (filter === "unlocked" ? unlocked : !unlocked);
   }).map(item => {
-    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned);
+    const unlocked = CubieCustoms.unlocked(item, medals, saved.shop.owned, saved.testerTon618);
     const wearing = equipped.id === item.id;
     const card = document.createElement("article");
     card.className = "custom-tile" + (unlocked ? "" : " custom-locked");
@@ -656,7 +657,7 @@ function renderCustoms() {
     button.setAttribute("aria-label", `${wearing ? "Wearing" : unlocked ? "Wear" : "Locked:"} ${item.name}`);
     button.setAttribute("aria-pressed", String(wearing));
     button.onclick = () => {
-      if (!CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned)) return;
+      if (!CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)) return;
       saved.cubieCustom = item.id;
       previewCustomId = item.id;
       applyCubieCustom();
@@ -1424,13 +1425,39 @@ document
       showGameArea();
     }),
   );
+let singularityNameTimer;
 $("player").oninput = () => {
+  clearTimeout(singularityNameTimer);
   showScores();
   const name = $("player").value.trim().toLowerCase();
+  if (CubieCustoms.redeemTesterCode(name)) {
+    saved.testerTon618 = true;
+    saved.cubieCustom = "ton_618";
+    applyCubieCustom();
+    if (selected === "customs") renderCustoms();
+    persist();
+    $("name-surprise").dataset.secret = "ton618tester";
+    $("name-surprise").textContent = "TON 618 tester Custom unlocked. No achievement awarded.";
+    $("name-surprise").hidden = false;
+    clearTimeout(nameSurpriseTimer);
+    nameSurpriseActive = true;
+    syncMusic();
+    nameSurpriseTimer = setTimeout(() => {
+      nameSurpriseActive = false;
+      $("name-surprise").hidden = true;
+      syncMusic();
+    }, 4000);
+    previousSecretName = "";
+    return;
+  }
   if (name === "gravitron") {
-    unlockSingularity();
-    initializeAudio();
-    coreOrigin.play();
+    // Allow the longer tester code to be typed without firing its prefix.
+    singularityNameTimer = setTimeout(() => {
+      if ($("player").value.trim().toLowerCase() !== "gravitron") return;
+      unlockSingularity();
+      initializeAudio();
+      coreOrigin.play();
+    }, 800);
     return;
   }
   if (name === "gaster") {
