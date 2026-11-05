@@ -705,13 +705,14 @@ function renderTrails() {
     const card = document.createElement("article");
     card.className = "custom-tile trail-tile";
     card.dataset.trail = item.id;
+    card.dataset.tier = item.tier;
     card.dataset.equipped = String(wearing);
     card.style.setProperty("--trail-color", item.colors[0]);
     const art = document.createElement("div");
     art.className = "trail-preview";
     art.innerHTML = TurtleTrails.preview(item);
     const name = document.createElement("h5"); name.textContent = item.name;
-    const type = document.createElement("span"); type.className = "custom-tier"; type.textContent = "Turtle Trail";
+    const type = document.createElement("span"); type.className = "custom-tier"; type.textContent = `${CubieCustoms.tierLabels[item.tier]} Turtle Trail`;
     const flavor = document.createElement("p"); flavor.textContent = item.flavor;
     const price = document.createElement("strong"); price.className = "shop-price";
     price.textContent = owned ? "Owned" : `${item.price.toLocaleString()} Cubie Cash`;
