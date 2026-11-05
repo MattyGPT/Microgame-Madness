@@ -22,6 +22,7 @@ const CubieCustoms = (() => {
     medal_rainbow: "Two rainbows walked into a closet. Cubie walked out.",
     medal_empyrorite: "One legendary achievement. An emerald glow that never forgets.",
     classic: "The original little square with a very big heart.",
+    trooper: "A few scuffs. Still ready for one more try.",
     pumpkin: "Won the crown. Kept the pumpkin. Refuses to become pie.",
     bookworm: "Just one more chapter. And maybe a tiny bookmark nap.",
     wizard: "Knows every spell except the one that finds missing socks.",
@@ -70,6 +71,14 @@ const CubieCustoms = (() => {
     catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
+  add("trooper", "Trooper Cubie", "dodge_early_death", "#a9cbb9",
+    '<path d="M29 36h20M27 40h11" fill="none" stroke="#d5efe0" stroke-width="3" stroke-linecap="round"/>' +
+    '<g transform="rotate(-14 75 39)"><rect x="58" y="32" width="34" height="14" rx="5" fill="#8b6446" opacity=".25" transform="translate(0 2)"/><rect x="58" y="32" width="34" height="14" rx="5" fill="#edc69f" stroke="#b4815a" stroke-width="1.2"/><rect x="69" y="34" width="12" height="10" rx="2" fill="#ffe2bf"/><path d="M71 36h8m-8 3h8m-8 3h8" stroke="#e6bb90" stroke-width=".9"/><g fill="#b4815a"><circle cx="62" cy="37" r=".8"/><circle cx="65" cy="41" r=".8"/><circle cx="85" cy="37" r=".8"/><circle cx="88" cy="41" r=".8"/></g></g>' +
+    '<path d="m27 78 7-3m-7 9 10-4M87 60l5-3" fill="none" stroke="#75998b" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M28 94h17v10H32q-4-2-4-10Z" fill="#799d91"/><path d="M30 97h12m-10 4h9" stroke="#c9e2d5" stroke-width="1.3" stroke-dasharray="2 2"/>' +
+    '<path d="m77 93-3 15 8-4 6 4-1-15Z" fill="#9c6e51"/><path d="m78 95-1 9 5-3 4 3-1-9Z" fill="#e4b58d"/>' +
+    '<circle cx="82" cy="90" r="9" fill="#8c5d40"/><circle cx="82" cy="89" r="8" fill="#c59167" stroke="#f4d2ae" stroke-width="1.5"/>' +
+    '<path d="m82 83 1.6 3.5 3.9.4-2.9 2.6.8 3.8-3.4-1.9-3.4 1.9.8-3.8-2.9-2.6 3.9-.4Z" fill="#ffe1aa"/>');
   add("bumblebee", "Bumblebee Cubie", "dodge_close_10", "#f4cb64",
     '<path d="M24 42h72v8H24ZM24 87h72v9H24Z" fill="#67503c"/>' +
     '<path d="M39 30 33 15M81 30l6-15" stroke="#67503c" stroke-width="4" stroke-linecap="round"/>' +
