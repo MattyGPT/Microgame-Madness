@@ -26,10 +26,12 @@ test('defeated bosses visibly laugh after combat stops, with reduced motion supp
     await page.evaluate(({mode,difficulty}) => {
       saved.unlocks.singularity = true;
       selectGame(mode); startGame(difficulty);
+      if (['pumpkin', 'wrath'].includes(mode)) laughRuntime.runPython('from bridge import session\nsession.game.begin_attack(0)');
       laughRuntime.runPython('from bridge import session\nfrom arcade_effects import DEATH_DURATION\nsession.game.alive = False\nsession.death_age = DEATH_DURATION');
     }, {mode,difficulty});
     await expect.poll(() => page.evaluate(() => !active && snapshot.over)).toBe(true);
     await expect.poll(() => page.evaluate(() => laughRuntime.runPython('getattr(session.game, "defeat_laugh_age", 0)'))).toBeGreaterThan(.1);
+    await expect(page.locator('#overlay')).toHaveClass(/boss-defeat/);
     const before = await page.evaluate(() => ({commands:JSON.stringify(snapshot.commands),score:snapshot.score}));
     await expect.poll(() => page.evaluate(() => JSON.stringify(snapshot.commands))).not.toBe(before.commands);
     expect(await page.evaluate(() => snapshot.score)).toBe(before.score);

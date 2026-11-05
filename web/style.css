@@ -2267,3 +2267,17 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .grimoire-glyphs, .grimoire-ribbon, .relic-drift, .forge-inner-gear,
   .forge-veins, .leviathan-caustics, .emperor-corona { animation:none; }
 }
+
+/* Keep the victorious boss's laughing face visible above the rematch panel. */
+.arena.arcade .overlay.boss-defeat {
+  top: auto;
+  backdrop-filter: none;
+  background: linear-gradient(transparent, #101315e8 32%, #101315f5);
+  justify-content: flex-end;
+  padding: 14px;
+  gap: 6px;
+}
+.overlay.boss-defeat .eyebrow { display: none; }
+.overlay.boss-defeat h3 { margin: 0; font-size: clamp(18px, 2.5vw, 28px); }
+.overlay.boss-defeat p { margin: 0; font-size: 12px; }
+.overlay.boss-defeat .primary-button { margin-top: 4px; padding: 9px 18px; }

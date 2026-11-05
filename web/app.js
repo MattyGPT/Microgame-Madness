@@ -1154,6 +1154,8 @@ function startGame(difficulty) {
   $("arena").focus({ preventScroll: true });
 }
 function showOverlay(title, copy, button, kicker) {
+  $("overlay").classList.toggle("boss-defeat", !!snapshot?.over && !snapshot.won
+    && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected));
   $("overlay-title").textContent = title;
   $("overlay-copy").textContent = copy;
   $("overlay-action").textContent = button;
