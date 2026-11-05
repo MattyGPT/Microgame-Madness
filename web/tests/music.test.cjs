@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 23);
+  assert.equal(arcadeTracks.length, 26);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 23);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 26);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('twenty-three distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 23);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 23);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 23);
+test('twenty-six distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 26);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 26);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 26);
   assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
   assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
@@ -160,7 +160,7 @@ test('twenty-three distinct arcade songs and the boss score have safe levels and
     assert.ok(Math.abs(samples.length / 22050 - bars * 4 * 60 / track.bpm) < 1 / 22050);
     fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(fingerprints.size, 24);
+  assert.equal(fingerprints.size, 27);
   assert.throws(() => compose('missing'), /Unknown music/);
 });
 
@@ -563,4 +563,18 @@ test('melody pulses follow synthesized notes, rests, pause and loop position', (
   assert.ok(Math.abs(player.melodyPulse() - pulse) < 1e-10);
   player.playing = false;
   assert.equal(player.melodyPulse(), 0);
+});
+
+test('new arcade tempos and cinematic aftermath are available with safe, louder looping playback', () => {
+  for (const [id, bpm] of [['starburst_255', 255], ['slow_orbit', 55], ['christmas_99', 99]])
+    assert.equal(jukeboxTracks.find(track => track.id === id).bpm, bpm);
+  const samples = compose('core_aftermath', 8000);
+  assert.ok(samples.every(value => Number.isFinite(value) && Math.abs(value) < .9));
+  const ctx = context(), player = new Player(ctx);
+  player.buffer = () => ({duration:60});
+  player.setState({theme:'core_aftermath', playing:true});
+  assert.equal(player.current.source.loop, true);
+  assert.equal(player.current.gain.gain.value, .36);
+  player.setState({theme:'arcade', playing:true});
+  assert.equal(player.current.gain.gain.value, .22);
 });

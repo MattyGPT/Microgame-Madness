@@ -4,7 +4,7 @@ import math
 
 from singularity_core import (ATTACKS, BOX_CENTER, BOX_HALF, ECHO_STEPS, INTRO_DURATION, NODES,
                               LASER_CONTACT, LASER_WHITEN, LASER_IMPLODE, LASER_SHATTER)
-from pumpkin_king_view import mix
+from pumpkin_king_view import mix, happy_laugh_mouth
 
 
 CYAN = "#65f5ff"
@@ -356,6 +356,15 @@ def draw_core(game):
         angle = index*math.pi/27
         x, y = bx+math.cos(angle)*78, by-2-math.sin(angle)*16
         oval(x, y, 2.1, 1.3, fill=CYAN if (index+int(t*16))%6 < 2 else VIOLET)
+    if not game.alive and not game.won:
+        # A luminous grin emerges inside the dark event horizon after defeat.
+        laugh_age = getattr(game, "defeat_laugh_age", 0)
+        poly(happy_laugh_mouth(bx, by-7, 35, 18, laugh_age), "#d9b8ff", VIOLET, 1)
+        for side in (-1, 1):
+            for i in range(8):
+                ax = bx+side*13-6+i*1.5
+                ay = by+9+4*math.sin(i*math.pi/7)
+                line(ax, ay, ax+1.5, by+9+4*math.sin((i+1)*math.pi/7), 2, CYAN)
     if game.shielded:
         oval(bx, by, 70, 61, outline="#65f5ff48", width=1)
     if finale:

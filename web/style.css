@@ -168,6 +168,11 @@ h1 em {
   color: var(--muted);
   margin: 0;
 }
+.creator-credit {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
 .hero-art {
   position: relative;
   width: 400px;
@@ -1976,6 +1981,55 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .seraph-wing, .seraph-sunwheel, .seraph-halo,
   .cartographer-astrolabe, .cartographer-compass, .cartographer-constellations { animation: none; }
 }
+.ton-ring-flow { animation: ton-ring-spin 4s linear infinite; }
+.ton-inner-swirl { transform-origin: 60px 67px; animation: ton-gas-swirl 28s linear infinite; }
+.ton-inner-counter { animation-duration: 43s; animation-direction: reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .ton-inner-swirl { animation: none; }
+}
+.ton-jet { transform-origin: 60px 33px; animation: ton-jet-breathe 4.6s ease-in-out infinite; }
+@keyframes ton-jet-breathe { 50% { transform: scaleX(.7); opacity: .65; } }
+.ton-jet-stream { animation: ton-jet-stream 1.3s linear infinite; }
+@keyframes ton-jet-stream { to { stroke-dashoffset: -14; } }
+.ton-infall { animation: ton-infall 5s linear infinite; }
+@keyframes ton-infall {
+  0% { transform: rotate(0deg) translateY(-64px) scale(.3); opacity: 0; }
+  25% { opacity: .9; }
+  85% { opacity: .8; }
+  100% { transform: rotate(100deg) translateY(-39px) scale(.1); opacity: 0; }
+}
+.ton-lens-shimmer { animation: ton-lens-shimmer 6s ease-in-out infinite; }
+@keyframes ton-lens-shimmer { 50% { opacity: .55; } }
+.ton-disk-flare { animation: ton-disk-flare 4.8s ease-in-out infinite; }
+@keyframes ton-disk-flare { 50% { transform: scale(1.3, .7); opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+  .ton-jet, .ton-jet-stream, .ton-infall, .ton-lens-shimmer, .ton-disk-flare { animation: none; }
+  .ton-infall { opacity: 0; }
+}
+.phantom-flame { transform-origin: 0 12px; animation: phantom-flame-dance 2.6s ease-in-out infinite alternate; }
+@keyframes phantom-flame-dance {
+  from { transform: scale(.92, .88) skewX(-6deg); }
+  to { transform: scale(1.08, 1.14) skewX(7deg); }
+}
+.phantom-ghost-orbit { offset-rotate: 0deg; animation: ton-meteor-orbit 15s linear infinite; }
+.phantom-ghost-bob { animation: phantom-ghost-bob 3s ease-in-out infinite alternate; }
+@keyframes phantom-ghost-bob { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+.phantom-eye-fire { transform-origin: 0 8px; animation: phantom-flame-dance 1.7s ease-in-out infinite alternate; filter: drop-shadow(0 0 3px #ffe247); }
+.cubie-custom-art[data-custom="phantom_king"] .cubie-eyes { filter: drop-shadow(0 0 4px #ffd52f); }
+@media (prefers-reduced-motion: reduce) {
+  .phantom-flame, .phantom-ghost-orbit, .phantom-ghost-bob, .phantom-eye-fire { animation: none; }
+  .phantom-ghost-orbit { offset-distance: 20%; }
+}
+@keyframes ton-ring-spin { to { stroke-dashoffset: -100; } }
+.ton-meteor { offset-rotate: auto; animation: ton-meteor-orbit 9s linear infinite; }
+@keyframes ton-meteor-orbit { to { offset-distance: 100%; } }
+.ton-gas { transform-origin: 60px 67px; animation: ton-gas-swirl 15s linear infinite; }
+@keyframes ton-gas-swirl { to { transform: rotate(360deg); } }
+.cubie-custom-art[data-custom="ton_618"] .cubie-eyes { filter: drop-shadow(0 0 3px #ff244f); }
+@media (prefers-reduced-motion: reduce) {
+  .ton-ring-flow, .ton-meteor, .ton-gas { animation: none; }
+  .ton-meteor { offset-distance: 25%; }
+}
 .whale-galaxy { transform-origin: 60px 67px; animation: whale-galaxy-turn 30s linear infinite; }
 @keyframes whale-galaxy-turn { to { transform: rotate(360deg); } }
 .whale-fin { animation: whale-fin-swim 3.6s ease-in-out infinite alternate; }
@@ -2119,60 +2173,97 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .cubie-ring-particles { animation: none; }
 }
 
-
-.ton-ring-flow { animation: ton-ring-spin 4s linear infinite; }
-
-.ton-inner-swirl { transform-origin: 60px 67px; animation: ton-gas-swirl 28s linear infinite; }
-
-.ton-inner-counter { animation-duration: 43s; animation-direction: reverse; }
-
+/* Hacker Cubie: irregular spatial glitches rather than rapid flashing. */
+.hacker-claw { transform-origin: 114px 33px; animation: hacker-claw-reach 5.5s ease-in-out infinite; }
+@keyframes hacker-claw-reach { 0%, 100% { transform: rotate(5deg) translateY(0); } 45% { transform: rotate(-7deg) translateY(-5px); } 47% { transform: rotate(-7deg) translate(2px, -5px); } 50% { transform: rotate(-7deg) translateY(-5px); } 75% { transform: rotate(-2deg) translateY(-2px); } }
+.hacker-claw-echo { opacity: .4; animation: hacker-echo 4.7s steps(1, end) infinite; }
+@keyframes hacker-echo { 0%, 45%, 100% { transform: translateX(-1px); opacity: .25; } 40%, 70% { transform: translate(3px, -1px); opacity: .55; } 74% { transform: translateX(-2px); opacity: .35; } }
+.hacker-rift { animation: hacker-rift-color 7s linear infinite; }
+@keyframes hacker-rift-color { to { filter: hue-rotate(360deg); } }
+.hacker-screen-noise, .hacker-hand-noise { animation: hacker-data-shift 4.3s steps(1, end) infinite; }
+.hacker-hand-noise { animation-delay: -1.4s; }
+@keyframes hacker-data-shift { 0%, 100% { transform: translateX(0); opacity: .45; } 25% { transform: translateX(-2px); opacity: .7; } 28% { transform: translateX(2px); opacity: .5; } 58% { transform: translateY(2px); opacity: .65; } 62% { transform: translateX(-1px); opacity: .4; } }
+.hacker-scan { animation: hacker-scan-pass 5s linear infinite; }
+@keyframes hacker-scan-pass { to { transform: translateY(60px); } }
 @media (prefers-reduced-motion: reduce) {
-  .ton-inner-swirl { animation: none; }
+  .hacker-claw, .hacker-claw-echo, .hacker-rift, .hacker-screen-noise, .hacker-hand-noise, .hacker-scan { animation: none; }
+}
+/* Give Hacker's tall fingertips breathing room in the shop and closet cards. */
+.custom-tile[data-custom="shop_hacker"] .custom-swatch { height: 124px; }
+.custom-tile[data-custom="shop_hacker"] .custom-swatch svg { margin-top: 40px; }
+
+.hacker-finger { animation: hacker-finger-curl 5.5s ease-in-out infinite alternate; }
+@keyframes hacker-finger-curl { to { transform: rotate(var(--finger-angle)); } }
+@media (prefers-reduced-motion: reduce) { .hacker-finger { animation: none; } }
+
+.neon-noodles { filter: drop-shadow(0 0 1.5px #ffdf87) drop-shadow(0 0 3px #ff9944); }
+.cubie-custom-art[data-custom="shop_prism_pop"] :is(.cubie-front, .cubie-side, .cubie-trim) {
+  animation: prism-pop-colors .3s steps(6, end) infinite;
+}
+@keyframes prism-pop-colors { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art[data-custom="shop_prism_pop"] :is(.cubie-front, .cubie-side, .cubie-trim) { animation: none; }
 }
 
-.ton-jet { transform-origin: 60px 33px; animation: ton-jet-breathe 4.6s ease-in-out infinite; }
-
-@keyframes ton-jet-breathe { 50% { transform: scaleX(.7); opacity: .65; } }
-
-.ton-jet-stream { animation: ton-jet-stream 1.3s linear infinite; }
-
-@keyframes ton-jet-stream { to { stroke-dashoffset: -14; } }
-
-.ton-infall { animation: ton-infall 5s linear infinite; }
-
-@keyframes ton-infall {
-  0% { transform: rotate(0deg) translateY(-64px) scale(.3); opacity: 0; }
-  25% { opacity: .9; }
-  85% { opacity: .8; }
-  100% { transform: rotate(100deg) translateY(-39px) scale(.1); opacity: 0; }
+.cubie-custom-art[data-custom="shop_neon_noodle"] .cubie-front > g > * {
+  stroke: #fff;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+.cubie-custom-art[data-custom="shop_neon_noodle"] .cubie-eyes rect {
+  stroke: #fff;
+  stroke-width: 2px;
+  paint-order: stroke fill;
 }
 
-.ton-lens-shimmer { animation: ton-lens-shimmer 6s ease-in-out infinite; }
-
-@keyframes ton-lens-shimmer { 50% { opacity: .55; } }
-
-.ton-disk-flare { animation: ton-disk-flare 4.8s ease-in-out infinite; }
-
-@keyframes ton-disk-flare { 50% { transform: scale(1.3, .7); opacity: .55; } }
-
+/* Achievement Empyrorite relics: independent accessory motion. */
+.emperor-seal, .relic-orbit, .forge-gear { transform-origin:60px 68px; animation: relic-orbit 26s linear infinite; }
+@keyframes relic-orbit { to { transform:rotate(360deg); } }
+.emperor-mantle { transform-origin:60px 40px; animation: relic-mantle 4s ease-in-out infinite alternate; }
+@keyframes relic-mantle { to { transform:scaleX(1.06) skewX(2deg); } }
+.emperor-crown { animation: relic-crown 3.7s ease-in-out infinite alternate; }
+@keyframes relic-crown { to { transform:translateY(-4px); } }
+.emperor-ember { animation: relic-ember 3.4s ease-out infinite; }
+@keyframes relic-ember { 0% { opacity:0; transform:translateY(8px); } 25% { opacity:.9; } 100% { opacity:0; transform:translate(5px,-35px); } }
+.emperor-soul-ring { animation: relic-ring 4s linear infinite; }
+@keyframes relic-ring { to { stroke-dashoffset:-64; } }
+.grimoire-pages { transform-origin:60px 100px; animation: grimoire-pages 4s ease-in-out infinite alternate; }
+@keyframes grimoire-pages { to { transform:scaleX(.94) skewY(2deg); } }
+.tempest-wing { transform-origin:35px 65px; animation: tempest-wing 2.8s ease-in-out infinite alternate; }
+@keyframes tempest-wing { to { transform:rotate(-7deg) scaleX(.94); } }
+.tempest-bolt { animation: tempest-charge 3.5s ease-in-out infinite; filter:drop-shadow(0 0 2px #9ae9ff); }
+@keyframes tempest-charge { 0%,100% { opacity:.25; } 45%,65% { opacity:1; } }
+.relic-breathe { animation: relic-breathe 3s ease-in-out infinite alternate; filter:drop-shadow(0 0 3px #cdffeb); }
+@keyframes relic-breathe { to { opacity:.55; } }
+.forge-plume { transform-origin:60px 40px; animation: forge-plume 2s ease-in-out infinite alternate; }
+@keyframes forge-plume { to { transform:scale(.94,1.1); opacity:.65; } }
+.leviathan-fins { transform-origin:60px 60px; animation: leviathan-fins 3s ease-in-out infinite alternate; }
+@keyframes leviathan-fins { to { transform:scaleX(.92) scaleY(1.04); } }
+.leviathan-tail { transform-origin:70px 100px; animation: leviathan-tail 2.5s ease-in-out infinite alternate; }
+@keyframes leviathan-tail { to { transform:rotate(-9deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .ton-jet, .ton-jet-stream, .ton-infall, .ton-lens-shimmer, .ton-disk-flare { animation: none; }
-  .ton-infall { opacity: 0; }
+  .emperor-seal, .relic-orbit, .forge-gear, .emperor-mantle, .emperor-crown,
+  .emperor-ember, .emperor-soul-ring, .grimoire-pages, .tempest-wing, .tempest-bolt,
+  .relic-breathe, .forge-plume, .leviathan-fins, .leviathan-tail { animation:none; }
 }
 
-@keyframes ton-ring-spin { to { stroke-dashoffset: -100; } }
+.custom-unlock-art { display:flex; align-items:center; justify-content:center; flex:0 0 54px; height:60px; }
+.custom-unlock-art .cubie-custom-art { width:34px; height:34px; overflow:visible; }
 
-.ton-meteor { offset-rotate: auto; animation: ton-meteor-orbit 9s linear infinite; }
-
-@keyframes ton-meteor-orbit { to { offset-distance: 100%; } }
-
-.ton-gas { transform-origin: 60px 67px; animation: ton-gas-swirl 15s linear infinite; }
-
-@keyframes ton-gas-swirl { to { transform: rotate(360deg); } }
-
-.cubie-custom-art[data-custom="ton_618"] .cubie-eyes { filter: drop-shadow(0 0 3px #ff244f); }
-
+.grimoire-glyphs { animation: grimoire-ink 4s ease-in-out infinite alternate; filter:drop-shadow(0 0 2px #cc99ff); }
+@keyframes grimoire-ink { from { opacity:.55; } to { opacity:1; filter:drop-shadow(0 0 4px #ddbbff); } }
+.grimoire-ribbon { transform-origin:87px 105px; animation: grimoire-ribbon 3s ease-in-out infinite alternate; }
+@keyframes grimoire-ribbon { to { transform:skewX(9deg); } }
+.relic-drift { animation: relic-drift 4s ease-in-out infinite; }
+@keyframes relic-drift { 0%,100% { opacity:0; transform:translate(0,5px); } 35% { opacity:.9; } 90% { opacity:0; transform:translate(3px,-22px); } }
+.forge-inner-gear { transform-origin:60px 68px; animation: relic-orbit 34s linear infinite reverse; }
+.forge-veins { animation: relic-breathe 2.5s ease-in-out infinite alternate; filter:drop-shadow(0 0 2px #ff943b); }
+.leviathan-caustics { animation: leviathan-light 6s ease-in-out infinite alternate; }
+@keyframes leviathan-light { to { transform:translate(2px,4px); opacity:.75; } }
+.emperor-corona { transform-origin:60px 90px; animation: emperor-corona 3.2s ease-in-out infinite alternate; filter:drop-shadow(0 0 2px #b8ffba); }
+@keyframes emperor-corona { to { transform:scaleX(1.06) scaleY(.95); opacity:.6; } }
 @media (prefers-reduced-motion: reduce) {
-  .ton-ring-flow, .ton-meteor, .ton-gas { animation: none; }
-  .ton-meteor { offset-distance: 25%; }
+  .grimoire-glyphs, .grimoire-ribbon, .relic-drift, .forge-inner-gear,
+  .forge-veins, .leviathan-caustics, .emperor-corona { animation:none; }
 }

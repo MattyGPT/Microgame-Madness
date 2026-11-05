@@ -86,22 +86,22 @@ class BrowserAdapterTests(unittest.TestCase):
         shell = self.start("pumpkin", "baby")
         shell_features = [c for c in shell["commands"] if c["kind"] == "polygon"][:4]
         original = self.start("boss", "impossible")
-        features = [c for c in original["commands"] if c["kind"] == "polygon"][:4]
+        features = [c for c in original["commands"] if c["kind"] == "polygon" and c["fill"] in ("#000000", "#fff351")][:4]
         self.assertEqual([list(c["coords"]) for c in features], [list(c["coords"]) for c in shell_features])
         self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
         game = self.session.game
         game.shots = [Projectile(game.boss_x, game.boss_y, 0, 520)]
         struck = self.session.dispatch({"action": "tick", "dt": .01})
-        features = [c for c in struck["commands"] if c["kind"] == "polygon"][:4]
+        features = [c for c in struck["commands"] if c["kind"] == "polygon" and c["fill"] in ("#000000", "#fff351")][:4]
         self.assertLess(struck["hp"], original["hp"])
         self.assertEqual([c["fill"] for c in features], ["#fff351"] * 2 + ["#000000"] * 2)
         self.assertTrue(any(c["fill"] == "#ffffff" and c["kind"] in ("rectangle", "oval")
                             for c in struck["commands"]))
         self.assertNotEqual([c["coords"] for c in features[:2]],
-                            [c["coords"] for c in original["commands"] if c["kind"] == "polygon"][:2])
+                            [c["coords"] for c in original["commands"] if c["kind"] == "polygon" and c["fill"] in ("#000000", "#fff351")][:2])
         for _ in range(20):
             recovered = self.session.dispatch({"action": "tick", "dt": .05})
-        features = [c for c in recovered["commands"] if c["kind"] == "polygon"][:4]
+        features = [c for c in recovered["commands"] if c["kind"] == "polygon" and c["fill"] in ("#000000", "#fff351")][:4]
         self.assertEqual([c["fill"] for c in features], ["#000000"] * 4)
 
     def test_color_memory_eyes_stay_open_in_gaps_and_when_shot(self):

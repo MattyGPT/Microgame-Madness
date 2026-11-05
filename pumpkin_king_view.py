@@ -28,6 +28,17 @@ PUMPKIN_FACE_FEATURES = (
 )
 
 
+def happy_laugh_mouth(x, y, width, depth, age):
+    """An upturned open smile, pulsing on the defeat laugh's ha syllables."""
+    phase = min(1, (age % .36) / .28)
+    opening = depth * (.35 + .65 * math.sin(math.pi * phase))
+    top = [(x + width * (i / 12 - .5), y + 3 * (abs(i - 6) / 6) ** 2)
+           for i in range(13)]
+    bottom = [(x + width * (i / 12 - .5), y + 3 - opening * (1 - ((i - 6) / 6) ** 2))
+              for i in range(12, -1, -1)]
+    return top + bottom
+
+
 def mix(a, b, amount):
     amount = max(0, min(1, amount))
     return "#" + "".join(f"{round(int(a[i:i+2],16)*(1-amount)+int(b[i:i+2],16)*amount):02x}" for i in (1, 3, 5))
@@ -562,10 +573,19 @@ class KingView:
             color = mix(BACKGROUND, heat, intensity)
             self.oval(px, py, 1.8*(1-rise)+.3, 3*(1-rise)+.5, color)
 
+    def _happy_laugh(self, x, y, width, depth, age, color="#251727"):
+        self.poly(happy_laugh_mouth(x, y, width, depth, age), color)
+        # Small bright teeth make the open mouth read as a delighted grin.
+        self.ribbon(((x-width*.24, y-.8), (x, y-1.7), (x+width*.24, y-.8)),
+                    2, "#fff2ce")
+
     def _face(self, x, y, scale, shell, glow, t, game=None):
         if shell:
             self.rounded_rect(x, y, 72, 42, 6, "#ffffff")
-            for polygon in PUMPKIN_FACE_FEATURES:
+            for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
+                if game is not None and not game.alive and index == 3:
+                    self._happy_laugh(x, y-7, 43, 14, getattr(game, "defeat_laugh_age", 0), glow)
+                    continue
                 self.poly([(x+px*scale, y+py*scale) for px, py in polygon], glow)
             return
         name = game.stage.name
@@ -603,6 +623,9 @@ class KingView:
             if glow == "#38201c" and blink > .2:
                 self.oval(x+side*20+gaze, y+15, 2, 4, "#ff5c48")
         self._outlined_feature(((x-4, y+7), (x+4, y+7), (x, y-1)), "#38201c")
+        if not game.alive and not game.won:
+            self._happy_laugh(x, y-7, 45, 22, getattr(game, "defeat_laugh_age", 0))
+            return
         if roar:
             jaw = 3*math.sin(t*22)
             mouth = [(x+math.cos(i*math.tau/20)*12,
@@ -623,8 +646,28 @@ class KingView:
                 self.ribbon(((x+side*33, y+29), (x+side*11, y+23)), 2.5, "#9e2433")
 
     def draw_boss(self, game):
-        """Rounded Boss Crush bodies and faces, shared by both front ends."""
+        """Lit arena and beveled Boss Crush bodies, shared by both front ends."""
         self.counts, self.used = {}, set()
+        # Cosmetic geometry only: the arena and collision rectangles stay unchanged.
+        t = game.elapsed
+        left, right, bottom, top = game.left, game.right, game.bottom, game.top
+        accent = game.config.color
+        self.rect((left+right)/2, (bottom+top)/2, right-left, top-bottom, "#0c1221")
+        for gx in range(int(left)+30, int(right), 40):
+            self.rect(gx, (bottom+top)/2, .7, top-bottom, "#151f32")
+        for gy in range(int(bottom)+30, int(top), 40):
+            self.rect((left+right)/2, gy, right-left, .7, "#151f32")
+        for side in (-1, 1):
+            edge = left if side < 0 else right
+            self.rect(edge-side*3, (bottom+top)/2, 5, top-bottom, "#253047")
+            self.rect(edge-side*6, (bottom+top)/2, 1, top-bottom, mix(accent, "#111827", .65))
+            for gy in range(int(bottom)+22, int(top)-10, 32):
+                pulse = .25+.2*math.sin(t*2-gy*.025)
+                self.rect(edge-side*3, gy, 2, 10, mix("#29354a", accent, pulse))
+        for edge in (bottom, top):
+            self.rect((left+right)/2, edge+(3 if edge == bottom else -3), right-left, 5, "#253047")
+            for gx in (left+22, right-22):
+                self.rect(gx, edge+(4 if edge == bottom else -4), 28, 2, mix(accent, "#ffffff", .2))
         if not game.won:
             x, y, t = game.boss_x, game.boss_y, game.elapsed
             hit = game.hit_flash > 0
@@ -634,13 +677,29 @@ class KingView:
             color = game.config.color
             if hit and game.difficulty != "impossible":
                 color = mix(color, "#fff5ac", .7)
-            self.rounded_rect(x, y, 72, 42, 10, mix(game.config.color, "#101323", .76))
-            self.rounded_rect(x, y+1, 66, 36, 8, color)
-            self.rounded_rect(x-6, y+13, 43, 2, 1, mix(color, "#ffffff", .4))
+            # Low-contrast shadow separates the hovering shell from the floor.
+            self.oval(x, y-27, 66, 9, "#080d18")
+            self.rounded_rect(x, y, 72, 42, 9, mix(color, "#080e20", .7))
+            self.rounded_rect(x, y+1, 68, 38, 8, mix(color, "#ffffff", .35))
+            self.rounded_rect(x, y, 64, 34, 7, mix(color, "#0c152b", .32))
+            self.rounded_rect(x, y+3, 62, 28, 6, color)
+            self.poly(((x-30,y+10),(x-24,y+16),(x+23,y+16),(x+29,y+10)), mix(color,"#ffffff",.3))
+            self.poly(((x-30,y-8),(x-24,y-15),(x+24,y-15),(x+30,y-8),(x+24,y-11),(x-24,y-11)), mix(color,"#10162c",.5))
+            self.rounded_rect(x-7, y+17, 37, 1.5, .7, mix(color, "#ffffff", .7))
+            for side in (-1, 1):
+                self.rounded_rect(x+side*33, y-2, 2, 11, 1, mix(color, "#ffffff", .5))
+                self.oval(x+side*28, y-13, 2, 2, "#dce9ff")
+            # Tiny reactor vents breathe, then light up before an attack.
+            vent = "#fff0ba" if danger or attacking else mix(color,"#d9ffff",.45+.2*math.sin(t*3))
+            for dx in (-5, 0, 5):
+                self.rect(x+dx, y-18, 2, 1.5, vent)
             gaze = max(-2, min(2, (game.x-x)/110))
             blink = .13 if t%4.1 > 3.97 and not danger and not hit else 1
             if game.difficulty == "impossible":
                 for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
+                    if defeated_player and index == 3:
+                        self._happy_laugh(x, y-7, 43, 14, getattr(game, "defeat_laugh_age", 0), "#000000")
+                        continue
                     points = []
                     for px, py in polygon:
                         if index < 2:
@@ -664,7 +723,9 @@ class KingView:
                         if blink > .5:
                             self.oval(ex+gaze*.4, y+7, 2.5, 3, "#fff4dd")
                     self.ribbon(((x+side*26, y+15), (x+side*10, y+(10 if danger else 13))), 2.3, "#342039")
-                if hit or danger or attacking:
+                if defeated_player:
+                    self._happy_laugh(x, y-7, 30, 14, getattr(game, "defeat_laugh_age", 0))
+                elif hit or danger or attacking:
                     self.oval(x, y-10, 13 if hit else 20, 11 if hit else 15, "#261b32")
                 else:
                     curve = 1.8 if defeated_player else 1
@@ -855,7 +916,7 @@ class KingView:
             body_x, body_y, _, _ = game.body_rectangle
             if name in ("shell", "glow", "left_burst", "right_burst") and not game.intro_done:
                 glow = "#111827" if name == "shell" else mix("#111827", "#ffef42", progress if name == "glow" else 1)
-                self._face(body_x, body_y, 1, True, glow, game.elapsed)
+                self._face(body_x, body_y, 1, True, glow, game.elapsed, game)
             else:
                 hit_eyes = game.hit_flash > 0 and game.attack_index != 0
                 glow = COLORS.get(game.eye_rule, "#fff351" if hit_eyes else "#38201c")

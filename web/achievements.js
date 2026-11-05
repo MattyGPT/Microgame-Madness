@@ -89,12 +89,18 @@ const Achievements = (() => {
   add("dodge_merciless_240", "Beyond Mercy", "rainbow", "Turtle Dodge", "Survive 240 seconds in one Merciless game.", "mercilessBest", 240);
   add("boss_clean_streak_15", "Unbreakable Spectrum", "rainbow", "Boss Crush", "Win 15 consecutive Boss Crush fights without damage. Damage, losses, and abandoned fights reset the streak.", "bossCleanStreak", 15);
   add("pumpkin_flawless_5", "Sovereign of Suffering", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 5 times without taking damage, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 5);
+  add("pumpkin_flawless_10", "Beyond the Phantom Crown", "empyrorite", "Pumpkin King", "Defeat the Pumpkin King 10 times without taking a hit, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 10);
+  add("hangman_perfect_100", "The Living Grimoire", "empyrorite", "Hangman", "Win 100 Hangman games without a wrong guess.", "perfectWins", 100);
+  add("typing_100", "Thunder at Your Fingertips", "empyrorite", "Key Rush", "Complete 100 rounds in one Key Rush game.", "typingBest", 100);
+  add("boss_100", "Heart of the Celestial Forge", "empyrorite", "Boss Crush", "Win 100 Boss Crush games.", "bossWins", 100);
+  add("dodge_merciless_420", "Seven Minutes Below Infinity", "empyrorite", "Turtle Dodge", "Survive 420 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 420);
   // Unicode equivalents of Wingdings M Y / A R M, repeated three times.
   // These remain symbols on devices without the Windows Wingdings font.
   add("waste_of_time", "WASTE OF TIME", "black", "Arcade",
     "💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎ 💣︎✡︎ ✌︎☼💣︎", "gasterCompleted", 1,
     { secret: true, wingdings: true });
   // New achievements for the secret boss, practice game, and highest-tier challenges.
+  add("santa_song", "A Very Cubie Christmas", "gold", "Arcade", "Listen to Snowfall at the Arcade to unlock Santa Cubie.", "christmasHeard");
   add("name_gravitron", "Access Granted", "bronze", "Singularity Core", "Unlock Singularity Core with GRAVITRON.", "name_gravitron");
   add("play_singularity", "Into the Event Horizon", "silver", "Singularity Core", "Start a Singularity Core fight.", "play_singularity");
   for (const [index, [title, tier, protocol]] of [
@@ -230,6 +236,7 @@ const Achievements = (() => {
   add("boss_win_3", "Triple Trouble", "silver", "Boss Crush", "Win 3 Boss Crush games.", "bossWins", 3);
   add("wrath_win_3", "Third Rehearsal", "silver", "The King's Wrath", "Win 3 King's Wrath practice fights, in any modes.", "wrathWins", 3);
   add("wrath_counter_10", "Talk to the Hand", "silver", "The King's Wrath", "Successfully counter 10 magenta fingers across King's Wrath fights.", "wrathCounterHits", 10);
+  add("name_codexisthebest", "Code to the Rainbow", "rainbow", "Arcade", "Enter CODEXISTHEBEST as your arcade name to unlock Codex Cubie.", "name_codexisthebest");
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -299,12 +306,13 @@ const Achievements = (() => {
       return this.update(stats => {
         if (name === "dingdong") stats.dingdong = 1;
         if (name === "cube") stats.cubePets++;
-        if (["cubie", "boo", "starlight", "rocknroy", "pixel", "1up"].includes(name)) stats[`name_${name}`] = 1;
+        if (["cubie", "boo", "starlight", "rocknroy", "pixel", "1up", "codexisthebest"].includes(name)) stats[`name_${name}`] = 1;
         if (name === "high score") stats.name_high_score = 1;
         if (name === "gravitron") stats.name_gravitron = 1;
       });
     }
     hearMusic(track, custom, audible) {
+      if (audible && track === "christmas_99") return this.update(stats => { stats.christmasHeard = 1; });
       if (!audible || track !== "gaster_remix" || custom !== "gaster"
         || !this.data.unlocked.waste_of_time) return { earned: [], changed: false };
       return this.update(stats => { stats.gasterRemixHeard = 1; });

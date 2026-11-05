@@ -168,6 +168,10 @@ const modes = {
 };
 // Each sleeve has its own palette; related songs share a visual motif.
 const songSleeves = {
+  starburst_255: ["#ffdc65", "#ff6295", "bolt"],
+  slow_orbit: ["#b3c9ff", "#776ba4", "moon"],
+  christmas_99: ["#fff4cf", "#cf404a", "star"],
+  core_aftermath: ["#ffb2ac", "#a13764", "orbit"],
   hyperspeed: ["#ffde70", "#f26a99", "bolt"],
   velvet_tokens: ["#d7b5f5", "#737bb4", "moon"],
   arcade: ["#c6f783", "#5cb8a5", "pixels"],
@@ -260,10 +264,11 @@ let previousBossHealth = null;
 let damageFlashAnimation = null;
 let healingFlashAnimation = null;
 let coreOrigin;
+let coreAftermath = false;
 let nameSurpriseActive = false;
 let nameSurpriseTimer;
 let previousSecretName = "";
-const nameSecrets = { dingdong: "", cubie: "Hi, I’m Cubie!", boo: "BOO!", starlight: "You’re made of starlight. ✦", pixel: "Every pixel counts!", "1up": "Extra life energy!", "high score": "Your name belongs at the top!" };
+const nameSecrets = { codexisthebest: "Codex Cubie unlocked. Let’s build something!", dingdong: "", cubie: "Hi, I’m Cubie!", boo: "BOO!", starlight: "You’re made of starlight. ✦", pixel: "Every pixel counts!", "1up": "Extra life energy!", "high score": "Your name belongs at the top!" };
 // History state survives a real reload without exposing a URL hint or relying
 // on browser storage. Consume it immediately so later reloads cannot replay it.
 const pendingGaster = history.state?.gasterSequence;
@@ -291,7 +296,7 @@ try {
   const value = JSON.parse(localStorage.getItem(storageKey));
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
-    saved.testerTon618 = CubieCustoms.testerCodeActive && value.testerTon618 === true;
+    saved.testerTon618 = value.testerTon618 === true || CubieCustoms.redeemTesterCode(value.player);
     saved.shop = value.shop;
     saved.turtleTrail = typeof value.turtleTrail === "string" ? value.turtleTrail : null;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";
@@ -312,7 +317,21 @@ try {
   storageAvailable = false;
 }
 const achievementTracker = new Achievements.Tracker(saved.achievements);
+
+function newCustomNotifications() {
+  return CubieCustoms.catalog.filter(item => {
+    if (announcedCustoms.has(item.id) || !CubieCustoms.unlocked(item,
+      achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)) return false;
+    announcedCustoms.add(item.id);
+    return true;
+  }).map(item => ({ ...item, notificationKind: "custom" }));
+}
+
 saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
+// Seed from the saved closet so reloads never replay old Custom unlocks.
+const announcedCustoms = new Set(CubieCustoms.catalog.filter(item =>
+  CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
+).map(item => item.id));
 saved.turtleTrail = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned)?.id || null;
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
@@ -449,22 +468,27 @@ function showAchievementToasts(earned = []) {
 function createAchievementToast(item) {
   const toast = document.createElement("article");
   toast.className = "achievement-toast";
-  toast.dataset.achievementId = item.id;
+  const isCustom = item.notificationKind === "custom";
+  if (isCustom) toast.dataset.customId = item.id;
+  else toast.dataset.achievementId = item.id;
   toast.dataset.tier = item.tier;
   const badge = document.createElement("span");
   badge.className = "medal";
-  if (item.tier === "empyrorite") badge.append(empyroriteGem());
+  if (isCustom) {
+    badge.className = "custom-unlock-art";
+    badge.innerHTML = CubieCustoms.svg(item);
+  } else if (item.tier === "empyrorite") badge.append(empyroriteGem());
   else badge.textContent = "★";
   badge.setAttribute("aria-hidden", "true");
   const detail = document.createElement("div");
   const label = document.createElement("small");
-  label.textContent = `${item.tier === "black" ? "Secret" : item.tier} achievement · +${Achievements.points[item.tier]} points`;
+  label.textContent = isCustom ? `New Cubie unlocked · ${CubieCustoms.tierLabels[item.tier]}` : `${item.tier === "black" ? "Secret" : item.tier} achievement · +${Achievements.points[item.tier]} points`;
   const title = document.createElement("strong");
-  title.textContent = item.title;
+  title.textContent = isCustom ? item.name : item.title;
   detail.append(label, title);
   const close = document.createElement("button");
   close.textContent = "×";
-  close.setAttribute("aria-label", "Dismiss achievement notification");
+  close.setAttribute("aria-label", isCustom ? "Dismiss Cubie unlock notification" : "Dismiss achievement notification");
   close.onclick = () => dismissAchievementToast(toast);
   toast.append(badge, detail, close);
   return toast;
@@ -536,7 +560,7 @@ function updateAchievements(result) {
   persist();
   renderAchievements();
   celebrateAchievements(result.earned);
-  showAchievementToasts(result.earned);
+  showAchievementToasts([...result.earned, ...newCustomNotifications()]);
   if (selected === "customs") renderCustoms();
 }
 function initializeAchievements() {
@@ -783,6 +807,7 @@ function renderShop() {
       } else {
         if (!CubieShop.buy(saved.shop, item)) return;
         $("shop-status").textContent = `${item.name} is yours! Find it in your closet or choose Wear Custom.`;
+        showAchievementToasts(newCustomNotifications());
       }
       persist();
       renderShop();
@@ -842,6 +867,7 @@ function showScores() {
 function saveRound() {
   if (roundSaved || !snapshot) return;
   roundSaved = true;
+  if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) playSound("boss_laugh");
   if (modes[selected].temporary) return;
   if (snapshot.over) countCompletedMinigame();
   lastCashReward = CubieShop.reward(saved.shop, selected, selectedDifficulty, snapshot.score);
@@ -977,6 +1003,7 @@ function showGameArea() {
   document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
 }
 function selectGame(mode) {
+  coreAftermath = false;
   if (loadFailed && !["customs", "shop"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   updateAchievements(achievementTracker.abandon());
@@ -1057,6 +1084,7 @@ function selectGame(mode) {
   syncMusic();
 }
 function startGame(difficulty) {
+  coreAftermath = false;
   if (selected === "jukebox" && Object.hasOwn(modes.jukebox.difficulties, difficulty)) {
     selectedDifficulty = difficulty;
     jukeboxPaused = false;
@@ -1400,6 +1428,14 @@ function frame(now) {
       fail(error);
     }
   }
+  if (!active && ready && snapshot?.over && !snapshot.won && !document.hidden
+      && !gasterActive && !coreOrigin?.open && !trailReducedMotion.matches
+      && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) {
+    try {
+      snapshot = send("defeat_frame", { dt: (now - lastFrame) / 1000 });
+      draw(snapshot);
+    } catch (error) { fail(error); }
+  }
   const noteIcon = document.querySelector('[data-game="jukebox"] .card-art');
   if (noteIcon) {
     const pulse = soundOn && !document.hidden && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -1432,6 +1468,7 @@ $("player").oninput = () => {
   const name = $("player").value.trim().toLowerCase();
   if (CubieCustoms.redeemTesterCode(name)) {
     saved.testerTon618 = true;
+    showAchievementToasts(newCustomNotifications());
     saved.cubieCustom = "ton_618";
     applyCubieCustom();
     if (selected === "customs") renderCustoms();
@@ -1686,7 +1723,7 @@ function syncMusic() {
   }
   if (!musicPlayer) return;
   const state = {
-    theme: selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+    theme: coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "keyboard" ? "keyrush"
@@ -1694,7 +1731,7 @@ function syncMusic() {
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
-      && (selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
+      && (coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
   if (pendingRockSong) {
     musicPlayer.playOnce(pendingRockSong, state);
@@ -1766,6 +1803,7 @@ function playSound(event) {
   const oscillator = audioContext.createOscillator(),
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
+  const laugh = event === "boss_laugh";
   const squeak = event === "squeak";
   const ding = event === "achievement";
   const scare = event === "scare";
@@ -1778,9 +1816,22 @@ function playSound(event) {
     core_laser: [65, 780, 1.2, .14],
     core_destroyed: [180, 25, 1, .13],
   }[event];
-  const duration = core ? core[2] : ding ? .7 : squeak ? .24 : scare ? .38 : .36;
+  const duration = laugh ? 1.65 : core ? core[2] : ding ? .7 : squeak ? .24 : scare ? .38 : .36;
   oscillator.type = squeak || ding ? "sine" : "sawtooth";
-  if (core) {
+  if (laugh) {
+    // Four voiced ha syllables: a falling pitch and a fresh breath on each.
+    oscillator.type = "triangle";
+    gain.gain.setValueAtTime(.001, now);
+    const base = ["pumpkin", "wrath"].includes(selected) ? 165 : selected === "boss" ? 120 : 75;
+    for (let i = 0; i < 4; i++) {
+      const t = now + i * .36;
+      oscillator.frequency.setValueAtTime(base * (1.3 - i * .07), t);
+      oscillator.frequency.exponentialRampToValueAtTime(base * .73, t + .24);
+      gain.gain.setValueAtTime(.001, t);
+      gain.gain.exponentialRampToValueAtTime(.36, t + .035);
+      gain.gain.exponentialRampToValueAtTime(.001, t + .28);
+    }
+  } else if (core) {
     oscillator.type = ["core_teleport", "core_exposed", "core_heal"].includes(event) ? "sine" : "sawtooth";
     oscillator.frequency.setValueAtTime(core[0], now);
     oscillator.frequency.exponentialRampToValueAtTime(core[1], now + duration * .9);
@@ -1906,7 +1957,7 @@ async function initialize() {
 coreOrigin = new CoreOrigin.Film($("core-origin"), {
   audio: () => ({ context: audioContext, destination: audioMaster, enabled: soundOn }),
   toggleSound: () => $("sound").click(),
-  onChange: () => { clearKeys(); syncMusic(); },
+  onChange: open => { coreAftermath = !open; clearKeys(); syncMusic(); },
 });
 initializeGlobalLeaderboards();
 initializeAchievements();

@@ -13,12 +13,23 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
 });
 
-test('retired tester code and saved grants cannot unlock TON 618', async ({ page }) => {
+test('TON 618 code unlocks permanently without granting its achievement', async ({ page }) => {
   await page.locator('#player').fill('GRAVITRON618');
-  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
-  await page.evaluate(() => { saved.testerTon618 = true; saved.cubieCustom = 'ton_618'; persist(); });
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'ton_618');
+  expect(await page.evaluate(() => !!achievementTracker.data.unlocked.core_flawless)).toBe(false);
+  await page.locator('#player').fill('Nate');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
-  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
-  expect(await page.evaluate(() => CubieCustoms.unlocked(CubieCustoms.catalog.find(c => c.id === 'ton_618'), {core_flawless: '2026-11-05'}))).toBe(true);
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'ton_618');
+  expect(await page.evaluate(() => saved.testerTon618)).toBe(true);
+});
+test('old code grants and saved code names restore TON 618 access', async ({page}) => {
+  for (const profile of [{testerTon618:true,player:'Nate'}, {testerTon618:false,player:'GRAVITRON618'}]) {
+    await page.evaluate(profile => {
+      Object.assign(saved, profile, {cubieCustom:'ton_618'}); persist();
+    }, profile);
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await expect(page.locator('#cube')).toHaveAttribute('data-custom','ton_618');
+  }
 });

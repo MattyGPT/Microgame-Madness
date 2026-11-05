@@ -125,6 +125,11 @@ class BrowserGame:
             if self.game.result == "completed":
                 self.completed += 1
                 self.new_round(now)
+        elif action == "defeat_frame":
+            if (self.mode in ("boss", "pumpkin", "wrath", "singularity", "core_practice")
+                    and not self.game.alive and not self.game.won):
+                dt = max(0, min(float(request.get("dt", 0)), .05))
+                self.game.defeat_laugh_age = getattr(self.game, "defeat_laugh_age", 0) + dt
         elif action == "laser" and self.mode == "singularity" and not self.paused:
             self.game.fire_laser()
         elif action == "pause" and self.mode in ("dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice"):
@@ -202,10 +207,16 @@ class BrowserGame:
                     if bullet.delay > 0:
                         continue
                     color = {"blue": "#42c9ff", "orange": "#ff9d32"}.get(bullet.rule, game.config.color)
-                    for shape in bullet.rectangles():
-                        rect(*shape, color)
+                    for bx, by, bw, bh in bullet.rectangles():
+                        rect(bx, by, bw, bh, color)
+                        # Insets add a luminous core without enlarging the hazard.
+                        if bw > 4 and bh > 4:
+                            rect(bx, by, bw-4, bh-4, "#172138")
+                            rect(bx, by+bh/2-1.5, bw-2, 1, "#eefaff")
+                            rect(bx, by, max(1, bw-7), max(1, bh-7), color)
                 for shot in game.shots:
                     rect(shot.x, shot.y, 4, 12, "#67e8f9")
+                    rect(shot.x, shot.y+1, 2, 8, "#ecfeff")
                 for pickup in game.healing_pickups:
                     rect(pickup.x, pickup.y, 16, 16, "#22c55e")
                     rect(pickup.x, pickup.y, 4, 12, "#ffffff")

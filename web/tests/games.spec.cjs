@@ -2231,8 +2231,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(116);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 116 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(126);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 126 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
@@ -2318,7 +2318,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('68 / 116 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('71 / 126 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
@@ -2423,7 +2423,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     expect(order.actual).toEqual(order.expected);
   };
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(48);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(49);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
@@ -2440,9 +2440,9 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     for (let i = 0; i < 10; i++) { roundSaved = false; saveRound(); saveRound(); }
   });
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-balance')).toHaveText('150 Cubie Cash');
+  await expect(page.locator('#shop-balance')).toHaveText('600 Cubie Cash');
   await mint.locator('button').click();
-  await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
+  await expect(page.locator('#shop-balance')).toHaveText('450 Cubie Cash');
   await expect(mint.locator('button')).toHaveText('Wear Custom');
   await mint.locator('button').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_blue_mint');
@@ -2450,11 +2450,11 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_blue_mint');
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
+  await expect(page.locator('#shop-balance')).toHaveText('450 Cubie Cash');
   await expect(mint.locator('button')).toHaveText('Equipped ✓');
   await checkPriceOrder();
   await page.locator('#shop-room summary').click();
-  await expect(page.locator('#shop-rates')).toContainText('Hangman: score × 100');
+  await expect(page.locator('#shop-rates')).toContainText('Hangman: score × 400');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator('#shop-room').screenshot({ path: testInfo.outputPath('cubie-shop.png') });
   expect(errors).toEqual([]);
@@ -2498,4 +2498,44 @@ test('Key Rush touch keyboard handles case and symbols without opening the devic
   });
   await page.locator('#keyboard-game').screenshot({ path: testInfo.outputPath('mobile-key-rush.png') });
   expect(errors).toEqual([]);
+});
+
+test('CODEXISTHEBEST unlocks rainbow Codex Cubie and equipment survives reload', async ({ page }, testInfo) => {
+  await page.locator('[data-game="customs"]').click();
+  const custom = page.locator('#customs-grid .custom-tile[data-custom="codex"]');
+  await expect(custom).toHaveAttribute('data-tier', 'rainbow');
+  await expect(custom.locator('.custom-equip')).toBeDisabled();
+  await page.locator('#player').fill('CODEXISTHEBEST');
+  await expect(custom.locator('.custom-equip')).toBeEnabled();
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+  await custom.locator('.custom-equip').click();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'codex');
+  await page.evaluate(() => {
+    document.querySelectorAll('#achievement-toast button').forEach(button => button.click());
+    document.querySelector('#achievement-celebrations').replaceChildren();
+  });
+  await expect(page.locator('#name-surprise')).toBeHidden();
+  await custom.screenshot({ path: testInfo.outputPath('codex-cubie.png') });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'codex');
+  await expect(page.locator('#profile-score')).toHaveText('2440');
+});
+
+test('Hacker Cubie can be purchased for 4000 Cash and keeps its corrupted face when equipped', async ({ page }, testInfo) => {
+  await page.evaluate(() => { saved.shop.units = 4000000; persist(); });
+  await page.locator('[data-game="shop"]').click();
+  const card = page.locator('#shop-grid .custom-tile[data-custom="shop_hacker"]');
+  await expect(card).toHaveAttribute('data-tier', 'empyrorite');
+  await expect(card.locator('.shop-price')).toHaveText('4000 Cubie Cash');
+  await card.getByRole('button', { name: 'Buy Hacker Cubie', exact: true }).click();
+  await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
+  await card.getByRole('button', { name: 'Wear Hacker Cubie', exact: true }).click();
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_hacker');
+  await expect(page.locator('#cube .hacker-claw')).toHaveCount(1);
+  await expect(page.locator('#cube .cubie-eyes path')).toHaveAttribute('stroke', '#fff5f5');
+  await card.screenshot({ path: testInfo.outputPath('hacker-shop-card.png') });
+  await page.reload();
+  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_hacker');
 });

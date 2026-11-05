@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('116 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 116);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 116);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 116);
+test('126 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 126);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 126);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 126);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -14,6 +14,46 @@ test('116 distinct Customs use achievements or shop purchases and retain Cubie�
     assert.equal(Customs.unlocked(item, {}), item.id === 'classic');
     assert.ok(item.achievements.length || item.price > 0);
     assert.ok(item.flavor);
+  }
+});
+
+test('TON 618 requires a flawless Core victory and recognizes saved achievements', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(item => item.id === 'ton_618');
+  assert.equal(item.tier, 'empyrorite');
+  const tracker = new Tracker();
+  const win = damage => {
+    tracker.start('singularity', 'gravitron');
+    tracker.observe({ mode: 'singularity', difficulty: 'gravitron', over: true,
+      won: true, attacks_completed: 15, hp: 0, shielded: false, lives: 10, damage_taken: damage });
+  };
+  win(1);
+  assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
+  win(0);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(Customs.unlocked(item, restored.data.unlocked), true);
+  assert.equal(Customs.selected('ton_618', restored.data.unlocked).id, 'ton_618');
+});
+
+test('Rainbow Phantom King requires a no-hit Pumpkin victory even after healing', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(item => item.id === 'phantom_king');
+  assert.equal(item.tier, 'rainbow');
+  assert.equal(achievements.find(a => a.id === 'pumpkin_flawless').tier, 'diamond');
+  for (const difficulty of ['baby', 'coward', 'phase2', 'come_on']) {
+    const tracker = new Tracker();
+    const finish = (won, damage) => {
+      tracker.start('pumpkin', difficulty);
+      tracker.observe({ mode: 'pumpkin', difficulty, over: true, won,
+        lives: 15, max_lives: 15, damage_taken: damage });
+    };
+    finish(true, 1);
+    assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
+    finish(false, 0);
+    assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
+    finish(true, 0);
+    const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.equal(Customs.selected('phantom_king', restored.data.unlocked).id, 'phantom_king');
   }
 });
 
@@ -81,20 +121,32 @@ test('Gaster Cubie requires completing the event, not just entering the name', (
   assert.equal(Customs.unlocked(custom, tracker.data.unlocked), true);
 });
 
-test('TON 618 requires a flawless Core victory and recognizes saved achievements', () => {
-  const { Tracker } = require('../achievements.js');
-  const item = Customs.catalog.find(item => item.id === 'ton_618');
-  assert.equal(item.tier, 'empyrorite');
+test('Codex Cubie unlocks once from its rainbow arcade-name achievement', () => {
+  const { Tracker } = require('../achievements');
   const tracker = new Tracker();
-  const win = damage => {
-    tracker.start('singularity', 'gravitron');
-    tracker.observe({ mode: 'singularity', difficulty: 'gravitron', over: true,
-      won: true, attacks_completed: 15, hp: 0, shielded: false, lives: 10, damage_taken: damage });
-  };
-  win(1);
-  assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
-  win(0);
+  const custom = Customs.catalog.find(c => c.id === 'codex');
+  assert.equal(custom.tier, 'rainbow');
+  assert.equal(Customs.selected('codex', tracker.data.unlocked).id, 'classic');
+  assert.deepEqual(tracker.secret('codexisthebest').earned.map(a => a.id), ['name_codexisthebest']);
+  assert.equal(tracker.score, 2430);
+  assert.equal(Customs.selected('codex', tracker.data.unlocked).id, 'codex');
   const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
-  assert.equal(Customs.unlocked(item, restored.data.unlocked), true);
-  assert.equal(Customs.selected('ton_618', restored.data.unlocked).id, 'ton_618');
+  assert.equal(restored.secret('codexisthebest').changed, false);
+});
+
+
+test('Boss Cubie unlocks at ten Boss Crush wins, including saved progress', () => {
+  const { Tracker } = require('../achievements');
+  const custom = Customs.catalog.find(c => c.id === 'boss');
+  const tracker = new Tracker({ stats: { bossWins: 9 } });
+  tracker.visit();
+  assert.equal(Customs.unlocked(custom, tracker.data.unlocked), false);
+  tracker.start('boss', 'mean');
+  tracker.observe({ mode: 'boss', difficulty: 'mean', over: true, won: true, damage_taken: 1 });
+  assert.equal(Customs.unlocked(custom, tracker.data.unlocked), true);
+  const returning = new Tracker({ stats: { bossWins: 10 } });
+  returning.visit();
+  assert.equal(Customs.selected('boss', returning.data.unlocked).id, 'boss');
+  assert.equal(custom.tier, 'crystal');
+  assert.match(custom.flavor, /dry erase marker/);
 });
