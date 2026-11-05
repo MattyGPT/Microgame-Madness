@@ -3,6 +3,15 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 test.beforeEach(async ({ page }) => {
+  // Keep unrelated score tests deterministic; music-award tests explicitly select their song.
+  await page.route('**/music.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'constructor(context, destination = context.destination, random = Math.random)',
+      'constructor(context, destination = context.destination, random = () => .12)') });
+  });
+
+
   await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
     const file = path.basename(new URL(route.request().url()).pathname);
     const local = path.resolve('node_modules/pyodide', file);

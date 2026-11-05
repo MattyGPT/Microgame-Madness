@@ -5,6 +5,14 @@ const fs = require("node:fs");
 // Serve the exact pinned runtime locally in CI so CDN availability does not
 // make game regressions intermittent. Production uses the same CDN version.
 test.beforeEach(async ({ page }) => {
+  // Keep unrelated score tests deterministic; music-award tests explicitly select their song.
+  await page.route('**/music.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'constructor(context, destination = context.destination, random = Math.random)',
+      'constructor(context, destination = context.destination, random = () => .12)') });
+  });
+
   await page.route(
     "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**",
     (route) => {
@@ -885,13 +893,14 @@ test('global outages keep games playable and queued scores retry after reload', 
   expect(service.guests).toBe(1);
 });
 
-test("arcade music shuffles all twenty-three songs automatically before repeating", async ({ page }) => {
+test("arcade music shuffles the full song catalog automatically before repeating", async ({ page }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.locator('h1').click();
   await expect.poll(() => page.evaluate(() => audioContext?.state)).toBe("running");
   const heard = [];
-  for (let i = 0; i < 23; i++) {
+  const totalTracks = await page.evaluate(() => ArcadeMusic.tracks.length);
+  for (let i = 0; i < totalTracks; i++) {
     const track = await page.evaluate(() => musicPlayer.track);
     heard.push(track);
     expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
@@ -901,7 +910,7 @@ test("arcade music shuffles all twenty-three songs automatically before repeatin
     await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
   }
   expect([...heard].sort()).toEqual(await page.evaluate(() => ArcadeMusic.tracks.map(track => track.id).sort()));
-  expect(new Set(heard).size).toBe(23);
+  expect(new Set(heard).size).toBe(totalTracks);
   expect(errors).toEqual([]);
 });
 
@@ -2318,7 +2327,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('71 / 126 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('77 / 126 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');

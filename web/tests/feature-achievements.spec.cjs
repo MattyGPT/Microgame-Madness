@@ -3,6 +3,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 test.beforeEach(async ({ page }) => {
+  // Keep unrelated score tests deterministic; music-award tests explicitly select their song.
+  await page.route('**/music.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'constructor(context, destination = context.destination, random = Math.random)',
+      'constructor(context, destination = context.destination, random = () => .12)') });
+  });
+
   await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
     const file = path.basename(new URL(route.request().url()).pathname);
     const local = path.resolve('node_modules/pyodide', file);
@@ -125,7 +133,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
 
 test('Empyrorite challenges cover Merciless and Boss Crush while Chaos, Perfected is Rainbow', async ({ page }, testInfo) => {
   await page.locator('#achievements-tab').click();
-  await expect(page.locator('.achievement-card[data-tier="empyrorite"]')).toHaveCount(5);
+  await expect(page.locator('.achievement-card[data-tier="empyrorite"]')).toHaveCount(10);
   for (const [id, title, requirement] of [
     ['dodge_merciless_300', 'Beyond the Last Mercy', '300 seconds in one Merciless'],
     ['boss_clean_streak_20', 'Sovereign of the Arena', '20 consecutive Boss Crush fights'],
