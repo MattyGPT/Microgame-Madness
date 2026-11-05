@@ -12,6 +12,7 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./core-origin.css" />
+    <link rel="stylesheet" href="./trails.css" />
     <script
       src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
       defer
@@ -19,6 +20,7 @@
     <script src="./achievements.js" defer></script>
     <script src="./customs.js" defer></script>
     <script src="./shop.js" defer></script>
+    <script src="./trails.js" defer></script>
     <script src="./music.js" defer></script>
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
@@ -326,10 +328,19 @@
             </div>
             <section id="shop-room" aria-label="Cubie Shop" hidden>
               <div class="shop-heading"><div><p class="eyebrow">CUBIE CASH</p><h3>Little outfits. Big personality.</h3></div><strong id="shop-balance" aria-live="polite"></strong></div>
-              <p>Earn Cash by playing, then collect exclusive Customs. Every purchase stays in your closet.</p>
+              <p>Earn Cash by playing, then collect Cubie Customs and Turtle Trails. Your purchases stay in this browser profile.</p>
               <p id="shop-progress"></p><p id="shop-status" role="status" aria-live="polite"></p>
               <details><summary>How to earn Cubie Cash</summary><p>Score × game multiplier × difficulty bonus = converted score. Every 100 converted score earns 1 Cubie Cash. Partial Cash carries over between rounds. Finished rounds earn Cash once, even if you lose; Key Rush also pays when you exit. Temporary Core practice does not award Cash.</p><div id="shop-rates"></div></details>
+              <div class="shop-categories" role="group" aria-label="Shop category">
+                <button type="button" id="shop-customs-tab" aria-controls="shop-grid" aria-pressed="true">Cubie Customs · 48</button>
+                <button type="button" id="shop-trails-tab" aria-controls="trail-room" aria-pressed="false">Turtle Trails · 48</button>
+              </div>
               <div id="shop-grid"></div>
+              <section id="trail-room" aria-label="Turtle Trails" hidden>
+                <div class="trail-heading"><div><h4>A little color in your wake.</h4><p id="trail-equipped">Equipped: No trail</p></div><button type="button" id="trail-remove">No trail</button></div>
+                <p class="trail-note">48 trails, priced from low to high. Trails fade in under half a second as you move in Turtle Dodge, Boss Crush, Pumpkin King, and The King's Wrath. Hidden during Singularity Core and practice. Reduced motion turns trail effects off.</p>
+                <div id="trail-grid"></div>
+              </section>
             </section>
             <section id="customs-room" aria-label="Cubie's Customs" hidden>
               <div class="customs-preview">

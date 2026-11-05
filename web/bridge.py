@@ -222,8 +222,10 @@ class BrowserGame:
                     result["sounds"].append("turtle_death")
                     self.death_sound_pending = False
             elif not result.get("arena_shattered"):
-                commands.append({"kind": "polygon", "coords": [v for x, y in PLAYER_POLYGON for v in (game.x+x, -game.y-y)],
+                commands.append({"kind": "polygon", "role": "player", "coords": [v for x, y in PLAYER_POLYGON for v in (game.x+x, -game.y-y)],
                                  "fill": "#ffffff" if getattr(game, "invulnerable", 0) else "#a3ff80"})
+            result["player"] = {"x": game.x, "y": game.y,
+                                "visible": self.death_age is None and not result.get("arena_shattered", False)}
             result["commands"] = commands
         return result
 

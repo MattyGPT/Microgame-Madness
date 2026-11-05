@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const modes = {
   shop: {
     title: "Cubie Shop", category: "10 / CUBIE CASH", art: "C",
-    heading: "Little outfits. Big personality.", copy: "Play games to earn Cubie Cash and collect exclusive Customs.",
+    heading: "Little outfits. Big personality.", copy: "Play games to earn Cubie Cash and collect Customs and Turtle Trails.",
     accent: "#80b9ff", controls: "100 converted score = 1 Cubie Cash · Harder modes earn more",
     localOnly: true, temporary: true, difficulties: {},
   },
@@ -292,6 +292,7 @@ try {
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
     saved.shop = value.shop;
+    saved.turtleTrail = typeof value.turtleTrail === "string" ? value.turtleTrail : null;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";
     saved.unlocks.singularity = value.unlocks?.singularity === true;
     saved.minigamesCompleted = Number.isSafeInteger(value.minigamesCompleted) && value.minigamesCompleted >= 0
@@ -310,7 +311,8 @@ try {
   storageAvailable = false;
 }
 const achievementTracker = new Achievements.Tracker(saved.achievements);
-saved.shop = CubieShop.restore(saved.shop, CubieCustoms.catalog);
+saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
+saved.turtleTrail = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned)?.id || null;
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
@@ -676,7 +678,67 @@ function renderCustoms() {
 }
 $("customs-filter").onchange = renderCustoms;
 
+let shopCategory = "customs";
+function setShopCategory(category) {
+  shopCategory = category;
+  $("shop-grid").hidden = category !== "customs";
+  $("trail-room").hidden = category !== "trails";
+  $("shop-customs-tab").setAttribute("aria-pressed", String(category === "customs"));
+  $("shop-trails-tab").setAttribute("aria-pressed", String(category === "trails"));
+}
+$("shop-customs-tab").onclick = () => setShopCategory("customs");
+$("shop-trails-tab").onclick = () => setShopCategory("trails");
+$("trail-remove").onclick = () => {
+  saved.turtleTrail = null;
+  turtleTrailField.reset();
+  persist();
+  renderShop();
+  $("shop-status").textContent = "Turtle trail removed.";
+  $("trail-remove").focus({ preventScroll: true });
+};
+function renderTrails() {
+  const equipped = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned);
+  $("trail-equipped").textContent = `Equipped: ${equipped?.name || "No trail"}`;
+  $("trail-remove").setAttribute("aria-pressed", String(!equipped));
+  $("trail-grid").replaceChildren(...[...TurtleTrails.catalog].sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
+    const owned = saved.shop.owned.includes(item.id), wearing = equipped?.id === item.id;
+    const card = document.createElement("article");
+    card.className = "custom-tile trail-tile";
+    card.dataset.trail = item.id;
+    card.dataset.equipped = String(wearing);
+    card.style.setProperty("--trail-color", item.colors[0]);
+    const art = document.createElement("div");
+    art.className = "trail-preview";
+    art.innerHTML = TurtleTrails.preview(item);
+    const name = document.createElement("h5"); name.textContent = item.name;
+    const type = document.createElement("span"); type.className = "custom-tier"; type.textContent = "Turtle Trail";
+    const flavor = document.createElement("p"); flavor.textContent = item.flavor;
+    const price = document.createElement("strong"); price.className = "shop-price";
+    price.textContent = owned ? "Owned" : `${item.price.toLocaleString()} Cubie Cash`;
+    const button = document.createElement("button"); button.className = "custom-equip";
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip trail" : `Buy · ${item.price.toLocaleString()} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Equip" : "Buy"} ${item.name} trail`);
+    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
+    button.onclick = () => {
+      if (saved.shop.owned.includes(item.id)) {
+        saved.turtleTrail = item.id;
+        turtleTrailField.reset();
+        $("shop-status").textContent = `${item.name} equipped. Your turtle is ready to leave a trail.`;
+      } else {
+        if (!CubieShop.buy(saved.shop, item)) return;
+        $("shop-status").textContent = `${item.name} is yours! Choose Equip trail to use it.`;
+      }
+      persist(); renderShop();
+      cardFocus(item.id);
+    };
+    card.append(art, name, type, flavor, price, button);
+    return card;
+  }));
+}
+function cardFocus(id) { $("trail-grid").querySelector(`[data-trail="${id}"] button`)?.focus({ preventScroll: true }); }
 function renderShop() {
+  setShopCategory(shopCategory);
+  renderTrails();
   $("shop-balance").textContent = `${CubieShop.balance(saved.shop).toLocaleString()} Cubie Cash`;
   $("shop-progress").textContent = `${(saved.shop.units % 1000 / 10).toLocaleString()} / 100 converted score toward your next Cash.`;
   $("shop-rates").replaceChildren(...Object.entries(CubieShop.rates).map(([mode, rate]) => {
@@ -747,7 +809,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -917,6 +979,7 @@ function selectGame(mode) {
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
+  turtleTrailField.reset();
   if (active && selected === "keyboard") saveRound();
   active = false;
   snapshot = null;
@@ -1007,6 +1070,7 @@ function startGame(difficulty) {
     return;
   }
   resetDamageFeedback();
+  turtleTrailField.reset();
   selectedDifficulty = difficulty;
   if (!modes[selected].localOnly) {
     $("leaderboard-game").value = selected;
@@ -1195,6 +1259,8 @@ function render() {
   else $("overlay").hidden = true;
   syncMusic();
 }
+const turtleTrailField = new TurtleTrails.Field();
+const trailReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const ctx = $("game-canvas").getContext("2d");
 function draw(s) {
   ctx.clearRect(0, 0, 680, 560);
@@ -1208,6 +1274,8 @@ function draw(s) {
   ctx.rect(left, -top, right - left, top - bottom);
   ctx.clip();
   for (const command of s.commands) {
+    if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !trailReducedMotion.matches)
+      turtleTrailField.draw(ctx, TurtleTrails.selected(saved.turtleTrail, saved.shop.owned));
     const c = command.coords;
     if (command.kind === "clip_start") {
       ctx.save();
@@ -1323,6 +1391,8 @@ function frame(now) {
         dt: (now - lastFrame) / 1000,
         keys: [...keys],
       });
+      turtleTrailField.update((now - lastFrame) / 1000, snapshot,
+        TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches);
       render();
     } catch (error) {
       fail(error);
