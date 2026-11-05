@@ -386,7 +386,7 @@ const CubieCustoms = (() => {
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
   // Temporary tester access. Set false to revoke code access, including saved
   // grants, without affecting TON 618 earned through a flawless Core victory.
-  const testerCodeActive = true;
+  const testerCodeActive = false;
   const redeemTesterCode = name => testerCodeActive && typeof name === "string"
     && name.trim().toLowerCase() === "gravitron618";
   const unlocked = (item, medals, owned = [], testerTon618 = false) => item.id === "classic"
