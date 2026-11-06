@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 203);
+  assert.equal(catalog.length, 204);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {

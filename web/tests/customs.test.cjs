@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('126 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 126);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 126);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 126);
+test('132 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 132);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 132);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 132);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -149,4 +149,48 @@ test('Boss Cubie unlocks at ten Boss Crush wins, including saved progress', () =
   assert.equal(Customs.selected('boss', returning.data.unlocked).id, 'boss');
   assert.equal(custom.tier, 'crystal');
   assert.match(custom.flavor, /dry erase marker/);
+});
+
+test('Forever Friend unlocks at 1000 cumulative pets, persists, and migrates existing pet counts', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'forever_friend');
+  assert.equal(item.tier, 'empyrorite');
+  assert.equal(item.price, undefined);
+  let tracker = new Tracker({ stats: { cubePets: 998 } });
+  tracker.visit();
+  tracker.secret('cube');
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, 'classic');
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  const awards = tracker.secret('cube').earned.map(a => a.id);
+  assert.ok(awards.includes('cube_pet_1000'));
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, item.id);
+  const stamp = tracker.data.unlocked.cube_pet_1000;
+  const score = tracker.score;
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  tracker.visit();
+  assert.ok(!tracker.secret('cube').earned.some(a => a.id === 'cube_pet_1000'));
+  assert.equal(tracker.score, score);
+  assert.equal(tracker.data.unlocked.cube_pet_1000, stamp);
+  for (const pets of [1000, 1200]) {
+    const old = new Tracker({ stats: { cubePets: pets } });
+    assert.ok(old.visit().earned.some(a => a.id === 'cube_pet_1000'));
+    assert.equal(Customs.selected(item.id, old.data.unlocked).id, item.id);
+  }
+});
+
+test('Singularity Cubie unlocks only from a completed one-HP Core victory and persists', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'singularity');
+  for (const [mode, lives, won, expected] of [
+    ['singularity', 2, true, false], ['singularity', 0, false, false],
+    ['core_practice', 1, true, false], ['singularity', 1, true, true],
+  ]) {
+    const tracker = new Tracker();
+    const difficulty = mode === 'singularity' ? 'gravitron' : 'orbital_saws';
+    tracker.start(mode, difficulty);
+    tracker.observe({ mode, difficulty, over: true, won, lives, hp: 0,
+      shielded: false, attacks_completed: 15, damage_taken: 9 });
+    const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+    assert.equal(Customs.unlocked(item, restored.data.unlocked), expected);
+  }
 });

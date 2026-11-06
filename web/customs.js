@@ -73,6 +73,14 @@ const CubieCustoms = (() => {
     catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
+  add("satellite", "Satellite Cubie", "play_singularity", "#bac7d8",
+    '<rect x="26" y="34" width="68" height="68" rx="9" fill="#d6e0ea" stroke="#71859e" stroke-width="1.5"/><path d="M32 39h56M31 96h58" stroke="#f5fbff" stroke-width="2"/>' +
+    '<g class="cubie-motion motion-sway" style="transform-origin:60px 28px"><path d="M60 29V10l12-7" fill="none" stroke="#92a9c2" stroke-width="3"/><circle cx="73" cy="3" r="4" fill="#86e6ff" stroke="#e0faff" stroke-width="1.2"/><path d="M48 15q12 12 24 0" fill="#8da1bb" stroke="#e4efff" stroke-width="1.5"/></g>' +
+    '<g fill="#71859e"><circle cx="31" cy="39" r="1.5"/><circle cx="89" cy="39" r="1.5"/><circle cx="31" cy="96" r="1.5"/><circle cx="89" cy="96" r="1.5"/></g>', square, {
+      flavor: "A tiny signal from a very friendly corner of space.",
+      back: '<path d="M-8 65h136" stroke="#71859e" stroke-width="5"/>' +
+        [-1, 1].map(side => `<g transform="translate(${side < 0 ? -16 : 106} 40)"><g class="cubie-motion motion-sway" style="transform-origin:15px 25px;animation-delay:${side < 0 ? '-.8' : '-2'}s"><rect width="30" height="50" rx="2" fill="#204777" stroke="#a6c7eb" stroke-width="2"/><path d="M10 1v48M20 1v48M1 10h28M1 20h28M1 30h28M1 40h28" stroke="#60b6ee" stroke-width="1"/><path d="M3 3h24" stroke="#d1f2ff" stroke-width="1.5"/></g></g>`).join(''),
+    });
   add("trooper", "Trooper Cubie", "dodge_early_death", "#a9cbb9",
     '<path d="M29 36h20M27 40h11" fill="none" stroke="#d5efe0" stroke-width="3" stroke-linecap="round"/>' +
     '<g transform="rotate(-14 75 39)"><rect x="58" y="32" width="34" height="14" rx="5" fill="#8b6446" opacity=".25" transform="translate(0 2)"/><rect x="58" y="32" width="34" height="14" rx="5" fill="#edc69f" stroke="#b4815a" stroke-width="1.2"/><rect x="69" y="34" width="12" height="10" rx="2" fill="#ffe2bf"/><path d="M71 36h8m-8 3h8m-8 3h8" stroke="#e6bb90" stroke-width=".9"/><g fill="#b4815a"><circle cx="62" cy="37" r=".8"/><circle cx="65" cy="41" r=".8"/><circle cx="85" cy="37" r=".8"/><circle cx="88" cy="41" r=".8"/></g></g>' +
@@ -267,6 +275,9 @@ const CubieCustoms = (() => {
     '<path d="M20 29h28v16H20M75 89h25v17H75" fill="#f4c988"/><path d="M23 41h24M78 93h19" stroke="#795f8a" stroke-width="3" stroke-dasharray="3 3"/><path d="M26 84l14 10M27 90l11-5" stroke="#795f8a" stroke-width="3"/>');
   add("heart", "Best Friend Cubie", "cube_pet_100", "#ffb6c6",
     '<path class="cubie-motion motion-heart" style="transform-origin:60px 28px" d="M45 17c-13-13-24 7 15 21 39-14 28-34 15-21L60 28z" fill="#ec6e97"/><ellipse cx="30" cy="80" rx="9" ry="5" fill="#ee8aa8"/><ellipse cx="90" cy="80" rx="9" ry="5" fill="#ee8aa8"/>');
+  add("forever_friend", "Forever Friend Cubie", "cube_pet_1000", "#a5e5cb",
+    '<path d="m25 35-5-22 22 12L60 8l18 17 22-12-5 22Z" fill="#f8d791" stroke="#c49a58" stroke-width="2"/><g class="cubie-motion motion-heart" style="transform-origin:60px 22px"><path d="M60 29C35 17 48 6 60 17 72 6 85 17 60 29Z" fill="#ed87b4"/></g><ellipse cx="30" cy="80" rx="8" ry="5" fill="#f3afbd"/><ellipse cx="90" cy="80" rx="8" ry="5" fill="#f3afbd"/><path d="m22 96 21-5 17 9 17-9 21 5-8 12H30Z" fill="#f8d791"/><path d="M60 105c-20-10-10-20 0-10 10-10 20 0 0 10Z" fill="#ed87b4"/>', square,
+    { flavor: "A thousand little hugs. A friendship without an ending.", back: '<g class="cubie-motion motion-wing" style="transform-origin:60px 62px;animation-duration:4s"><path d="M29 83Q-3 73 1 32l13 12 2-19 17 26 10 17M91 83q32-10 28-51l-13 12-2-19-17 26-10 17" fill="#d5fff0" stroke="#80c9b1" stroke-width="2"/><path d="m8 49 19 20m85-20L93 69" stroke="#f8d791" stroke-width="3"/></g>' });
   add("gaster", "Gaster Cubie", "waste_of_time", "#eeeef2",
     '<path d="M38 28l5 12-7 9 6 9M85 104l-5-13 7-8-5-11" fill="none" stroke="#22232d" stroke-width="3"/>' +
     '<path d="M20 96l18-9 22 12 22-12 18 9v12H20Z" fill="#242530"/>' +
@@ -429,6 +440,11 @@ const CubieCustoms = (() => {
     ["moon_rabbit", "Moon Rabbit Cubie", 1650, "diamond", "#dfd4ec", "Delivers wishes by moonlight.", "<g class=\"cubie-motion motion-sway\" style=\"transform-origin:36px 33px;\"><path d=\"M28 33Q12-7 29-3q16 4 16 36Z\" fill=\"#e9def2\" /><path d=\"M31 25Q23 3 29 5q7 5 8 20Z\" fill=\"#cca5ca\" /></g><g class=\"cubie-motion motion-sway\" style=\"transform-origin:84px 33px;animation-delay:-1.7s\"><path d=\"M76 33q0-40 17-36 17 7-1 36Z\" fill=\"#e9def2\" /><path d=\"M83 25q1-22 8-20 5 6-1 20Z\" fill=\"#cca5ca\" /></g><path d=\"M26 96q9-14 22 0m24 0q13-14 22 0\" fill=\"#c3acd8\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><circle cx=\"60\" cy=\"25\" r=\"6\" fill=\"#fff0bd\"/></g>"],
     ["kaleidoscope", "Kaleidoscope Cubie", 1900, "rainbow", "#c7b9dd", "Every turn reveals another little wonder.", "<g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 28px;animation-duration:14s\"><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#ed9baf\" transform=\"rotate(0 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#f3d887\" transform=\"rotate(60 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#9fdab5\" transform=\"rotate(120 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#91cfe4\" transform=\"rotate(180 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#a5adeb\" transform=\"rotate(240 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#c8a4df\" transform=\"rotate(300 60 28)\"/><circle cx=\"60\" cy=\"28\" r=\"5\" fill=\"#fff2d5\"/></g><g class=\"cubie-motion motion-color\" style=\"transform-origin:60px 68px;\"><path d=\"M24 93 42 88l18 12 18-12 18 5-18 13-18-6-18 6Z\" fill=\"#a2decb\" /><path d=\"M25 37h70\" fill=\"none\" stroke=\"#ffe7a6\" stroke-width=\"4\" stroke-linecap=\"round\" /></g>"],
     ["carnival", "Carnival Cubie", 2000, "rainbow", "#ecb0c1", "The parade starts whenever you smile.", "<path d=\"M16 38 60 1l44 37Z\" fill=\"#ef7f97\" /><path d=\"M60 1 36 38h17Zm0 0 7 37h17Z\" fill=\"#fbe5a4\" /><path d=\"M16 38h88v8H16Z\" fill=\"#a2cfd1\" /><path d=\"M29 97h62\" fill=\"none\" stroke=\"#f5e4b5\" stroke-width=\"5\" stroke-linecap=\"round\" /><g class=\"cubie-motion motion-sway\" style=\"transform-origin:60px 3px;\"><path d=\"M60 3V-8l20 6-20 5Z\" fill=\"#96d7c6\" /></g><circle cx=\"31\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/><circle cx=\"60\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/><circle cx=\"89\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/>"],
+    ["prism_moth", "Prism Moth Cubie", 2100, "rainbow", "#b8a0df", "Follows every color of light. Always finds a friend.",
+      '<path d="M42 31 35 12m43 19 7-19" fill="none" stroke="#eadbff" stroke-width="3" stroke-linecap="round"/><circle cx="35" cy="12" r="4" fill="#ffb5cf"/><circle cx="85" cy="12" r="4" fill="#a5f2de"/><path d="m30 96 15-7 15 11 15-11 15 7-15 10-15-6-15 6Z" fill="#ffe6a0"/>',
+      { back: '<g class="cubie-motion motion-wing" style="transform-origin:60px 64px;animation-duration:3s"><path d="M35 65Q-7 54 2 13q33 1 45 35M85 65q42-11 33-52-33 1-45 35" fill="#f69dbe" stroke="#ffe9ce" stroke-width="2"/><path d="M31 65Q-8 75 9 113q26-3 38-27M89 65q39 10 22 48-26-3-38-27" fill="#91dce4" stroke="#e4faff" stroke-width="2"/><path d="M7 23q21 7 29 28L13 43Zm106 0q-21 7-29 28l23-8Z" fill="#ffe49a"/><path d="m10 80 24-6-15 23Zm100 0-24-6 15 23Z" fill="#b6a0f4"/><circle cx="16" cy="35" r="5" fill="#a9e7ba"/><circle cx="104" cy="35" r="5" fill="#a9e7ba"/></g>' }],
+    ["rainbow_sundae", "Rainbow Sundae Cubie", 2150, "rainbow", "#ffe2bd", "Seven scoops of happiness. The cherry is a bonus.",
+      '<path d="M17 41q-7-20 14-24 6-19 24-9 18-15 30 3 23-2 20 30Z" fill="#ffaacb"/><path d="M22 39q-5-15 11-19 13-3 19 19Z" fill="#ffe294"/><path d="M45 39q-3-23 14-23 19-2 20 23Z" fill="#a5e6c0"/><path d="M73 39q-1-18 14-17 17 0 15 17Z" fill="#a7c7ff"/><path d="M20 38h80v7q-8 12-15 0-8 17-16 0-8 11-17 0-8 15-16 0-9 8-16 0Z" fill="#fff3e4"/><g class="cubie-motion motion-hover" style="transform-origin:60px 9px;animation-duration:3s"><circle cx="60" cy="9" r="8" fill="#e96b94"/><path d="M60 2q0-10 10-10" fill="none" stroke="#73b893" stroke-width="3"/><circle cx="57" cy="6" r="2" fill="#ffe8ed"/></g><path d="M18 96h84l-13 17H31Z" fill="#b6a0e4"/><path d="M31 101h58" stroke="#e9d8ff" stroke-width="3" stroke-linecap="round"/><path d="m29 31 5 2m21-9 3 4m25 3 4-2" stroke="#dd86b5" stroke-width="3" stroke-linecap="round"/>'],
     ["solar_seraph", "Solar Seraph Cubie", 2400, "empyrorite", "#e8c98e", "Carries dawn beneath both wings.", "<g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><ellipse cx=\"60\" cy=\"12\" rx=\"24\" ry=\"7\" fill=\"none\" stroke=\"#ffecac\" stroke-width=\"3\"/><path d=\"M26 45v43m68-43v43\" fill=\"none\" stroke=\"#fff5ce\" stroke-width=\"2\" stroke-linecap=\"round\" /></g><path d=\"M23 94 41 88l19 12 19-12 18 6-18 13-19-7-19 7Z\" fill=\"#f6e4bb\" />", {"back": "<g class=\"cubie-motion motion-wing\" style=\"transform-origin:60px 54px;animation-duration:3s\"><path d=\"M23 71Q-5 61 1 20l12 13 1-23 14 22 6-17 13 34M97 71q28-10 22-51l-12 13-1-23-14 22-6-17-13 34\" fill=\"#fff0ce\" stroke=\"#d8b576\" stroke-width=\"2\"/><path d=\"M12 40 27 61m81-21L93 61\" fill=\"none\" stroke=\"#e6c383\" stroke-width=\"2\" stroke-linecap=\"round\" /></g>"}],
     ["star_cartographer", "Star Cartographer Cubie", 2800, "empyrorite", "#637d9b", "Maps every star. Leaves room for new wishes.", "<path d=\"M23 34h74v68H23Z\" fill=\"#405b7a\" /><path d=\"M29 40 45 35l17 8 23-6 7 9M28 92l18 7 22-9 23 10\" fill=\"none\" stroke=\"#86bbcd\" stroke-width=\"1.5\" stroke-linecap=\"round\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.0s\"><circle cx=\"29\" cy=\"40\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.7s\"><circle cx=\"45\" cy=\"35\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-1.4s\"><circle cx=\"62\" cy=\"43\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.0999999999999996s\"><circle cx=\"85\" cy=\"37\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.8s\"><circle cx=\"28\" cy=\"92\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-3.5s\"><circle cx=\"46\" cy=\"99\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.199999999999999s\"><circle cx=\"68\" cy=\"90\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.8999999999999995s\"><circle cx=\"91\" cy=\"100\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 15px;animation-duration:18s\"><path d=\"m60-1 4 12 13 4-13 4-4 12-4-12-13-4 13-4Z\" fill=\"#ffe5a3\" /></g><path d=\"M21 33v70m78-70v70\" fill=\"none\" stroke=\"#c7daea\" stroke-width=\"2\" stroke-linecap=\"round\" />", {"faceColor": "#e7f4f1"}],
   ];
@@ -439,6 +455,28 @@ const CubieCustoms = (() => {
     '<rect x="20" y="28" width="80" height="80" rx="5"/>', {
       price: 4000, tier: "empyrorite", flavor: "Half hello, half system error. Do not shake the hand.",
     });
+  const spaceJunkShards = [
+    'M21 31 43 28 39 42 24 48 19 40Z',
+    'M47 29 67 30 72 42 56 48 43 42Z',
+    'M72 29 96 33 100 45 80 49 76 41Z',
+    'M22 52 38 47 49 55 44 68 23 70 19 62Z',
+    'M53 51 72 47 78 61 68 72 49 67Z',
+    'M82 53 99 49 98 69 80 74 75 66Z',
+    'M22 75 43 73 49 85 37 94 20 88Z',
+    'M49 73 67 77 76 73 80 88 67 95 51 89Z',
+    'M85 79 99 74 100 94 86 101 80 91Z',
+    'M23 94 38 99 45 94 51 107 29 108 20 103Z',
+    'M55 96 67 100 77 96 81 107 57 108Z',
+    'M87 105 98 99 100 108 86 110Z',
+  ];
+  add("shop_space_junk", "Space Junk Cubie", null, "none",
+    spaceJunkShards.map(d => `<path d="${d}"/>`).join(''),
+    spaceJunkShards.map(d => `<path d="${d}"/>`).join(''),
+    { price: 1230, tier: "diamond", faceColor: "#baf5ff", flavor: "Some assembly required. The smile arrived intact." });
+  add("singularity", "Singularity Cubie", "core_clutch", "#03040c",
+    '<circle cx="60" cy="67" r="39" fill="none" stroke="#c3a5ff" stroke-width="2"/>',
+    '<circle cx="60" cy="67" r="39"/>',
+    { faceColor: "#d4faff", flavor: "One tiny heartbeat. One enormous smile." });
   // Code grants are permanent; the achievement remains an independent unlock.
   const testerCodeActive = false;
   const redeemTesterCode = name => testerCodeActive && typeof name === "string"
@@ -460,7 +498,7 @@ const CubieCustoms = (() => {
     bookworm: [15, 24.6522, 90, 81.3478], rocket: [20, 11, 80, 88],
     turtle: [17, 24, 86, 86], comet: [19, 27, 82, 82], moon: [18, 26, 84, 84],
     diamond: [15, 23, 90, 82], ghost: [18, 21, 84, 88], star: [9, 8, 102, 101],
-    pixel: [18, 22, 84, 84], mushroom: [28, 34, 64, 73], vortex: [21, 28, 78, 78], ton_618: [21, 28, 78, 78],
+    pixel: [18, 22, 84, 84], mushroom: [28, 34, 64, 73], vortex: [21, 28, 78, 78], ton_618: [21, 28, 78, 78], singularity: [21, 28, 78, 78],
   };
   function sideColor(color) {
     const rgb = color.match(/[a-f\d]{2}/gi).map(channel => parseInt(channel, 16));
@@ -489,6 +527,24 @@ const CubieCustoms = (() => {
         front: `<defs><clipPath id="${id(name)}"><rect x="-20" y="${upperFront ? -50 : cy}" width="160" height="${upperFront ? cy + 50 : 180}"/></clipPath></defs>` + group('front'),
       };
     };
+    if (item.id === 'forever_friend') {
+      const heart = 'M0 9C-24-4-16-23 0-12C16-23 24-4 0 9Z';
+      const jewel = (x, y, scale = 1) => `<g transform="translate(${x} ${y}) scale(${scale})"><path d="${heart}" fill="${url('friend-ruby')}" stroke="#ffe5ae" stroke-width="1.4"/><path d="M0-12-12-13-8-3 0 9 8-3 12-13Z" fill="#ffb2d5" opacity=".55"/><path d="m0-12-8 9h16Z" fill="#fff0ef" opacity=".7"/><path d="M-12-12-15-7" stroke="#fff8f0" stroke-width="2" stroke-linecap="round"/></g>`;
+      const wing = `<path d="M32 86C0 81-16 47-9 4Q4 24 15 30L13 8Q36 27 42 61Z" fill="${url('friend-feather')}" stroke="#74bba8" stroke-width="1.1"/>` +
+        Array.from({ length: 6 }, (_, i) => {
+          const x = -8 + i * 5, y = 12 + i * 7;
+          return `<path d="M${x} ${y}Q${x+1} ${y+32} 32 ${84-i*3}Q${17+i*2} ${62-i*3} ${x+8} ${y+8}Z" fill="${url('friend-feather')}" stroke="#7bbba9" stroke-width=".7"/><path d="M${x+3} ${y+10}Q${x+8} ${y+30} 30 ${79-i*3}" fill="none" stroke="#f1fff3" stroke-width=".8"/>`;
+        }).join('') + `<path d="M17 43Q33 51 35 78" fill="none" stroke="${url('friend-gold')}" stroke-width="4"/><circle cx="23" cy="53" r="3" fill="#eafded" stroke="#c7a05c"/>`;
+      const feathers = `<g>${motion(wing, 'motion-wing', '34px 77px', 'animation-duration:4.8s')}</g><g transform="translate(120 0) scale(-1 1)">${motion(wing, 'motion-wing', '34px 77px', 'animation-duration:4.8s')}</g>`;
+      const motes = [[-5,57,.65],[114,35,.5],[8,98,.4],[104,102,.55]].map(([x,y,s],i) => `<g transform="translate(${x} ${y})">${motion(jewel(0,0,s), 'motion-hover', '0px 0px', `animation-delay:${-i*1.2}s;animation-duration:5s`)}</g>`).join('');
+      return { faceColor: '#173e39', sideColor: '#257963', shadowColor: '#152e2d',
+        back: `<defs><linearGradient id="${id('friend-feather')}" x2=".8" y2="1"><stop stop-color="#fffce3"/><stop offset=".35" stop-color="#e6fff0"/><stop offset=".7" stop-color="#8fd6bc"/><stop offset="1" stop-color="#367f7a"/></linearGradient><linearGradient id="${id('friend-gold')}" x2=".6" y2="1"><stop stop-color="#fff9cd"/><stop offset=".25" stop-color="#ebca79"/><stop offset=".5" stop-color="#fff1b1"/><stop offset=".73" stop-color="#b5833e"/><stop offset="1" stop-color="#f6d595"/></linearGradient><linearGradient id="${id('friend-ruby')}" x2=".7" y2="1"><stop stop-color="#ffd5e8"/><stop offset=".3" stop-color="#f67fad"/><stop offset=".7" stop-color="#bd3d83"/><stop offset="1" stop-color="#6c2e6a"/></linearGradient><radialGradient id="${id('friend-aura')}"><stop offset=".25" stop-color="#b8ffe0" stop-opacity=".25"/><stop offset="1" stop-color="#75e7b9" stop-opacity="0"/></radialGradient></defs><ellipse cx="60" cy="58" rx="77" ry="76" fill="${url('friend-aura')}"/><ellipse cx="60" cy="25" rx="32" ry="10" fill="none" stroke="${url('friend-gold')}" stroke-width="1.5" opacity=".7"/>${feathers}${motes}`,
+        detail: `<defs>${clip}<linearGradient id="${id('friend-shell')}" x2=".85" y2="1"><stop stop-color="#e5ffe9"/><stop offset=".22" stop-color="#a4eccc"/><stop offset=".6" stop-color="#60bca0"/><stop offset="1" stop-color="#287e72"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('friend-shell')}"/><path d="M25 57V43q0-10 10-10h47M95 75v20q0 8-9 8H41" fill="none" stroke="#ecffe1" stroke-width="1.4" opacity=".8"/><path d="M28 87q5-5 9 0m46 0q5-5 9 0" fill="none" stroke="#ffc4d1" stroke-width="4" stroke-linecap="round"/><path d="M20 95Q40 87 60 100Q80 87 100 95v15H20Z" fill="${url('friend-gold')}"/><path d="M23 98q18-7 37 7 19-14 37-7" fill="none" stroke="#fff3ce" stroke-width="1"/></g>` +
+          `<path d="M25 35 20 10 40 23 46 8 60 20 74 8 80 23 100 10 95 35Z" fill="${url('friend-gold')}" stroke="#956d39" stroke-width="1"/><path d="m27 28-3-12 16 12 7-14 13 13 13-13 7 14 16-12-3 12" fill="none" stroke="#fff6cc" stroke-width="1.2"/><path d="M25 32q35-8 70 0v7q-35-8-70 0Z" fill="${url('friend-gold')}" stroke="#a67c40" stroke-width=".7"/>` +
+          [31,42,78,89].map(x => `<circle cx="${x}" cy="33" r="2" fill="#ebfff0" stroke="#9d773f" stroke-width=".7"/>`).join('') +
+          motion(jewel(60,20,.85), 'motion-heart', '60px 20px', 'animation-duration:3.6s') + jewel(60,100,.45) +
+          `<path d="M29 43q7-5 12-3m38 0q5-2 12 3" fill="none" stroke="#ebffe9" stroke-width="1" opacity=".8"/>${sparkle(23,13,-.7,3)}${sparkle(93,33,-2.1,3)}${sparkle(35,101,-1.3,2)}` };
+    }
     if (item.id === 'attack_pumpkin_rotating_rings') {
       const blue = orbit('blue-ring', 'M8 40Q60 1 112 40Q60 79 8 40Z', 40, '#70d8f4', 5, 0, true, 5.4);
       const orange = orbit('orange-ring', 'M8 78Q60 123 112 78Q60 33 8 78Z', 78, '#ffb262', 5);
@@ -560,6 +616,19 @@ const CubieCustoms = (() => {
           `<defs><clipPath id="${id('phantom-front')}"><rect x="-25" y="77" width="180" height="90"/></clipPath></defs><g clip-path="${url('phantom-front')}">${ghosts}</g>`,
         eyeEffects: [43.5,101.5].map((x,i)=>`<g transform="translate(${x} 59)"><g class="phantom-eye-fire" style="animation-delay:${-i*.6}s"><path d="M-7 4C-13-8-6-15-7-27C-1-22 0-14 3-10Q8-15 6-22C18-7 8 4 7 8Z" fill="#ffcc37" opacity=".8"/><path d="M-4 4Q-7-5-2-12Q0-3 4-6Q9 3 3 7Z" fill="#fffbd0"/></g></g>`).join('') };
     }
+    if (item.id === 'shop_space_junk') {
+      return { sideOffset: 0, shadowOffset: 0, sideColor: 'none', shadowColor: 'none',
+        detail: spaceJunkShards.map((d, i) => `<g class="cubie-motion space-junk-fragment" style="animation-delay:${-i*.43}s;animation-duration:${3.4+i%3*.6}s"><path d="${d}" fill="${['#28374e', '#3c4e68', '#25344a'][i%3]}" stroke="#65cfff" stroke-width="1.2" stroke-linejoin="bevel"/><path d="${d}" fill="none" stroke="#b1edff" stroke-width=".5" stroke-dasharray="6 32"/></g>`).join('') };
+    }
+    if (item.id === 'singularity') {
+      const pieces = Array.from({length: 8}, (_, i) => {
+        const angle = i * 45;
+        return `<g transform="translate(60 67) rotate(${angle})"><g class="cubie-motion space-metal-drift" style="animation-delay:${-i*.47}s;animation-duration:${3.2+i%3*.7}s"><path d="M43-10 58-12 62 10 44 12Z" fill="${i%2 ? '#293a56' : '#43526c'}" stroke="#65cfff" stroke-width="1.3"/><path d="M46-6 54-7 56-2M47 7l7-2" fill="none" stroke="#9beaff" stroke-width="1"/><path d="M44 0 51 2 48 5" fill="none" stroke="#121e36" stroke-width="1.4"/><circle cx="55" cy="5" r="1.2" fill="#65f5ff"/></g></g>`;
+      }).join('');
+      return { sideOffset: 0, shadowOffset: 0,
+        back: `<ellipse cx="60" cy="72" rx="65" ry="16" fill="none" stroke="#a488ff" stroke-width="3" opacity=".7"/>${pieces}`,
+        detail: `<circle cx="60" cy="67" r="38" fill="#03040c" stroke="#59647d" stroke-width="3"/><circle cx="60" cy="67" r="34" fill="none" stroke="#c3a5ff" stroke-width="1.5"/><g class="cubie-motion motion-spin" style="transform-origin:60px 67px;animation-duration:18s"><circle cx="60" cy="67" r="36" fill="none" stroke="#65f5ff" stroke-width="1.7" stroke-dasharray="1 8"/></g><path d="M-5 72Q60 105 125 72" fill="none" stroke="#a488ff" stroke-width="2"/><path d="M-5 72Q60 105 125 72" fill="none" stroke="#65f5ff" stroke-width="1" stroke-dasharray="3 9"/>` };
+    }
     if (item.id === 'ton_618') {
       const rings = [88].map((cy, i) => {
         const path = `M119 ${cy}A59 13 0 1 1 1 ${cy}A59 13 0 1 1 119 ${cy}Z`;
@@ -588,7 +657,7 @@ const CubieCustoms = (() => {
         `<g class="ton-inner-swirl ton-inner-counter" fill="none"><path d="M27 67C22 38 74 20 91 50S63 104 42 87 44 48 63 52" stroke="#9f2041" stroke-width="5" opacity=".16" filter="${url('ton-mist')}"/>` +
         Array.from({length:22},(_,i)=>`<circle cx="${60+Math.cos(i*2.4)*(12+i%6*4)}" cy="${67+Math.sin(i*2.4)*(12+i%6*4)}" r="${i%4 ? .35 : .6}" fill="#d06577" opacity="${i%3 ? .2 : .35}"/>`).join('') +
         `</g><circle cx="60" cy="67" r="38" fill="${url('ton-depth')}"/></g>`;
-      return { sideOffset: 0, shadowOffset: 0, sideColor: '#310d25', shadowColor: '#160915', eyeEffects: '<path d="M37 50h4v20h-4M95 50h4v20h-4" fill="#ff9aaa" opacity=".8"/>', faceColor: '#ff304c',
+      return { sideOffset: 0, shadowOffset: 0, sideColor: '#310d25', shadowColor: '#160915', eyeHighlights: '<path d="M37 50h4v20h-4M95 50h4v20h-4" fill="#ff9aaa" opacity=".8"/>', faceColor: '#ff304c',
         back: `<defs><linearGradient id="${id('ton-jet-color')}" x2="0" y2="1"><stop stop-color="#ff2152" stop-opacity="0"/><stop offset=".38" stop-color="#ff3e70" stop-opacity=".45"/><stop offset=".8" stop-color="#fff0eb" stop-opacity=".85"/><stop offset="1" stop-color="#d71342" stop-opacity=".1"/></linearGradient><linearGradient id="${id('ton-ivory')}" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".45" stop-color="#ffb4bd"/><stop offset=".65" stop-color="#fff"/><stop offset="1" stop-color="#ffe6e4"/></linearGradient><linearGradient id="${id('ton-plasma')}" x2="1" y2="1"><stop stop-color="#fe1f4e" stop-opacity="0"/><stop offset=".35" stop-color="#ff5367" stop-opacity=".5"/><stop offset=".6" stop-color="#a00036" stop-opacity=".25"/><stop offset="1" stop-color="#e3214a" stop-opacity="0"/></linearGradient><linearGradient id="${id('ton-stone')}" x2=".6" y2="1"><stop stop-color="#ecac9e"/><stop offset=".45" stop-color="#827382"/><stop offset="1" stop-color="#312436"/></linearGradient><radialGradient id="${id('ton-void')}" cx=".4" cy=".35" r=".7"><stop stop-color="#03040b"/><stop offset=".75" stop-color="#120916"/><stop offset="1" stop-color="#52112d"/></radialGradient><filter id="${id('ton-mist')}" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.6"/></filter><radialGradient id="${id('ton-aura')}"><stop offset=".45" stop-color="#f01743" stop-opacity="0"/><stop offset=".7" stop-color="#e71947" stop-opacity=".4"/><stop offset="1" stop-color="#a50028" stop-opacity="0"/></radialGradient><linearGradient id="${id('ton-tail')}"><stop stop-color="#e5153b" stop-opacity="0"/><stop offset=".65" stop-color="#ff3e54"/><stop offset="1" stop-color="#fff1cf"/></linearGradient></defs><circle cx="60" cy="67" r="64" fill="${url('ton-aura')}"/>${jets}${gas}${dust}${embers}${meteors}${rings.map(r => r.back).join('')}`,
         detail: `<circle cx="60" cy="67" r="38.5" fill="${url('ton-void')}" stroke="#bf294a" stroke-width="1.3"/>${interior}<circle cx="60" cy="67" r="36.8" fill="none" stroke="#ff8a97" stroke-width=".5" opacity=".4"/><path d="M24 58A37 37 0 0 1 87 42" fill="none" stroke="#ffe1dc" stroke-width="1.4"/><path d="M25 80A36 36 0 0 0 85 94" fill="none" stroke="#ff375c" stroke-width="1"/>${lens}${rings.map(r => r.front).join('')}${flares}<defs><clipPath id="${id('ton-meteor-front')}"><rect x="-25" y="67" width="180" height="100"/></clipPath></defs><g clip-path="${url('ton-meteor-front')}">${meteors}</g>` };
     }
@@ -774,7 +843,7 @@ const CubieCustoms = (() => {
       `<g class="cubie-underbody" transform="${fit}" stroke-linejoin="round">${item.underBody || ''}</g>` +
       silhouette(item.color, 0, 'cubie-front') +
       `<g class="cubie-trim" transform="${fit}" stroke-linejoin="round">${detail}</g>` +
-      (enhanced?.eyes || `<g fill="${faceColor}" class="cubie-eyes"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g>`) +
+      (enhanced?.eyes || `<g fill="${faceColor}" class="cubie-eyes"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/>${enhanced?.eyeHighlights || ""}</g>`) +
       (enhanced?.eyeEffects || "") +
       (enhanced?.mouth || `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${faceColor}"/>`) +
       '</g></svg>';

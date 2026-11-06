@@ -20,6 +20,7 @@ const Achievements = (() => {
   add("name_rocknroy", "Game Tester", "rainbow", "Arcade", "Turn up the arcade with ROCKNROY.", "name_rocknroy");
   add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
   add("cube_pet_100", "Cubie's Best Friend", "crystal", "Arcade", "Pet Cubie 100 times.", "cubePets", 100);
+  add("cube_pet_1000", "A Thousand Little Hugs", "empyrorite", "Arcade", "Pet Cubie 1,000 times.", "cubePets", 1000);
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
     ["keyboard", "Key to Success", "Key Rush"],

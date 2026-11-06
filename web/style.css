@@ -2281,3 +2281,16 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .overlay.boss-defeat h3 { margin: 0; font-size: clamp(18px, 2.5vw, 28px); }
 .overlay.boss-defeat p { margin: 0; font-size: 12px; }
 .overlay.boss-defeat .primary-button { margin-top: 4px; padding: 9px 18px; }
+
+/* Detached blue-edged salvage drifts independently around Cubie's face. */
+.space-metal-drift { animation: space-metal-drift 4s ease-in-out infinite alternate; }
+@keyframes space-metal-drift {
+  from { transform: translateX(-2px) rotate(-3deg); }
+  to { transform: translateX(4px) rotate(4deg); }
+}
+
+.space-junk-fragment { animation: space-junk-fragment 4s ease-in-out infinite alternate; }
+@keyframes space-junk-fragment {
+  from { transform: translate(-.6px, -.8px); }
+  to { transform: translate(.6px, .8px); }
+}

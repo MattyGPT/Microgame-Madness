@@ -68,7 +68,7 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
   await page.locator('#player').fill('Player');
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
-  await page.evaluate(() => { coreOrigin.age = 22.95; });
+  await page.evaluate(() => { coreOrigin.age = 22.95; coreOrigin.syncSound(); });
   await expect(page.locator('#core-origin')).toBeHidden();
   expect(errors).toEqual([]);
 });
@@ -98,4 +98,33 @@ test('soundtrack is finite stereo audio with headroom and a clean ending', async
   expect(result.max).toBeLessThan(.9); expect(result.max).toBeGreaterThan(.1);
   expect(result.energy).toBeGreaterThan(10); expect(result.stereo).toBeGreaterThan(10);
   expect(result.first).toBe(0); expect(Math.abs(result.last)).toBeLessThan(.0001);
+});
+
+test('film follows audio through stalled frames, audio suspension, and sound toggles', async ({ page }) => {
+  await page.locator('#player').fill('GRAVITRON');
+  await expect(page.locator('#core-origin')).toBeVisible();
+  const drift = () => page.evaluate(() => Math.abs(coreOrigin.age -
+    (coreOrigin.audioOffset + coreOrigin.source.context.currentTime - coreOrigin.audioStarted)));
+  await page.evaluate(() => {
+    const until = performance.now() + 250;
+    while (performance.now() < until) { /* simulate a slow mobile frame */ }
+  });
+  await page.waitForTimeout(80);
+  expect(await drift()).toBeLessThan(.1);
+  await page.evaluate(() => coreOrigin.source.context.suspend());
+  await page.waitForTimeout(80);
+  const age = await page.evaluate(() => coreOrigin.age);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => coreOrigin.age)).toBeCloseTo(age, 3);
+  await page.evaluate(() => coreOrigin.source.context.resume());
+  await page.waitForTimeout(100);
+  expect(await drift()).toBeLessThan(.1);
+  await page.locator('[data-origin-sound]').click();
+  const mutedAge = await page.evaluate(() => coreOrigin.age);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => coreOrigin.age)).toBeGreaterThan(mutedAge);
+  await page.locator('[data-origin-sound]').click();
+  await page.waitForTimeout(80);
+  expect(await drift()).toBeLessThan(.1);
+  await page.locator('[data-origin-skip]').click();
 });

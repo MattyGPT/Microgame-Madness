@@ -2,6 +2,8 @@
 (() => {
   'use strict';
   const duration = 23, TAU = Math.PI * 2;
+  const cues = { planetStart: 2.1, planetStep: .87, planetFall: 2.4, collapse: 10.5,
+    armorStart: 13.1, armorStep: .24, armorTravel: 2.15, title: 18.3 };
   const clamp = v => Math.max(0, Math.min(1, v));
   const ease = v => { v = clamp(v); return v * v * (3 - 2 * v); };
   const mix = (a, b, t) => a + (b - a) * t;
@@ -69,7 +71,7 @@
     }
     const planetColors = [['#92edf3', '#197ba7'], ['#e3be92', '#9d5c4e'], ['#a8aaef', '#3c428e'], ['#efbc81', '#a84c28'], ['#9fe3ae', '#347d72']];
     for (let i = 4; i >= 0; i--) {
-      const pull = ease((t - (2.1 + i * .87)) / 2.4);
+      const pull = ease((t - (cues.planetStart + i * cues.planetStep)) / cues.planetFall);
       if (pull >= 1) continue;
       const a = i * 2.28 + t * (.1 + i * .012) + pull * 2.7;
       const rx = (220 + i * 65) * (1 - pull), ry = (100 + i * 34) * (1 - pull);
@@ -103,8 +105,8 @@
       }
       c.restore();
     }
-    if (t > 10.3 && t < 13) {
-      const wave = (t - 10.3) / 2.7;
+    if (t > cues.collapse && t < cues.collapse + 2.7) {
+      const wave = (t - cues.collapse) / 2.7;
       c.save(); c.globalAlpha = Math.pow(1 - wave, 2) * .65;
       ellipse(c, 70 + wave * 620, 70 + wave * 620, '#b69aff', 2 + (1 - wave) * 9);
       c.restore();
@@ -127,7 +129,7 @@
       circle(c, 0, 0, 81, '#000007');
       // Eight beveled armor plates visibly arrive from different directions.
       for (let i = 0; i < 8; i++) {
-        const land = ease((t - 13.1 - i * .24) / 2.15);
+        const land = ease((t - cues.armorStart - i * cues.armorStep) / cues.armorTravel);
         const angle = i * TAU / 8 + .12;
         const distance = (1 - land) * (380 + noise(i + 40) * 150);
         c.save(); c.translate(Math.cos(angle) * distance, Math.sin(angle) * distance);
@@ -180,7 +182,7 @@
     for (let channel = 0; channel < 2; channel++) {
       const data = buffer.getChannelData(channel);
       let low = 0, seed = 419 + channel * 739;
-      const impacts = [3.9, 4.77, 5.64, 6.51, 7.38, 10.5, ...Array.from({length: 8}, (_, i) => 15.25 + i * .24), 18.3];
+      const impacts = [...Array.from({length: 5}, (_, i) => cues.planetStart + i * cues.planetStep + cues.planetFall), cues.collapse, ...Array.from({length: 8}, (_, i) => cues.armorStart + i * cues.armorStep + cues.armorTravel), cues.title];
       for (let i = 0; i < data.length; i++) {
         const t = i / rate;
         seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
@@ -188,10 +190,17 @@
         const fade = ease(t / 1.5) * (1 - ease((t - 21) / 2));
         const collapse = ease((t - 8) / 2.3) * (1 - ease((t - 10.25) / .3));
         const hush = 1 - .92 * ease((t - 10.15) / .2) * (1 - ease((t - 10.5) / .45));
-        let sample = (.1 * Math.sin(TAU * 36.708 * t) + low * (.5 + collapse * 1.5)) * hush;
+        // Sub-bass plus audible upper harmonics gives the approach weight on
+        // both headphones and small speakers, without raising the output ceiling.
+        let sample = (.17 * Math.sin(TAU * 36.708 * t)
+          + .065 * Math.sin(TAU * 73.416 * t)
+          + .035 * Math.sin(TAU * 110.124 * t)
+          + low * (.75 + collapse * 2.4)) * hush;
         const pad = t < 10.5 ? [73.416, 110, 138.591] : [73.416, 110, 146.832, 174.614];
         for (const hz of pad) sample += Math.sin(TAU * (hz + channel * .13) * t + .4 * Math.sin(t * .32)) * .025 * hush;
-        sample += Math.sin(TAU * (65 * t + 6 * t * t)) * collapse * .045;
+        sample += (Math.sin(TAU * (65 * t + 6 * t * t)) * .09
+          + Math.sin(TAU * (130 * t + 12 * t * t)) * .035
+          + white * .055) * collapse;
         // Small orbiting notes rise with the worlds; the title resolves the chord.
         if (t < 8.5) {
           const beat = t % .6, note = [293.665, 440, 554.365, 587.33][Math.floor(t / .6) % 4];
@@ -201,15 +210,25 @@
           const age = t - impacts[j];
           if (age < 0 || age > 3) continue;
           const metal = j >= 6 && j < 14;
-          if (metal) sample += (.075 * Math.sin(TAU * 630 * age) + .045 * Math.sin(TAU * 937 * age) + white * .08) * Math.exp(-age * 18) * ease(age / .006);
+          if (metal) {
+            // Each containment segment locks with a steel strike and a low thud.
+            sample += (.14 * Math.sin(TAU * 630 * age) + .085 * Math.sin(TAU * 937 * age) + white * .14) * Math.exp(-age * 15) * ease(age / .006);
+            sample += .18 * Math.sin(TAU * (72 * age + 3 * (1 - Math.exp(-age * 22)))) * Math.exp(-age * 12) * ease(age / .008);
+          }
           else {
             const big = j === 5 || j === 14;
-            sample += (Math.sin(TAU * (42 * age + 5 * (1 - Math.exp(-age * 9)))) * (big ? .25 : .09) + low * (big ? 1.1 : .4)) * Math.exp(-age * (big ? 1.4 : 3)) * ease(age / .012);
+            const phase = TAU * (42 * age + 5 * (1 - Math.exp(-age * 9)));
+            sample += (Math.sin(phase) * (big ? .48 : .17)
+              + Math.sin(phase * 2) * (big ? .16 : .055)
+              + low * (big ? 1.8 : .65)) * Math.exp(-age * (big ? 1.1 : 2.6)) * ease(age / .012);
+            // The collapse and title get a broad impact crack and a long tail.
+            if (big) sample += (white * .2 * Math.exp(-age * 24)
+              + .12 * Math.sin(TAU * 29.136 * age) * Math.exp(-age * 1.3)) * ease(age / .008);
           }
         }
-        if (t >= 18.3) {
-          const a = t - 18.3;
-          for (const hz of [146.832, 220, 293.665, 349.228]) sample += Math.sin(TAU * hz * a) * .045 * ease(a / .1) * Math.exp(-a * .6);
+        if (t >= cues.title) {
+          const a = t - cues.title;
+          for (const hz of [146.832, 220, 293.665, 349.228]) sample += Math.sin(TAU * hz * a) * .065 * ease(a / .1) * Math.exp(-a * .5);
         }
         data[i] = Math.tanh(sample * fade) * .72;
       }
@@ -226,10 +245,10 @@
       this.pause = dialog.querySelector('[data-origin-pause]');
       this.mute = dialog.querySelector('[data-origin-sound]');
       this.skip.onclick = () => this.close();
-      this.pause.onclick = () => { this.paused = !this.paused; this.last = performance.now(); this.syncSound(); this.controls(); };
-      this.mute.onclick = () => { this.options.toggleSound?.(); this.syncSound(); this.controls(); };
+      this.pause.onclick = () => { this.advance(performance.now()); this.paused = !this.paused; this.last = performance.now(); this.syncSound(); this.controls(); };
+      this.mute.onclick = () => { this.advance(performance.now()); this.options.toggleSound?.(); this.syncSound(); this.controls(); };
       dialog.addEventListener('cancel', event => { event.preventDefault(); this.close(); });
-      document.addEventListener('visibilitychange', () => { this.last = performance.now(); this.syncSound(); });
+      document.addEventListener('visibilitychange', () => { if (this.source) this.advance(performance.now()); this.last = performance.now(); this.syncSound(); });
       this.reduced.addEventListener('change', () => {
         if (this.open && this.reduced.matches) { this.age = 19; this.paused = true; this.syncSound(); this.controls(); }
       });
@@ -268,12 +287,24 @@
       const gain = audio.context.createGain(), now = audio.context.currentTime;
       gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(1, now + .012);
       source.connect(gain); gain.connect(audio.destination);
-      source.start(0, this.age); this.source = source; this.audioGain = gain;
+      this.audioOffset = this.age; this.audioStarted = now;
+      source.start(now, this.age); this.source = source; this.audioGain = gain;
+      // Buffer synthesis can take time on phones. Never count that work as film time.
+      this.last = performance.now();
+    }
+    advance(now) {
+      if (!this.paused) {
+        if (this.source) {
+          // AudioContext time stops when audio is suspended and advances through
+          // dropped frames, keeping the picture on the same playback position.
+          this.age = this.audioOffset + Math.max(0, this.source.context.currentTime - this.audioStarted);
+        } else if (!document.hidden) this.age += Math.max(0, (now - this.last) / 1000);
+      }
+      this.last = now;
     }
     tick(now) {
       if (!this.open) return;
-      if (!this.paused && !document.hidden) this.age += Math.max(0, (now - this.last) / 1000);
-      this.last = now;
+      this.advance(now);
       if (this.age >= duration) { this.close(); return; }
       const w = this.canvas.clientWidth, h = this.canvas.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
       if (this.canvas.width !== Math.round(w * dpr) || this.canvas.height !== Math.round(h * dpr)) {
@@ -281,7 +312,7 @@
       }
       this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw(this.ctx, this.age, w, h);
       const title = this.dialog.querySelector('.origin-title');
-      title.style.opacity = ease((this.age - 18) / 1.2);
+      title.style.opacity = ease((this.age - cues.title) / 1.2);
       const label = this.dialog.querySelector('[data-origin-chapter]');
       const text = chapter(this.age); if (label.textContent !== text) label.textContent = text;
       this.dialog.querySelector('.origin-progress').style.transform = `scaleX(${clamp(this.age / duration)})`;
@@ -294,5 +325,5 @@
       if (this.focusBefore?.isConnected) this.focusBefore.focus({ preventScroll: true });
     }
   }
-  window.CoreOrigin = { Film, draw, soundtrack, duration, chapter };
+  window.CoreOrigin = { Film, draw, soundtrack, duration, chapter, cues };
 })();
