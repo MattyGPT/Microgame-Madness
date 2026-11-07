@@ -1,16 +1,6 @@
-const { test, expect } = require('@playwright/test');
-const path = require('node:path');
-const fs = require('node:fs');
+const { test, expect } = require('./fixtures/game.cjs');
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    if (!fs.existsSync(local)) return route.abort();
-    return route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } });
-  });
   // Keep the automatic welcome award out of the batch under test.
   await page.addInitScript(() => localStorage.setItem('microgame-madness.v1', JSON.stringify({
     player: 'Toast tester', scores: {}, achievements: {

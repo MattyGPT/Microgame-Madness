@@ -243,15 +243,18 @@ For web changes, install the development-only Node dependencies (Node 22+):
 
 ```sh
 npm ci
-npm run build
 npm test
 npx playwright install chromium
 npm run test:browser
 ```
 
-`npm test` checks achievement thresholds, persistence, and duplicate prevention, and runs the packaged Python modules in the actual Pyodide WebAssembly runtime. Playwright exercises the interface in desktop and mobile Chromium, including each game, scores across reloads, pause controls, layout width, and loading errors. Browser tests serve the exact pinned Pyodide npm distribution locally instead of depending on CDN uptime. CI also installs Chromium's system dependencies.
+`npm test` builds the browser package explicitly, then runs unit and integration tests together. For focused runs, use `npm run test:unit` (no build required) or `npm run test:integration` (builds first). `npm run test:browser` also builds before starting Playwright. Python packaging tests use temporary output directories and never overwrite your local `dist/`.
 
-Pull requests run these checks automatically. The publish workflow reruns them on `main` before deployment.
+The JavaScript tests check achievement thresholds, persistence, and duplicate prevention, and run the packaged Python modules in the actual Pyodide WebAssembly runtime. Playwright exercises the interface in desktop and mobile Chromium, including each game, scores across reloads, pause controls, layout width, and loading errors. Browser tests serve the exact pinned Pyodide npm distribution locally instead of depending on CDN uptime. CI also installs Chromium's system dependencies.
+
+Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web/tests/fixtures/game.cjs`: it installs the pinned local runtime before navigation. Install test-specific routes before calling `openGame(page)`; use explicit reloads when testing persistence. Each test retains a fresh browser context.
+
+Pull requests run Python/JavaScript checks and all four browser shards concurrently. The publish workflow reruns them on `main` and requires every check to pass before deployment.
 
 ## GitHub Pages
 

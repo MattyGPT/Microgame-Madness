@@ -7,7 +7,7 @@ const { loadPyodide } = require("pyodide");
 test("packaged Python runs in WebAssembly without desktop dependencies", async () => {
   const py = await loadPyodide();
   py.FS.mkdir("/game");
-  const root = path.resolve(__dirname, "../../dist");
+  const root = path.resolve(__dirname, "../../../dist");
   for (const file of JSON.parse(
     fs.readFileSync(path.join(root, "python-files.json")),
   )) {
