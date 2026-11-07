@@ -2367,12 +2367,23 @@ test('every Custom shows its tier on the card and preview with matching outlines
   const customs = await page.evaluate(() => CubieCustoms.catalog.map(item => ({
     id: item.id, name: item.name, tier: item.tier, label: CubieCustoms.tierLabels[item.tier],
   })));
-  for (const item of customs) {
-    const tile = page.locator('.custom-tile[data-custom="' + item.id + '"]');
-    await expect(tile).toHaveAttribute('data-tier', item.tier);
-    await expect(tile.locator('.custom-tier')).toHaveText(item.label + ' Custom');
-    await expect(tile).toHaveCSS('border-top-width', '2px');
-  }
+  // Routine playtime saves must preserve card nodes and active previews.
+  expect(await page.evaluate(() => {
+    const card = document.querySelector('.custom-tile');
+    websiteTimeCheckpoint -= 11000;
+    saveWebsiteTime();
+    return card === document.querySelector('.custom-tile');
+  })).toBe(true);
+  // Inspect the entire growing catalog in one browser call to avoid hundreds
+  // of round trips while keeping every card's tier, label, and border covered.
+  const cards = await page.locator('.custom-tile').evaluateAll(tiles => tiles.map(tile => ({
+    id: tile.dataset.custom, tier: tile.dataset.tier,
+    label: tile.querySelector('.custom-tier').textContent,
+    border: getComputedStyle(tile).borderTopWidth,
+  })));
+  expect(cards.sort((a, b) => a.id.localeCompare(b.id))).toEqual(customs.map(item => ({
+    id: item.id, tier: item.tier, label: item.label + ' Custom', border: '2px',
+  })).sort((a, b) => a.id.localeCompare(b.id)));
   for (const tier of ['bronze', 'silver', 'gold', 'crystal', 'diamond', 'rainbow', 'empyrorite', 'black']) {
     const id = tier === 'black' ? 'gaster' : 'medal_' + tier;
     const tile = page.locator('.custom-tile[data-custom="' + id + '"]');
