@@ -5,7 +5,7 @@ const modes = {
   geomayhem: {
     title: "Geomayhem", category: "11 / SURVIVOR · EARLY BUILD", art: "◇",
     heading: "Small Cubie. Maximum mayhem.",
-    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP, choose upgrades, and evolve your weapon at three and five stars. Every fifth wave brings an elite; wave 20 brings the boss. All levels are open for this rough draft. Each run starts fresh.",
+    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP to add weapons or upgrade your six-slot loadout. A and B drones attack automatically; other weapons fire together. Each weapon evolves at three and five stars. Every fifth wave brings an elite; wave 20 brings the boss. All levels are open; each run starts fresh.",
     accent: "#71f5d2", controls: "Arrows move · Aim with mouse · Hold left click to fire · D pauses",
     choiceLabel: "Choose a level · 20 waves each", localOnly: true, temporary: true, difficulties: {},
   },
@@ -178,6 +178,7 @@ let geomayhemArmory = [];
 let geomayhemFiring = false;
 let geomayhemAim = null;
 let geomayhemOfferKey = "";
+let geomayhemLoadoutKey = "";
 function initializeGeomayhem(catalog) {
   geomayhemArmory = catalog.weapons;
   modes.geomayhem.difficulties = Object.fromEntries(catalog.levels.map((level, i) => [
@@ -198,7 +199,7 @@ function renderGeomayhemWeapon() {
   $("geomayhem-weapon-description").textContent = weapon.description;
   $("geomayhem-evolution-three").textContent = `★★★ ${weapon.third}`;
   $("geomayhem-evolution-five").textContent = `★★★★★ ${weapon.fifth}`;
-  const shapes = { bolt: "▲", fan: "◆", ring: "✳", beam: "▰", orbit: "✹", mine: "⬟", boomerang: "❯", nova: "◎" };
+  const shapes = { bolt: "▲", fan: "◆", ring: "✳", beam: "▰", orbit: "✹", mine: "⬟", boomerang: "❯", nova: "◎", drone: "✣" };
   $("geomayhem-weapon-preview").replaceChildren(...[1, 3, 5].map(stars => {
     const form = document.createElement("span");
     form.className = `geomayhem-weapon-icon tier-${stars}`;
@@ -213,7 +214,21 @@ function renderGeomayhemWeapon() {
 $("geomayhem-weapon").addEventListener("change", renderGeomayhemWeapon);
 function renderGeomayhem(s) {
   $("geomayhem-wave").textContent = `LEVEL ${s.level}/10 · WAVE ${s.wave}/20`;
-  $("geomayhem-build").textContent = `${s.weapon.form} ${"★".repeat(s.weapon.stars)}${"☆".repeat(5-s.weapon.stars)}`;
+  $("geomayhem-build").textContent = `${s.loadout.length}/${s.weapon_slots} weapons`;
+  const loadoutKey = s.loadout.map(weapon => `${weapon.id}:${weapon.stars}`).join();
+  if (loadoutKey !== geomayhemLoadoutKey) {
+    geomayhemLoadoutKey = loadoutKey;
+    $("geomayhem-inventory").replaceChildren(...s.loadout.map(weapon => {
+      const slot = document.createElement("span");
+      slot.dataset.weapon = weapon.id;
+      slot.setAttribute("role", "listitem");
+      slot.style.setProperty("--weapon-color", weapon.color);
+      slot.textContent = `${weapon.form} ${"★".repeat(weapon.stars)}${"☆".repeat(5-weapon.stars)}`;
+      slot.title = weapon.kind === "drone" ? "Automatic companion" : "Hold left click or Fire to attack";
+      return slot;
+    }));
+    fitArcade();
+  }
   $("geomayhem-rank").textContent = `Rank ${s.rank} · ${s.kills} KOs`;
   $("geomayhem-xp").max = s.xp_needed;
   $("geomayhem-xp").value = Math.min(s.xp, s.xp_needed);
@@ -988,7 +1003,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "geomayhem" ? "Early build · All 10 levels and 32 weapons are open. Runs start fresh; records and rewards are not saved yet." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "geomayhem" ? "Early build · 10 levels, 34 weapons, 6 slots per run. Add weapons through level-up choices. Runs start fresh; records and rewards are not saved yet." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1251,6 +1266,7 @@ function selectGame(mode) {
   $("geomayhem-hud").hidden = true;
   $("geomayhem-upgrade").hidden = true;
   geomayhemOfferKey = "";
+  geomayhemLoadoutKey = "";
   geomayhemAim = null;
   $("arena").classList.remove("arcade");
   $("player-health").hidden = true;
@@ -1520,7 +1536,7 @@ function render() {
     }
     if (selected === "geomayhem") {
       title = s.won ? "Mayhem mastered!" : "Cubie will be back.";
-      copy = s.won ? `${s.level_name} cleared! All 20 waves survived with ${s.weapon.form}. Try another level or weapon.` : s.death_message;
+      copy = s.won ? `${s.level_name} cleared! All 20 waves survived with ${s.loadout.length} weapons. Try another level or build.` : s.death_message;
     }
     showOverlay(
       title,

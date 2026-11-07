@@ -20,7 +20,7 @@ test('Geomayhem armory, Cubie movement, manual mouse/touch fire and pause', asyn
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await expect(page.locator('#difficulty-choices button')).toHaveCount(10);
-  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(32);
+  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(34);
   await page.locator('#geomayhem-weapon').selectOption('comet');
   await expect(page.locator('#geomayhem-evolution-three')).toContainText('Comet Flare');
   await expect(page.locator('#geomayhem-evolution-five')).toContainText('Comet Apocalypse');
@@ -77,8 +77,8 @@ test('XP choices freeze combat and evolve weapon art and gimmicks at three and f
     await page.locator('[data-upgrade="weapon"]').click();
     await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
     expect(await model(page, 'session.game.stars')).toBe(stars);
-    if (stars === 3) await expect(page.locator('#geomayhem-build')).toContainText('Prism Fork');
-    if (stars === 5) await expect(page.locator('#geomayhem-build')).toContainText('Prism Constellation');
+    if (stars === 3) await expect(page.locator('[data-weapon="needle"]')).toContainText('Prism Fork');
+    if (stars === 5) await expect(page.locator('[data-weapon="needle"]')).toContainText('Prism Constellation');
   }
   await model(page, 'session.game.xp = session.game.xp_needed');
   await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
@@ -102,4 +102,44 @@ test('level ten ends at wave twenty and a defeated Cubie can restart', async ({ 
   await page.locator('[data-difficulty="level_1"]').click();
   await expect(page.locator('#player-health-value')).toHaveText('100 / 100');
   await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/10 · WAVE 1/20');
+});
+
+test('level-ups equip six weapons including autonomous A and B drones with independent evolutions', async ({ page }, testInfo) => {
+  await page.locator('[data-difficulty="level_1"]').click();
+  await model(page, 'session.game.break_left = 100');
+  for (const id of ['drone_a', 'drone_b']) {
+    await model(page, 'session.game.xp = session.game.xp_needed');
+    await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+    await page.locator(`[data-upgrade="acquire:${id}"]`).click();
+    await expect(page.locator(`#geomayhem-inventory [data-weapon="${id}"]`)).toBeVisible();
+  }
+  await expect(page.locator('#geomayhem-build')).toHaveText('3/6 weapons');
+  expect(await model(page, 'session.game.stars')).toBe(1);
+  await model(page, 'from geomayhem import Enemy\nsession.game.enemies = [Enemy(500, 150, 0, 100000, 0, 12, "chaser", 100000)]');
+  await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
+  expect(await model(page, 'all(shot.weapon != "needle" for shot in session.game.shots)')).toBe(true);
+  for (let slots = 4; slots <= 6; slots++) {
+    await model(page, 'session.game.xp = session.game.xp_needed');
+    await page.locator('[data-upgrade^="acquire:"]').click();
+    await expect(page.locator('#geomayhem-inventory [data-weapon]')).toHaveCount(slots);
+  }
+  await model(page, 'session.game.xp = session.game.xp_needed');
+  await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+  await expect(page.locator('[data-upgrade^="acquire:"]')).toHaveCount(0);
+  await page.locator('#geomayhem-upgrade-choices button').last().click();
+  await model(page, 'session.game.loadout = {key: (1 if key == "drone_a" else 5) for key in session.game.loadout}');
+  for (let star = 2; star <= 5; star++) {
+    await model(page, 'session.game.xp = session.game.xp_needed');
+    await page.locator('[data-upgrade="upgrade:drone_a"]').click();
+    expect(await model(page, 'session.game.loadout["drone_a"]')).toBe(star);
+    expect(await model(page, 'session.game.loadout["drone_b"]')).toBe(5);
+    if (star === 3) await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Swarm');
+  }
+  await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Starfleet');
+  await expect(page.locator('#geomayhem-build')).toHaveText('6/6 weapons');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator('#arena').screenshot({ path: testInfo.outputPath('six-weapon-drone-build.png') });
+  await page.locator('#exit').click();
+  await page.locator('[data-difficulty="level_1"]').click();
+  await expect(page.locator('#geomayhem-build')).toHaveText('1/6 weapons');
 });

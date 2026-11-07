@@ -1,4 +1,4 @@
-"""Display-independent Geomayhem prototype: 10 arenas, 20 waves, 32 weapons."""
+"""Display-independent Geomayhem: 10 arenas, 20 waves and six-slot builds."""
 from dataclasses import dataclass, field
 import math
 import random
@@ -14,6 +14,7 @@ LEVELS = (
 )
 WAVES = 20
 MAX_ENEMIES, MAX_SHOTS, MAX_GEMS = 60, 100, 100
+MAX_WEAPONS = 6
 
 
 @dataclass
@@ -68,7 +69,9 @@ class Geomayhem:
         self.elapsed, self.invulnerable, self.damage_taken = 0.0, 0.0, 0.0
         self.rank, self.xp, self.kills, self.score = 1, 0, 0, 0
         self.speed, self.magnet = 175, 52
-        self.weapon, self.stars = weapon, 1
+        self.weapon = weapon
+        self.loadout = {weapon: 1}
+        self.cooldowns = {weapon: 0.0}
         self.upgrades = {"boots": 0, "magnet": 0, "heart": 0}
         self.offers = []
         self.enemies, self.shots, self.gems, self.effects, self.hazards = [], [], [], [], []
@@ -77,6 +80,23 @@ class Geomayhem:
         self.spawned = 0
         self.aim = None
         self.death_message = ""
+
+    @property
+    def stars(self):
+        """The starting weapon's stars, also used by the original HUD contract."""
+        return self.loadout[self.weapon]
+
+    @stars.setter
+    def stars(self, value):
+        self.loadout[self.weapon] = max(1, min(5, int(value)))
+
+    @property
+    def fire_in(self):
+        return self.cooldowns[self.weapon]
+
+    @fire_in.setter
+    def fire_in(self, value):
+        self.cooldowns[self.weapon] = value
 
     @property
     def xp_needed(self):
@@ -89,8 +109,17 @@ class Geomayhem:
     def choose(self, choice):
         if not self.alive or self.won or choice not in {offer["id"] for offer in self.offers}:
             return False
-        if choice == "weapon":
-            self.stars = min(5, self.stars + 1)
+        if choice == "weapon" or choice.startswith("upgrade:"):
+            weapon_id = self.weapon if choice == "weapon" else choice.split(":", 1)[1]
+            if weapon_id not in self.loadout or self.loadout[weapon_id] >= 5:
+                return False
+            self.loadout[weapon_id] += 1
+        elif choice.startswith("acquire:"):
+            weapon_id = choice.split(":", 1)[1]
+            if weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
+                return False
+            self.loadout[weapon_id] = 1
+            self.cooldowns[weapon_id] = 0.0
         elif choice == "repair":
             self.lives = min(self.max_lives, self.lives + 35)
         else:
@@ -112,11 +141,24 @@ class Geomayhem:
         self.xp -= self.xp_needed
         self.rank += 1
         choices = []
-        if self.stars < 5:
-            weapon = ARMORY[self.weapon]
-            next_star = self.stars + 1
+        upgradable = [key for key, stars in self.loadout.items() if stars < 5]
+        if upgradable:
+            weapon_id = self.rng.choice(upgradable)
+            weapon = ARMORY[weapon_id]
+            next_star = self.loadout[weapon_id] + 1
             detail = weapon.info(next_star)["third" if next_star == 3 else "fifth"] if next_star in (3, 5) else "More damage and faster firing."
-            choices.append({"id": "weapon", "name": f"{weapon.name} · {next_star} stars", "description": detail})
+            choices.append({"id": "weapon" if weapon_id == self.weapon else f"upgrade:{weapon_id}",
+                            "name": f"{weapon.name} · {next_star} stars", "description": detail})
+        if len(self.loadout) < MAX_WEAPONS:
+            available = [key for key in ARMORY if key not in self.loadout]
+            # Introduce both companions in the first two choices, then shuffle
+            # the whole armory. Choosing an upgrade instead never locks a drone.
+            drones = [key for key in ("drone_a", "drone_b") if key in available]
+            weapon_id = drones[0] if self.rank <= 3 and drones else self.rng.choice(available)
+            weapon = ARMORY[weapon_id]
+            controls = "Follows Cubie and attacks automatically." if weapon.kind == "drone" else "Fires alongside your other weapons when you hold Fire."
+            choices.append({"id": f"acquire:{weapon_id}", "name": f"NEW · {weapon.name} · 1 star",
+                            "description": f"{weapon.info()['description']}. {controls} Uses slot {len(self.loadout)+1}/{MAX_WEAPONS}."})
         pool = [{"id": key, "name": name, "description": text} for key, name, text in (
             ("boots", "Quick Steps", "+16 movement speed. Keep moving."),
             ("magnet", "Gem Magnet", "+24 XP pickup range."),
@@ -194,26 +236,33 @@ class Geomayhem:
         if len(self.shots) < MAX_SHOTS:
             self.shots.append(shot)
 
-    def fire(self):
-        weapon = ARMORY[self.weapon]
-        target = self.aim
+    def drone_position(self, weapon_id):
+        angle = self.elapsed * 1.8 + (math.pi if weapon_id == "drone_b" else 0)
+        return self.x + math.cos(angle) * 44, self.y + math.sin(angle) * 36
+
+    def fire(self, weapon_id=None):
+        weapon_id = weapon_id or self.weapon
+        weapon = ARMORY[weapon_id]
+        stars = self.loadout[weapon_id]
+        origin_x, origin_y = self.drone_position(weapon_id) if weapon.kind == "drone" else (self.x, self.y)
+        target = None if weapon.kind == "drone" else self.aim
         if target is None:
-            nearest = min(self.enemies, key=lambda e: math.hypot(e.x - self.x, e.y - self.y), default=None)
+            nearest = min((e for e in self.enemies if e.hp > 0), key=lambda e: math.hypot(e.x - origin_x, e.y - origin_y), default=None)
             target = (nearest.x, nearest.y) if nearest else (self.x + self.face[0] * 200, self.y + self.face[1] * 200)
-        angle = math.atan2(target[1] - self.y, target[0] - self.x)
-        damage = weapon.damage * (1 + (self.stars - 1) * .38)
-        traits = weapon.traits(self.stars)
+        angle = math.atan2(target[1] - origin_y, target[0] - origin_x)
+        damage = weapon.damage * (1 + (stars - 1) * .38)
+        traits = weapon.traits(stars)
         self.shots_fired += 1
-        self.fire_in = weapon.interval / (1 + (self.stars - 1) * .12)
+        self.cooldowns[weapon_id] = weapon.interval / (1 + (stars - 1) * .12)
         for i in range(weapon.count):
             a = angle + (i - (weapon.count - 1) / 2) * .17
             if weapon.kind in ("ring", "orbit"):
                 a = angle + i * math.tau / weapon.count
-            shot = Shot(self.x, self.y, math.cos(a) * 310, math.sin(a) * 310,
-                        damage, weapon.id, self.stars, traits.copy(), weapon.kind, angle=a)
+            shot = Shot(origin_x, origin_y, math.cos(a) * 310, math.sin(a) * 310,
+                        damage, weapon.id, stars, traits.copy(), "bolt" if weapon.kind == "drone" else weapon.kind, angle=a)
             if weapon.kind == "beam":
                 end = self.x + math.cos(a) * 750, self.y + math.sin(a) * 750
-                self._effect("line", self.x, self.y, 3 + self.stars, weapon.color, end, self.stars)
+                self._effect("line", self.x, self.y, 3 + stars, weapon.color, end, stars)
                 for enemy in self.enemies[:]:
                     dx, dy = enemy.x - self.x, enemy.y - self.y
                     along = dx * math.cos(a) + dy * math.sin(a)
@@ -221,8 +270,8 @@ class Geomayhem:
                     if 0 <= along <= 750 and cross < enemy.radius + 5:
                         self._hit(enemy, shot)
             elif weapon.kind == "nova":
-                radius = 95 + self.stars * 12
-                self._effect("ring", self.x, self.y, radius, weapon.color, stars=self.stars)
+                radius = 95 + stars * 12
+                self._effect("ring", self.x, self.y, radius, weapon.color, stars=stars)
                 for enemy in self.enemies[:]:
                     if math.hypot(enemy.x - self.x, enemy.y - self.y) <= radius + enemy.radius:
                         self._hit(enemy, shot)
@@ -299,7 +348,8 @@ class Geomayhem:
         self.elapsed += dt
         self.aim = aim
         self.invulnerable = max(0, self.invulnerable - dt)
-        self.fire_in = max(0, self.fire_in - dt)
+        for weapon_id in self.cooldowns:
+            self.cooldowns[weapon_id] = max(0, self.cooldowns[weapon_id] - dt)
         for effect in self.effects:
             effect["life"] -= dt
         self.effects = [e for e in self.effects if e["life"] > 0]
@@ -309,8 +359,11 @@ class Geomayhem:
             self.face = dx / length, dy / length
             self.x = max(self.left + 15, min(self.right - 15, self.x + self.face[0] * self.speed * dt))
             self.y = max(self.bottom + 15, min(self.top - 15, self.y + self.face[1] * self.speed * dt))
-        if "f" in keys and self.fire_in <= 0:
-            self.fire()
+        for weapon_id in self.loadout:
+            automatic = ARMORY[weapon_id].kind == "drone"
+            trigger = bool(self.enemies) if automatic else "f" in keys
+            if trigger and self.cooldowns[weapon_id] <= 0:
+                self.fire(weapon_id)
         if self.break_left > 0:
             self.break_left = max(0, self.break_left - dt)
         else:
@@ -402,6 +455,8 @@ class Geomayhem:
                 "level": self.level, "level_name": LEVELS[self.level - 1][0], "wave": self.wave,
                 "cleared": self.cleared, "rank": self.rank, "xp": self.xp, "xp_needed": self.xp_needed,
                 "kills": self.kills, "weapon": weapon, "offers": self.offers,
+                "loadout": [ARMORY[key].info(stars) for key, stars in self.loadout.items()],
+                "weapon_slots": MAX_WEAPONS,
                 "face": self.face, "shots_fired": self.shots_fired, "damage_taken": self.damage_taken,
                 "death_message": self.death_message,
                 "label": f"Level {self.level}/10 · Wave {self.wave}/20 · " +

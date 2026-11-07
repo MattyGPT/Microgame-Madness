@@ -28,7 +28,7 @@ def draw_geomayhem(game):
         commands.append({"kind": "polygon", "coords": [x+dx, -y-dy, ex+dx, -ey-dy, ex-dx, -ey+dy, x-dx, -y+dy], "fill": color})
 
     def weapon_art(x, y, weapon, stars, angle=0, size=8):
-        sides = {"bolt": 3, "fan": 4, "ring": 8, "beam": 4, "orbit": 6, "mine": 5, "boomerang": 3, "nova": 10}[weapon.kind]
+        sides = {"bolt": 3, "fan": 4, "ring": 8, "beam": 4, "orbit": 6, "mine": 5, "boomerang": 3, "nova": 10, "drone": 6}[weapon.kind]
         if stars >= 5:
             polygon(x, y, size + 8, 8, "", weapon.color, angle, star=True)
             circle(x, y, size + 3, outline="#ffffff", width=1)
@@ -88,6 +88,17 @@ def draw_geomayhem(game):
             if effect["stars"] >= 5:
                 polygon(effect["x"], effect["y"], r*1.1, 10, "", effect["color"], star=True)
     if game.alive:
+        for weapon_id, stars in game.loadout.items():
+            if ARMORY[weapon_id].kind != "drone":
+                continue
+            dx, dy = game.drone_position(weapon_id)
+            color = ARMORY[weapon_id].color
+            for ox, oy in ((-10, -8), (10, -8), (-10, 8), (10, 8)):
+                line(dx, dy, dx+ox, dy+oy, 2, color)
+                circle(dx+ox, dy+oy, 4, "#102638", color, 1)
+            weapon_art(dx, dy, ARMORY[weapon_id], stars, game.elapsed*2, 7)
+            commands.append({"kind": "text", "coords": [dx, -dy-20], "fill": color,
+                             "font": ["Arial", 10], "text": "A" if weapon_id == "drone_a" else "B"})
         # Cubie's face shifts toward movement, independently of weapon aim.
         x, y = game.x, game.y
         circle(x, y-12, 16, "#091320")
@@ -97,6 +108,7 @@ def draw_geomayhem(game):
         rect(x+fx-5, y+fy+2, 4, 5, "#183a31")
         rect(x+fx+5, y+fy+2, 4, 5, "#183a31")
         rect(x+fx, y+fy-5, 5, 2, "#183a31")
-        weapon_art(x+22, y-8, ARMORY[game.weapon], game.stars, game.elapsed, 6)
+        if ARMORY[game.weapon].kind != "drone":
+            weapon_art(x+22, y-8, ARMORY[game.weapon], game.stars, game.elapsed, 6)
         commands[-1]["role"] = "geomayhem-player"
     return commands

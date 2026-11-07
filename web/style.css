@@ -1274,6 +1274,8 @@ select:disabled {
 .geomayhem-hud { width: 100%; padding: 9px 12px; color: #dbfff3; background: #14251f; border-bottom: 1px solid #365950; font-size: 11px; }
 .geomayhem-hud > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 #geomayhem-build { text-align: right; color: #a7f2d2; }
+#geomayhem-inventory { justify-content: flex-start; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+#geomayhem-inventory > span { border: 1px solid var(--weapon-color); border-radius: 5px; color: var(--weapon-color); padding: 3px 6px; font-size: 10px; }
 #geomayhem-xp { width: 55%; height: 6px; accent-color: #71f5d2; }
 .geomayhem-upgrade { z-index: 3; overflow-y: auto; }
 #geomayhem-upgrade-choices { display: grid; gap: 10px; width: min(100%, 460px); }

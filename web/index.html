@@ -181,7 +181,7 @@
             <svg viewBox="0 0 180 100"><g fill="none" stroke="#71f5d2" opacity=".45"><circle cx="90" cy="52" r="43"/><circle cx="90" cy="52" r="33"/></g><path d="M23 18l12 20H11z" fill="#ff9a85"/><path d="M151 62l16 10-7 20h-18l-7-20z" fill="#b695ff"/><path d="M143 10l4 9 10 2-8 7 2 10-8-5-9 5 2-10-7-7 10-2z" fill="#ffe58f"/><rect x="67" y="30" width="46" height="46" rx="8" fill="#b6ef7f" stroke="#eaffca" stroke-width="2"/><path d="M79 45v8m18-8v8m-13 8h9" stroke="#183a31" stroke-width="4"/><path d="M114 47l15-4-6 14z" fill="#71f5d2"/></svg>
           </span>
           <span class="card-title">Geomayhem <span>↗</span></span>
-          <span class="card-description">One Cubie. 32 ways to cause mayhem.</span>
+          <span class="card-description">One Cubie. Build your own mayhem.</span>
         </button>
         <button class="game-card" data-game="jukebox" aria-pressed="false" style="--accent: #f5a5dc">
           <span class="card-top">08 <span>MUSIC ROOM</span></span>
@@ -335,7 +335,7 @@
               </div>
               <h4 id="difficulty-title">Choose a difficulty to play</h4>
               <section id="geomayhem-loadout" class="geomayhem-loadout" aria-label="Geomayhem armory" hidden>
-                <label for="geomayhem-weapon">STARTING WEAPON · 32 TO TRY</label>
+                <label for="geomayhem-weapon">STARTING WEAPON · 34 TO TRY</label>
                 <select id="geomayhem-weapon"></select>
                 <div id="geomayhem-weapon-preview" aria-hidden="true"></div>
                 <p id="geomayhem-weapon-description"></p>
@@ -427,6 +427,7 @@
             <div id="geomayhem-hud" class="geomayhem-hud" hidden>
               <div><strong id="geomayhem-wave"></strong><span id="geomayhem-build"></span></div>
               <div><span id="geomayhem-rank"></span><progress id="geomayhem-xp" aria-label="Experience until next upgrade" max="8" value="0"></progress></div>
+              <div id="geomayhem-inventory" role="list" aria-label="Equipped weapons"></div>
             </div>
             <canvas
               id="game-canvas"

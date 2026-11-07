@@ -44,7 +44,7 @@ class Weapon:
                 "fifth": f"{self.ultimate}: {TRAITS[self.fifth]}. Crowned nova art."}
 
 
-# Four distinct builds per firing pattern; each has its own three-trait evolution.
+# Four builds per handheld pattern, plus two autonomous drone companions.
 WEAPONS = tuple(Weapon(*row) for row in (
     ("needle", "Prism Needle", "bolt", "#71f5d2", 5, .34, 1, "pierce", "split", "homing", "Prism Fork", "Prism Constellation"),
     ("comet", "Comet Wand", "bolt", "#ffae72", 7, .65, 1, "burn", "blast", "return", "Comet Flare", "Comet Apocalypse"),
@@ -78,5 +78,7 @@ WEAPONS = tuple(Weapon(*row) for row in (
     ("heart", "Pulse Heart", "nova", "#ff8cb1", 6, 1.6, 1, "lifesteal", "slow", "burn", "Pulse Bloom", "Pulse Superheart"),
     ("zero", "Zero Bell", "nova", "#a6e9ff", 5, 1.5, 1, "freeze", "split", "pull", "Zero Chime", "Zero Resonance"),
     ("sun", "Sun Dial", "nova", "#ffbd68", 8, 2.0, 1, "burn", "blast", "chain", "Sun Corona", "Sun Genesis"),
+    ("drone_a", "A Drone", "drone", "#7eeaff", 5, .8, 1, "homing", "split", "blast", "A Drone Swarm", "A Drone Starfleet"),
+    ("drone_b", "B Drone", "drone", "#ffa5d9", 4, 1.1, 2, "chain", "freeze", "lifesteal", "B Drone Frostwing", "B Drone Lifeline"),
 ))
 ARMORY = {weapon.id: weapon for weapon in WEAPONS}

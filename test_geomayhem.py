@@ -79,10 +79,10 @@ class GeomayhemTests(unittest.TestCase):
         game.update(.05, {"f"}, (200, 0))
         self.assertEqual(game.shots_fired, 1)
 
-    def test_32_weapons_all_damage_enemies_at_each_evolution_and_change_art(self):
-        self.assertEqual(len(ARMORY), 32)
+    def test_34_weapons_all_damage_enemies_at_each_evolution_and_change_art(self):
+        self.assertEqual(len(ARMORY), 34)
         signatures = {(w.kind, w.trait, w.third, w.fifth) for w in WEAPONS}
-        self.assertEqual(len(signatures), 32)
+        self.assertEqual(len(signatures), 34)
         for weapon in WEAPONS:
             art = []
             self.assertEqual(len({weapon.trait, weapon.third, weapon.fifth}), 3)
@@ -96,7 +96,9 @@ class GeomayhemTests(unittest.TestCase):
                         game.update(.05, set(), (75, 0))
                     self.assertTrue(any(e.hp < e.max_hp for e in game.enemies))
                     self.assertEqual(len(weapon.traits(stars)), (1, 2, 3)[(1, 3, 5).index(stars)])
-                    art.append(json.dumps(game.snapshot()["commands"][-5:]))
+                    appearance = self.game(weapon=weapon.id)
+                    appearance.stars = stars
+                    art.append(json.dumps(appearance.snapshot()["commands"]))
             self.assertEqual(len(set(art)), 3)
 
     def test_hit_effects_chain_blast_status_split_pull_and_heal(self):
@@ -172,6 +174,87 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(game.snapshot(), before)
         self.assertEqual(self.game().stars, 1)
         self.assertEqual(self.game().lives, 100)
+
+    def test_levelups_add_drones_and_other_weapons_without_replacing_the_starter(self):
+        game = self.game()
+        for expected in ("drone_a", "drone_b"):
+            game.xp = game.xp_needed
+            game.update(.01, set())
+            self.assertTrue(game.choose(f"acquire:{expected}"))
+            self.assertEqual(game.loadout[expected], 1)
+            self.assertEqual(game.loadout["needle"], 1)
+            self.assertFalse(game.choose(f"acquire:{expected}"))
+        while len(game.loadout) < 6:
+            game.xp = game.xp_needed
+            game.update(.01, set())
+            choice = next(o["id"] for o in game.offers if o["id"].startswith("acquire:"))
+            self.assertTrue(game.choose(choice))
+        game.xp = game.xp_needed
+        game.update(.01, set())
+        self.assertEqual(len(game.loadout), 6)
+        self.assertTrue(all(not o["id"].startswith("acquire:") for o in game.offers))
+        self.assertFalse(game.choose("acquire:comet"))
+        self.assertEqual(game.weapon, "needle")
+        self.assertEqual(len(game.snapshot()["loadout"]), 6)
+        self.assertEqual(self.game().loadout, {"needle": 1})
+
+    def test_all_equipped_weapons_fire_on_their_own_cooldown(self):
+        game = self.game()
+        game.loadout["comet"] = 3
+        game.cooldowns["comet"] = 0
+        game.update(.01, {"f"}, (200, 0))
+        self.assertEqual({s.weapon for s in game.shots}, {"needle", "comet"})
+        self.assertEqual({s.weapon: s.stars for s in game.shots}, {"needle": 1, "comet": 3})
+        self.assertNotEqual(game.cooldowns["comet"], game.cooldowns["needle"])
+        fired = game.shots_fired
+        for _ in range(20):
+            game.update(.05, set())
+        self.assertEqual(game.shots_fired, fired)
+        game.update(.01, {"f"}, (200, 0))
+        self.assertEqual(game.shots_fired, fired + 2)
+
+    def test_drones_follow_cubie_attack_without_fire_and_freeze_during_choices(self):
+        game = self.game()
+        for key in ("drone_a", "drone_b"):
+            game.loadout[key] = 1
+            game.cooldowns[key] = 0
+        game.enemies = [enemy(160)]
+        position = game.drone_position("drone_a")
+        game.update(.05, {"Right"})
+        self.assertNotEqual(game.drone_position("drone_a"), position)
+        self.assertNotEqual(game.drone_position("drone_a"), game.drone_position("drone_b"))
+        self.assertEqual({s.weapon for s in game.shots}, {"drone_a", "drone_b"})
+        self.assertEqual(game.stars, 1)
+        game.xp = game.xp_needed
+        game.update(.01, set())
+        before = game.snapshot()
+        game.update(.05, {"Right", "f"})
+        self.assertEqual(game.snapshot(), before)
+
+    def test_companion_stars_evolve_independently_and_stop_at_five(self):
+        game = self.game()
+        game.stars = 5
+        game.loadout["drone_a"] = 1
+        game.cooldowns["drone_a"] = 0
+        for star in range(2, 6):
+            game.xp = game.xp_needed
+            game.update(.01, set())
+            self.assertTrue(game.choose("upgrade:drone_a"))
+            self.assertEqual(game.loadout["drone_a"], star)
+            self.assertEqual(game.stars, 5)
+        game.xp = game.xp_needed
+        game.update(.01, set())
+        self.assertFalse(game.choose("upgrade:drone_a"))
+        self.assertFalse(any(o["id"].startswith("upgrade:") for o in game.offers))
+        game.fire("drone_a")
+        self.assertEqual(game.shots[-1].traits, {"homing", "split", "blast"})
+
+    def test_starting_with_a_drone_offers_the_other_companion(self):
+        game = self.game(weapon="drone_b")
+        game.xp = game.xp_needed
+        game.update(.01, set())
+        self.assertTrue(game.choose("acquire:drone_a"))
+        self.assertEqual(game.loadout, {"drone_b": 1, "drone_a": 1})
 
     def test_pickup_and_entity_caps_preserve_xp(self):
         game = self.game()
