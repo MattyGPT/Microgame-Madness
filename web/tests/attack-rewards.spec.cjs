@@ -28,6 +28,11 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   });
   expect(await page.evaluate(() => saved.achievements.stats.survive_pumpkin_bone_gauntlet)).toBe(9);
   expect(await page.evaluate(() => !!saved.achievements.unlocked.survive_pumpkin_bone_gauntlet)).toBe(false);
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.evaluate(() => {
@@ -69,6 +74,11 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   await expect(tile).not.toContainText(/loader|temporary/);
   await tile.locator('.custom-equip').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'attack_core_photon_rain');
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'attack_core_photon_rain');

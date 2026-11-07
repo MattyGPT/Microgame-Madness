@@ -78,6 +78,7 @@ test("real Hangman wins award the requested medals once and persist across reloa
 
 test("achievements remain usable when browser storage is blocked", async ({ page }) => {
   await page.addInitScript(() => {
+    if (localStorage.getItem('microgame-madness.v1')) return;
     Storage.prototype.setItem = () => { throw new DOMException('Blocked', 'SecurityError'); };
   });
   await openGame(page);
@@ -377,13 +378,13 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
 });
 
 test('retiered profiles show corrected points and Rainbow awards have six-color celebrations', async ({ page }, testInfo) => {
-  await openGame(page);
   const date = '2026-10-31T12:00:00.000Z';
-  await page.evaluate(date => {
+  await page.addInitScript(date => {
+    if (localStorage.getItem('microgame-madness.v1')) return;
     const unlocked = Object.fromEntries(['welcome', 'boss_impossible', 'boss_nightmare_flawless', 'pumpkin_phase2', 'dodge_360'].map(id => [id, date]));
     localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Returning Player', scores: {}, achievements: { stats: { visits: 1 }, unlocked, score: 1090 } }));
   }, date);
-  await page.reload();
+  await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('3790');
   await expect(page.locator('#achievement-toast')).toBeHidden();
@@ -398,10 +399,13 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
   await rainbow.scrollIntoViewIfNeeded();
   await rainbow.screenshot({ path: testInfo.outputPath('rainbow-medal.png') });
   expect(await page.evaluate(() => achievementTracker.data.unlocked.dodge_360)).toBe(date);
-  await page.evaluate(() => {
-    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1'));
-    saved.achievements.stats.pumpkinFlawlessWins = 4;
-    localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
+  // Import the near-threshold fixture through the same journal as restored progress.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    const profile = structuredClone(saved);
+    profile.achievements.stats.pumpkinFlawlessWins = 4;
+    await accountApp.controller.importProfile(profile, { baseline: true });
+    accountApp.applyCurrent();
   });
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();

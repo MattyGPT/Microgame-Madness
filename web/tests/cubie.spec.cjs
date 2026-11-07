@@ -14,6 +14,11 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   const card = page.locator('[data-achievement="cube_pet_100"]');
   await expect(card).toContainText('Locked · 49 / 100');
   await expect(page.locator('#profile-score')).toHaveText('130');
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#sound').click();
@@ -31,6 +36,11 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   await expect(page.locator('#achievement-toast')).toContainText('crystal achievement · +270 points');
   for (let i = 0; i < 5; i++) await cube.press('Enter');
   await expect(page.locator('#profile-score')).toHaveText('430');
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#achievements-tab').click();
@@ -85,6 +95,11 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
     await expect(card).toContainText('Unlocked');
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('370');
@@ -129,15 +144,15 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
 
 
 test('Cubie hints after twenty completed minigames, ignores exits, and remembers dismissal', async ({ page }, testInfo) => {
-  await openGame(page);
-  await page.evaluate(() => {
-    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1') || '{}');
+  await page.addInitScript(() => {
+    if (localStorage.getItem('microgame-madness.v1')) return;
+    const saved = {};
     saved.minigamesCompleted = 18;
     saved.minigamesStarted = 20;
     saved.cubieHintShown = false;
     localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
   });
-  await page.reload();
+  await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   const dialog = page.locator('#cubie-hint');
   // Abandoning even a scored Key Rush run must not count as completion.
@@ -156,6 +171,11 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   });
   expect(await page.evaluate(() => saved.minigamesCompleted)).toBe(19);
   await expect(dialog).not.toBeVisible();
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="hangman"]').click();
@@ -176,6 +196,11 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   await page.screenshot({ path: testInfo.outputPath('cubie-hint.png') });
   await page.locator('#cubie-hint-okay').click();
   await expect(dialog).not.toBeVisible();
+  // The rendered award is optimistic; wait for its IndexedDB transaction before unloading.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.working;
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="hangman"]').click();

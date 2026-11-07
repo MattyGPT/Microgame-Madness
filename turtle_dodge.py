@@ -44,6 +44,8 @@ def register_pumpkin_shape(turtle, screen, name="white_jack_o_lantern", eye_colo
 
 
 def create_game(difficulty):
+    if difficulty == "dodge_impossible":
+        return DodgeGame(difficulty="impossible")
     if difficulty in PUMPKIN_DIFFICULTIES:
         return PumpkinKing(difficulty=difficulty)
     return BossCrush(difficulty) if difficulty in BOSS_DIFFICULTIES else DodgeGame(difficulty=difficulty)
@@ -63,14 +65,15 @@ def start_turtle_dodge():
     print("Easy: original rules\nNormal: faster blocks with varied speeds")
     print("Hard: much faster yellow blocks that sway left and right")
     print("Merciless: faster red blocks, more spawns, smaller arena, deadly edges, NO PAUSE")
+    print("Impossible (dodge_impossible): smaller white blocks, stronger sway, tighter arena, deadly edges, NO PAUSE")
     print("Boss Crush: dodge bullet patterns and shoot the boss with F")
     print("Impossible Phase 2: THE PUMPKIN KING — transformation, seven attacks, E to counter")
     print("Coward Mode: THE PUMPKIN KING — 10 HP instead of 5")
     print("Baby Mode: THE PUMPKIN KING — 15 HP")
     print(f"{COME_ON_NAME} — 23 HP (enter come_on)")
-    difficulty = input("Choose easy / normal / hard / merciless / boss / phase2 / coward / baby / come_on: ").strip().lower()
-    while difficulty not in (*DIFFICULTIES, "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode", COME_ON_NAME.lower()):
-        difficulty = input("Please choose easy, normal, hard, merciless, boss, phase2, coward, baby, or come_on: ").strip().lower()
+    difficulty = input("Choose easy / normal / hard / merciless / dodge_impossible / boss / phase2 / coward / baby / come_on: ").strip().lower()
+    while difficulty not in (*DIFFICULTIES, "dodge_impossible", "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode", COME_ON_NAME.lower()):
+        difficulty = input("Please choose easy, normal, hard, merciless, dodge_impossible, boss, phase2, coward, baby, or come_on: ").strip().lower()
     if difficulty == "impossible phase 2":
         difficulty = PHASE_TWO
     if difficulty == "coward mode":
@@ -79,6 +82,8 @@ def start_turtle_dodge():
         difficulty = COME_ON_MODE
     if difficulty == "baby mode":
         difficulty = BABY_MODE
+    if difficulty == "impossible":
+        difficulty = "dodge_impossible"
     if difficulty in ("boss", "boss crush"):
         print("Mean: fans and aimed bursts\nCruel: faster volleys plus rings\nNightmare: dense, fast patterns\nImpossible: bone walls, spirals, blue/orange attacks, and the toughest boss")
         difficulty = input("Choose mean / cruel / nightmare / impossible: ").strip().lower()
@@ -154,7 +159,7 @@ class TurtleDodge:
         self.death_particles.color("#ffffff")
         self.blocks = self.pen()
         self.blocks.shape("square")
-        self.blocks.shapesize(BLOCK_SIZE / 20, outline=BLOCK_OUTLINE_WIDTH)
+        self.blocks.shapesize(BLOCK_SIZE * getattr(self.game.rules, "block_scale", 1) / 20, outline=BLOCK_OUTLINE_WIDTH)
         self.boss = self.pen()
         self.boss.shape("square")
         register_pumpkin_shape(turtle, self.screen)
@@ -163,7 +168,7 @@ class TurtleDodge:
         self.hud = self.pen()
         self.message = self.pen()
         border = self.pen()
-        border.color("#ff3030" if self.game.rules.deadly_edges else "#43536b")
+        border.color("#ffffff" if isinstance(self.game, DodgeGame) and self.game.difficulty == "impossible" else "#ff3030" if self.game.rules.deadly_edges else "#43536b")
         left, right, bottom, top = self.game.rules.bounds
         border.goto(left, bottom)
         border.pendown()
@@ -246,7 +251,7 @@ class TurtleDodge:
             return
         self.saved = True
         try:
-            save_score(self.player_name, self.game.score, dodge_score_file(self.game.difficulty))
+            save_score(self.player_name, self.game.score, dodge_score_file("dodge_impossible" if isinstance(self.game, DodgeGame) and self.game.difficulty == "impossible" else self.game.difficulty))
             self.best = max(self.best, self.game.score)
         except ScoreError as exc:
             self.notice = "Score could not be saved (see terminal)."
@@ -363,7 +368,7 @@ class TurtleDodge:
             for block in self.game.blocks:
                 self.blocks.color(block_outline_color(block.color), block.color)
                 for x, y in block.centers():
-                    if self.game.bottom - CELL / 2 <= y <= self.game.top + CELL / 2:
+                    if self.game.bottom - block.cell_size / 2 <= y <= self.game.top + block.cell_size / 2:
                         self.blocks.goto(x, y)
                         self.blocks.stamp()
         self.death_particles.clearstamps()
@@ -421,8 +426,8 @@ def main():
         return 1
     try:
         difficulty = sys.argv[2] if len(sys.argv) > 2 else "easy"
-        if difficulty not in (*DIFFICULTIES, *BOSS_DIFFICULTIES, *PUMPKIN_DIFFICULTIES):
-            print("Unknown difficulty. Choose easy, normal, hard, merciless, mean, cruel, nightmare, impossible, phase2, coward, baby, or come_on.")
+        if difficulty not in (*DIFFICULTIES, "dodge_impossible", *BOSS_DIFFICULTIES, *PUMPKIN_DIFFICULTIES):
+            print("Unknown difficulty. Choose easy, normal, hard, merciless, dodge_impossible, mean, cruel, nightmare, impossible, phase2, coward, baby, or come_on.")
             return 1
         app = TurtleDodge(turtle, sys.argv[1] if len(sys.argv) > 1 else "Player", difficulty)
         app.root.mainloop()

@@ -148,6 +148,8 @@ test('Puzzle Cube turns independent layers, loops seamlessly, and stays still wi
     });
     return [...document.querySelectorAll('.puzzle-layer')].map(el => getComputedStyle(el).transform);
   }, phase);
+  await expect(page.locator('.puzzle-block')).toHaveCount(27);
+  await expect(page.locator('.puzzle-block .puzzle-face')).toHaveCount(162);
   const start = await inspect(0);
   const face = page.locator('.puzzle-expression');
   const originalFace = await face.boundingBox();

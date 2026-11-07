@@ -255,10 +255,11 @@
       this.tick = this.tick.bind(this);
     }
     get open() { return this.dialog.open; }
+    get reducedMotion() { return this.reduced.matches || !!this.options.reducedMotion?.(); }
     play() {
       if (this.open) return;
       this.focusBefore = document.activeElement;
-      this.age = this.reduced.matches ? 19 : 0; this.paused = this.reduced.matches;
+      this.age = this.reducedMotion ? 19 : 0; this.paused = this.reducedMotion;
       this.last = performance.now(); this.dialog.showModal();
       this.options.onChange?.(true); this.controls(); this.syncSound();
       this.last = performance.now();
@@ -267,8 +268,8 @@
     controls() {
       this.pause.textContent = this.paused ? 'Play' : 'Pause';
       this.pause.setAttribute('aria-pressed', String(this.paused));
-      this.pause.hidden = this.reduced.matches;
-      this.skip.textContent = this.reduced.matches ? 'Enter containment' : 'Skip film';
+      this.pause.hidden = this.reducedMotion;
+      this.skip.textContent = this.reducedMotion ? 'Enter containment' : 'Skip film';
       const sound = !!this.options.audio?.()?.enabled;
       this.mute.textContent = sound ? 'Sound on' : 'Sound off';
       this.mute.setAttribute('aria-pressed', String(sound));

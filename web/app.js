@@ -76,6 +76,7 @@ const modes = {
         "Merciless",
         "Deadly edges, a smaller arena, and no pausing.",
       ],
+      impossible: ["Impossible", "An even smaller arena. Smaller white blocks fall faster and sway harder. White edges kill. No pausing."],
     },
   },
   boss: {
@@ -386,6 +387,8 @@ let gameTimeOffset = 0;
 let ready = false;
 let loadFailed = false;
 let active = false;
+let accountApp = null;
+let applyingAccountProfile = false;
 let snapshot = null;
 let handle = null;
 let lastFrame = 0;
@@ -444,9 +447,10 @@ saved.turtleTrail = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned)?.
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
+  if (!applyingAccountProfile) accountApp?.preferences(saved);
   try {
     const json = JSON.stringify(saved);
-    localStorage.setItem(storageKey, json);
+    if (!accountApp?.accountBound) localStorage.setItem(storageKey, json);
     persistedProfileJSON = json;
     storageAvailable = true;
   } catch {
@@ -461,6 +465,7 @@ function countCompletedMinigame() {
   saved.minigamesCompleted = Math.min(20, saved.minigamesCompleted + 1);
   if (saved.minigamesCompleted === 20 && !saved.cubieHintShown) {
     saved.cubieHintShown = true;
+    accountApp?.arcade("hint");
     clearKeys();
     cubieHintStarted = performance.now();
     $("cubie-hint").showModal();
@@ -884,13 +889,16 @@ function renderTrails() {
     button.textContent = wearing ? "Equipped ✓" : owned ? "Equip trail" : `Buy · ${item.price.toLocaleString()} Cash`;
     button.setAttribute("aria-label", `${owned ? "Equip" : "Buy"} ${item.name} trail`);
     button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
-    button.onclick = () => {
+    button.onclick = async () => {
       if (saved.shop.owned.includes(item.id)) {
         saved.turtleTrail = item.id;
         turtleTrailField.reset();
         $("shop-status").textContent = `${item.name} equipped. Your turtle is ready to leave a trail.`;
       } else {
-        if (!CubieShop.buy(saved.shop, item)) return;
+        if (accountApp?.initialized && accountApp.controller) {
+          try { await accountApp.purchase(item.id); }
+          catch (error) { $("shop-status").textContent = error.message; return; }
+        } else if (!CubieShop.buy(saved.shop, item)) return;
         $("shop-status").textContent = `${item.name} is yours! Choose Equip trail to use it.`;
       }
       persist(); renderShop();
@@ -938,14 +946,18 @@ function renderShop() {
     button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
     button.textContent = wearing ? "Equipped ✓" : owned ? "Wear Custom" : `Buy · ${item.price} Cash`;
     button.setAttribute("aria-label", `${owned ? "Wear" : "Buy"} ${item.name}`);
-    button.onclick = () => {
+    button.onclick = async () => {
       if (saved.shop.owned.includes(item.id)) {
         saved.cubieCustom = item.id;
         applyCubieCustom();
         $("shop-status").textContent = `Now wearing ${item.name}.`;
       } else {
-        if (!CubieShop.buy(saved.shop, item)) return;
+        if (accountApp?.initialized && accountApp.controller) {
+          try { await accountApp.purchase(item.id); }
+          catch (error) { $("shop-status").textContent = error.message; return; }
+        } else if (!CubieShop.buy(saved.shop, item)) return;
         $("shop-status").textContent = `${item.name} is yours! Find it in your closet or choose Wear Custom.`;
+        announcedCustoms.delete(item.id);
         showAchievementToasts(newCustomNotifications());
       }
       persist();
@@ -1006,8 +1018,9 @@ function showScores() {
 }
 function saveRound() {
   if (roundSaved || !snapshot) return;
+  accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
   roundSaved = true;
-  if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) playSound("boss_laugh");
+  if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath"].includes(selected)) playSound("boss_laugh");
   if (modes[selected].temporary) return;
   if (snapshot.over) countCompletedMinigame();
   lastCashReward = CubieShop.reward(saved.shop, selected, selectedDifficulty, snapshot.score);
@@ -1026,6 +1039,8 @@ const leaderboardReady = fetch("./leaderboard-config.json", { cache: "no-store" 
   .catch(() => ({}))
   .then(config => new Leaderboards.Client(config));
 let globalRequest = 0;
+let leaderboardOffset = 0;
+let leaderboardAroundMe = false;
 let submissionRequest = 0;
 function updateGlobalDifficulties(difficulty) {
   const mode = $("leaderboard-game").value;
@@ -1046,8 +1061,22 @@ function initializeGlobalLeaderboards() {
     return option;
   }));
   updateGlobalDifficulties();
-  $("leaderboard-game").onchange = () => { updateGlobalDifficulties(); loadGlobalScores(); };
-  $("leaderboard-difficulty").onchange = loadGlobalScores;
+  $("leaderboard-game").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; updateGlobalDifficulties(); loadGlobalScores(); };
+  $("leaderboard-difficulty").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; loadGlobalScores(); };
+  $("leaderboard-season").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; loadGlobalScores(); };
+  $("leaderboard-previous").onclick = () => { leaderboardOffset = Math.max(0, leaderboardOffset - 10); leaderboardAroundMe = false; loadGlobalScores(); };
+  $("leaderboard-next").onclick = () => { leaderboardOffset += 10; leaderboardAroundMe = false; loadGlobalScores(); };
+  $("leaderboard-near").onclick = () => {
+    if (!accountApp?.signedIn) { $("leaderboard-status").textContent = "Sign in to see your position across devices."; return; }
+    leaderboardAroundMe = true; leaderboardOffset = 0; loadGlobalScores();
+  };
+  leaderboardReady.then(async client => {
+    for (const season of await client.seasons()) {
+      const option = document.createElement("option"); option.value = season.id;
+      option.textContent = season.name || season.title || season.id;
+      $("leaderboard-season").append(option);
+    }
+  });
   $("leaderboard-refresh").onclick = async () => {
     await retryGlobalScores();
     loadGlobalScores();
@@ -1056,7 +1085,7 @@ function initializeGlobalLeaderboards() {
     await retryGlobalScores();
     if (!$("global-panel").hidden) loadGlobalScores();
   });
-  retryGlobalScores();
+  accountApp.ready.then(() => retryGlobalScores());
 }
 async function loadGlobalScores() {
   const request = ++globalRequest;
@@ -1066,16 +1095,39 @@ async function loadGlobalScores() {
   $("leaderboard-status").textContent = "Loading global rankings…";
   try {
     const client = await leaderboardReady;
-    const rows = await client.list(mode, difficulty);
+    const rows = await client.listPage(mode, difficulty, { offset: leaderboardOffset,
+      season: $("leaderboard-season").value || null, aroundMe: leaderboardAroundMe });
     if (request !== globalRequest) return;
     for (const entry of rows) {
-      const row = document.createElement("li"), name = document.createElement("span"), score = document.createElement("strong");
+      const row = document.createElement("li"), name = document.createElement(entry.public_id ? "button" : "span"), score = document.createElement("strong");
+      if (entry.public_id) {
+        name.type = "button"; name.className = "quiet-button";
+        name.onclick = async () => {
+          try {
+            const profile = await client.request("/rest/v1/rpc/get_account_public_profile", { p_public_id: entry.public_id });
+            if (!profile) { $("leaderboard-status").textContent = "This profile is private or unavailable."; return; }
+            let dialog = $("public-player-dialog");
+            if (!dialog) {
+              dialog = document.createElement("dialog"); dialog.id = "public-player-dialog"; dialog.className = "account-dialog";
+              dialog.setAttribute("aria-labelledby", "public-player-name");
+              const title = document.createElement("h2"); title.id = "public-player-name";
+              const note = document.createElement("p"); note.textContent = "Public arcade profile. Game history and account details remain private.";
+              const close = document.createElement("button"); close.textContent = "Close"; close.onclick = () => dialog.close();
+              dialog.append(title, note, close); document.body.append(dialog);
+            }
+            $("public-player-name").textContent = profile.player;
+            dialog.showModal();
+          } catch (error) { $("leaderboard-status").textContent = error.message; }
+        };
+      }
       name.textContent = `${String(entry.rank).padStart(2, "0")}  ${entry.player}${entry.is_you ? " (you)" : ""}`;
       score.textContent = `${entry.score}${mode === "keyboard" ? " rounds" : " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(name, score);
       $("global-scores").append(row);
     }
+    $("leaderboard-previous").disabled = leaderboardOffset === 0 || leaderboardAroundMe;
+    $("leaderboard-next").disabled = rows.length < 10 || leaderboardAroundMe;
     $("leaderboard-status").textContent = rows.length ? "Best scores from players everywhere." : "No scores yet. Set the first record!";
   } catch (error) {
     if (request === globalRequest) $("leaderboard-status").textContent = error.message;
@@ -1085,6 +1137,18 @@ async function loadGlobalScores() {
 }
 async function publishGlobalScore(entry) {
   if (modes[entry.mode]?.localOnly) return;
+  if (accountApp?.controller) {
+    if (!accountApp.controller.state().profile.privacy?.leaderboard) {
+      $("leaderboard-submission").textContent = "Saved privately. Enable sharing in your profile to join casual rankings.";
+      return;
+    }
+    if (accountApp.signedIn) {
+      await accountApp.chain;
+      try { await accountApp.controller.flush(); $("leaderboard-submission").textContent = "Your account scores are synced."; }
+      catch { $("leaderboard-submission").textContent = "Saved on this device. Sharing will resume when you reconnect."; }
+      return;
+    }
+  }
   const request = ++submissionRequest;
   try {
     const client = await leaderboardReady;
@@ -1099,6 +1163,7 @@ async function publishGlobalScore(entry) {
 }
 async function retryGlobalScores() {
   try {
+    if (!await syncGuestLeaderboardPrivacy()) return;
     const client = await leaderboardReady;
     if (!client.configured || !Object.keys(client.pending).length) return;
     await client.flush();
@@ -1106,6 +1171,23 @@ async function retryGlobalScores() {
   } catch {
     $("leaderboard-submission").textContent = "Saved locally. We’ll retry your global score when you reconnect or press Refresh.";
   }
+}
+async function syncGuestLeaderboardPrivacy() {
+  await accountApp.ready;
+  if (accountApp.signedIn || accountApp.accountBound) return false;
+  const client = await leaderboardReady;
+  if (!client.configured) return false;
+  const visible = !!accountApp.controller.state().profile.privacy?.leaderboard;
+  const user = accountApp.session.snapshot().user;
+  if ((!user && !visible) || (user && !user.is_anonymous)) return false;
+  const generation = accountApp.controller.generation;
+  await accountApp.session.ensureAnonymous();
+  const token = await accountApp.session.token();
+  accountApp.checkIdentity(generation);
+  const effective = await client.request('/rest/v1/rpc/set_guest_leaderboard_visibility', { p_visible: visible }, token);
+  accountApp.checkIdentity(generation);
+  if (typeof effective !== 'boolean') throw new Error('Leaderboard privacy could not be confirmed. Try syncing again.');
+  return effective && visible;
 }
 function send(action, extra = {}) {
   return JSON.parse(
@@ -1151,6 +1233,7 @@ function selectGame(mode) {
   coreAftermath = false;
   if (loadFailed && !["customs", "shop"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
+  accountApp?.finish(snapshot, active && selected === "keyboard" ? "exit" : "interrupted");
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   turtleTrailField.reset();
@@ -1234,6 +1317,7 @@ function selectGame(mode) {
   syncMusic();
 }
 function startGame(difficulty) {
+  if (accountApp?.blocked) return;
   coreAftermath = false;
   if (selected === "jukebox" && Object.hasOwn(modes.jukebox.difficulties, difficulty)) {
     selectedDifficulty = difficulty;
@@ -1276,8 +1360,10 @@ function startGame(difficulty) {
     fail(error);
     return;
   }
-  if (!modes[selected].temporary || selected === "core_practice")
+  if (!modes[selected].temporary || selected === "core_practice") {
+    accountApp?.startRun(selected, selectedDifficulty);
     updateAchievements(achievementTracker.start(selected, selectedDifficulty));
+  }
   active = true;
   lastFrame = performance.now();
   $("welcome").hidden = true;
@@ -1307,7 +1393,7 @@ function startGame(difficulty) {
 }
 function showOverlay(title, copy, button, kicker) {
   $("overlay").classList.toggle("boss-defeat", !!snapshot?.over && !snapshot.won
-    && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected));
+    && ["boss", "pumpkin", "wrath"].includes(selected));
   $("overlay-title").textContent = title;
   $("overlay-copy").textContent = copy;
   $("overlay-action").textContent = button;
@@ -1343,7 +1429,11 @@ function updateDamageFeedback(s) {
 function render() {
   const s = snapshot;
   updateDamageFeedback(s);
-  if (!s.dying && (!modes[selected].temporary || selected === "core_practice")) updateAchievements(achievementTracker.observe(s));
+  if (!s.dying && (!modes[selected].temporary || selected === "core_practice")) {
+    const progress = achievementTracker.observe(s);
+    accountApp?.observe(s, progress.changed, achievementTracker.observedAt);
+    updateAchievements(progress);
+  }
   const hasHealth = ["boss", "pumpkin", "wrath", "singularity", "core_practice", "geomayhem"].includes(selected);
   $("player-health").hidden = !hasHealth || s.arena_shattered;
   if (hasHealth) {
@@ -1463,7 +1553,7 @@ function draw(s) {
   ctx.rect(left, -top, right - left, top - bottom);
   ctx.clip();
   for (const command of s.commands) {
-    if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !trailReducedMotion.matches)
+    if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || saved.preferences?.reducedMotion))
       turtleTrailField.draw(ctx, TurtleTrails.selected(saved.turtleTrail, saved.shop.owned));
     const c = command.coords;
     if (command.kind === "clip_start") {
@@ -1509,7 +1599,8 @@ function draw(s) {
   }
   ctx.restore();
   ctx.strokeStyle =
-    selected === "dodge" && s.difficulty === "merciless"
+    selected === "dodge" && s.difficulty === "impossible" ? "#ffffff"
+      : selected === "dodge" && s.difficulty === "merciless"
       ? "#ff4565"
       : "#45534b";
   ctx.lineWidth = 2;
@@ -1554,6 +1645,7 @@ function exitGame() {
   selectGame(selected);
 }
 function fail(error) {
+  accountApp?.finish(snapshot, "interrupted");
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
   console.error(error);
@@ -1582,15 +1674,15 @@ function frame(now) {
         ...(selected === "geomayhem" ? { aim: geomayhemAim } : {}),
       });
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
-        TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches);
+        TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches || !!saved.preferences?.reducedMotion);
       render();
     } catch (error) {
       fail(error);
     }
   }
   if (!active && ready && snapshot?.over && !snapshot.won && !document.hidden
-      && !gasterActive && !coreOrigin?.open && !trailReducedMotion.matches
-      && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) {
+      && !gasterActive && !coreOrigin?.open && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
+      && ["boss", "pumpkin", "wrath"].includes(selected)) {
     try {
       snapshot = send("defeat_frame", { dt: (now - lastFrame) / 1000 });
       draw(snapshot);
@@ -1598,7 +1690,7 @@ function frame(now) {
   }
   const noteIcon = document.querySelector('[data-game="jukebox"] .card-art');
   if (noteIcon) {
-    const pulse = soundOn && !document.hidden && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const pulse = soundOn && !document.hidden && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
       ? musicPlayer?.melodyPulse() || 0 : 0;
     noteIcon.style.transform = `scale(${1 + pulse * .22})`;
   }
@@ -1622,10 +1714,10 @@ document
     }),
   );
 let singularityNameTimer;
-$("player").oninput = () => {
+function runArcadeCode(rawName, separate = false) {
   clearTimeout(singularityNameTimer);
   showScores();
-  const name = $("player").value.trim().toLowerCase();
+  const name = rawName.trim().toLowerCase();
   if (CubieCustoms.redeemTesterCode(name)) {
     saved.testerTon618 = true;
     showAchievementToasts(newCustomNotifications());
@@ -1650,7 +1742,7 @@ $("player").oninput = () => {
   if (name === "gravitron") {
     // Allow the longer tester code to be typed without firing its prefix.
     singularityNameTimer = setTimeout(() => {
-      if ($("player").value.trim().toLowerCase() !== "gravitron") return;
+      if (!separate && $("player").value.trim().toLowerCase() !== "gravitron") return;
       unlockSingularity();
       initializeAudio();
       coreOrigin.play();
@@ -1659,9 +1751,10 @@ $("player").oninput = () => {
   }
   if (name === "gaster") {
     history.replaceState({ ...history.state, gasterSequence: { soundOn } }, "");
-    saved.player = $("player").value.trim();
+    if (!separate) saved.player = $("player").value.trim();
     persist();
-    location.reload();
+    const pendingSave = accountApp ? accountApp.ready.then(() => accountApp.settle()) : Promise.resolve();
+    pendingSave.then(() => location.reload());
     return;
   }
   const secret = name === "rocknroy" || Object.hasOwn(nameSecrets, name) ? name : "";
@@ -1690,7 +1783,19 @@ $("player").oninput = () => {
     }
   }
   previousSecretName = secret;
+}
+$("player").oninput = () => {
+  if (!accountApp?.signedIn) runArcadeCode($("player").value);
+  else { saved.player = $("player").value.trim() || "Player"; persist(); }
 };
+$("arcade-code-submit").onclick = () => {
+  if (active) return;
+  runArcadeCode($("arcade-code").value, true);
+  $("arcade-code").value = "";
+};
+$("arcade-code").addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); $("arcade-code-submit").click(); }
+});
 let blushTimer;
 function blushCubie() {
   $("cube").classList.add("blushing");
@@ -1908,6 +2013,8 @@ if (!soundOn) {
 }
 $("sound").onclick = () => {
   soundOn = !soundOn;
+  if (!applyingAccountProfile && accountApp?.initialized)
+    accountApp.setting({ soundOn }).catch(error => accountApp.message(error.message));
   if (!soundOn) pendingAchievementDing = false;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
@@ -1932,7 +2039,7 @@ function syncMusic() {
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
-      : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
+      : active && selected === "dodge" ? `dodge_${selectedDifficulty === "impossible" ? "merciless" : selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
@@ -2160,10 +2267,67 @@ async function initialize() {
   }
 }
 coreOrigin = new CoreOrigin.Film($("core-origin"), {
+  reducedMotion: () => !!saved.preferences?.reducedMotion,
   audio: () => ({ context: audioContext, destination: audioMaster, enabled: soundOn }),
   toggleSound: () => $("sound").click(),
   onChange: open => { coreAftermath = !open; clearKeys(); syncMusic(); },
 });
+let appliedAccountOwner;
+function applyAccountProfile(profile) {
+  if (!profile || active) return;
+  const owner = accountApp?.controller?.state().owner;
+  const editingName = owner === appliedAccountOwner && document.activeElement === $("player");
+  appliedAccountOwner = owner;
+  applyingAccountProfile = true;
+  try {
+    saved = profile;
+    saved.unlocks ||= { singularity: false };
+    achievementTracker.data = new Achievements.Tracker(saved.achievements).data;
+    achievementTracker.round = null;
+    saved.achievements = achievementTracker.data;
+    saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
+    saved.cubieCustom ||= "classic";
+    if (!editingName) $("player").value = saved.player || "Player";
+    announcedCustoms.clear();
+    for (const item of CubieCustoms.catalog)
+      if (CubieCustoms.unlocked(item, saved.achievements.unlocked, saved.shop.owned, saved.testerTon618)) announcedCustoms.add(item.id);
+    document.querySelector('[data-game="singularity"]').hidden = !saved.unlocks.singularity;
+    if (soundOn !== (saved.preferences?.soundOn !== false)) $("sound").click();
+    document.documentElement.classList.toggle("account-reduced-motion", !!saved.preferences?.reducedMotion);
+    renderAchievements(); applyCubieCustom(); showScores();
+    if (selected === "shop") renderShop();
+    if (selected === "customs") renderCustoms();
+    persist();
+  } finally { applyingAccountProfile = false; }
+}
+accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAccountProfile,
+  isPlaying: () => active, config: leaderboardReady.then(client => ({ url: client.url, key: client.key })),
+  onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
+accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
+accountApp.ready.then(async () => {
+  const client = await leaderboardReady;
+  if (accountApp.session) client.accountSession = accountApp.session;
+  client.beforeFlush = async () => {
+    if (!await syncGuestLeaderboardPrivacy()) throw new Error('Leaderboard sharing is disabled for this profile.');
+  };
+});
+for (const [method, makeEvent] of Object.entries({
+  visit: () => ["visit", {}],
+  secret: name => ["secret", { name }],
+  hearMusic: (track, custom, audible) => ["music", { track, audible }],
+  completeGaster: () => ["gaster", {}],
+  spendTime: seconds => { const end = Date.now(); return ["time", { start: end - Math.min(seconds, 60) * 1000, end }]; },
+})) {
+  const original = achievementTracker[method].bind(achievementTracker);
+  achievementTracker[method] = (...args) => {
+    const result = original(...args);
+    if (result.changed) {
+      const [event, payload = {}] = makeEvent(...args);
+      accountApp.arcade(event, payload, { occurredAt: achievementTracker.observedAt });
+    }
+    return result;
+  };
+}
 initializeGlobalLeaderboards();
 initializeAchievements();
 // Save elapsed open-page time across visits; a fresh load starts a fresh clock.

@@ -3,7 +3,7 @@
 const Leaderboards = (() => {
   const difficulties = Object.freeze({
     hangman: ['easy', 'medium', 'hard'], keyboard: ['progressive'],
-    dodge: ['easy', 'normal', 'hard', 'merciless'],
+    dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
     wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'],
@@ -28,6 +28,7 @@ const Leaderboards = (() => {
       this.session = this.read('session') || null;
       this.pending = Object.fromEntries(Object.entries(this.read('pending') || {})
         .filter(([key, entry]) => entry && valid(entry) && key === `${entry.mode}:${entry.difficulty}`));
+      this.pendingOwner = this.read('pending-owner') || this.session?.user_id || null;
       this.authenticating = null;
       this.flushing = null;
     }
@@ -59,6 +60,10 @@ const Leaderboards = (() => {
       catch { throw new Error('Global rankings could not be loaded. Please try again.'); }
     }
     async token() {
+      if (this.accountSession) {
+        await this.accountSession.ensureAnonymous();
+        return this.accountSession.token();
+      }
       if (this.session?.access_token && this.session.expires_at > this.now() / 1000 + 30)
         return this.session.access_token;
       if (this.authenticating) return this.authenticating;
@@ -87,9 +92,42 @@ const Leaderboards = (() => {
         throw new Error('Global rankings could not be loaded. Please try again.');
       return rows.slice(0, 10);
     }
+    async listPage(mode, difficulty, { offset = 0, season = null, aroundMe = false } = {}) {
+      if (!this.configured) throw new Error('Global rankings aren’t connected yet. Your local scores are saved.');
+      let token;
+      if (this.accountSession?.snapshot().user) {
+        try { token = await this.accountSession.token(); } catch { /* Public browsing remains available. */ }
+      }
+      try {
+        const rows = await this.request('/rest/v1/rpc/get_account_leaderboard', {
+          p_mode: mode, p_difficulty: difficulty, p_season: season,
+          p_offset: offset, p_limit: 10, p_around_me: aroundMe,
+        }, token);
+        if (!Array.isArray(rows) || rows.some(row => !Number.isSafeInteger(Number(row.rank))
+            || Number(row.rank) < 1 || typeof row.player !== 'string' || !Number.isSafeInteger(row.score)))
+          throw new Error('Global rankings could not be loaded. Please try again.');
+        return rows;
+      } catch (error) {
+        if ((error.status === 404 || error.status === 400) && !season && !aroundMe && !offset)
+          return this.list(mode, difficulty);
+        throw error;
+      }
+    }
+    async seasons() {
+      if (!this.configured) return [];
+      try {
+        const rows = await this.request('/rest/v1/rpc/get_account_seasons', {});
+        return Array.isArray(rows) ? rows : [];
+      } catch { return []; }
+    }
     async submit(entry) {
       if (!valid(entry)) throw new Error('Invalid leaderboard score');
       if (!this.configured) return false;
+      const current = this.accountSession?.snapshot().user;
+      if (this.accountSession && current && !current.is_anonymous) throw new Error('Account results use account synchronization.');
+      if (Object.keys(this.pending).length && this.pendingOwner && current && this.pendingOwner !== current.id)
+        throw new Error('Earlier leaderboard submissions belong to another guest identity.');
+      if (!Object.keys(this.pending).length) this.pendingOwner = current?.id || this.session?.user_id || null;
       const key = `${entry.mode}:${entry.difficulty}`;
       this.pending[key] = { ...entry, player: entry.player.trim(), score: Math.max(entry.score, this.pending[key]?.score || 0) };
       this.write('pending', this.pending);
@@ -102,7 +140,13 @@ const Leaderboards = (() => {
       this.flushing = (async () => {
         while (Object.keys(this.pending).length) {
           const [key, entry] = Object.entries(this.pending)[0];
+          await this.beforeFlush?.();
           const token = await this.token();
+          const current = this.accountSession?.snapshot().user;
+          if (this.accountSession && (!current || !current.is_anonymous)) throw new Error('Account results use account synchronization.');
+          const owner = current?.id || this.session?.user_id;
+          if (this.pendingOwner && owner !== this.pendingOwner) throw new Error('Earlier leaderboard submissions belong to another guest identity.');
+          this.pendingOwner = owner; this.write('pending-owner', owner);
           const best = await this.request('/rest/v1/rpc/submit_leaderboard_score', {
             p_mode: entry.mode, p_difficulty: entry.difficulty, p_player: entry.player, p_score: entry.score,
           }, token);

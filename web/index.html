@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./core-origin.css" />
     <link rel="stylesheet" href="./trails.css" />
+    <link rel="stylesheet" href="./accounts/profile.css" />
     <script
       src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
       defer
@@ -25,6 +26,11 @@
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
     <script src="./core-origin.js" defer></script>
+    <script src="./account-rules.js" defer></script>
+    <script src="./accounts/store.js" defer></script>
+    <script src="./accounts/session.js" defer></script>
+    <script src="./accounts/sync.js" defer></script>
+    <script src="./accounts/app.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
   <body>
@@ -472,6 +478,8 @@
               value="Player"
               autocomplete="nickname"
             />
+            <label for="arcade-code">ARCADE CODES</label>
+            <div class="arcade-code-control"><input id="arcade-code" maxlength="32" autocomplete="off" placeholder="Found a secret?" /><button id="arcade-code-submit" type="button">Try code</button></div>
           </div>
           <section class="profile-summary" aria-label="Achievement profile">
             <div class="score-row"><span>Profile score</span><strong id="profile-score">0</strong></div>
@@ -507,12 +515,15 @@
               <select id="leaderboard-game"></select>
               <label for="leaderboard-difficulty">Difficulty</label>
               <select id="leaderboard-difficulty"></select>
+              <label for="leaderboard-season">Period</label>
+              <select id="leaderboard-season"><option value="">All time</option></select>
             </div>
             <div class="leaderboard">
               <h3>Global top 10 <button id="leaderboard-refresh" class="quiet-button" type="button">Refresh</button></h3>
               <p id="leaderboard-status" role="status" aria-live="polite"></p>
               <ol id="global-scores" aria-label="Global high scores"></ol>
-              <p class="global-note">Your best completed round appears under your player name. Each difficulty has its own rankings.</p>
+              <div class="account-actions"><button id="leaderboard-previous" type="button" class="quiet-button" disabled>Previous</button><button id="leaderboard-next" type="button" class="quiet-button" disabled>Next</button><button id="leaderboard-near" type="button" class="quiet-button">Around me</button></div>
+              <p class="global-note">Casual rankings use browser-reported scores. Each difficulty has its own board; earlier records break ties. Choose whether to share scores in your profile.</p>
               <p id="leaderboard-submission" role="status" aria-live="polite"></p>
             </div>
           </section>

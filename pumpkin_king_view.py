@@ -28,15 +28,36 @@ PUMPKIN_FACE_FEATURES = (
 )
 
 
-def happy_laugh_mouth(x, y, width, depth, age):
-    """An upturned open smile, pulsing on the defeat laugh's ha syllables."""
-    phase = min(1, (age % .36) / .28)
-    opening = depth * (.35 + .65 * math.sin(math.pi * phase))
-    top = [(x + width * (i / 12 - .5), y + 3 * (abs(i - 6) / 6) ** 2)
-           for i in range(13)]
-    bottom = [(x + width * (i / 12 - .5), y + 3 - opening * (1 - ((i - 6) / 6) ** 2))
-              for i in range(12, -1, -1)]
-    return top + bottom
+LAUGH_STYLES = {
+    "mean": (.48, 27, 9, 3),
+    "cruel": (.64, 31, 10, -2),
+    "nightmare": (.94, 29, 8, 0),
+    "impossible": (.72, 42, 10, 0),
+    "pumpkin": (.58, 44, 17, 0),
+    "wrath": (.86, 46, 14, 2),
+}
+
+
+def defeat_laugh_pulse(style, age):
+    """Smooth jaw motion with a distinct cadence for each boss."""
+    period = LAUGH_STYLES[style][0]
+    return (.5 - .5 * math.cos(math.tau * age / period)) ** 2
+
+
+def defeat_laugh_mouth(x, y, style, age):
+    """Open laughs and carved grins with each boss's own jaw shape."""
+    _, width, depth, tilt = LAUGH_STYLES[style]
+    opening = depth * (.55 + .45 * defeat_laugh_pulse(style, age))
+    carved = style in ("impossible", "pumpkin", "wrath")
+    points = []
+    for i in range(13):
+        u = (i - 6) / 6
+        notch = (1.4 if i % 2 else 0) if carved else 0
+        points.append((x + width * u / 2, y + 2 * u*u + tilt*u - notch))
+    for i in range(12, -1, -1):
+        u = (i - 6) / 6
+        points.append((x + width*u/2, y + 2*u*u + tilt*u - opening*(1-u*u)))
+    return points
 
 
 def mix(a, b, amount):
@@ -573,18 +594,31 @@ class KingView:
             color = mix(BACKGROUND, heat, intensity)
             self.oval(px, py, 1.8*(1-rise)+.3, 3*(1-rise)+.5, color)
 
-    def _happy_laugh(self, x, y, width, depth, age, color="#251727"):
-        self.poly(happy_laugh_mouth(x, y, width, depth, age), color)
-        # Small bright teeth make the open mouth read as a delighted grin.
-        self.ribbon(((x-width*.24, y-.8), (x, y-1.7), (x+width*.24, y-.8)),
-                    2, "#fff2ce")
+    def _defeat_laugh(self, x, y, style, age, color="#251727"):
+        self.poly(defeat_laugh_mouth(x, y, style, age), color)
+        pulse = defeat_laugh_pulse(style, age)
+        if style in ("cruel", "nightmare"):
+            # A thin tooth line, never a floating white bar across the face.
+            self.ribbon(((x-9, y-.4), (x, y-1), (x+9, y-.4)),
+                        .8 if style == "nightmare" else 1.2, "#e5d8c0")
+        elif style in ("pumpkin", "wrath"):
+            for side in (-1, 1):
+                px = x + side * (12 if style == "pumpkin" else 15)
+                self.poly(((px-1.8, y-.6), (px+1.8, y-.6),
+                           (px, y-2.2-pulse)), "#ffbc58")
 
     def _face(self, x, y, scale, shell, glow, t, game=None):
+        defeated = game is not None and not game.alive and not game.won
+        style = "wrath" if hasattr(game, "practice_attack") else "pumpkin"
+        age = getattr(game, "defeat_laugh_age", 0)
+        pulse = defeat_laugh_pulse(style, age) if defeated else 0
+        if defeated:
+            y += pulse * (1.2 if style == "pumpkin" else .5)
         if shell:
             self.rounded_rect(x, y, 72, 42, 6, "#ffffff")
             for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
                 if game is not None and not game.alive and index == 3:
-                    self._happy_laugh(x, y-7, 43, 14, getattr(game, "defeat_laugh_age", 0), glow)
+                    self._defeat_laugh(x, y-7, "impossible", age, glow)
                     continue
                 self.poly([(x+px*scale, y+py*scale) for px, py in polygon], glow)
             return
@@ -616,15 +650,18 @@ class KingView:
         blink = .12 if t%4.7 > 4.56 and not color_memory and not game.eye_rule and not roar else 1
         for side in (-1, 1):
             eye = ((side*37, 23), (side*7, 17), (side*11, 7), (side*30, 12))
-            if hit and not color_memory:
+            if hit and not color_memory and not defeated:
                 eye = ((side*35, 17), (side*9, 13), (side*13, 10), (side*30, 13))
+            if defeated:
+                blink = (1.0 + .12*pulse) if style == "pumpkin" else (.85 + .15*pulse)
+                gaze = 0
             points = [(x+px+gaze, y+16+(py-16)*blink) for px, py in eye]
-            self._outlined_feature(points, glow, thickness=1.6)
-            if glow == "#38201c" and blink > .2:
+            self._outlined_feature(points, "#38201c" if defeated else glow, thickness=1.6)
+            if not defeated and glow == "#38201c" and blink > .2:
                 self.oval(x+side*20+gaze, y+15, 2, 4, "#ff5c48")
         self._outlined_feature(((x-4, y+7), (x+4, y+7), (x, y-1)), "#38201c")
         if not game.alive and not game.won:
-            self._happy_laugh(x, y-7, 45, 22, getattr(game, "defeat_laugh_age", 0))
+            self._defeat_laugh(x, y-7, style, age)
             return
         if roar:
             jaw = 3*math.sin(t*22)
@@ -673,6 +710,12 @@ class KingView:
             hit = game.hit_flash > 0
             danger = game.lunge_state in ("warning", "lunging")
             defeated_player = not game.alive
+            laugh_style = game.difficulty if game.difficulty in LAUGH_STYLES else "mean"
+            laugh_age = getattr(game, "defeat_laugh_age", 0)
+            laugh_pulse = defeat_laugh_pulse(laugh_style, laugh_age) if defeated_player else 0
+            if defeated_player:
+                hit = danger = False
+                y += laugh_pulse * {"mean": .9, "cruel": .6, "nightmare": .2, "impossible": .4}.get(laugh_style, .5)
             attacking = game.volley > 0 and game.attack_in > game.config.interval-.17
             color = game.config.color
             if hit and game.difficulty != "impossible":
@@ -698,12 +741,12 @@ class KingView:
             if game.difficulty == "impossible":
                 for index, polygon in enumerate(PUMPKIN_FACE_FEATURES):
                     if defeated_player and index == 3:
-                        self._happy_laugh(x, y-7, 43, 14, getattr(game, "defeat_laugh_age", 0), "#000000")
+                        self._defeat_laugh(x, y-7, "impossible", laugh_age, "#000000")
                         continue
                     points = []
                     for px, py in polygon:
                         if index < 2:
-                            py = 9+(py-9)*(.5 if hit else blink)
+                            py = 9+(py-9)*(1.0+.15*laugh_pulse if defeated_player else .5 if hit else blink)
                             px += gaze
                         elif index == 3:
                             py += math.sin(t*12)*(2 if defeated_player else .6)
@@ -716,7 +759,13 @@ class KingView:
             else:
                 for side in (-1, 1):
                     ex = x+side*17+gaze
-                    if hit:
+                    if defeated_player:
+                        # Open eyes follow the jaw pulse while retaining distinct shapes.
+                        eye_width, eye_height = {"mean": (9, 10), "cruel": (8, 9),
+                                                 "nightmare": (7, 11)}.get(laugh_style, (9, 10))
+                        self.oval(ex, y+5, eye_width, eye_height+2*laugh_pulse, "#261b32")
+                        self.oval(ex+.7, y+7, 2.2, 2.8, "#fff4dd")
+                    elif hit:
                         self.ribbon(((ex-5, y+9), (ex+4, y+4), (ex-5, y+1)), 2.6, "#261b32")
                     else:
                         self.oval(ex, y+5, 9, 12*blink, "#261b32")
@@ -724,14 +773,14 @@ class KingView:
                             self.oval(ex+gaze*.4, y+7, 2.5, 3, "#fff4dd")
                     self.ribbon(((x+side*26, y+15), (x+side*10, y+(10 if danger else 13))), 2.3, "#342039")
                 if defeated_player:
-                    self._happy_laugh(x, y-7, 30, 14, getattr(game, "defeat_laugh_age", 0))
+                    self._defeat_laugh(x, y-8, laugh_style, laugh_age)
                 elif hit or danger or attacking:
                     self.oval(x, y-10, 13 if hit else 20, 11 if hit else 15, "#261b32")
                 else:
                     curve = 1.8 if defeated_player else 1
                     self.ribbon([(x-13+i*26/12, y-10+curve*(abs(i-6)/6)**2*5+
                                   math.sin(t*3)*.6) for i in range(13)], 3, "#261b32")
-            if game.hp < game.config.hp*.25:
+            if not defeated_player and game.hp < game.config.hp*.25:
                 self.oval(x+27, y+9+math.sin(t*5)*1.5, 3, 6, "#c7f8ff")
         for key in self.previous-self.used:
             self.canvas.itemconfigure(self.items[key], state="hidden")

@@ -1,5 +1,10 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
+  // Legacy fixture is migrated into the authoritative journal on first load.
+  await page.addInitScript(units => {
+    if (!localStorage.getItem('microgame-madness.v1'))
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({ shop: { units, owned: [] } }));
+  }, 1230000);
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
@@ -10,7 +15,6 @@ test('shop search filters Customs and trails while preserving buying and sorting
   await search.fill('  SPACE   junk  ');
   await expect(page.locator('#shop-grid .custom-tile:visible')).toHaveCount(1);
   await expect(page.locator('#shop-grid .custom-tile:visible')).toContainText('Space Junk Cubie');
-  await page.evaluate(() => { saved.shop.units = 1230000; renderShop(); });
   await page.getByRole('button', { name: 'Buy Space Junk Cubie', exact: true }).click();
   await expect(search).toHaveValue('  SPACE   junk  ');
   await page.getByRole('button', { name: 'Wear Space Junk Cubie', exact: true }).click();

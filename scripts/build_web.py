@@ -70,6 +70,14 @@ def build():
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
+    shutil.copy2(ROOT / "shared" / "account-rules.js", OUTPUT / "account-rules.js")
+    account_names = ("store.js", "session.js", "sync.js", "app.js", "profile.css")
+    (OUTPUT / "accounts").mkdir()
+    for name in account_names:
+        shutil.copy2(ROOT / "web" / "accounts" / name, OUTPUT / "accounts" / name)
+    for name in ("account-rules.js", *(f"accounts/{name}" for name in account_names)):
+        version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
+        html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     (OUTPUT / "index.html").write_text(html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
     python_dir = OUTPUT / "python"

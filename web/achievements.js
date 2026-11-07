@@ -24,7 +24,7 @@ const Achievements = (() => {
   add("website_10_hours", "The Party Never Stops", "empyrorite", "Arcade", "Spend 10 hours total on the website across visits (36,000 seconds).", "websiteSeconds", 36000);
   add("website_5_hours", "All Aboard!", "rainbow", "Arcade", "Spend 5 hours total on the website across visits (18,000 seconds).", "websiteSeconds", 18000);
   add("cube_pet_500", "A New Dimension", "diamond", "Arcade", "Click Cubie 500 times in total.", "cubePets", 500);
-  add("cube_pet_1000", "A Thousand Little Hugs", "empyrorite", "Arcade", "Pet Cubie 1,000 times.", "cubePets", 1000);
+  add("cube_pet_1000", "Five Thousand Little Hugs", "empyrorite", "Arcade", "Pet Cubie 5,000 times.", "cubePets", 5000);
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
     ["keyboard", "Key to Success", "Key Rush"],
@@ -247,6 +247,12 @@ const Achievements = (() => {
   add("magenta_counter_100", "The Golden Hand", "rainbow", "Pumpkin King", "Counter 100 magenta fingers across Pumpkin King and King's Wrath fights.", "magentaCounterHits", 100);
   add("arcade_deaths_10", "Back with a Hiss", "silver", "Arcade", "Die 10 times across Turtle Dodge, Boss Crush, Pumpkin King, King's Wrath, or Singularity Core (including Core practice).", "arcadeDeaths", 10);
   add("dodge_square_deaths_50", "Square One Again", "gold", "Turtle Dodge", "Die to the square O block 50 times across Easy, Normal, Hard, or Merciless. This is the normally yellow piece; Merciless recolors it red.", "dodgeSquareDeaths", 50);
+  for (const [seconds, title, tier] of [
+    [15, "Into the Whiteout", "silver"], [30, "White-Knuckle Dodge", "gold"],
+    [60, "Ride the Slipstream", "diamond"], [120, "Absolute Zero Fear", "rainbow"],
+    [180, "Beyond Impossible", "empyrorite"],
+  ]) add(`dodge_impossible_${seconds}`, title, tier, "Turtle Dodge",
+    `Survive ${seconds} seconds in one Impossible Turtle Dodge game.`, "impossibleBest", seconds);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -285,13 +291,14 @@ const Achievements = (() => {
       return Math.min(item.target, value);
     }
     update(change) {
+      this.observedAt = Date.now();
       const before = JSON.stringify(this.data);
       change(this.data.stats);
       this.data.stats.magentaCounterHits = this.data.stats.wrathCounterHits + this.data.stats.pumpkinCounterHits;
       const earned = [];
       for (const item of catalog) {
         if (!this.data.unlocked[item.id] && this.progress(item) >= item.target) {
-          this.data.unlocked[item.id] = new Date().toISOString();
+          this.data.unlocked[item.id] = new Date(this.observedAt).toISOString();
           earned.push(item);
         }
       }
@@ -395,7 +402,7 @@ const Achievements = (() => {
         }
         if (s.over === true && s.won === false && (["dodge", "boss", "pumpkin"].includes(s.mode) || core || wrath || corePractice)) {
           stats.arcadeDeaths++;
-          if (s.mode === "dodge" && ["easy", "normal", "hard", "merciless"].includes(s.difficulty) && s.death_cause === "o_block")
+          if (s.mode === "dodge" && ["easy", "normal", "hard", "merciless", "impossible"].includes(s.difficulty) && s.death_cause === "o_block")
             stats.dodgeSquareDeaths++;
         }
         if (s.mode === 'core_practice') {
@@ -424,6 +431,7 @@ const Achievements = (() => {
               && s.elapsed >= 0 && s.elapsed < 5) stats.dodgeEarlyDeath = 1;
           stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));
           stats.dodgeBest = Math.max(stats.dodgeBest, count(s.elapsed));
+          if (s.difficulty === "impossible") stats.impossibleBest = Math.max(stats.impossibleBest, count(s.elapsed));
           if (s.difficulty === "merciless") stats.mercilessBest = Math.max(stats.mercilessBest, count(s.elapsed));
         }
         if (!s.over) return;
@@ -485,3 +493,6 @@ const Achievements = (() => {
   return { catalog, points, Tracker, attackRewards };
 })();
 if (typeof module !== "undefined") module.exports = Achievements;
+
+// Portable catalog access for the shared browser/server account rules.
+if (typeof globalThis !== "undefined") globalThis.Achievements = Achievements;

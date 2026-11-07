@@ -135,7 +135,7 @@ class Geomayhem:
             x = (self.left + 18, self.right - 18)[side]
         else:
             y = (self.bottom + 18, self.top - 18)[side - 2]
-        # Avoid spawning on Cubie if he is hugging an edge.
+        # Avoid spawning on Cubie if they are hugging an edge.
         if math.hypot(x - self.x, y - self.y) < 110:
             x, y = (-260 if self.x >= 0 else 260), (-190 if self.y >= 0 else 190)
         kind = ("boss" if self.wave == 20 else "elite") if self.spawned == 0 and self.wave % 5 == 0 else self.rng.choice(
