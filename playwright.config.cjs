@@ -3,14 +3,18 @@ module.exports = defineConfig({
   testDir: "./web/tests",
   testMatch: "*.spec.cjs",
   timeout: 90000,
-  expect: { timeout: 30000 },
-  fullyParallel: false,
-  workers: 1,
+  expect: { timeout: 10000 },
+  fullyParallel: true,
+  workers: 2,
+  forbidOnly: Boolean(process.env.CI),
+  globalTimeout: process.env.CI ? 16 * 60 * 1000 : undefined,
   retries: process.env.CI ? 1 : 0,
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: process.env.CI
+    ? [["list"], ["blob"]]
+    : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: "http://127.0.0.1:8766",
-    trace: "retain-on-failure",
+    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
     screenshot: "only-on-failure",
   },
   projects: [

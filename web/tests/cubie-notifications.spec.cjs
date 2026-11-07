@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('new Customs share the achievement stack once, including purchases, and stay quiet on reload', async ({page}, testInfo) => {
@@ -28,6 +28,6 @@ test('new Customs share the achievement stack once, including purchases, and sta
   await tile.locator('.custom-equip').click();
   await expect(page.locator(`#achievement-toast [data-custom-id="${id}"]`)).toBeVisible();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#achievement-toast [data-custom-id]')).toHaveCount(0);
 });

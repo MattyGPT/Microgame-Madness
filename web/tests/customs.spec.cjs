@@ -36,7 +36,7 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await page.locator('.achievement-confetti').first().waitFor({ state: 'hidden' });
   await page.locator('#customs-room').screenshot({ path: testInfo.outputPath('custom-cubie-collection.png') });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'pumpkin');
   await page.locator('#cube').click({ force: true });
   await expect(page.locator('#cube')).toHaveClass(/blushing/);
@@ -61,7 +61,7 @@ test('Custom Cubie rejects locked saved outfits and respects reduced motion', as
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
   await expect(page.locator('[data-game="customs"] .cubie-float')).toHaveCSS('animation-name', 'none');
 });
@@ -82,7 +82,7 @@ test('locked Customs can be previewed with flavor text without equipping', async
   await expect(page.locator('#customs-flavor')).toHaveText('Knows every spell except the one that finds missing socks.');
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
 });
 
@@ -98,7 +98,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
     localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
   });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="customs"]').click();
   await expect(page.locator('#customs-count')).toHaveText('90 / 155 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
@@ -128,7 +128,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.locator('#customs-room').screenshot({ path: testInfo.outputPath('gaster-and-tier-customs.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'gaster');
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button', { name: 'Wear Empyrorite Cubie', exact: true }).click();
@@ -201,7 +201,7 @@ test('Gaster remix achievement follows audible playback and equipment, not previ
   await page.locator('#jukebox-pause').click();
   await expect(page.locator('#profile-score')).toHaveText(score);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => !!achievementTracker.data.unlocked.gaster_remix)).toBe(true);
   await expect(page.locator('#profile-score')).toHaveText(score);
   expect(errors).toEqual([]);
@@ -243,7 +243,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await mint.locator('button').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_blue_mint');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_blue_mint');
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-balance')).toHaveText('450 Cubie Cash');
@@ -274,7 +274,7 @@ test('CODEXISTHEBEST unlocks rainbow Codex Cubie and equipment survives reload',
   await expect(page.locator('#name-surprise')).toBeHidden();
   await custom.screenshot({ path: testInfo.outputPath('codex-cubie.png') });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'codex');
   await expect(page.locator('#profile-score')).toHaveText('2440');
 });
@@ -294,7 +294,7 @@ test('Hacker Cubie can be purchased for 4000 Cash and keeps its corrupted face w
   await expect(page.locator('#cube .cubie-eyes path')).toHaveAttribute('stroke', '#fff5f5');
   await card.screenshot({ path: testInfo.outputPath('hacker-shop-card.png') });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_hacker');
 });
 

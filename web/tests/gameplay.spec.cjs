@@ -47,6 +47,7 @@ test("home fits the viewport and Hangman scores survive reload", async ({
   await page.reload();
   await expect(page.locator("#runtime-status")).toContainText(
     "All games ready",
+    { timeout: 30000 },
   );
   await expect(page.locator("#hangman-game")).toBeHidden();
   await page.locator('[data-difficulty="easy"]').click();

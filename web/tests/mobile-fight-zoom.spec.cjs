@@ -1,6 +1,6 @@
 const {test,expect}=require('./fixtures/game.cjs');
 test('pinch zoom preserves every fight canvas and does not force scrolling',async({page,context})=>{
- await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready');
+ await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
  await page.evaluate(()=>{unlockSingularity(false);});
  const cdp=await context.newCDPSession(page);
  const size=()=>page.locator('#game-canvas').evaluate(el=>({width:parseFloat(el.style.width),height:parseFloat(el.style.height)}));

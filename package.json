@@ -11,7 +11,8 @@
     "pretest:integration": "npm run build",
     "test:integration": "node --test web/tests/integration/*.test.cjs",
     "pretest:browser": "npm run build",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:browser:built": "playwright test"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.14",

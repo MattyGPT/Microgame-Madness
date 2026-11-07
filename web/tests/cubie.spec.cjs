@@ -15,7 +15,7 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   await expect(card).toContainText('Locked · 49 / 100');
   await expect(page.locator('#profile-score')).toHaveText('130');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#sound').click();
   for (let i = 49; i < 99; i++) await cube.press('Space');
   await page.locator('#achievements-tab').click();
@@ -32,7 +32,7 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   for (let i = 0; i < 5; i++) await cube.press('Enter');
   await expect(page.locator('#profile-score')).toHaveText('430');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
   await expect(page.locator('#profile-score')).toHaveText('430');
@@ -86,7 +86,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('370');
   await cube.click({ force: true });
   await page.locator('#player').fill('DINGDONG');
@@ -138,7 +138,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
     localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
   });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   const dialog = page.locator('#cubie-hint');
   // Abandoning even a scored Key Rush run must not count as completion.
   await page.locator('[data-game="keyboard"]').click();
@@ -157,7 +157,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   expect(await page.evaluate(() => saved.minigamesCompleted)).toBe(19);
   await expect(dialog).not.toBeVisible();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await expect(dialog).not.toBeVisible();
@@ -177,7 +177,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   await page.locator('#cubie-hint-okay').click();
   await expect(dialog).not.toBeVisible();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await page.evaluate(() => {

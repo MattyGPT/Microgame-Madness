@@ -79,7 +79,7 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   const reloaded = page.waitForEvent('load');
   await page.locator('#player').fill('  gAsTeR  ');
   await reloaded;
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => performance.getEntriesByType('navigation')[0].type)).toBe('reload');
   expect(await page.evaluate(() => history.state?.gasterSequence)).toBeUndefined();
   await expect(page.locator('#profile-score')).toHaveText('10');
@@ -134,7 +134,7 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   await card.scrollIntoViewIfNeeded();
   await card.screenshot({ path: testInfo.outputPath('waste-of-time.png') });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('676');
   await expect(page.locator('#achievement-toast')).toBeHidden();
   await page.waitForTimeout(5500);
@@ -154,7 +154,7 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
   const reloaded = page.waitForEvent('load');
   await page.locator('#player').fill('gaster');
   await reloaded;
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'false');
   await page.evaluate(() => {
     window.gasterGameRemaining = [];
@@ -190,7 +190,7 @@ test('Gaster recovers from unavailable audio and interrupted sequences cannot un
   await expect(page.locator('#sound')).toHaveText('Sound unavailable');
   await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('10');
   await page.waitForTimeout(5500);
   await expect(page.locator('#gaster-blackout')).toBeHidden();
@@ -247,7 +247,7 @@ test('ROCKNROY randomly selects all five original songs, returns to arcade, and 
     expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(false);
   }
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('2440');
   await expect(page.locator('#achievement-toast')).toBeHidden();
   await page.locator('#achievements-tab').click();
@@ -339,7 +339,7 @@ test('new name secrets replace effects cleanly and award once across reloads', a
   await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('460');
   await page.locator('#sound').click();
   for (const name of ['CUBIE', 'BOO', 'STARLIGHT']) await page.locator('#player').fill(name);
@@ -385,7 +385,7 @@ test('three new arcade names unlock through name entry and persist', async ({ pa
   }
   await expect(page.locator('#profile-score')).toHaveText('460');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#achievements-tab').click();
   for (const id of ['name_pixel', 'name_1up', 'name_high_score'])
     await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');

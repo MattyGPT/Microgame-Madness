@@ -83,6 +83,12 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
 });
 
 test("The King's Wrath Random Order shuffles all attacks and keeps the preparation countdown", async ({ page }, testInfo) => {
+  await page.route('**/app.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'const pyodide = await loadPyodide(',
+      'const pyodide = window.wrathRuntime = await loadPyodide(') });
+  });
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     const body = (await response.text()).replace('self.game = KingsWrath(attack=difficulty)',
@@ -98,16 +104,25 @@ test("The King's Wrath Random Order shuffles all attacks and keeps the preparati
   expect(await page.evaluate(() => snapshot.label)).toContain('GET READY — 3 · NEXT:');
   const result = await page.evaluate(() => {
     const order = [snapshot.label.split('NEXT: ')[1]];
-    for (let frame = 0; frame < 2200 && order.length < 8; frame++) {
-      snapshot = send('tick', { dt: .05, keys: [] });
-      const next = snapshot.label.split('NEXT: ')[1];
-      if (next && next !== order.at(-1)) order.push(next);
+    // Native Python tests exhaustively replay shuffle rules. Advance the real
+    // model to each boundary here to check browser countdowns and the award,
+    // without thousands of canvas snapshots and JSON/WASM round trips.
+    wrathRuntime.runPython('from bridge import session');
+    for (let attack = 0; attack < 7; attack++) {
+      wrathRuntime.runPython(`
+game = session.game
+remaining = game.stage.duration - game.stage_age + sum(stage.duration for stage in game.queue)
+game.update(remaining, set())
+`);
+      snapshot = send('tick', { dt: 0, keys: [] });
+      order.push(snapshot.label.split('NEXT: ')[1]);
     }
     render();
     return { order, difficulty: snapshot.difficulty, over: snapshot.over,
       completed: snapshot.attacks_completed, fullDeck: Boolean(saved.achievements.unlocked.wrath_full_deck) };
   });
   expect(result.order).toHaveLength(8);
+  expect(result.order.every(Boolean)).toBe(true);
   expect(new Set(result.order.slice(0, 7)).size).toBe(7);
   expect(result.order[7]).not.toBe(result.order[6]);
   expect(result).toMatchObject({ difficulty: 'random_order', over: false, completed: 7, fullDeck: true });
@@ -139,7 +154,7 @@ test("The King's Wrath Random Order saves separate records and offers global ran
   await expect(page.locator('#leaderboard-difficulty')).toHaveValue('random_order');
   await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.scores['wrath:random_order'][0].player)).toBe('Shuffle player');
 });
 
@@ -157,7 +172,7 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
     localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
   });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#player').fill('Practice player');
   await page.locator('[data-game="wrath"]').click();
   await page.locator('[data-difficulty="bone_gauntlet"]').click();
@@ -175,7 +190,7 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
   await expect(page.locator('label[for="leaderboard-difficulty"]')).toHaveText('Attack');
   await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.scores['wrath:bone_gauntlet'][0].player)).toBe('Practice player');
 });
 

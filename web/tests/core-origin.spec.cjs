@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and clean exit', async ({ page }, testInfo) => {
@@ -54,7 +54,7 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
   await page.keyboard.press('Escape');
   await expect(page.locator('#core-origin')).toBeHidden();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#core-origin')).toBeHidden();
   await page.locator('#player').fill('Player');
   await page.locator('#player').fill('GRAVITRON');
