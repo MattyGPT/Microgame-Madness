@@ -294,8 +294,10 @@ let joystickPointer = null;
 const storageKey = "microgame-madness.v1";
 let saved = { player: "Player", scores: {}, achievements: {}, unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false };
 let storageAvailable = true;
+let persistedProfileJSON = null;
 try {
-  const value = JSON.parse(localStorage.getItem(storageKey));
+  persistedProfileJSON = localStorage.getItem(storageKey);
+  const value = JSON.parse(persistedProfileJSON);
   if (value && typeof value === "object") {
     saved.achievements = value.achievements;
     saved.testerTon618 = value.testerTon618 === true;
@@ -339,7 +341,9 @@ saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(saved));
+    const json = JSON.stringify(saved);
+    localStorage.setItem(storageKey, json);
+    persistedProfileJSON = json;
     storageAvailable = true;
   } catch {
     storageAvailable = false;
@@ -2046,6 +2050,14 @@ initializeAchievements();
 let websiteTimeCheckpoint = performance.now();
 function saveWebsiteTime() {
   const now = performance.now();
+  // A timer/pagehide save must not replace a newer profile written by another
+  // tab or an import with this page's older in-memory copy.
+  try {
+    if (storageAvailable && localStorage.getItem(storageKey) !== persistedProfileJSON) {
+      websiteTimeCheckpoint = now;
+      return;
+    }
+  } catch { /* Existing storage handling keeps this visit usable in memory. */ }
   const seconds = Math.floor((now - websiteTimeCheckpoint) / 1000);
   if (seconds <= 0) return;
   websiteTimeCheckpoint += seconds * 1000;
