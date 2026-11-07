@@ -1633,7 +1633,8 @@ function runArcadeCode(rawName, separate = false) {
     history.replaceState({ ...history.state, gasterSequence: { soundOn } }, "");
     if (!separate) saved.player = $("player").value.trim();
     persist();
-    location.reload();
+    const pendingSave = accountApp ? accountApp.ready.then(() => accountApp.settle()) : Promise.resolve();
+    pendingSave.then(() => location.reload());
     return;
   }
   const secret = name === "rocknroy" || Object.hasOwn(nameSecrets, name) ? name : "";
