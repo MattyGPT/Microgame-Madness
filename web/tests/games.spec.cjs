@@ -1694,7 +1694,7 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
   });
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
-    const setup = 'self.game = PumpkinKing(difficulty=difficulty)\n            from boss_crush import Projectile\n            self.game.begin_attack(0)\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+    const setup = 'self.game = PumpkinKing(difficulty=difficulty)\n            from boss_crush import Projectile\n            self.game.begin_attack(0)\n            self.game.elapsed = 100\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
     await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', setup) });
   });
   await page.reload();
@@ -2327,7 +2327,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('81 / 138 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('85 / 138 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
