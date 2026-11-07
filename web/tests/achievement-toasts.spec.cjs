@@ -1,5 +1,9 @@
 const { test, expect } = require('./fixtures/game.cjs');
 
+// The queue tests award their own medals; random Christmas playback must not
+// enqueue an unrelated Santa award when a toast click enables audio.
+test.use({ deterministicMusic: true });
+
 test.beforeEach(async ({ page }) => {
   // Keep the automatic welcome award out of the batch under test.
   await page.addInitScript(() => localStorage.setItem('microgame-madness.v1', JSON.stringify({
