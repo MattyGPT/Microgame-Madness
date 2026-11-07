@@ -64,3 +64,32 @@ test('a server-rejected purchase is not reported as owned', async t => {
   });
   await assert.rejects(app.purchase('item'), /purchase was not accepted/);
 });
+
+test('a delayed preference update waits for newer gameplay before applying the profile', async () => {
+  let releaseSetting, releaseGameplay, settingStarted, gameplayStarted;
+  const settingGate = new Promise(resolve => { releaseSetting = resolve; });
+  const gameplayGate = new Promise(resolve => { releaseGameplay = resolve; });
+  const startedSetting = new Promise(resolve => { settingStarted = resolve; });
+  const startedGameplay = new Promise(resolve => { gameplayStarted = resolve; });
+  const app = Object.create(App.prototype);
+  const profile = { preferenceRevisions: {}, unlocked: false };
+  app.chain = app.ready = Promise.resolve();
+  app.message = () => {};
+  const applied = [];
+  app.applyCurrent = () => applied.push(profile.unlocked);
+  app.controller = { generation: 1, state: () => ({ profile }), enqueue: async kind => {
+    if (kind === 'settings') { settingStarted(); await settingGate; }
+    else { gameplayStarted(); await gameplayGate; profile.unlocked = true; }
+  } };
+  const preference = app.setting({ soundOn: false });
+  await startedSetting;
+  const gameplay = app.enqueue('arcade', { event: 'secret', name: 'rocknroy' });
+  assert.equal(app.queuedWrites, 2);
+  releaseSetting();
+  await startedGameplay;
+  assert.deepEqual(applied, []);
+  releaseGameplay();
+  await Promise.all([preference, gameplay]);
+  assert.deepEqual(applied, [true]);
+  assert.equal(app.queuedWrites, 0);
+});

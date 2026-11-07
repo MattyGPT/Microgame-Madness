@@ -2150,8 +2150,12 @@ coreOrigin = new CoreOrigin.Film($("core-origin"), {
   toggleSound: () => $("sound").click(),
   onChange: open => { coreAftermath = !open; clearKeys(); syncMusic(); },
 });
+let appliedAccountOwner;
 function applyAccountProfile(profile) {
   if (!profile || active) return;
+  const owner = accountApp?.controller?.state().owner;
+  const editingName = owner === appliedAccountOwner && document.activeElement === $("player");
+  appliedAccountOwner = owner;
   applyingAccountProfile = true;
   try {
     saved = profile;
@@ -2161,7 +2165,7 @@ function applyAccountProfile(profile) {
     saved.achievements = achievementTracker.data;
     saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
     saved.cubieCustom ||= "classic";
-    $("player").value = saved.player || "Player";
+    if (!editingName) $("player").value = saved.player || "Player";
     announcedCustoms.clear();
     for (const item of CubieCustoms.catalog)
       if (CubieCustoms.unlocked(item, saved.achievements.unlocked, saved.shop.owned, saved.testerTon618)) announcedCustoms.add(item.id);

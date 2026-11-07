@@ -62,7 +62,7 @@ const AccountApp = (() => {
           if (state.lastSyncedAt && state.lastSyncedAt !== this.lastAppliedSync) {
             this.lastAppliedSync = state.lastSyncedAt;
             const owner = state.owner;
-            this.chain.then(() => {
+            this.settle().then(() => {
               if (owner === this.controller.state().owner && !this.controller.state().pending) this.applyCurrent();
             }).catch(error => this.message(error.message));
           }
@@ -100,6 +100,20 @@ const AccountApp = (() => {
       return true;
     }
     get blocked() { return !this.initialized || this.busy || this.isolating || !!this.controller?.state()?.importRequired; }
+    track(task) {
+      this.queuedWrites = (this.queuedWrites || 0) + 1;
+      if (this.nodes) this.render();
+      const tracked = task.finally(() => {
+        this.queuedWrites--;
+        if (this.nodes) this.render();
+      });
+      this.chain = tracked.catch(error => this.message(error.message));
+      return tracked;
+    }
+    async settle() {
+      let pending;
+      do { pending = this.chain; await pending; } while (pending !== this.chain);
+    }
     enqueue(kind, payload, options = {}) {
       const immutable = copy(payload);
       options = { occurredAt: Date.now(), ...options };
@@ -110,8 +124,7 @@ const AccountApp = (() => {
         if (generation !== undefined && generation !== this.controller.generation) throw new Error('The active profile changed before saving this action.');
         return this.controller.enqueue(kind, immutable, options);
       });
-      this.chain = task.catch(error => this.message(error.message));
-      return task;
+      return this.track(task);
     }
     startRun(mode, difficulty) {
       if (difficulty === 'final_cutscene') return;
@@ -142,21 +155,24 @@ const AccountApp = (() => {
       const generation = this.controller.generation;
       const desired = { player: profile.player, cubieCustom: profile.cubieCustom || 'classic',
         turtleTrail: profile.turtleTrail || null };
-      this.chain = this.chain.then(async () => {
+      const task = this.chain.then(async () => {
         this.checkIdentity(generation);
         const current = this.controller.state().profile;
         const changes = Object.fromEntries(Object.entries(desired).filter(([key, value]) => current[key] !== value));
         if (Object.keys(changes).length) await this.controller.enqueue('settings', {
           changes, baseRevisions: current.preferenceRevisions || {},
         });
-      }).catch(error => this.message(error.message));
+      });
+      this.track(task);
     }
     async setting(changes) {
       const generation = this.controller.generation;
-      await this.chain;
+      await this.settle();
       this.checkIdentity(generation);
       const current = this.controller.state().profile;
-      await this.controller.enqueue('settings', { changes, baseRevisions: current.preferenceRevisions || {} });
+      await this.enqueue('settings', { changes, baseRevisions: current.preferenceRevisions || {} });
+      await this.settle();
+      this.checkIdentity(generation);
       this.applyCurrent();
       if (Object.hasOwn(changes, 'leaderboard')) {
         try { await this.onVisibilityChange?.(); }
@@ -168,7 +184,7 @@ const AccountApp = (() => {
     }
     async purchase(itemId) {
       const generation = this.controller.generation;
-      await this.chain;
+      await this.settle();
       this.checkIdentity(generation);
       if (this.signedIn) {
         await this.controller.flush();
@@ -176,8 +192,9 @@ const AccountApp = (() => {
         if (this.controller.state().pending) throw new Error('Connect and sync your earnings before purchasing.');
         if (!navigator.onLine) throw new Error('Connect to purchase with your account.');
       }
-      await this.controller.enqueue('purchase', { itemId });
+      await this.enqueue('purchase', { itemId });
       if (this.signedIn) await this.controller.flush();
+      await this.settle();
       this.checkIdentity(generation);
       this.applyCurrent();
       if (!this.controller.state().profile.shop.owned.includes(itemId))
@@ -193,7 +210,7 @@ const AccountApp = (() => {
       this.busy = true;
       this.nodes.panel.setAttribute('aria-busy', 'true');
       this.message('');
-      try { await this.ready; await this.chain; await callback(); }
+      try { await this.ready; await this.settle(); await callback(); }
       catch (error) { this.message(error.message || 'That change could not be saved. Please try again.'); }
       finally { this.busy = false; this.nodes.panel.removeAttribute('aria-busy'); this.isolateChangedIdentity(); this.render(); }
     }
@@ -351,6 +368,7 @@ const AccountApp = (() => {
         auth_required: 'Sign in again to sync', error: 'Progress needs attention', pending: 'Saved on this device · Sync pending' };
       let status = labels[state.status] || (this.signedIn ? state.status || 'Saved' : 'Guest · Saved on this device');
       if (!state.durable) status = 'Storage unavailable · Progress lasts for this visit unless saved online';
+      else if (this.queuedWrites) status = 'Saving on this device…';
       else if (state.pending && this.signedIn && !needsSignIn) status = `${state.pending} changes waiting to sync`;
       if (state.importRequired) status = 'Review your guest progress to finish saving your account';
       this.$('account-summary').textContent = status;
