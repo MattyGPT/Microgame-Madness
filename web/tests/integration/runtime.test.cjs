@@ -24,6 +24,8 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
   assert.equal(practice.attacks.length, 15);
   for (const [mode, difficulty] of [
     ["hangman", "easy"],
+    ["geomayhem", "level_1"],
+    ["geomayhem", "level_10"],
     ["keyboard", "progressive"],
     ["dodge", "merciless"],
     ["boss", "impossible"],

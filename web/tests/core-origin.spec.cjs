@@ -23,6 +23,10 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
     await page.locator('#core-origin').screenshot({ path: testInfo.outputPath(`${name}.png`) });
   }
   await expect(page.locator('#origin-heading')).toBeVisible();
+  // The screenshot tour ends at 20s of a 23s film. Start the control checks
+  // from the beginning so audio/visibility assertions cannot race auto-close.
+  // Natural completion is exercised separately at the end of this test.
+  await page.evaluate(() => { coreOrigin.age = 0; });
   await page.locator('[data-origin-pause]').click();
   expect(await page.evaluate(() => coreOrigin.source !== null)).toBe(true);
   await page.locator('[data-origin-sound]').click();

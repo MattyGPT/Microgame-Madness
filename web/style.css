@@ -1254,6 +1254,39 @@ select:disabled {
   height: auto;
   display: block;
 }
+.geomayhem-loadout {
+  width: min(100%, 540px);
+  padding: 18px;
+  margin: 0 auto 22px;
+  border: 1px solid #365950;
+  background: #14221f;
+  border-radius: 14px;
+  text-align: left;
+}
+.geomayhem-loadout label { display: block; font: 11px monospace; letter-spacing: .1em; color: #71f5d2; margin-bottom: 10px; }
+.geomayhem-loadout select { width: 100%; min-height: 44px; background: #101d21; color: #eafff7; border: 1px solid #52756c; border-radius: 8px; padding: 10px; }
+.geomayhem-loadout p { font-size: 12px; margin: 8px 0; max-width: none; }
+#geomayhem-weapon-preview { display: flex; justify-content: space-evenly; gap: 18px; padding: 20px 0 12px; }
+.geomayhem-weapon-icon { display: inline-grid; place-content: center; width: 52px; height: 52px; position: relative; color: var(--weapon-color); font-size: 30px; }
+.geomayhem-weapon-icon small { position: absolute; top: 100%; width: 100%; text-align: center; font-size: 9px; letter-spacing: 2px; }
+.geomayhem-weapon-icon.tier-3 { border: 2px solid var(--weapon-color); border-radius: 12px; background: #ffffff0a; }
+.geomayhem-weapon-icon.tier-5 { border: 3px double var(--weapon-color); border-radius: 50%; box-shadow: 0 0 18px color-mix(in srgb, var(--weapon-color), transparent 65%); text-shadow: 0 0 12px var(--weapon-color); }
+.geomayhem-hud { width: 100%; padding: 9px 12px; color: #dbfff3; background: #14251f; border-bottom: 1px solid #365950; font-size: 11px; }
+.geomayhem-hud > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#geomayhem-build { text-align: right; color: #a7f2d2; }
+#geomayhem-xp { width: 55%; height: 6px; accent-color: #71f5d2; }
+.geomayhem-upgrade { z-index: 3; overflow-y: auto; }
+#geomayhem-upgrade-choices { display: grid; gap: 10px; width: min(100%, 460px); }
+#geomayhem-upgrade-choices button { text-align: left; padding: 16px; color: #eafff7; background: #193b32; border: 1px solid #71f5d2; border-radius: 12px; min-height: 64px; }
+#geomayhem-upgrade-choices button:hover { background: #285345; }
+#geomayhem-upgrade-choices strong, #geomayhem-upgrade-choices span { display: block; }
+#geomayhem-upgrade-choices span { font-size: 12px; color: #bbd9ce; margin-top: 5px; }
+@media (max-width: 600px) {
+  .geomayhem-hud { font-size: 10px; padding: 6px 8px; }
+  #geomayhem-upgrade-choices { gap: 6px; }
+  #geomayhem-upgrade-choices button { padding: 10px; }
+  .geomayhem-loadout { padding: 12px; }
+}
 .overlay {
   position: absolute;
   inset: 0;

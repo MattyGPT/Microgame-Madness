@@ -14,6 +14,7 @@ from singularity_practice import PRACTICE_ATTACKS, SingularityCutscene, Singular
 from singularity_core_view import draw_core
 from pumpkin_king_view import KingView
 from arcade_effects import DEATH_DURATION, death_pixels
+from geomayhem import Geomayhem, catalog as geomayhem_catalog
 
 
 class DrawCanvas:
@@ -67,7 +68,7 @@ class BrowserGame:
         self.now = 0
         self.message = ""
 
-    def start(self, mode, difficulty, now):
+    def start(self, mode, difficulty, now, weapon="needle"):
         self.mode, self.difficulty = mode, difficulty
         self.paused = False
         self.completed = 0
@@ -77,7 +78,11 @@ class BrowserGame:
         self.death_age = None
         self.death_sound_pending = False
         self.view = KingView(self.canvas, audio=False)
-        if mode == "hangman":
+        if mode == "geomayhem":
+            if difficulty not in {f"level_{i}" for i in range(1, 11)}:
+                raise ValueError("Unknown Geomayhem level")
+            self.game = Geomayhem(int(difficulty.split("_")[1]), weapon)
+        elif mode == "hangman":
             rules = DIFFICULTY[difficulty]
             self.game = HangmanGame(random.choice(rules["words"]), rules["max_attempts"])
         elif mode == "keyboard":
@@ -108,14 +113,27 @@ class BrowserGame:
         action = request["action"]
         now = float(request.get("now", self.now))
         self.now = now
+        if action == "geomayhem_options":
+            return geomayhem_catalog()
         if action == "core_practice_options":
             return {"attacks": [{"id": key, "number": index + 1,
                                  "name": ATTACKS[index].name, "hint": ATTACKS[index].hint}
                                 for key, index in PRACTICE_ATTACKS.items()]}
         if action == "start":
-            self.start(request["mode"], request.get("difficulty", "easy"), now)
+            self.start(request["mode"], request.get("difficulty", "easy"), now, request.get("weapon", "needle"))
         elif self.game is None:
             raise ValueError("Start a game first")
+        elif self.mode == "geomayhem":
+            if action == "upgrade" and not self.paused:
+                self.game.choose(request.get("choice"))
+            elif action == "pause" and self.game.alive and not self.game.won and not self.game.offers:
+                self.paused = not self.paused
+            elif action == "tick" and not self.paused:
+                aim = request.get("aim")
+                if not (isinstance(aim, list) and len(aim) == 2
+                        and all(isinstance(v, (int, float)) and abs(v) <= 2000 for v in aim)):
+                    aim = None
+                self.game.update(float(request.get("dt", 0)), set(request.get("keys", [])), aim)
         elif action == "guess" and self.mode == "hangman":
             result = self.game.guess(request["key"])
             self.message = {"correct": "Nice guess!", "wrong": "Not this time.",
@@ -145,6 +163,8 @@ class BrowserGame:
 
     def snapshot(self):
         game = self.game
+        if self.mode == "geomayhem":
+            return game.snapshot(self.paused)
         result = {"mode": self.mode, "difficulty": self.difficulty, "paused": self.paused,
                   "message": self.message, "sounds": [], "commands": []}
         if self.mode == "hangman":

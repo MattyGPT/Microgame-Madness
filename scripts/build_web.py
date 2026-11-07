@@ -14,6 +14,7 @@ PYTHON_SOURCES = (
     "pumpkin_king.py", "pumpkin_king_view.py", "kings_wrath.py",
     "singularity_core.py", "singularity_core_view.py", "singularity_practice.py",
     "arcade_effects.py",
+    "geomayhem.py", "geomayhem_weapons.py", "geomayhem_view.py",
 )
 
 
