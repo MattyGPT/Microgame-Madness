@@ -1,4 +1,4 @@
-"""Display-independent Geomayhem: 10 arenas, 20 waves and six-slot builds."""
+"""Display-independent Geomayhem: 10 arenas, 20 waves and three-slot builds."""
 from dataclasses import dataclass, field
 import math
 import random
@@ -14,7 +14,7 @@ LEVELS = (
 )
 WAVES = 20
 MAX_ENEMIES, MAX_SHOTS, MAX_GEMS = 60, 100, 100
-MAX_WEAPONS = 6
+MAX_WEAPONS = 3
 
 
 @dataclass
@@ -52,7 +52,7 @@ class Shot:
 
 
 class Geomayhem:
-    left, right, bottom, top = -310, 310, -235, 235
+    left, right, bottom, top = -465, 465, -352.5, 352.5
 
     def __init__(self, level=1, weapon="needle", rng=None):
         if not isinstance(level, int) or not 1 <= level <= len(LEVELS):
@@ -75,6 +75,7 @@ class Geomayhem:
         self.upgrades = {"boots": 0, "magnet": 0, "heart": 0}
         self.offers = []
         self.enemies, self.shots, self.gems, self.effects, self.hazards = [], [], [], [], []
+        self.weapon_pickups = []
         self.serial, self.shots_fired = 0, 0
         self.fire_in, self.spawn_in, self.break_left = 0, .6, 2.0
         self.spawned = 0
@@ -116,10 +117,8 @@ class Geomayhem:
             self.loadout[weapon_id] += 1
         elif choice.startswith("acquire:"):
             weapon_id = choice.split(":", 1)[1]
-            if weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
+            if not self._equip(weapon_id):
                 return False
-            self.loadout[weapon_id] = 1
-            self.cooldowns[weapon_id] = 0.0
         elif choice == "repair":
             self.lives = min(self.max_lives, self.lives + 35)
         else:
@@ -134,6 +133,23 @@ class Geomayhem:
         self.offers = []
         self._offer_upgrade()
         return True
+
+    def _equip(self, weapon_id):
+        if weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
+            return False
+        self.loadout[weapon_id] = 1
+        self.cooldowns[weapon_id] = 0.0
+        self.weapon_pickups = [item for item in self.weapon_pickups if item["weapon"] != weapon_id]
+        return True
+
+    def _drop_weapon(self, x, y):
+        if len(self.loadout) + len(self.weapon_pickups) >= MAX_WEAPONS:
+            return
+        reserved = set(self.loadout) | {item["weapon"] for item in self.weapon_pickups}
+        available = [key for key in ARMORY if key not in reserved]
+        drones = [key for key in ("drone_a", "drone_b") if key in available]
+        weapon_id = drones[0] if drones else self.rng.choice(available)
+        self.weapon_pickups.append({"x": x, "y": y, "weapon": weapon_id})
 
     def _offer_upgrade(self):
         if self.offers or self.xp < self.xp_needed or self.won or not self.alive:
@@ -179,7 +195,8 @@ class Geomayhem:
             y = (self.bottom + 18, self.top - 18)[side - 2]
         # Avoid spawning on Cubie if they are hugging an edge.
         if math.hypot(x - self.x, y - self.y) < 110:
-            x, y = (-260 if self.x >= 0 else 260), (-190 if self.y >= 0 else 190)
+            x = self.left + 50 if self.x >= 0 else self.right - 50
+            y = self.bottom + 45 if self.y >= 0 else self.top - 45
         kind = ("boss" if self.wave == 20 else "elite") if self.spawned == 0 and self.wave % 5 == 0 else self.rng.choice(
             ["chaser", "chaser", "runner"] + (["tank"] if self.wave >= 4 else []) + (["shooter"] if self.wave >= 7 else []))
         hp, speed, radius = {"chaser": (9, 42, 11), "runner": (6, 75, 8), "tank": (25, 28, 17),
@@ -329,7 +346,9 @@ class Geomayhem:
                     if shot.kind != "orbit" and ("pierce" not in shot.traits or len(shot.hits) >= 4):
                         shot.age = shot.ttl
                         break
-        self.shots = [s for s in self.shots if s.age < s.ttl and abs(s.x) < 380 and abs(s.y) < 300]
+        self.shots = [s for s in self.shots if s.age < s.ttl
+                      and self.left - 70 < s.x < self.right + 70
+                      and self.bottom - 65 < s.y < self.top + 65]
 
     def _damage(self, amount):
         if self.invulnerable or not self.alive:
@@ -404,12 +423,16 @@ class Geomayhem:
             if math.hypot(hazard[0] - self.x, hazard[1] - self.y) < 18:
                 self._damage(8)
                 hazard[4] = 0
-        self.hazards = [h for h in self.hazards if h[4] > 0 and abs(h[0]) < 340 and abs(h[1]) < 260]
+        self.hazards = [h for h in self.hazards if h[4] > 0
+                        and self.left - 30 < h[0] < self.right + 30
+                        and self.bottom - 25 < h[1] < self.top + 25]
         if not self.alive:
             return
         for enemy in self.enemies:
             if enemy.hp <= 0:
                 self.kills += 1
+                if self.kills % 8 == 0:
+                    self._drop_weapon(enemy.x, enemy.y)
                 self.score += 10 + (50 if enemy.kind in ("elite", "boss") else 0)
                 value = 16 if enemy.kind in ("elite", "boss") else 3
                 if len(self.gems) < MAX_GEMS:
@@ -417,6 +440,10 @@ class Geomayhem:
                 else:
                     self.gems[-1][2] += value
         self.enemies = [e for e in self.enemies if e.hp > 0]
+        for item in self.weapon_pickups[:]:
+            if math.hypot(item["x"] - self.x, item["y"] - self.y) < 26:
+                if self._equip(item["weapon"]):
+                    self._effect("ring", item["x"], item["y"], 30, ARMORY[item["weapon"]].color)
         for gem in self.gems:
             distance = math.hypot(gem[0] - self.x, gem[1] - self.y)
             if distance < self.magnet:
@@ -430,8 +457,6 @@ class Geomayhem:
         if self.spawned >= self.quota and not self.enemies:
             self.cleared += 1
             self.score += 100 * self.level
-            self.xp += sum(g[2] for g in self.gems)
-            self.gems.clear()
             self.shots.clear()
             self.hazards.clear()
             self.lives = min(self.max_lives, self.lives + 8)
@@ -457,6 +482,7 @@ class Geomayhem:
                 "kills": self.kills, "weapon": weapon, "offers": self.offers,
                 "loadout": [ARMORY[key].info(stars) for key, stars in self.loadout.items()],
                 "weapon_slots": MAX_WEAPONS,
+                "weapon_pickups": [dict(item) for item in self.weapon_pickups],
                 "face": self.face, "shots_fired": self.shots_fired, "damage_taken": self.damage_taken,
                 "death_message": self.death_message,
                 "label": f"Level {self.level}/10 · Wave {self.wave}/20 · " +

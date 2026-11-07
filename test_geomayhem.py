@@ -54,6 +54,74 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(game.wave, 2)
         self.assertGreater(game.break_left, 0)
 
+    def test_wave_clear_leaves_xp_on_ground_until_collected(self):
+        game = self.game()
+        game.gems = [[200, 150, game.xp_needed]]
+        game.spawned = game.quota
+        game.update(.01, set())
+        self.assertEqual(game.wave, 2)
+        self.assertEqual((game.xp, game.rank, game.offers), (0, 1, []))
+        self.assertEqual(len(game.gems), 1)
+        game.x, game.y = 200, 150
+        game.update(.01, set())
+        self.assertEqual(game.gems, [])
+        self.assertEqual(game.rank, 2)
+        self.assertTrue(game.offers)
+
+    def test_combat_drops_collectable_drones_and_respects_three_slots(self):
+        game = self.game()
+        for kills, weapon in ((7, "drone_a"), (15, "drone_b")):
+            game.kills = kills
+            game.enemies = [enemy(250, 200, hp=0)]
+            game.update(.01, set())
+            self.assertEqual(game.weapon_pickups[0]["weapon"], weapon)
+            self.assertNotIn(weapon, game.loadout)
+            self.assertFalse(game.offers)
+            self.assertTrue(any(c.get("text") == "Walk over to equip" for c in game.snapshot()["commands"]))
+            # A wave transition leaves the drop in place.
+            game.spawned = game.quota
+            game.update(.01, set())
+            self.assertEqual(len(game.weapon_pickups), 1)
+            game.x, game.y = 250, 200
+            game.update(.01, set())
+            self.assertEqual(game.loadout[weapon], 1)
+            self.assertEqual(game.weapon_pickups, [])
+            game.x = game.y = 0
+        game.weapon_pickups = [{"x": 0, "y": 0, "weapon": "comet"}]
+        game.kills = 23
+        game.enemies = [enemy(250, 200, hp=0)]
+        game.update(.01, set())
+        self.assertEqual(len(game.loadout), 3)
+        self.assertNotIn("comet", game.loadout)
+        self.assertEqual(len(game.weapon_pickups), 1)
+        self.assertEqual(game.snapshot()["weapon_slots"], 3)
+
+    def test_weapon_choices_remove_matching_drops_without_duplicates(self):
+        game = self.game()
+        game._drop_weapon(200, 100)
+        game._drop_weapon(250, 100)
+        game._drop_weapon(300, 100)
+        self.assertEqual([p["weapon"] for p in game.weapon_pickups], ["drone_a", "drone_b"])
+        game.xp = game.xp_needed
+        game.update(.01, set())
+        self.assertTrue(game.choose("acquire:drone_a"))
+        self.assertEqual([p["weapon"] for p in game.weapon_pickups], ["drone_b"])
+
+    def test_larger_map_keeps_combat_and_rendering_beyond_old_edges(self):
+        game = self.game()
+        self.assertEqual(game.right - game.left, 620 * 1.5)
+        self.assertEqual(game.top - game.bottom, 470 * 1.5)
+        game.x, game.y = 400, 300
+        game.enemies = [enemy(420, 300)]
+        game.shots = [Shot(405, 300, 0, 0, 10, "needle", 1, {"pierce"})]
+        game.hazards = [[430, 300, 0, 0, 5]]
+        game.update(.01, {"Right"})
+        self.assertGreater(game.x, 400)
+        self.assertEqual(game.enemies[0].hp, 990)
+        self.assertEqual(len(game.shots), 1)
+        self.assertEqual(len(game.hazards), 1)
+        self.assertEqual(game.snapshot()["commands"][0]["coords"], [-465, -352.5, 465, 352.5])
+
     def test_move_normalizes_diagonals_clamps_edges_and_keeps_facing(self):
         straight, diagonal = self.game(), self.game()
         straight.update(.05, {"Right"})
@@ -135,7 +203,7 @@ class GeomayhemTests(unittest.TestCase):
         self.assertTrue(all(e.hp == 990 for e in game.enemies))
         self.assertEqual(len(game.shots), 1)
         for trait in ("homing", "return", "ricochet"):
-            shot = Shot(305, 0, 310, 0, 10, "needle", 3, {trait}, age=.6)
+            shot = Shot(game.right - 5, 0, 310, 0, 10, "needle", 3, {trait}, age=.6)
             game.shots = [shot]
             game._update_shots(.05)
             self.assertLess(shot.vx, 0, trait)
@@ -184,18 +252,13 @@ class GeomayhemTests(unittest.TestCase):
             self.assertEqual(game.loadout[expected], 1)
             self.assertEqual(game.loadout["needle"], 1)
             self.assertFalse(game.choose(f"acquire:{expected}"))
-        while len(game.loadout) < 6:
-            game.xp = game.xp_needed
-            game.update(.01, set())
-            choice = next(o["id"] for o in game.offers if o["id"].startswith("acquire:"))
-            self.assertTrue(game.choose(choice))
         game.xp = game.xp_needed
         game.update(.01, set())
-        self.assertEqual(len(game.loadout), 6)
+        self.assertEqual(len(game.loadout), 3)
         self.assertTrue(all(not o["id"].startswith("acquire:") for o in game.offers))
         self.assertFalse(game.choose("acquire:comet"))
         self.assertEqual(game.weapon, "needle")
-        self.assertEqual(len(game.snapshot()["loadout"]), 6)
+        self.assertEqual(len(game.snapshot()["loadout"]), 3)
         self.assertEqual(self.game().loadout, {"needle": 1})
 
     def test_all_equipped_weapons_fire_on_their_own_cooldown(self):

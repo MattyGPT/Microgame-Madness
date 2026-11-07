@@ -148,7 +148,43 @@ test('level ten ends at wave twenty and a defeated Cubie can restart', async ({ 
   await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/10 · WAVE 1/20');
 });
 
-test('level-ups equip six weapons including autonomous A and B drones with independent evolutions', async ({ page }, testInfo) => {
+test('wave clears leave XP to collect, and the enlarged arena keeps mouse aim aligned', async ({ page }) => {
+  await page.locator('[data-difficulty="level_1"]').click();
+  await model(page, 'session.game.gems = [[200, 150, session.game.xp_needed]]\nsession.game.spawned = session.game.quota\nsession.game.enemies.clear()');
+  await expect(page.locator('#geomayhem-wave')).toContainText('WAVE 2/20');
+  await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
+  expect(await model(page, 'session.game.rank')).toBe(1);
+  expect(await model(page, 'len(session.game.gems)')).toBe(1);
+  await model(page, 'session.game.x, session.game.y = 200, 150\nsession.game.break_left = 100');
+  await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+  await page.locator('[data-upgrade="weapon"]').click();
+  await model(page, 'session.game.x = session.game.y = 0');
+  const box = await page.locator('#game-canvas').boundingBox();
+  await page.mouse.move(box.x + (340 + 400 * 2 / 3) * box.width / 680,
+    box.y + (280 - 300 * 2 / 3) * box.height / 560);
+  await page.mouse.down();
+  await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
+  expect(await model(page, 'abs(session.game.aim[0] - 400) < 3 and abs(session.game.aim[1] - 300) < 3')).toBe(true);
+  await page.mouse.up();
+  expect(await model(page, 'session.game.right - session.game.left')).toBe(930);
+});
+
+test('combat drops equip A and B drones by walking over them', async ({ page }, testInfo) => {
+  await page.locator('[data-difficulty="level_1"]').click();
+  await model(page, 'session.game.break_left = 100');
+  for (const [kills, id] of [[7, 'drone_a'], [15, 'drone_b']]) {
+    await model(page, `from geomayhem import Enemy\nsession.game.x, session.game.y = 200, 200\nsession.game.kills = ${kills}\nsession.game.enemies = [Enemy(500, 250, 200, 0, 0, 12, "chaser", 1)]`);
+    await expect.poll(() => model(page, 'len(session.game.weapon_pickups)')).toBe(1);
+    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`weapon-pickup-${id}.png`) });
+    await page.keyboard.down('d');
+    await expect(page.locator(`#geomayhem-inventory [data-weapon="${id}"]`)).toBeVisible();
+    await page.keyboard.up('d');
+    await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
+  }
+  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
+});
+
+test('level-ups equip three weapons including autonomous A and B drones with independent evolutions', async ({ page }, testInfo) => {
   await page.locator('[data-difficulty="level_1"]').click();
   await model(page, 'session.game.break_left = 100');
   for (const id of ['drone_a', 'drone_b']) {
@@ -157,16 +193,11 @@ test('level-ups equip six weapons including autonomous A and B drones with indep
     await page.locator(`[data-upgrade="acquire:${id}"]`).click();
     await expect(page.locator(`#geomayhem-inventory [data-weapon="${id}"]`)).toBeVisible();
   }
-  await expect(page.locator('#geomayhem-build')).toHaveText('3/6 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
   expect(await model(page, 'session.game.stars')).toBe(1);
   await model(page, 'from geomayhem import Enemy\nsession.game.enemies = [Enemy(500, 150, 0, 100000, 0, 12, "chaser", 100000)]');
   await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
   expect(await model(page, 'all(shot.weapon != "needle" for shot in session.game.shots)')).toBe(true);
-  for (let slots = 4; slots <= 6; slots++) {
-    await model(page, 'session.game.xp = session.game.xp_needed');
-    await page.locator('[data-upgrade^="acquire:"]').click();
-    await expect(page.locator('#geomayhem-inventory [data-weapon]')).toHaveCount(slots);
-  }
   await model(page, 'session.game.xp = session.game.xp_needed');
   await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
   await expect(page.locator('[data-upgrade^="acquire:"]')).toHaveCount(0);
@@ -180,10 +211,10 @@ test('level-ups equip six weapons including autonomous A and B drones with indep
     if (star === 3) await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Swarm');
   }
   await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Starfleet');
-  await expect(page.locator('#geomayhem-build')).toHaveText('6/6 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('#arena').screenshot({ path: testInfo.outputPath('six-weapon-drone-build.png') });
+  await page.locator('#arena').screenshot({ path: testInfo.outputPath('three-weapon-drone-build.png') });
   await page.locator('#exit').click();
   await page.locator('[data-difficulty="level_1"]').click();
-  await expect(page.locator('#geomayhem-build')).toHaveText('1/6 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('1/3 weapons');
 });

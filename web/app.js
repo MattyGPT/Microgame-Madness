@@ -5,7 +5,7 @@ const modes = {
   geomayhem: {
     title: "Geomayhem", category: "11 / SURVIVOR · EARLY BUILD", art: "◇",
     heading: "Small Cubie. Maximum mayhem.",
-    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP to add weapons or upgrade your six-slot loadout. A and B drones attack automatically; other weapons fire together. Each weapon evolves at three and five stars. Every fifth wave brings an elite; wave 20 brings the boss. All levels are open; each run starts fresh.",
+    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP for level-up choices, and walk over glowing weapon drops to equip them. Your three slots include your starting weapon. A and B drones attack automatically; other weapons fire together. Weapons evolve at three and five stars. Clearing waves never collects XP for you. All levels are open; each run starts fresh.",
     accent: "#71f5d2", controls: "WASD / arrows move · Aim with mouse · Hold left click to fire · R pauses",
     choiceLabel: "Choose a level · 20 waves each", localOnly: true, temporary: true, difficulties: {},
   },
@@ -260,10 +260,15 @@ function renderGeomayhem(s) {
     }
   }
 }
+function geomayhemScale(s) {
+  const [left, right, bottom, top] = s.bounds;
+  return Math.min(620 / (right - left), 470 / (top - bottom));
+}
 function aimGeomayhem(event) {
   const rect = $("game-canvas").getBoundingClientRect();
-  geomayhemAim = [(event.clientX - rect.left) * 680 / rect.width - 340,
-    280 - (event.clientY - rect.top) * 560 / rect.height];
+  const scale = snapshot?.mode === "geomayhem" ? geomayhemScale(snapshot) : 1;
+  geomayhemAim = [((event.clientX - rect.left) * 680 / rect.width - 340) / scale,
+    (280 - (event.clientY - rect.top) * 560 / rect.height) / scale];
 }
 $("game-canvas").addEventListener("pointermove", event => {
   if (selected === "geomayhem" && event.pointerType === "mouse") aimGeomayhem(event);
@@ -1006,7 +1011,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "geomayhem" ? "Early build · 10 levels, 34 weapons, 6 slots per run. Add weapons through level-up choices. Runs start fresh; records and rewards are not saved yet." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "geomayhem" ? "Early build · 10 levels, 34 weapons, 3 slots per run. Find weapon drops or add weapons through XP level-ups. Runs start fresh; records and rewards are not saved yet." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1565,6 +1570,10 @@ function draw(s) {
   ctx.clearRect(0, 0, 680, 560);
   ctx.save();
   ctx.translate(340, 280);
+  if (s.mode === "geomayhem") {
+    const scale = geomayhemScale(s);
+    ctx.scale(scale, scale);
+  }
   const [left, right, bottom, top] = s.bounds;
   ctx.fillStyle = "#111827";
   ctx.fillRect(left, -top, right - left, top - bottom);

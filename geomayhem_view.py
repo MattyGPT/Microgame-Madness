@@ -39,17 +39,27 @@ def draw_geomayhem(game):
         if stars >= 3:
             polygon(x, y, size * .42, 4, "#ffffff", angle=angle)
 
-    rect(0, 0, 620, 470, "#101d2b")
-    for x in range(-300, 311, 40):
-        rect(x, 0, 1, 470, "#1a2b3c")
-    for y in range(-220, 236, 40):
-        rect(0, y, 620, 1, "#1a2b3c")
-    for x in (-298, 298):
-        for y in (-223, 223):
+    width, height = game.right - game.left, game.top - game.bottom
+    rect(0, 0, width, height, "#101d2b")
+    for x in range(math.ceil(game.left / 40) * 40, math.ceil(game.right), 40):
+        rect(x, 0, 1, height, "#1a2b3c")
+    for y in range(math.ceil(game.bottom / 40) * 40, math.ceil(game.top), 40):
+        rect(0, y, width, 1, "#1a2b3c")
+    for x in (game.left + 12, game.right - 12):
+        for y in (game.bottom + 12, game.top - 12):
             rect(x, y, 20, 2, game.accent)
             rect(x, y, 2, 20, game.accent)
     for x, y, value in game.gems:
         polygon(x, y, 5 if value < 10 else 8, 4, "#70f6d4", "#e0fff5")
+    for item in game.weapon_pickups:
+        x, y = item["x"], item["y"]
+        weapon = ARMORY[item["weapon"]]
+        circle(x, y, 23 + math.sin(game.elapsed * 4) * 2, "#102638", weapon.color)
+        weapon_art(x, y, weapon, 1, size=12)
+        commands.append({"kind": "text", "coords": [x, -y-34], "fill": weapon.color,
+                         "font": ["Arial", 14], "text": weapon.name})
+        commands.append({"kind": "text", "coords": [x, -y+35], "fill": "#e0fff5",
+                         "font": ["Arial", 12], "text": "Walk over to equip" if len(game.loadout) < 3 else "Inventory full"})
     for enemy in game.enemies:
         color = {"chaser": "#fa7e93", "runner": "#ffbc66", "tank": "#b29afa", "shooter": "#ffdf79",
                  "elite": "#fb85e0", "boss": "#ff575f"}[enemy.kind]
