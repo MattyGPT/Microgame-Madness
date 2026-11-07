@@ -6,12 +6,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: game-checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   test:
     name: Python and JavaScript tests
+    concurrency:
+      group: game-test-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -28,6 +28,9 @@ jobs:
       - run: npm test
   build:
     name: Build browser artifact
+    concurrency:
+      group: game-build-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -53,6 +56,9 @@ jobs:
           retention-days: 7
   browser:
     name: Browser tests (${{ matrix.shard }}/4)
+    concurrency:
+      group: game-browser-${{ github.workflow }}-${{ github.ref }}-${{ matrix.shard }}
+      cancel-in-progress: true
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -90,6 +96,9 @@ jobs:
           retention-days: 7
   report:
     name: Combined browser report
+    concurrency:
+      group: game-report-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     needs: browser
     if: ${{ !cancelled() && needs.browser.result != 'skipped' }}
     runs-on: ubuntu-latest
