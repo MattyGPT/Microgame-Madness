@@ -460,7 +460,7 @@ class Geomayhem:
                 "face": self.face, "shots_fired": self.shots_fired, "damage_taken": self.damage_taken,
                 "death_message": self.death_message,
                 "label": f"Level {self.level}/10 · Wave {self.wave}/20 · " +
-                         (f"Next wave in {self.break_left:.1f}s" if self.break_left > 0 else "Arrows move · Hold left click to fire · D pauses")}
+                         (f"Next wave in {self.break_left:.1f}s" if self.break_left > 0 else "WASD / arrows move · Hold left click to fire · R pauses")}
 
 
 def catalog():

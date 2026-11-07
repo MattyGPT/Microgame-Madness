@@ -64,9 +64,9 @@ DIFFICULTIES = {
                             spawn_scale=0.55, color="#ff3030", sway=18,
                             bounds=(-220, 220, -180, 180),
                             can_pause=False, deadly_edges=True),
-    "impossible": Difficulty(speed_scale=3.6, speed_variation=(0.95, 1.25),
-                             spawn_scale=0.5, color="#ffffff", sway=36,
-                             bounds=(-210, 210, -170, 170), block_scale=0.82,
+    "impossible": Difficulty(speed_scale=3.3, speed_variation=(0.95, 1.25),
+                             spawn_scale=0.5, color="#ffffff", sway=27,
+                             bounds=(-210, 210, -170, 170), block_scale=0.75,
                              can_pause=False, deadly_edges=True),
 }
 

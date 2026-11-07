@@ -20,16 +20,16 @@ class ImpossibleDodgeTests(unittest.TestCase):
             game.spawn()
         for block in game.blocks:
             self.assertEqual(block.color, '#ffffff')
-            self.assertAlmostEqual(block.size, BLOCK_SIZE * .82)
+            self.assertAlmostEqual(block.size, BLOCK_SIZE * .75)
             for x, y in block.centers():
                 self.assertGreaterEqual(x - block.cell_size / 2, game.left)
                 self.assertLessEqual(x + block.cell_size / 2, game.right)
         block = game.blocks[0]
         if len(block.cells) > 1:
-            self.assertAlmostEqual(block.cell_size, CELL * .82)
+            self.assertAlmostEqual(block.cell_size, CELL * .75)
 
     def test_collision_uses_smaller_visible_tile(self):
-        block = Block(0, 0, ((0, 0),), '#ffffff', cell_size=CELL*.82)
+        block = Block(0, 0, ((0, 0),), '#ffffff', cell_size=CELL*.75)
         self.assertTrue(touches_block(0, 0, block))
         # The turtle's rightmost point is y=8. Place a tile just beyond it.
         block.x, block.y = PLAYER_RIGHT + block.size / 2 + .5, 8

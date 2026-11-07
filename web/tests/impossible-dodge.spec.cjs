@@ -10,7 +10,7 @@ test('Impossible has its own picker, small white arena, scaled blocks, rewards, 
   await expect.poll(()=>page.evaluate(()=>snapshot?.difficulty)).toBe('impossible');
   const state=await page.evaluate(()=>{
     active=false;
-    impossibleRuntime.runPython('from bridge import session\nfrom dodge_model import Block, CELL\nsession.game.blocks = [Block(-80, 70, ((0,0),(1,0),(1,1),(2,1)), "#ffffff", cell_size=CELL*.82), Block(50, 0, ((0,0),(1,0),(0,1),(1,1)), "#ffffff", cell_size=CELL*.82)]');
+    impossibleRuntime.runPython('from bridge import session\nfrom dodge_model import Block, CELL\nsession.game.blocks = [Block(-80, 70, ((0,0),(1,0),(1,1),(2,1)), "#ffffff", cell_size=CELL*.75), Block(50, 0, ((0,0),(1,0),(0,1),(1,1)), "#ffffff", cell_size=CELL*.75)]');
     snapshot=send('pause');draw(snapshot);
     return {bounds:snapshot.bounds,canPause:snapshot.can_pause,paused:snapshot.paused,commands:snapshot.commands};
   });
@@ -18,7 +18,7 @@ test('Impossible has its own picker, small white arena, scaled blocks, rewards, 
   expect(state.canPause).toBe(false);
   const blocks=state.commands.filter(c=>c.fill==='#ffffff'&&c.kind==='rectangle');
   expect(blocks.length).toBe(8);
-  for (const block of blocks) expect(block.coords[2]-block.coords[0]).toBeCloseTo(28*.94*.82,5);
+  for (const block of blocks) expect(block.coords[2]-block.coords[0]).toBeCloseTo(28*.94*.75,5);
   await page.locator('#game-canvas').screenshot({path:testInfo.outputPath('impossible-arena.png')});
   const result=await page.evaluate(()=>{
     achievementTracker.start('dodge','impossible');

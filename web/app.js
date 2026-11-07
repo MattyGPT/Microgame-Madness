@@ -6,7 +6,7 @@ const modes = {
     title: "Geomayhem", category: "11 / SURVIVOR · EARLY BUILD", art: "◇",
     heading: "Small Cubie. Maximum mayhem.",
     copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP to add weapons or upgrade your six-slot loadout. A and B drones attack automatically; other weapons fire together. Each weapon evolves at three and five stars. Every fifth wave brings an elite; wave 20 brings the boss. All levels are open; each run starts fresh.",
-    accent: "#71f5d2", controls: "Arrows move · Aim with mouse · Hold left click to fire · D pauses",
+    accent: "#71f5d2", controls: "WASD / arrows move · Aim with mouse · Hold left click to fire · R pauses",
     choiceLabel: "Choose a level · 20 waves each", localOnly: true, temporary: true, difficulties: {},
   },
   shop: {
@@ -176,6 +176,7 @@ const modes = {
 };
 let geomayhemArmory = [];
 let geomayhemFiring = false;
+const geomayhemMovementKeys = new Map();
 let geomayhemAim = null;
 let geomayhemOfferKey = "";
 let geomayhemLoadoutKey = "";
@@ -275,7 +276,7 @@ $("game-canvas").addEventListener("pointerdown", event => {
   geomayhemFiring = true;
   $("game-canvas").setPointerCapture(event.pointerId);
   $("arena").focus({ preventScroll: true });
-  snapshot = send("tick", { dt: 0, keys: [...keys, "f"], aim: geomayhemAim });
+  snapshot = send("tick", { dt: 0, keys: [...keys, ...geomayhemMovementKeys.values(), "f"], aim: geomayhemAim });
   render();
 });
 window.addEventListener("pointerup", () => { geomayhemFiring = false; });
@@ -1213,6 +1214,7 @@ function send(action, extra = {}) {
 }
 function clearKeys() {
   keys.clear();
+  geomayhemMovementKeys.clear();
   geomayhemFiring = false;
   resetJoystick();
   document
@@ -1463,7 +1465,7 @@ function render() {
   }
   $("score").textContent = s.score;
   $("pause").hidden = !s.can_pause || s.over;
-  $("pause").textContent = s.paused ? "Resume · D" : "Pause · D";
+  $("pause").textContent = `${s.paused ? "Resume" : "Pause"} · ${selected === "geomayhem" ? "R" : "D"}`;
   if (selected === "geomayhem") renderGeomayhem(s);
   if (selected === "hangman") {
     $("hangman-picture").textContent = s.picture;
@@ -1688,7 +1690,7 @@ function frame(now) {
     try {
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
-        keys: [...new Set([...keys, ...joystickKeys, ...(selected === "geomayhem" && geomayhemFiring ? ["f"] : [])])],
+        keys: [...new Set([...keys, ...joystickKeys, ...geomayhemMovementKeys.values(), ...(selected === "geomayhem" && geomayhemFiring ? ["f"] : [])])],
         ...(selected === "geomayhem" ? { aim: geomayhemAim } : {}),
       });
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
@@ -1887,7 +1889,16 @@ window.addEventListener("keydown", (event) => {
       return;
     }
     if (!active) return;
-    if (event.key.toLowerCase() === "d" && !event.repeat) {
+    if (selected === "geomayhem") {
+      const movement = arrowMap[event.key] || { w: "Up", a: "Left", s: "Down", d: "Right" }[event.key.toLowerCase()];
+      if (movement) {
+        event.preventDefault();
+        // Keep aliases separate: releasing W must not release a held Up arrow.
+        geomayhemMovementKeys.set(event.code || event.key.toLowerCase(), movement);
+        return;
+      }
+    }
+    if (event.key.toLowerCase() === (selected === "geomayhem" ? "r" : "d") && !event.repeat) {
       event.preventDefault();
       pause();
       return;
@@ -1900,9 +1911,10 @@ window.addEventListener("keydown", (event) => {
     }
   }
 });
-window.addEventListener("keyup", (event) =>
-  keys.delete(arrowMap[event.key] || event.key.toLowerCase()),
-);
+window.addEventListener("keyup", (event) => {
+  geomayhemMovementKeys.delete(event.code || event.key.toLowerCase());
+  keys.delete(arrowMap[event.key] || event.key.toLowerCase());
+});
 window.addEventListener("blur", () => {
   clearKeys();
   if (active && snapshot?.can_pause && !snapshot.paused) pause();

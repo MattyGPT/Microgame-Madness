@@ -16,6 +16,50 @@ async function model(page, code) {
   return page.evaluate(code => window.geomayhemRuntime.runPython(code), `from bridge import session\n${code}`);
 }
 
+test('WASD and arrows move together, R pauses, and other games retain D pause', async ({ page }) => {
+  await page.locator('[data-difficulty="level_1"]').click();
+  await model(page, 'session.game.break_left = 100');
+  await expect(page.locator('#pause')).toHaveText('Pause · R');
+  await expect(page.locator('#game-canvas')).toHaveAttribute('aria-label', /WASD.*R pauses/);
+  for (const [key, axis, direction] of [['w', 'y', 1], ['a', 'x', -1], ['s', 'y', -1], ['d', 'x', 1], ['W', 'y', 1]]) {
+    await model(page, 'session.game.x = session.game.y = 0');
+    await page.keyboard.down(key);
+    await expect.poll(() => model(page, `session.game.${axis} * ${direction}`)).toBeGreaterThan(12);
+    await page.keyboard.up(key);
+    expect(await model(page, 'session.paused')).toBe(false);
+  }
+  await model(page, 'session.game.y = 0');
+  await page.keyboard.down('w');
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(() => model(page, 'session.game.y')).toBeGreaterThan(12);
+  await page.keyboard.up('w');
+  const afterW = await model(page, 'session.game.y');
+  await expect.poll(() => model(page, 'session.game.y')).toBeGreaterThan(afterW + 12);
+  await page.keyboard.up('ArrowUp');
+  const stopped = await model(page, 'session.game.y');
+  const elapsed = await model(page, 'session.game.elapsed');
+  await expect.poll(() => model(page, 'session.game.elapsed')).toBeGreaterThan(elapsed + .15);
+  expect(await model(page, 'session.game.y')).toBe(stopped);
+  await page.keyboard.down('r');
+  await expect(page.locator('#pause')).toHaveText('Resume · R');
+  const pausedAt = await model(page, 'session.game.elapsed');
+  await page.keyboard.down('r'); // A repeated keydown must not toggle again.
+  await page.keyboard.up('r');
+  await page.keyboard.press('d');
+  expect(await model(page, 'session.paused')).toBe(true);
+  expect(await model(page, 'session.game.elapsed')).toBe(pausedAt);
+  await page.keyboard.press('r');
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.locator('#pause')).toHaveText('Pause · R');
+  await expect.poll(() => model(page, 'session.game.elapsed')).toBeGreaterThan(pausedAt);
+  await page.locator('[data-game="dodge"]').click();
+  await page.locator('[data-difficulty="easy"]').click();
+  await page.keyboard.press('r');
+  await expect(page.locator('#overlay')).toBeHidden();
+  await page.keyboard.press('d');
+  await expect(page.locator('#pause')).toHaveText('Resume · D');
+});
+
 test('Geomayhem armory, Cubie movement, manual mouse/touch fire and pause', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
