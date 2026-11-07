@@ -155,8 +155,8 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
   await expect(page.locator('#touch-fire')).toBeHidden();
   await expect(page.locator('#touch-counter')).toBeHidden();
   if (testInfo.project.name === 'mobile') {
-    const button = await page.locator('[data-key="Right"]').boundingBox();
-    await page.mouse.move(button.x + button.width / 2, button.y + button.height / 2);
+    const stick = await page.locator('#touch-joystick').boundingBox();
+    await page.mouse.move(stick.x + stick.width - 10, stick.y + stick.height / 2);
     await page.mouse.down();
     await expect.poll(position).toEqual([126, -70]);
     await page.mouse.up();
@@ -190,8 +190,8 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   if (testInfo.project.name === 'mobile') {
     await expect(page.locator('#touch-fire')).toBeDisabled();
     await expect(page.locator('#touch-counter')).toBeHidden();
-    const button = await page.locator('[data-key="Right"]').boundingBox();
-    await page.mouse.move(button.x + button.width / 2, button.y + button.height / 2);
+    const stick = await page.locator('#touch-joystick').boundingBox();
+    await page.mouse.move(stick.x + stick.width - 10, stick.y + stick.height / 2);
     await page.mouse.down();
     await expect.poll(position).toEqual([126, -70]);
     await page.mouse.up();
