@@ -127,6 +127,7 @@ class DodgeGame:
         self.near_misses = 0
         self.blocks = []
         self.alive = True
+        self.death_cause = None
         self.spawn_in = 0.7 * self.rules.spawn_scale
 
     @property
@@ -175,6 +176,7 @@ class DodgeGame:
                 or y + PLAYER_BOTTOM <= self.bottom or y + PLAYER_TOP >= self.top
             ):
                 self.alive = False
+                self.death_cause = "edge"
                 return
             self.elapsed += step
             self.spawn_in -= step
@@ -191,6 +193,8 @@ class DodgeGame:
                     width = max(x for x, y in block.cells) * CELL
                     block.x = max(self.left + CELL / 2, min(self.right - CELL / 2 - width, block.x))
                 if touches_block(self.x, self.y, block):
+                    if self.alive:
+                        self.death_cause = "o_block" if tuple(block.cells) == SHAPES[1] else "block"
                     self.alive = False
                 elif not block.near_miss_awarded:
                     if touches_block(self.x, self.y, block, NEAR_MISS_MARGIN):

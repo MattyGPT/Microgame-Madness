@@ -73,6 +73,22 @@ const CubieCustoms = (() => {
     catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
+  add("party", "Party Cubie", "website_10_hours", "#7555b5",
+    '<path d="M35 31 60-14 85 31Z" fill="#ed8dce"/>', square,
+    { faceColor: "#fff5cf", flavor: "Ten hours together. Every moment deserves confetti." });
+  add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
+    '<path d="M21 34h78v12H21Z" fill="#173f66"/><path d="M25 43h70v47H25Z" fill="#78c7e0" stroke="#e7b85c" stroke-width="2"/>' +
+    '<path d="M22 94h76v13H22Z" fill="#ce4758"/><path d="M14 107h92l10 13H4Z" fill="#324c69" stroke="#a5bed2" stroke-width="2"/>' +
+    '<path d="M22 110 16 118m23-8-3 8m24-8v8m21-8 3 8m14-8 6 8" stroke="#d5e7ee" stroke-width="2"/>' +
+    ['#ff617c','#ffac45','#ffdf5c','#7ee2a5','#66cfff','#b894ff'].map((color,i) => `<rect x="${24+i*12}" y="96" width="12" height="5" fill="${color}"/>`).join('') +
+    [25,95].map(x => `<g transform="translate(${x} 110)"><g class="choo-wheel"><circle r="10" fill="#1e334c" stroke="#f3c35f" stroke-width="2.5"/><path d="M-7 0H7M0-7V7m-5-5 10 10m0-10L-5 5" stroke="#aacbdf" stroke-width="1.5"/><circle r="3" fill="#f2ba51"/></g></g>`).join(''), square, {
+      flavor: "Five hours of adventures. Next stop: another smile!", faceColor: "#17374b",
+      back: '<path d="M22 32V12h21v20M18 10h29v8H18Z" fill="#263f5b" stroke="#f3c35f" stroke-width="2"/><path d="M69 29V17h21v12" fill="#dc5866"/><path d="M14 28h92l-7-9H21Z" fill="#db5364" stroke="#ffb28f" stroke-width="1.5"/>' +
+        [0,1,2].map(i => `<circle class="choo-steam" style="animation-delay:${-i*.8}s" cx="33" cy="7" r="${5+i*2}" fill="#e4f6ff"/>`).join(''),
+    });
+  add("three_d", "3D Cubie", "cube_pet_500", "#c6f783",
+    '<path d="M60 20 104 45v50l-44 25-44-25V45Z" fill="#c6f783"/>', square,
+    { flavor: "Five hundred clicks opened up a whole new dimension." });
   add("chocolate", "Chocolate Cubie", "healing_20", "#64351f",
     '<rect x="23" y="31" width="74" height="74" rx="7" fill="#442518"/>' +
     Array.from({length:9}, (_, i) => {
@@ -316,6 +332,13 @@ const CubieCustoms = (() => {
     '<path d="M35 28h50l15 15v50l-15 15H35L20 93V43Z" fill="none" stroke="#e7fcff"/>',
     '<path d="M35 28h50l15 15v50l-15 15H35L20 93V43Z"/>',
     { flavor: "Every triumph leaves a little light inside." });
+  add("creeper", "Creeper Cubie", "arcade_deaths_10", "#69bb57",
+    '<path d="M22 30h18v16H22m55-16h21v20H77ZM22 86h16v20H22m58-16h18v16H80Z" fill="#408c43"/><path d="M43 31h15v12H43m23 49h12v13H66Z" fill="#a3db75"/>', square,
+    { flavor: "Ten dramatic exits. Still sneaking back for another game." });
+  add("tetris", "Tetris Cubie", "dodge_square_deaths_50", "#ffd655",
+    '<path d="M60 28v80M20 68h80" stroke="#b78921" stroke-width="3"/>',
+    '<rect x="20" y="28" width="80" height="80" rx="2"/>',
+    { flavor: "Fifty square encounters. Finally on your side." });
   add("forever_friend", "Forever Friend Cubie", "cube_pet_1000", "#a5e5cb",
     '<path d="m25 35-5-22 22 12L60 8l18 17 22-12-5 22Z" fill="#f8d791" stroke="#c49a58" stroke-width="2"/><g class="cubie-motion motion-heart" style="transform-origin:60px 22px"><path d="M60 29C35 17 48 6 60 17 72 6 85 17 60 29Z" fill="#ed87b4"/></g><ellipse cx="30" cy="80" rx="8" ry="5" fill="#f3afbd"/><ellipse cx="90" cy="80" rx="8" ry="5" fill="#f3afbd"/><path d="m22 96 21-5 17 9 17-9 21 5-8 12H30Z" fill="#f8d791"/><path d="M60 105c-20-10-10-20 0-10 10-10 20 0 0 10Z" fill="#ed87b4"/>', square,
     { flavor: "A thousand little hugs. A friendship without an ending.", back: '<g class="cubie-motion motion-wing" style="transform-origin:60px 62px;animation-duration:4s"><path d="M29 83Q-3 73 1 32l13 12 2-19 17 26 10 17M91 83q32-10 28-51l-13 12-2-19-17 26-10 17" fill="#d5fff0" stroke="#80c9b1" stroke-width="2"/><path d="m8 49 19 20m85-20L93 69" stroke="#f8d791" stroke-width="3"/></g>' });
@@ -446,19 +469,19 @@ const CubieCustoms = (() => {
     ["honey", "Honeycomb Cubie", 250, "bronze", "#f2b83f", "Bee yourself. The hive approves.", '<path d="m24 30 10 6v12l-10 6m58-24 12 6v12l-12 6-10-6V36Zm-35 66 10-6 10 6v12H47Z" fill="none" stroke="#b87925" stroke-width="3"/>'],
     ["sushi", "Sushi Cubie", 300, "silver", "#f8ead6", "Soy happy to see you.", '<path d="M20 35q40-32 80 0v9H20Z" fill="#f28f80"/><path d="M48 28h24v19H48ZM48 105h24v3H48Z" fill="#275244"/><path d="m28 30 15 9m0-16 16 13m8-13 17 13" stroke="#ffd1af" stroke-width="3"/>'],
     ["pirate", "Pirate Cubie", 400, "silver", "#c38b63", "The real treasure was this excellent hat.", '<path d="M12 35q12-15 24-9Q60-7 84 26q12-6 24 9Z" fill="#263449" stroke="#e7c47b" stroke-width="3"/><path d="m53 18 14 10m0-10L53 28" stroke="#fff1cf" stroke-width="3"/><path d="M22 98h76v8H22Z" fill="#a93842"/>'],
-    ["cloud", "Cloud Cubie", 450, "silver", "#d9efff", "Forecast: a hundred percent chance of happy.", '<path d="M16 36q-2-14 14-14 4-16 19-10 13-17 27 0 18-5 19 12 15 0 13 12" fill="#f4fbff"/><path class="cubie-motion motion-rain" d="m30 101-3 9m30-7-3 9m30-11-3 9" stroke="#79b9ef" stroke-width="3"/>'],
+    ["cloud", "Cloud Cubie", 450, "silver", "#d9efff", "Forecast: a hundred percent chance of happy.", '<path d="M25 57Q23 45 36 47M40 38Q47 29 55 38M64 34Q77 27 82 42M29 91Q37 101 47 96M66 103Q78 106 83 96" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path class="cubie-motion motion-rain" d="m33 113-3 9m30-5-3 9m30-13-3 9" fill="none" stroke="#79b9ef" stroke-width="2.5" stroke-linecap="round"/>', { body: '<path d="M34 44C30 29 47 23 56 34C66 19 86 26 86 42C104 39 112 58 100 69C113 84 100 101 86 97C81 113 63 115 54 104C41 116 22 108 25 95C8 96 6 74 20 67C7 54 18 39 34 44Z"/>' }],
     ["disco", "Disco Cubie", 600, "gold", "#a7a2d7", "The dance floor requested an encore.", '<path d="M40 29v78m20-78v78m20-78v78M21 48h78M21 68h78M21 88h78" stroke="#e5e6ff" stroke-width="2"/><path d="m12 15 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" fill="#fff6b4"/>'],
-    ["arcade_cabinet", "Cabinet Cubie", 700, "gold", "#bd719b", "One more game? That is literally the job.", '<path d="M22 29h76v15H22Z" fill="#354065"/><path d="M24 99h72l8 13H16Z" fill="#354065"/><circle class="cubie-motion motion-energy" cx="77" cy="105" r="3" fill="#ffe581"/><path class="cubie-motion motion-sway" style="transform-origin:36px 107px;animation-duration:2s" d="M36 107v-8" stroke="#72e5ce" stroke-width="3"/>'],
-    ["terrarium", "Terrarium Cubie", 850, "crystal", "#97cfba", "A tiny garden with very big growing plans.", '<path d="M23 93q20-10 37 0t37 0v13H23Z" fill="#43846a"/><path class="cubie-motion motion-sway" style="transform-origin:35px 93px;animation-duration:5s" d="M35 93V79m0 7q-11 0-9-9 10 0 9 9m0-2q11 0 10-10-10 1-10 10" fill="#79bd62" stroke="#3f7a44" stroke-width="2"/><path d="m83 35 10 10" stroke="#e4fff3" stroke-width="5"/>'],
+    ["arcade_cabinet", "Cabinet Cubie", 700, "gold", "#bd719b", "One more game? That is literally the job.", '<path d="M22 43h76v62H22Z" fill="#172c42"/>', { body: '<path d="M23 18H97L104 33V101L110 111V132H10V111L16 101V33Z"/>' }],
+    ["terrarium", "Terrarium Cubie", 850, "crystal", "#97cfba", "A tiny garden with very big growing plans.", '<path d="M23 93Q42 83 60 93T97 93V95Q97 105 86 105H34Q23 105 23 95Z" fill="#43846a"/><path class="cubie-motion motion-sway" style="transform-origin:35px 93px;animation-duration:5s" d="M35 93V79m0 7q-11 0-9-9 10 0 9 9m0-2q11 0 10-10-10 1-10 10" fill="#79bd62" stroke="#3f7a44" stroke-width="2"/><path d="m83 35 10 10" stroke="#e4fff3" stroke-width="5"/>'],
     ["origami", "Origami Cubie", 1000, "crystal", "#eed9ac", "Folded with care. Unfolds into a friend.", '<path d="m20 28 40 18 40-18-15 80-25-12-25 12Z" fill="#f8e8c9"/><path d="m20 28 40 18 40-18M60 46v50m-25 12 25-12 25 12" fill="none" stroke="#bfa77c" stroke-width="2"/>'],
     ["aurora", "Aurora Cubie", 1300, "diamond", "#3c5c90", "Brought the northern lights home before bedtime.", '<path d="M23 40q20-25 40-3t34-7M23 54q20-25 40-3t34-7" fill="none" stroke="#7ef2c6" stroke-width="7" opacity=".75"/><path d="M23 100q20-25 40-3t34-7" fill="none" stroke="#d8a2ef" stroke-width="7"/>'],
     ["prism_pop", "Prism Pop Cubie", 1800, "rainbow", "#f3a9c9", "Every color asked to be the favorite. Cubie said yes.", '<path d="m20 28 40 0-40 40Z" fill="#ffe38c"/><path d="m60 28 40 0v40Z" fill="#8adbd1"/><path d="m20 68 40 40H20Z" fill="#99b9ef"/><path d="m100 68-40 40h40Z" fill="#bba2ef"/><path d="m60 28 40 40-40 40-40-40Z" fill="none" stroke="#fff3d9" stroke-width="2"/>'],
-    ["pancake", "Pancake Cubie", 200, "bronze", "#dca460", "Stacks of courage. A little extra syrup.", "<path d=\"M20 40h80M20 96h80\" stroke=\"#fff1b9\" stroke-width=\"5\"/><path d=\"M21 29h78v18q-8 14-14 0-9 18-15 0-8 8-14 0-9 14-15 0H21Z\" fill=\"#aa6436\"/><rect x=\"49\" y=\"29\" width=\"22\" height=\"10\" rx=\"3\" fill=\"#ffe87e\"/>"],
+    ["pancake", "Pancake Cubie", 200, "bronze", "#dca460", "Stacks of courage. A little extra syrup.", "<path d=\"M20 40h80M20 96h80\" stroke=\"#fff1b9\" stroke-width=\"5\"/><path d=\"M22 40C22 33 29 29 38 29H82C91 29 98 33 98 40V45C98 49 96 51 93 51S88 49 88 45C88 42 82 42 82 46V51C82 59 73 59 73 51V47C73 43 67 43 67 47C67 54 58 54 58 47C58 43 52 43 52 47V49C52 57 43 57 43 49V46C43 42 37 42 37 46C37 52 28 52 28 46C28 43 22 45 22 40Z\" fill=\"#aa6436\"/><rect x=\"49\" y=\"29\" width=\"22\" height=\"10\" rx=\"3\" fill=\"#ffe87e\"/>"],
     ["ladybug", "Ladybug Cubie", 250, "bronze", "#ed595e", "Small spots. Enormous garden ambitions.", "<path d=\"M42 29 35 17m43 12 7-12\" stroke=\"#253140\" stroke-width=\"4\"/><circle cx=\"35\" cy=\"16\" r=\"5\" fill=\"#253140\"/><circle cx=\"85\" cy=\"16\" r=\"5\" fill=\"#253140\"/><g fill=\"#253140\"><circle cx=\"28\" cy=\"45\" r=\"5\"/><circle cx=\"92\" cy=\"45\" r=\"5\"/><circle cx=\"28\" cy=\"86\" r=\"5\"/><circle cx=\"92\" cy=\"86\" r=\"5\"/></g>"],
     ["mailbox", "Mailbox Cubie", 350, "silver", "#689aca", "Every letter gets a warm welcome. Even bills.", "<path d=\"M22 35h76v10H22Z\" fill=\"#294f7a\"/><path class=\"cubie-motion motion-mailflag\" style=\"transform-origin:101px 70px\" d=\"M101 70V27h15v13h-15\" fill=\"#e97367\" stroke=\"#d7e7ed\" stroke-width=\"3\"/><rect x=\"44\" y=\"96\" width=\"32\" height=\"11\" fill=\"#f8e6bb\"/><path d=\"m44 96 16 8 16-8\" fill=\"none\" stroke=\"#a88f6d\"/>"],
     ["crayon", "Crayon Cubie", 400, "silver", "#b784d8", "Colors outside the lines. Befriends everyone inside.", "<path d=\"m29 28 31-25 31 25Z\" fill=\"#8a54ac\"/><path d=\"M21 32h78v10H21ZM21 95h78v10H21Z\" fill=\"#50356d\"/><path d=\"m25 37 9-4 9 4 9-4 9 4 9-4 9 4 9-4\" fill=\"none\" stroke=\"#e6c5fa\" stroke-width=\"2\"/>"],
     ["sailor", "Sailor Cubie", 500, "silver", "#b8d9ef", "All aboard the good ship Friendship.", "<path d=\"M24 28h72l-7-17H31Z\" fill=\"#f2f4e7\"/><path d=\"M24 27h72\" stroke=\"#295883\" stroke-width=\"5\"/><path d=\"m23 91 37 17 37-17\" fill=\"none\" stroke=\"#295883\" stroke-width=\"8\"/><path d=\"m60 100-7 13 7-3 7 3Z\" fill=\"#e86a6d\"/>"],
-    ["waffle", "Waffle Cubie", 650, "gold", "#e6bc70", "Every little square holds a big breakfast dream.", "<path d=\"M37 29v78m23-78v78m23-78v78M21 44h78M21 67h78M21 90h78\" stroke=\"#c38d44\" stroke-width=\"5\"/><path d=\"m44 19 21-4 9 12-21 4Z\" fill=\"#fff1a0\"/>"],
+    ["waffle", "Waffle Cubie", 650, "gold", "#e6bc70", "Every little square holds a big breakfast dream.", "<path d=\"M37 29v78m23-78v78m23-78v78M21 44h78M21 67h78M21 90h78\" stroke=\"#c38d44\" stroke-width=\"5\"/><path d=\"M39 36q4-7 13-5l20-1q12-2 14 5 1 6-12 7l-23 2q-13 0-12-8Z\" fill=\"#f4d56c\"/><path d=\"M44 27 68 23q5-1 7 3l3 9q1 4-4 5l-24 4q-5 0-6-4l-3-8q-1-4 3-5Z\" fill=\"#dfad43\"/><path d=\"m44 24 24-4q5-1 7 3l2 7q1 4-4 5l-24 4q-5 0-6-4l-2-6q-1-4 3-5Z\" fill=\"#ffec94\"/><path d=\"m46 26 21-3q4 0 5 3\" fill=\"none\" stroke=\"#fff8ce\" stroke-width=\"2\" stroke-linecap=\"round\"/>"],
     ["jellyfish", "Jellyfish Cubie", 750, "gold", "#c68edc", "Goes with the flow. Brings its own night-light.", "<path d=\"M20 43q40-45 80 0\" fill=\"#ecd0fa\"/><path d=\"M28 104q-9 16 2 23m17-23q-8 14 3 25m22-25q9 13-2 23m20-23q10 14-1 25\" fill=\"none\" stroke=\"#ba97e8\" stroke-width=\"5\"/><circle cx=\"40\" cy=\"33\" r=\"3\" fill=\"#fff4ff\"/>"],
     ["clockwork", "Clockwork Cubie", 900, "crystal", "#b99573", "Always makes time for one more friend.", "<g fill=\"none\" stroke=\"#ead2a0\" stroke-width=\"4\"><circle cx=\"29\" cy=\"40\" r=\"12\"/><circle cx=\"91\" cy=\"96\" r=\"12\"/><path d=\"M29 24v32m-16-16h32M91 80v32m-16-16h32\"/></g><circle cx=\"60\" cy=\"24\" r=\"13\" fill=\"#eee4c8\" stroke=\"#765e4c\" stroke-width=\"3\"/><path d=\"M60 16v8l7 4\" fill=\"none\" stroke=\"#5d493d\" stroke-width=\"2\"/>"],
     ["snowglobe", "Snowglobe Cubie", 1100, "crystal", "#a7d5e7", "A tiny winter that never forgets your birthday.", "<path d=\"M17 99h86v13H17Z\" fill=\"#705e99\"/><path d=\"m31 37 9-5m44 10 9 5\" stroke=\"#edfcff\" stroke-width=\"4\"/><path d=\"M22 96q15-12 30 0t46 0\" fill=\"#f3fbff\"/><g fill=\"#fff\"><circle cx=\"30\" cy=\"66\" r=\"2\"/><circle cx=\"87\" cy=\"78\" r=\"2\"/><circle cx=\"67\" cy=\"36\" r=\"2\"/></g>"],
@@ -482,7 +505,7 @@ const CubieCustoms = (() => {
     ["frost", "Frost Cubie", 1150, "crystal", "#b0dfed", "Cool under pressure. Warm at heart.", "<path d=\"M22 33h76l-8 13-7-10-10 12-9-13-12 11-8-11-11 9Z\" fill=\"#e8fbff\" /><path d=\"M24 99 36 86l5 20m39 0 5-20 12 13Z\" fill=\"#7fb8d3\" /><g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 16px;animation-duration:12s\"><path d=\"M60 4v24M50 10l20 12M70 10 50 22m10-18-4 5m4-5 4 5\" fill=\"none\" stroke=\"#e9fcff\" stroke-width=\"2\" stroke-linecap=\"round\" /></g><path d=\"M27 55v29m66-29v29\" fill=\"none\" stroke=\"#efffff\" stroke-width=\"2\" stroke-linecap=\"round\" />"],
     ["music_box", "Music Box Cubie", 1200, "crystal", "#b69cce", "Tiny songs for very big feelings.", "<path d=\"M23 31h74v10H23ZM23 96h74v11H23Z\" fill=\"#705c99\" /><path d=\"M29 35h62m-62 65h62\" fill=\"none\" stroke=\"#e5c790\" stroke-width=\"2\" stroke-linecap=\"round\" /><path d=\"M100 72h11v-8\" fill=\"none\" stroke=\"#d7b987\" stroke-width=\"4\" stroke-linecap=\"round\" /><circle cx=\"111\" cy=\"62\" r=\"4\" fill=\"#e6cfa4\"/><g class=\"cubie-motion motion-sway\" style=\"transform-origin:60px 27px;\"><path d=\"M50 27V9l25-5v17h-4V11l-17 4v12Z\" fill=\"#f3dba0\" /><circle cx=\"47\" cy=\"27\" r=\"5\" fill=\"#f3dba0\"/><circle cx=\"68\" cy=\"22\" r=\"5\" fill=\"#f3dba0\"/></g>"],
     ["phoenix", "Phoenix Cubie", 1450, "diamond", "#efa278", "Every setback comes with a new sunrise.", "<g class=\"cubie-motion motion-thrust\" style=\"transform-origin:60px 32px;animation-duration:2s\"><path d=\"M38 32 44 8l17 12L77 4l9 28Z\" fill=\"#ffd48a\" /><path d=\"m46 31 9-14 9 12 13-16-3 20Z\" fill=\"#ffe9ad\" /></g><path d=\"M30 99q30 13 60 0\" fill=\"none\" stroke=\"#ffe3a2\" stroke-width=\"4\" stroke-linecap=\"round\" />", {"back": "<g class=\"cubie-motion motion-wing\" style=\"transform-origin:60px 55px;animation-duration:2.5s\"><path d=\"M23 62Q-5 38 4 21l18 14-4-24 29 39M97 62q28-24 19-41l-18 14 4-24-29 39\" fill=\"#d97362\" /><path d=\"M12 35 29 53m79-18-17 18\" fill=\"none\" stroke=\"#ffd395\" stroke-width=\"4\" stroke-linecap=\"round\" /></g>"}],
-    ["storm", "Storm Cubie", 1550, "diamond", "#8b9bbb", "Every cloud deserves a dramatic entrance.", "<path d=\"M16 36q-2-17 16-16 6-19 25-11 15-15 27 3 20-3 21 17l4 7Z\" fill=\"#c1c9e2\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><path d=\"m20 73-13 20h12l-5 18 20-26H22Zm82-28-12 20h12l-5 18 20-26h-12Z\" fill=\"#ffe09a\" /></g><path d=\"M30 100h59\" fill=\"none\" stroke=\"#c4d8f0\" stroke-width=\"3\" stroke-linecap=\"round\" />"],
+    ["storm", "Storm Cubie", 1550, "diamond", "#8b9bbb", "Every cloud deserves a dramatic entrance.", '<path d="M25 57Q23 45 36 47M40 38Q47 29 55 38M64 34Q77 27 82 42M29 91Q37 101 47 96M66 103Q78 106 83 96" fill="none" stroke="#dce5ff" stroke-width="1.8" stroke-linecap="round"/><g class="cubie-motion motion-energy" style="transform-origin:60px 68px"><path d="m20 73-13 20h12l-5 18 20-26H22Zm82-28-12 20h12l-5 18 20-26h-12Z" fill="#ffe09a" stroke="#fff0c4" stroke-width=".6"/></g>', { body: '<path d="M34 44C30 29 47 23 56 34C66 19 86 26 86 42C104 39 112 58 100 69C113 84 100 101 86 97C81 113 63 115 54 104C41 116 22 108 25 95C8 96 6 74 20 67C7 54 18 39 34 44Z"/>' }],
     ["koi", "Koi Cubie", 1600, "diamond", "#efead6", "Swims upstream. Waves to everyone downstream.", '<path d="M39 30q21-8 40 5l-9 15-25-5Z" fill="#e96c43"/>', { body: '<path d="M60 28C35 28 19 43 24 65C28 86 45 98 53 108H67C75 98 92 86 96 65C101 43 85 28 60 28Z"/>' }],
     ["moon_rabbit", "Moon Rabbit Cubie", 1650, "diamond", "#dfd4ec", "Delivers wishes by moonlight.", "<g class=\"cubie-motion motion-sway\" style=\"transform-origin:36px 33px;\"><path d=\"M28 33Q12-7 29-3q16 4 16 36Z\" fill=\"#e9def2\" /><path d=\"M31 25Q23 3 29 5q7 5 8 20Z\" fill=\"#cca5ca\" /></g><g class=\"cubie-motion motion-sway\" style=\"transform-origin:84px 33px;animation-delay:-1.7s\"><path d=\"M76 33q0-40 17-36 17 7-1 36Z\" fill=\"#e9def2\" /><path d=\"M83 25q1-22 8-20 5 6-1 20Z\" fill=\"#cca5ca\" /></g><path d=\"M26 96q9-14 22 0m24 0q13-14 22 0\" fill=\"#c3acd8\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><circle cx=\"60\" cy=\"25\" r=\"6\" fill=\"#fff0bd\"/></g>"],
     ["kaleidoscope", "Kaleidoscope Cubie", 1900, "rainbow", "#c7b9dd", "Every turn reveals another little wonder.", "<g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 28px;animation-duration:14s\"><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#ed9baf\" transform=\"rotate(0 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#f3d887\" transform=\"rotate(60 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#9fdab5\" transform=\"rotate(120 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#91cfe4\" transform=\"rotate(180 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#a5adeb\" transform=\"rotate(240 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#c8a4df\" transform=\"rotate(300 60 28)\"/><circle cx=\"60\" cy=\"28\" r=\"5\" fill=\"#fff2d5\"/></g><g class=\"cubie-motion motion-color\" style=\"transform-origin:60px 68px;\"><path d=\"M24 93 42 88l18 12 18-12 18 5-18 13-18-6-18 6Z\" fill=\"#a2decb\" /><path d=\"M25 37h70\" fill=\"none\" stroke=\"#ffe7a6\" stroke-width=\"4\" stroke-linecap=\"round\" /></g>"],
@@ -492,11 +515,43 @@ const CubieCustoms = (() => {
       { back: '<g class="cubie-motion motion-wing" style="transform-origin:60px 64px;animation-duration:3s"><path d="M35 65Q-7 54 2 13q33 1 45 35M85 65q42-11 33-52-33 1-45 35" fill="#f69dbe" stroke="#ffe9ce" stroke-width="2"/><path d="M31 65Q-8 75 9 113q26-3 38-27M89 65q39 10 22 48-26-3-38-27" fill="#91dce4" stroke="#e4faff" stroke-width="2"/><path d="M7 23q21 7 29 28L13 43Zm106 0q-21 7-29 28l23-8Z" fill="#ffe49a"/><path d="m10 80 24-6-15 23Zm100 0-24-6 15 23Z" fill="#b6a0f4"/><circle cx="16" cy="35" r="5" fill="#a9e7ba"/><circle cx="104" cy="35" r="5" fill="#a9e7ba"/></g>' }],
     ["rainbow_sundae", "Rainbow Sundae Cubie", 2150, "rainbow", "#ffe2bd", "Seven scoops of happiness. The cherry is a bonus.",
       '<path d="M17 41q-7-20 14-24 6-19 24-9 18-15 30 3 23-2 20 30Z" fill="#ffaacb"/><path d="M22 39q-5-15 11-19 13-3 19 19Z" fill="#ffe294"/><path d="M45 39q-3-23 14-23 19-2 20 23Z" fill="#a5e6c0"/><path d="M73 39q-1-18 14-17 17 0 15 17Z" fill="#a7c7ff"/><path d="M20 38h80v7q-8 12-15 0-8 17-16 0-8 11-17 0-8 15-16 0-9 8-16 0Z" fill="#fff3e4"/><g class="cubie-motion motion-hover" style="transform-origin:60px 9px;animation-duration:3s"><circle cx="60" cy="9" r="8" fill="#e96b94"/><path d="M60 2q0-10 10-10" fill="none" stroke="#73b893" stroke-width="3"/><circle cx="57" cy="6" r="2" fill="#ffe8ed"/></g><path d="M18 96h84l-13 17H31Z" fill="#b6a0e4"/><path d="M31 101h58" stroke="#e9d8ff" stroke-width="3" stroke-linecap="round"/><path d="m29 31 5 2m21-9 3 4m25 3 4-2" stroke="#dd86b5" stroke-width="3" stroke-linecap="round"/>'],
+    ["matrix", "Matrix Cubie", 2225, "rainbow", "#030806", "The code says hello. Cubie waves back.", '<path d="M25 34v68m70-68v68" stroke="#146b3b" stroke-width="1"/>', { faceColor: "#ffffff" }],
+    ["cyber", "Cybercubie", 900, "crystal", "#413d69", "Behind the neon mask: one very friendly smile.", '<path d="M24 43q36-15 72 0v48q-36 23-72 0Z" fill="#1b2947" stroke="#9debe9" stroke-width="2"/>', { faceColor: "#b7fff0" }],
     ["solar_seraph", "Solar Seraph Cubie", 2400, "empyrorite", "#e8c98e", "Carries dawn beneath both wings.", "<g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><ellipse cx=\"60\" cy=\"12\" rx=\"24\" ry=\"7\" fill=\"none\" stroke=\"#ffecac\" stroke-width=\"3\"/><path d=\"M26 45v43m68-43v43\" fill=\"none\" stroke=\"#fff5ce\" stroke-width=\"2\" stroke-linecap=\"round\" /></g><path d=\"M23 94 41 88l19 12 19-12 18 6-18 13-19-7-19 7Z\" fill=\"#f6e4bb\" />", {"back": "<g class=\"cubie-motion motion-wing\" style=\"transform-origin:60px 54px;animation-duration:3s\"><path d=\"M23 71Q-5 61 1 20l12 13 1-23 14 22 6-17 13 34M97 71q28-10 22-51l-12 13-1-23-14 22-6-17-13 34\" fill=\"#fff0ce\" stroke=\"#d8b576\" stroke-width=\"2\"/><path d=\"M12 40 27 61m81-21L93 61\" fill=\"none\" stroke=\"#e6c383\" stroke-width=\"2\" stroke-linecap=\"round\" /></g>"}],
     ["star_cartographer", "Star Cartographer Cubie", 2800, "empyrorite", "#637d9b", "Maps every star. Leaves room for new wishes.", "<path d=\"M23 34h74v68H23Z\" fill=\"#405b7a\" /><path d=\"M29 40 45 35l17 8 23-6 7 9M28 92l18 7 22-9 23 10\" fill=\"none\" stroke=\"#86bbcd\" stroke-width=\"1.5\" stroke-linecap=\"round\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.0s\"><circle cx=\"29\" cy=\"40\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.7s\"><circle cx=\"45\" cy=\"35\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-1.4s\"><circle cx=\"62\" cy=\"43\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.0999999999999996s\"><circle cx=\"85\" cy=\"37\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.8s\"><circle cx=\"28\" cy=\"92\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-3.5s\"><circle cx=\"46\" cy=\"99\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.199999999999999s\"><circle cx=\"68\" cy=\"90\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.8999999999999995s\"><circle cx=\"91\" cy=\"100\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 15px;animation-duration:18s\"><path d=\"m60-1 4 12 13 4-13 4-4 12-4-12-13-4 13-4Z\" fill=\"#ffe5a3\" /></g><path d=\"M21 33v70m78-70v70\" fill=\"none\" stroke=\"#c7daea\" stroke-width=\"2\" stroke-linecap=\"round\" />", {"faceColor": "#e7f4f1"}],
   ];
   for (const [id, name, price, tier, color, flavor, detail, layers = {}] of shopCustoms)
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
+  add("shop_puzzle_cube", "Puzzle Cube Cubie", null, "#548eea",
+    '<path d="M20 54h80M20 81h80M47 28v80M73 28v80" stroke="#172027" stroke-width="3"/>', square,
+    { price: 2000, tier: "rainbow", flavor: "One more turn. Almost there. Forever." });
+  const everydayShopCubies = [
+    ['moon', 'Moon Cubie', 900, 'crystal', '#bec9e4', 'A pocket-sized moon. Every crater holds a wish.', '<circle cx="60" cy="68" r="40"/>'],
+    ['sun', 'Sun Cubie', 1100, 'diamond', '#ffbe45', 'Brings the sunshine, even on your rainy days.', '<circle cx="60" cy="68" r="40"/>'],
+    ['ice_cream', 'Ice Cream Cubie', 750, 'gold', '#ffbbd4', 'One scoop of smiles. Extra sprinkles, please.', '<path d="M20 76V66a40 38 0 0 1 80 0v22q-7 15-14 1-6 20-15 4-9 20-18 0-10 17-17 0-16 7-16-17Z"/>'],
+    ['ice', 'Ice Cubie', 850, 'crystal', '#99e5f5', 'Cool little corners. Warm little heart.', '<path d="M30 28h59l11 11v58l-11 11H30L20 97V39Z"/>'],
+    ['sugar', 'Sugar Cubie', 550, 'silver', '#f5edf8', 'A tiny cube of sweetness with a crunchy sparkle.', '<rect x="20" y="28" width="80" height="80" rx="5"/>'],
+    ['lightbulb', 'Lightbulb Cubie', 1000, 'diamond', '#ffe5a0', 'Had a bright idea. It was becoming your friend.', '<path d="M60 28c-24 0-40 15-40 35 0 20 15 25 20 36v9h40v-9c5-11 20-16 20-36 0-20-16-35-40-35Z"/>'],
+  ];
+  for (const [key,name,price,tier,color,flavor,body] of everydayShopCubies)
+    add(`shop_${key}`, name, null, color, `<path d="M30 43q8-9 19-9" fill="none" stroke="${color}" stroke-width="2"/>`, body, { price, tier, flavor });
+  add("shop_rainbow_crayon", "Rainbow Crayon Cubie", null, "#b984ed",
+    '<path d="M22 28 60-9 98 28Z" fill="#ffbd65"/>',
+    '<rect x="20" y="28" width="80" height="80" rx="8"/>', {
+      price: 2026, tier: "rainbow", faceColor: "#292347",
+      flavor: "Every color in one little friend. Draw something wonderful.",
+    });
+  add("shop_balloon", "Balloon Cubie", null, "#ef769f",
+    '<path d="M55 105 52 114q8 4 16 0l-5-9" fill="#cb477d" stroke="#ffb8d2" stroke-width="1"/><path class="balloon-string" d="M60 116c-15 13 15 18 0 32" fill="none" stroke="#e8dbea" stroke-width="1.5" stroke-linecap="round"/>',
+    '<path d="M60 28C36 28 20 43 20 64c0 23 19 39 40 44 21-5 40-21 40-44 0-21-16-36-40-36Z"/>', {
+      price: 500, tier: "gold", faceColor: "#65233f",
+      flavor: "Full of happy thoughts. Please hold the string.",
+    });
+  add("shop_loco", "Loco Cubie", null, "#ef3448",
+    '<path d="M27 49v-8q0-6 7-6h43" fill="none" stroke="#ff9c98" stroke-width="2" stroke-linecap="round"/>', square, {
+      price: 685, tier: "gold", faceColor: "#fff071",
+      flavor: "A little dizzy. A lot of wiggle.",
+    });
   add("shop_hacker", "Hacker Cubie", null, "#858b98",
     '<path d="M60 28 56 42 64 49 57 58 63 66 55 77 62 84 58 96 63 108" fill="none" stroke="#b28fff" stroke-width="3"/>',
     '<rect x="20" y="28" width="80" height="80" rx="5"/>', {
@@ -551,6 +606,7 @@ const CubieCustoms = (() => {
     pumpkin: [18.8723, 26.3594, 82.2554, 81.5819],
     phantom_emperor: [18.8723, 26.3594, 82.2554, 81.5819],
     phantom_king: [18.8723, 26.3594, 82.2554, 81.5819],
+    shop_cloud: [12, 24, 96, 88], shop_storm: [12, 24, 96, 88], shop_arcade_cabinet: [10, 18, 100, 114],
     bookworm: [15, 24.6522, 90, 81.3478], rocket: [20, 11, 80, 88],
     turtle: [17, 24, 86, 86], comet: [19, 27, 82, 82], moon: [18, 26, 84, 84],
     diamond: [15, 23, 90, 82], ghost: [18, 21, 84, 88], star: [9, 8, 102, 101],
@@ -566,6 +622,111 @@ const CubieCustoms = (() => {
     const id = name => `${name}-${uid}`;
     const url = name => `url(#${id(name)})`;
     const clip = `<clipPath id="${id('body')}">${item.body}</clipPath>`;
+    if (everydayShopCubies.some(([key]) => item.id === `shop_${key}`)) {
+      const key = item.id.slice(5);
+      const palette = {
+        moon: ['#f3f5ff','#b7c4e0','#7388b2'], sun: ['#fff6b2','#ffc94d','#ef8a2d'],
+        ice_cream: ['#fff1f4','#ffbdd5','#df7eae'], ice: ['#f2ffff','#9ce8f7','#4fadd6'],
+        sugar: ['#ffffff','#f3eaf5','#c9bbd5'], lightbulb: ['#fffef0','#ffe9a3','#e4ae4b'],
+      }[key];
+      let back = '', trim = '';
+      if (key === 'moon') {
+        trim = [[34,46,6],[82,39,4],[88,87,7],[35,90,5],[65,99,3],[26,70,3]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#94a7cd" opacity=".65"/><path d="M${x-r*.7} ${y}q0 ${-r*.8} ${r*.8} ${-r*.8}" fill="none" stroke="#eff5ff" stroke-width="1.5"/>`).join('');
+        back = '<g class="shop-six-twinkle"><path d="m10 32 2-5 2 5 5 2-5 2-2 5-2-5-5-2Zm98 61 2-5 2 5 5 2-5 2-2 5-2-5-5-2Z" fill="#fff0b2"/></g>';
+      } else if (key === 'sun') {
+        back = '<g class="shop-sun-rays">' + Array.from({length:12},(_,i)=>`<path transform="rotate(${i*30} 60 68)" d="M55 22 60 7 65 22Q60 27 55 22Z" fill="${i%2?'#ffd86c':'#f8a53b'}" stroke="#fff0a4" stroke-width="1"/>`).join('') + '</g>';
+        trim = '<path d="M31 49q7-13 20-15" fill="none" stroke="#fff8c1" stroke-width="2.8" stroke-linecap="round"/><ellipse cx="30" cy="77" rx="5" ry="3" fill="#ee8e53" opacity=".6"/><ellipse cx="90" cy="77" rx="5" ry="3" fill="#ee8e53" opacity=".6"/>';
+      } else if (key === 'ice_cream') {
+        back = '<path d="M28 82h64l-28 54q-4 6-8 0Z" fill="#db9d57" stroke="#ffda95" stroke-width="1.5"/><path d="m36 91 35 28m-28-32 33 25m-24-29 30 23m-2-16-34 28m26-31-31 24m22-28-27 21" stroke="#ad713d" stroke-width="1.1"/><path d="M31 89h58" stroke="#ffe3ac" stroke-width="3"/>';
+        trim = '<path d="M31 50q8-15 23-14" fill="none" stroke="#fff6fa" stroke-width="3" stroke-linecap="round"/>' + [[38,44],[62,36],[81,46],[28,62],[91,64],[44,91],[77,92]].map(([x,y],i)=>`<path d="m${x} ${y} 3 2" stroke="${['#69ccbd','#ffdf6d','#ac88e4'][i%3]}" stroke-width="2.5" stroke-linecap="round"/>`).join('');
+      } else if (key === 'ice') {
+        trim = '<path d="M30 28 36 37h48l5-9M20 39l9 5v48l-9 5m80-58-9 5v48l9 5m-70 11 6-9h48l5 9" fill="#eaffff" opacity=".65"/><path d="M31 48 44 37h17L31 67Zm42 51 17-17v9l-7 8Z" fill="#fff" opacity=".35"/><path d="M81 35 73 44l6 7-7 5M27 87l8-7-4-6" fill="none" stroke="#eaffff" stroke-width="1.2"/>';
+        back = '<g class="shop-six-twinkle" stroke="#c6faff" stroke-width="1.4"><path d="M9 49h12m-6-6v12m-4-10 8 8m0-8-8 8M104 91h12m-6-6v12m-4-10 8 8m0-8-8 8"/></g>';
+      } else if (key === 'sugar') {
+        trim = Array.from({length:90},(_,i)=>{const x=23+i*17%74,y=31+i*29%74;return `<path d="m${x} ${y} 1.7-1 1 1.7-1.7 1Z" fill="${i%3?'#fff':'#cfc1d9'}" opacity="${i%3?'.75':'.45'}"/>`;}).join('') + '<path d="M25 48V34h58M95 87v15H36" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/>';
+      } else {
+        back = '<g class="shop-bulb-glow" fill="none" stroke="#ffdd79" stroke-width="2.5" stroke-linecap="round"><path d="M60 15V5M25 25l-7-8M95 25l7-8M8 60H0m112 0h8M13 94l-7 6m101-6 7 6"/></g>';
+        trim = '<path d="M31 52q3-13 17-17" fill="none" stroke="#fffef3" stroke-width="3.5" stroke-linecap="round"/><path d="M48 99 43 87m29 12 5-12" stroke="#dda745" stroke-width="1.5"/><path d="M39 101h42v17q-21 9-42 0Z" fill="#8797b2" stroke="#d6e2f0" stroke-width="1.3"/><path d="m40 105 40-3m-40 9 40-3m-40 9 40-3" stroke="#dce8ef" stroke-width="2"/><path d="M49 122h22q-11 12-22 0Z" fill="#45546e"/>';
+      }
+      return { sideOffset: ['ice','sugar'].includes(key)?7:0, shadowOffset: ['ice','sugar'].includes(key)?11:0, sideColor: palette[2], shadowColor: palette[2],
+        back, detail: `<defs><radialGradient id="${id('everyday-gloss')}" cx=".28" cy=".2" r=".95"><stop stop-color="${palette[0]}"/><stop offset=".55" stop-color="${palette[1]}"/><stop offset="1" stop-color="${palette[2]}"/></radialGradient></defs><g fill="${url('everyday-gloss')}">${item.body}</g>${trim}`,
+      };
+    }
+    if (item.id === 'shop_rainbow_crayon') {
+      const colors = ['#ff527e','#ff9c35','#ffe653','#65e892','#47d6f5','#8b85ff','#da81ed'];
+      const stops = colors.map((color,i)=>`<stop offset="${i/6}" stop-color="${color}"/>`).join('');
+      return { sideOffset: 6, shadowOffset: 10, sideColor: '#70529c', shadowColor: '#32294b',
+        detail: `<defs><linearGradient id="${id('crayon-rainbow')}" x1="0" y1="0" x2="1" y2=".15">${stops}</linearGradient><linearGradient id="${id('crayon-shade')}" x2="1" y2="0"><stop stop-color="#fff" stop-opacity=".4"/><stop offset=".22" stop-color="#fff" stop-opacity="0"/><stop offset=".7" stop-color="#30204f" stop-opacity="0"/><stop offset="1" stop-color="#30204f" stop-opacity=".3"/></linearGradient>${clip}</defs>` +
+          `<g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('crayon-rainbow')}"/><rect x="20" y="28" width="80" height="80" fill="${url('crayon-shade')}"/><path d="M20 34h80v10H20Zm0 56h80v10H20Z" fill="#42325e"/>` +
+          '<path d="m23 39 6-2 6 2 6-2 6 2 6-2 6 2 6-2 6 2 6-2 6 2 6-2 6 2M24 95h72" fill="none" stroke="#f9dcff" stroke-width="1.2" opacity=".8"/><path d="M26 49v35M94 49v35" stroke="#fff" stroke-width="1.2" opacity=".5"/></g>' +
+          `<path d="M20 28 55-8q5-5 10 0l35 36Z" fill="${url('crayon-rainbow')}" stroke="#fce0ff" stroke-width="1.2" stroke-linejoin="round"/><path d="M60-11 100 28H73Z" fill="#59376a" opacity=".2"/><path d="M26 25 56-5" stroke="#fff5db" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M23 29h74" stroke="#fff4cf" stroke-width="1.6"/>` +
+          [[13,39],[107,59],[10,93]].map(([x,y],i)=>`<g class="rainbow-crayon-sparkle" style="animation-delay:${-i*.7}s"><path d="m${x} ${y-4} 1.5 2.5 2.5 1.5-2.5 1.5-1.5 2.5-1.5-2.5-2.5-1.5 2.5-1.5Z" fill="${colors[i*2]}"/></g>`).join(''),
+      };
+    }
+    if (item.id === 'party') {
+      const colors = ['#ff81bc', '#ffe59b', '#8affd9', '#86ddff', '#c7a4ff'];
+      const star = (x,y,r=3) => `M${x} ${y-r} ${x+r*.3} ${y-r*.3} ${x+r} ${y} ${x+r*.3} ${y+r*.3} ${x} ${y+r} ${x-r*.3} ${y+r*.3} ${x-r} ${y} ${x-r*.3} ${y-r*.3}Z`;
+      const defs = `<defs>
+        <linearGradient id="${id('party-shell')}" x2=".85" y2="1"><stop stop-color="#edc7ff"/><stop offset=".18" stop-color="#a977e4"/><stop offset=".48" stop-color="#624099"/><stop offset=".75" stop-color="#372958"/><stop offset="1" stop-color="#a768af"/></linearGradient>
+        <linearGradient id="${id('party-gold')}" x2=".8" y2="1"><stop stop-color="#fff9d9"/><stop offset=".22" stop-color="#ffe49c"/><stop offset=".48" stop-color="#be792d"/><stop offset=".65" stop-color="#ffdf8a"/><stop offset="1" stop-color="#8a502d"/></linearGradient>
+        <linearGradient id="${id('party-ribbon')}" x2="1" y2=".3"><stop stop-color="#62d4ee"/><stop offset=".3" stop-color="#b6a0ff"/><stop offset=".62" stop-color="#ff9bd1"/><stop offset="1" stop-color="#a465d1"/></linearGradient>
+        <radialGradient id="${id('party-aura')}"><stop stop-color="#bd83ff" stop-opacity=".32"/><stop offset=".6" stop-color="#7844bb" stop-opacity=".18"/><stop offset="1" stop-color="#7844bb" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id('party-glass')}"><stop stop-color="#ffffff" stop-opacity="0"/><stop offset=".48" stop-color="#fff5de" stop-opacity=".6"/><stop offset=".53" stop-color="#d2f8ff" stop-opacity=".18"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+        <clipPath id="${id('party-body')}">${item.body}</clipPath>
+        <clipPath id="${id('party-hat-clip')}"><path d="M34 31 58-18Q60-22 62-18L86 31Q60 42 34 31Z"/></clipPath>
+      </defs>`;
+      const fireworks = [[7,16,-1.2],[113,5,-5.2]].map(([x,y,delay],index) => {
+        const rays = Array.from({length:10},(_,i) => {
+          const angle = i*Math.PI/5;
+          const x1=(Math.cos(angle)*8).toFixed(2), y1=(Math.sin(angle)*8).toFixed(2);
+          const x2=(Math.cos(angle)*16).toFixed(2), y2=(Math.sin(angle)*16).toFixed(2);
+          return `<path d="M${x1} ${y1} ${x2} ${y2}" stroke="${colors[(i+index)%5]}"/><circle cx="${x2}" cy="${y2}" r=".8" fill="#fff4cf" stroke="none"/>`;
+        }).join('');
+        return `<g transform="translate(${x} ${y})"><g class="party-firework" style="animation-delay:${delay}s" fill="none" stroke-width="1.2" stroke-linecap="round">${rays}<path d="${star(0,0,3)}" fill="#fff3bd" stroke="none"/></g></g>`;
+      }).join('');
+      const confetti = Array.from({length:28},(_,i) => {
+        const side = i%2 ? 1 : -1, x=60+side*(49+i%4*3), y=62-(i%7)*9;
+        const shape = i%4 === 0 ? `<path d="${star(0,0,2.5)}"/>`
+          : i%4 === 1 ? '<path d="M-2-3Q3-2 1 0T2 4" fill="none" stroke="currentColor" stroke-width="1.5"/>'
+          : '<path d="M-1.5-2.5h3v5h-3Z"/>';
+        return `<g transform="translate(${x} ${y})"><g class="party-confetti" style="--party-drift:${side*(4+i%4)}px;--party-twist:${side*(100+i*13)}deg;animation-delay:${-i*.31}s;color:${colors[i%5]}" fill="currentColor">${shape}</g></g>`;
+      }).join('');
+      const ribbons = [-1,1].map(side => `<g transform="translate(${side<0?16:104} 65) scale(${side} 1)"><g class="party-ribbon"><path d="M0 0C20-10 29 9 12 16S-1 38 18 43" fill="none" stroke="${url('party-gold')}" stroke-width="4"/><path d="M0-1C20-11 29 8 12 15S-1 37 18 42" fill="none" stroke="#fff0bd" stroke-width=".7"/><path d="M7-12C25-22 31-3 18 1S15 20 28 21" fill="none" stroke="${url('party-ribbon')}" stroke-width="2.5"/></g></g>`).join('');
+      const poppers = [-1,1].map(side => `<g transform="translate(${side<0?9:111} 81) rotate(${side*24})"><g class="party-popper" style="animation-delay:${side<0?0:-4}s"><path d="M-7-10 7-10 4 10H-4Z" fill="${url('party-gold')}" stroke="#ffe7ab" stroke-width=".8"/><path d="M-6-5H6L5 0H-5ZM-4 5H4L3 9H-3Z" fill="${url('party-ribbon')}"/><ellipse cy="-10" rx="7" ry="2.5" fill="#352547" stroke="#ffdc8b" stroke-width="1.2"/><path d="M0-15V-24m-5 12-5-8m15 8 5-8" fill="none" stroke="#ffe6ac" stroke-width="1.3" class="party-popper-flash"/></g></g>`).join('');
+      const gems = Array.from({length:9},(_,i) => `<path d="M${27+i*8} 34l2-2 2 2-2 2Z" fill="${colors[i%5]}" stroke="#fff4ce" stroke-width=".45"/>`).join('');
+      const sequins = Array.from({length:18},(_,i) => {
+        const x=i%2?94:26, y=44+Math.floor(i/2)*6;
+        return `<path class="party-sparkle" style="animation-delay:${-i*.37}s" d="${star(x,y,i%3===0?2:1)}" fill="${colors[i%5]}"/>`;
+      }).join('');
+      return {
+        sideColor: '#654086', shadowColor: '#251b3d',
+        eyeHighlights: '<path d="M38 51h4v7h-4m58-7h4v7h-4" fill="#fff" opacity=".9"/>',
+        back: defs + `<ellipse class="party-aura" cx="60" cy="62" rx="71" ry="75" fill="${url('party-aura')}"/>`
+          + `<g class="party-orbit"><ellipse cx="60" cy="68" rx="59" ry="49" fill="none" stroke="#c19aee" stroke-width=".6" stroke-dasharray="1 7"/><path d="${star(1,68,3)}${star(119,68,3)}" fill="#ffe6a1"/></g>`
+          + fireworks + ribbons + confetti,
+        detail: `<g fill="${url('party-shell')}">${item.body}</g>`
+          + `<g clip-path="${url('party-body')}"><path d="M20 28 74 28 20 90ZM100 28V108H64Z" fill="#e2b7ff" opacity=".1"/><path d="M20 28 46 47 100 28M20 108 41 86 100 108" fill="none" stroke="#e9bfff" stroke-width=".7" opacity=".35"/><g class="party-sheen"><path d="M-25 20H-4L64 115H43Z" fill="${url('party-glass')}"/></g></g>`
+          + `<path d="M23 48V34q0-3 3-3h68q3 0 3 3v14M23 88v14q0 3 3 3h68q3 0 3-3V88" fill="none" stroke="${url('party-gold')}" stroke-width="2"/><path d="M27 46V37h19m47 57v7H74" fill="none" stroke="#fff3cf" stroke-width=".8"/>${sequins}`
+          + `<path d="M21 92 36 86 60 103 84 86 99 92v14H21Z" fill="#281f46"/><path d="M23 92 36 88l18 15-20-6Zm74 0-13-4-18 15 20-6Z" fill="${url('party-gold')}"/><g class="party-bow"><path d="M60 99 47 92q-3 7 0 14l13-5 13 5q3-7 0-14Z" fill="${url('party-ribbon')}" stroke="#ffcced" stroke-width=".8"/><path d="m60 97 4 3-4 4-4-4Z" fill="${url('party-gold')}"/><path d="M49 95l7 4m15-4-7 4" stroke="#fff1da" stroke-width=".7"/></g>`
+          + `<g class="party-edge-glow" fill="none" stroke="${url('party-gold')}" stroke-width="1.1" opacity=".8">${item.body}</g>`
+          + `<g class="party-hat"><path d="M34 31 58-18Q60-22 62-18L86 31Q60 42 34 31Z" fill="${url('party-ribbon')}" stroke="${url('party-gold')}" stroke-width="1.4"/><g clip-path="${url('party-hat-clip')}"><path d="M29 21Q65 40 88 14M37 5Q62 23 79 1M47-10Q60 3 71-12" fill="none" stroke="${url('party-gold')}" stroke-width="5"/><path d="M37 29 59-17 61-14 47 32Z" fill="#fff" opacity=".25"/><g class="party-hat-shine"><path d="M20-25h8l51 65h-8Z" fill="#fff7db" opacity=".5"/></g></g><ellipse cx="60" cy="32" rx="27" ry="5" fill="${url('party-gold')}"/><path d="M34 32Q60 39 86 32" fill="none" stroke="#fff5cb" stroke-width="1"/>${gems}<g transform="translate(60 -20)"><g class="party-topper"><path d="M0-9 3-3 9 0 3 3 0 9-3 3-9 0-3-3Z" fill="${url('party-gold')}" stroke="#fff4c8" stroke-width=".8"/><path d="M0-9V9M-9 0H9" stroke="#fff4c8" stroke-width=".6"/><circle r="2" fill="#fff8e1"/></g></g></g>`
+          + poppers + [[30,39],[90,42],[28,90],[92,87]].map(([x,y],i)=>`<path class="party-sparkle" style="animation-delay:${-i*1.3}s" d="${star(x,y,3)}" fill="#fff3cf"/>`).join(''),
+      };
+    }
+    if (item.id === 'shop_balloon') return {
+      sideOffset: 0, shadowOffset: 0, sideColor: '#cf4a81', shadowColor: '#cf4a81',
+      detail: `<defs><radialGradient id="${id('balloon-gloss')}" cx=".32" cy=".24" r=".85"><stop stop-color="#ffb4d3"/><stop offset=".48" stop-color="#f576a4"/><stop offset="1" stop-color="#c73773"/></radialGradient></defs><g fill="${url('balloon-gloss')}">${item.body}</g>` +
+        '<path d="M31 53q3-14 17-16" fill="none" stroke="#fff0f7" stroke-width="4" stroke-linecap="round" opacity=".85"/><ellipse cx="29" cy="62" rx="2" ry="3" fill="#fff0f7" opacity=".65"/>' + item.detail,
+    };
+    if (item.id === 'shop_loco') {
+      const spiral = Array.from({length:97}, (_,i) => {
+        const angle = i / 96 * Math.PI * 4.5;
+        const radius = 1 + i / 96 * 15;
+        return `${i ? 'L' : 'M'}${(Math.cos(angle)*radius).toFixed(2)} ${(Math.sin(angle)*radius).toFixed(2)}`;
+      }).join(' ');
+      return { eyes: '<g class="cubie-eyes">' + [43.5,101.5].map(x =>
+        `<g transform="translate(${x} 61)"><path d="${spiral}" fill="none" stroke="#ffe82f" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></g>`).join('') + '</g>' };
+    }
     const sparkle = (x, y, delay, size = 4) => `<g transform="translate(${x} ${y})"><path class="custom-sparkle" style="animation-delay:${delay}s" d="M0 -${size} 1.3 -1.3 ${size} 0 1.3 1.3 0 ${size} -1.3 1.3 -${size} 0 -1.3 -1.3Z" fill="#f5ffed"/></g>`;
     // Animate independent accessories in their own coordinates. Body and face
     // geometry remains shared with Classic Cubie, including in tiny previews.
@@ -592,6 +753,23 @@ const CubieCustoms = (() => {
       return { faceColor: '#effff6', sideColor: '#53537f', shadowColor: '#282b4c',
         detail: `<defs>${clip}<linearGradient id="${id('lattice-shell')}" x2=".8" y2="1"><stop stop-color="#bd9de0"/><stop offset=".35" stop-color="#8665b3"/><stop offset="1" stop-color="#444a80"/></linearGradient><linearGradient id="${id('lattice-scan')}" x2="0" y2="1"><stop stop-color="#82ffee" stop-opacity="0"/><stop offset=".85" stop-color="#82ffee" stop-opacity=".12"/><stop offset="1" stop-color="#bffff6" stop-opacity=".4"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('lattice-shell')}"/>` +
           `<path d="M28 43H92M28 55H92M28 67H92M28 79H92M28 91H92M39 36V100M51 36V100M63 36V100M75 36V100M87 36V100" fill="none" stroke="#a9d9ef" stroke-width=".6" opacity=".22"/><g class="cubie-motion lattice-scan"><rect x="24" y="15" width="72" height="18" fill="${url('lattice-scan')}"/><path d="M24 33H96" stroke="#b5fff1" stroke-width="1" opacity=".6"/></g><path d="${rails}" fill="none" stroke="#384c72" stroke-width="4" stroke-linejoin="round"/><path d="${rails}" fill="none" stroke="#8fcbe8" stroke-width="1.2"/><path class="cubie-motion lattice-current" d="${rails}" pathLength="100" fill="none" stroke="#b5fff1" stroke-width="2.2" stroke-dasharray="5 20" stroke-linecap="round"/>${nodes}<path d="M24 47V40q0-8 8-8h48M96 87v9q0 8-8 8H43" fill="none" stroke="#e6d8ff" stroke-width="1.2" opacity=".8"/></g>${tiles}` };
+    }
+    if (item.id === 'shop_arcade_cabinet') {
+      return { sideOffset: 7, shadowOffset: 11, sideColor: '#4f345e', shadowColor: '#242338', faceColor: '#b9ffe7',
+        detail: `<defs><linearGradient id="${id('cabinet-shell')}" x2="1" y2=".7"><stop stop-color="#ef93bc"/><stop offset=".24" stop-color="#b9568b"/><stop offset=".72" stop-color="#813f78"/><stop offset="1" stop-color="#452e58"/></linearGradient><linearGradient id="${id('cabinet-screen')}" x2=".6" y2="1"><stop stop-color="#244859"/><stop offset=".4" stop-color="#153242"/><stop offset="1" stop-color="#091e30"/></linearGradient><linearGradient id="${id('cabinet-deck')}" x2="0" y2="1"><stop stop-color="#7790b3"/><stop offset=".24" stop-color="#414e79"/><stop offset="1" stop-color="#202b4b"/></linearGradient><radialGradient id="${id('cabinet-button')}" cx=".3" cy=".2"><stop stop-color="#fff3bf"/><stop offset=".4" stop-color="#ffd56f"/><stop offset="1" stop-color="#b97131"/></radialGradient><clipPath id="${id('cabinet-screen-clip')}"><rect x="26" y="47" width="68" height="54" rx="7"/></clipPath></defs>` +
+          `<g fill="${url('cabinet-shell')}">${item.body}</g><path d="M20 98V34l6-11h68M14 113v15h34" fill="none" stroke="#ffc7df" stroke-width="1.2" stroke-linecap="round"/><path d="M101 37v63M106 116v13H76" stroke="#301e42" stroke-width="2"/>` +
+          `<path d="M24 23h72l4 16H20Z" fill="#1d2b46" stroke="#efb6cd" stroke-width="1.1"/><path d="M28 26h64l2 10H26Z" fill="#38556b"/><text x="60" y="34" text-anchor="middle" fill="#fff0b4" font-family="monospace" font-size="8" font-weight="bold" letter-spacing="2">CUBIE</text><path d="M32 25h56" stroke="#8effe5" stroke-width=".8"/>` +
+          `<rect x="21" y="42" width="78" height="64" rx="9" fill="#192339" stroke="#f6b3d3" stroke-width="1"/><rect x="24" y="45" width="72" height="58" rx="8" fill="#528b9c"/><rect x="26" y="47" width="68" height="54" rx="7" fill="${url('cabinet-screen')}"/><g clip-path="${url('cabinet-screen-clip')}">` +
+          Array.from({length:18},(_,i)=>`<path d="M26 ${49+i*3}H94" stroke="#b5ffe9" stroke-width=".35" opacity=".09"/>`).join('') +
+          `<path d="M28 49H51L29 79Z" fill="#d6ffff" opacity=".07"/><path class="cubie-motion cabinet-scan" d="M26 48H94" stroke="#b1ffe5" stroke-width="1.5" opacity=".16"/></g><path d="M29 62v-8q0-4 4-4h12M91 89v5q0 4-4 4H77" fill="none" stroke="#8fcaca" stroke-width=".8" opacity=".7"/>` +
+          `<path d="M16 106H104L110 116H10Z" fill="${url('cabinet-deck')}" stroke="#aeb5d5" stroke-width=".9"/><path d="M12 116h96v6H12Z" fill="#1e2847"/><path d="M15 117h90" stroke="#7de9da" stroke-width="1.2"/><ellipse cx="36" cy="112" rx="9" ry="2.7" fill="#17243c"/><g class="cubie-motion motion-sway" style="transform-origin:36px 112px;animation-duration:2.4s"><path d="M36 111v-8" stroke="#b7d9e7" stroke-width="2.5"/><circle cx="36" cy="102" r="4.5" fill="#64dbc8" stroke="#1b756f" stroke-width=".8"/><path d="M33 101q1-3 4-2" fill="none" stroke="#ddfff0" stroke-width="1.2" stroke-linecap="round"/></g>` +
+          [70,84].map((x,i)=>`<ellipse cx="${x}" cy="112" rx="5" ry="3" fill="#152139"/><ellipse cx="${x}" cy="110.5" rx="4" ry="2.5" fill="${i?'#ec80ab':url('cabinet-button')}" stroke="${i?'#ffc7e3':'#fff1b4'}" stroke-width=".6"/>`).join('') +
+          `<rect x="45" y="124" width="30" height="6" rx="1.4" fill="#18263e" stroke="#d79bbd" stroke-width=".7"/><path d="M51 127h11" stroke="#a9c1cf" stroke-width="1.4"/><circle class="cubie-motion motion-energy" cx="69" cy="127" r="1.4" fill="#a0ffe0"/><path d="M19 124h17m-17 3h17m48-3h17m-17 3h17" stroke="#583052" stroke-width="1"/>` };
+    }
+    if (item.id === 'shop_cloud' || item.id === 'shop_storm') {
+      const storm = item.id === 'shop_storm';
+      return { sideOffset: 3, shadowOffset: 6, sideColor: storm ? '#657899' : '#a8cce6', shadowColor: storm ? '#3c4964' : '#7299b7',
+        detail: `<defs><linearGradient id="${id('cloud-body')}" x2=".2" y2="1"><stop stop-color="${storm ? '#c9d2ec' : '#fff'}"/><stop offset=".45" stop-color="${storm ? '#a0afce' : '#f0faff'}"/><stop offset="1" stop-color="${storm ? '#7183a7' : '#bfdff3'}"/></linearGradient></defs><g fill="${url('cloud-body')}">${item.body}</g>${item.detail}` };
     }
     if (item.id === 'bookworm') {
       return { sideOffset: 0, shadowOffset: 0, sideColor: 'transparent', shadowColor: 'transparent',
@@ -645,6 +823,75 @@ const CubieCustoms = (() => {
         detail: `<defs>${clip}<linearGradient id="${id('prism-glass')}" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".12"/><stop offset=".25" stop-color="#d8f5ff" stop-opacity=".01"/><stop offset=".7" stop-color="#cde3ff" stop-opacity=".015"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient><linearGradient id="${id('prism-face')}" x2="1" y2=".4"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".23" stop-color="#c5edff" stop-opacity=".06"/><stop offset=".72" stop-color="#d7dcff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient><linearGradient id="${id('prism-bevel')}" x2=".8" y2="1"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".2" stop-color="#c5efff" stop-opacity=".14"/><stop offset=".48" stop-color="#aaa5ff" stop-opacity=".04"/><stop offset=".75" stop-color="#d5faff" stop-opacity=".4"/><stop offset="1" stop-color="#fff" stop-opacity=".7"/></linearGradient><linearGradient id="${id('prism-spectrum')}" x2="1" y2="0">${spectrum.map((c,i)=>`<stop offset="${i/6}" stop-color="${c}" stop-opacity="1"/>`).join('')}</linearGradient></defs>` +
           `<g clip-path="${url('body')}"><path d="${outline}" fill="${url('prism-glass')}"/>${facets.map((d,i)=>`<path d="${d}" fill="${url('prism-bevel')}" opacity="${i%3 ? '.65' : '.95'}" stroke="#d6f5ff" stroke-opacity=".35" stroke-width=".4"/>`).join('')}<path d="${inset}" fill="none" stroke="${url('prism-spectrum')}" stroke-width="1.8"/><path d="M29 48 40 37h40M91 86l-11 13H40" fill="none" stroke="#fff" stroke-width=".65" opacity=".75"/><path d="M30 46 41 36 88 90 79 99Z" fill="#e7faff" opacity=".025"/><g class="prismatic-shine"><path d="M-63 20h7L44 120h-7Z" fill="${url('prism-spectrum')}" opacity=".8"/><path d="M-54 20h1.2L47 120h-1.2Z" fill="#fff" opacity=".65"/><path d="M-49 20h2L53 120h-2Z" fill="#c2eaff" opacity=".18"/></g><g transform="translate(120 136) scale(-1 -1)"><g class="prismatic-shine prismatic-reflection"><path d="M-65 20h4L39 120h-4Z" fill="${url('prism-spectrum')}" opacity=".65"/></g></g></g>` +
           `<path d="${outline}" fill="none" stroke="${url('prism-spectrum')}" stroke-width="2.8" opacity=".95"/><path d="${outline}" fill="none" stroke="#f3fdff" stroke-width=".8"/><path d="M35 29h49l14 14M21 46v44l14 16M87 105l11-12V78" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M35 28 41 35M85 28l-3 7M100 93l-7-3M35 108l3-7" stroke="#fff" stroke-width=".8"/>${sparkle(35,28,-.3,3.5)}${sparkle(99,92,-2,2.7)}${sparkle(85,29,-1.1,1.7)}${sparkle(28,93,-3.1,1.5)}` };
+    }
+    if (item.id === 'shop_sprout') {
+      const leaves = item.detail.slice(item.detail.indexOf('<g'));
+      return { detail: leaves + `<defs><linearGradient id="${id('sprout-clay')}" x2="1" y2=".3"><stop stop-color="#ac634b"/><stop offset=".35" stop-color="#e3a37b"/><stop offset="1" stop-color="#a9634a"/></linearGradient></defs>` +
+        `<path d="M20 94H108L102 124Q101 130 94 130H34Q27 130 26 124Z" fill="${url('sprout-clay')}" stroke="#955640" stroke-width="1.4"/>` +
+        '<path d="M31 106 34 120q1 4 6 4" fill="none" stroke="#f1bc93" stroke-width="2.5" stroke-linecap="round"/>' +
+        '<rect x="13" y="91" width="102" height="16" rx="7" fill="#ce8a67" stroke="#9f6048" stroke-width="1.4"/>' +
+        '<ellipse cx="64" cy="93" rx="49" ry="6" fill="#edb18b"/><path d="M22 100q42 6 84 0" fill="none" stroke="#f3c5a1" stroke-width="2" stroke-linecap="round"/>' };
+    }
+    if (item.id === 'shop_camper') {
+      return { back: `<defs><linearGradient id="${id('camp-pack')}" x2="1" y2="1"><stop stop-color="#dd955f"/><stop offset="1" stop-color="#80503e"/></linearGradient></defs>` +
+        `<rect x="91" y="40" width="35" height="66" rx="12" fill="${url('camp-pack')}" stroke="#664637" stroke-width="2"/>` +
+        '<path d="M99 42v61m18-60v58" stroke="#ebbc8c" stroke-width="3"/><rect x="104" y="64" width="23" height="25" rx="5" fill="#a56b49" stroke="#e4aa79"/><path d="M106 70h19" stroke="#f1c99d" stroke-width="2"/><rect x="88" y="30" width="39" height="15" rx="7" fill="#6c9c93" stroke="#426e66" stroke-width="1.5"/><path d="M99 31v13m17-13v13" stroke="#e9d9ab" stroke-width="3"/><rect x="8" y="59" width="13" height="35" rx="5" fill="#79a4a7" stroke="#446f76" stroke-width="1.5"/><path d="M11 57h7" stroke="#d8e0c5" stroke-width="4"/>',
+        detail: `<defs>${clip}<linearGradient id="${id('camp-hat')}" x2=".7" y2="1"><stop stop-color="#f2d49b"/><stop offset=".55" stop-color="#c7a169"/><stop offset="1" stop-color="#a27f50"/></linearGradient></defs>` +
+        `<g clip-path="${url('body')}"><path d="M20 41 34 43 38 87 47 96v12H20Zm80 0-14 2-4 44-9 9v12h27Z" fill="#65764a"/><path d="M26 45 31 86m63-41-5 41" stroke="#d6bf87" stroke-width="4"/><path d="M20 93h80v15H20Z" fill="#718051"/><rect x="24" y="96" width="21" height="10" rx="2" fill="#8e9b65" stroke="#d0ce9a"/><rect x="75" y="96" width="21" height="10" rx="2" fill="#8e9b65" stroke="#d0ce9a"/><path d="M25 99h19m32 0h19" stroke="#d6d3a4"/></g>` +
+        '<path d="m29 88 20 1 11 9 11-9 20-1-16 15-15-4-15 4Z" fill="#e89b63"/><path d="m60 97-8 17 11-3 6 3-4-17" fill="#c7744d"/><rect x="56" y="96" width="9" height="8" rx="3" fill="#f4d58b"/>' +
+        `<ellipse cx="60" cy="35" rx="49" ry="9" fill="#9c7e52" stroke="#e4c48b" stroke-width="1.5"/><path d="M29 32 34 12Q36 5 46 8l14 5 14-5q10-3 12 4l5 20Q60 42 29 32Z" fill="${url('camp-hat')}" stroke="#a88454" stroke-width="1.3"/>` +
+        '<path d="M31 25q29 9 58 0l2 7q-31 10-62 0Z" fill="#65543e"/><rect x="54" y="27" width="13" height="8" rx="2" fill="#e6c780"/><path d="m57 32 3-3 4 3" fill="none" stroke="#74835b" stroke-width="1.5"/><path d="M40 12 59 17l20-6" fill="none" stroke="#ffe6b4" stroke-width="1.3"/>' };
+    }
+    if (item.id === 'shop_penguin') {
+      const flipper = '<path d="M22 61Q-6 55 5 96q12-4 21-17Z" fill="#455e78" stroke="#8fa9bb" stroke-width="1.3"/>';
+      return { back: '', detail: item.detail +
+        motion(flipper, 'motion-paddle', '22px 62px') +
+        '<g transform="translate(120 0) scale(-1 1)">' +
+        motion(flipper, 'motion-paddle', '22px 62px') + '</g>' };
+    }
+    if (item.id === 'shop_aquarium') {
+      return { detail: `<defs>${clip}<linearGradient id="${id('aquarium-water')}" x2=".7" y2="1"><stop stop-color="#bcf3ee" stop-opacity=".45"/><stop offset="1" stop-color="#3b98bc" stop-opacity=".35"/></linearGradient></defs>` +
+        `<g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('aquarium-water')}"/>` +
+        '<path d="M16 97C30 88 42 92 57 96S85 87 104 94v18H16Z" fill="#e7d2a6"/><path d="M22 101q19-5 37 0t38-3" fill="none" stroke="#f7e8c7" stroke-width="2" stroke-linecap="round"/>' +
+        motion('<path d="M36 98Q34 85 37 70" fill="none" stroke="#3b826f" stroke-width="2.5" stroke-linecap="round"/><path d="M36 87Q23 85 27 76q10 0 9 11M37 79q13-2 12-12-11 1-12 12M37 72Q29 65 34 59q9 6 3 13M36 96q13-1 12-10-10 0-12 10" fill="#59aa83" stroke="#3b826f" stroke-width="1"/>', 'motion-sway', '36px 98px', 'animation-duration:5s') +
+        motion('<g fill="#e7ffff" fill-opacity=".28" stroke="#d9fbff" stroke-width="1"><circle cx="86" cy="81" r="3.5"/><circle cx="82" cy="95" r="2"/><circle cx="88" cy="47" r="3"/></g>', 'motion-steam') +
+        '<ellipse cx="49" cy="101" rx="4" ry="2" fill="#c6b78f"/><ellipse cx="76" cy="103" rx="3" ry="1.7" fill="#c6b78f"/></g>' +
+        '<rect x="23" y="31" width="74" height="74" rx="11" fill="none" stroke="#d8faff" stroke-width="1.4" opacity=".8"/><path d="M28 51V43q0-7 8-7h8M86 36h3q4 0 4 6" fill="none" stroke="#efffff" stroke-width="2.5" stroke-linecap="round"/>' };
+    }
+    if (item.id === 'creeper') {
+      const pixels = Array.from({length: 8}, (_, row) => Array.from({length: 8}, (_, col) => {
+        const colors = ['#86cb64', '#58a54a', '#6fbb53', '#a4d77b', '#438b43'];
+        return `<rect x="${20+col*10}" y="${28+row*10}" width="10" height="10" fill="${colors[(row*7+col*3+row*col)%5]}"/>`;
+      }).join('')).join('');
+      return { detail:`<defs>${clip}</defs><g clip-path="${url('body')}">${pixels}</g>`, faceColor:'#142e1a',
+        eyes:'<g class="cubie-eyes" fill="#142e1a"><rect x="31" y="45" width="25" height="25"/><rect x="90" y="45" width="25" height="25"/></g>',
+        mouth:'<path class="cubie-smile" d="M61 70h24v13h13v36H84v-15H62v15H48V83h13Z" fill="#142e1a"/>' };
+    }
+    if (item.id === 'tetris') {
+      const tiles = [[20,28],[60,28],[20,68],[60,68]].map(([x,y]) =>
+        `<rect x="${x+1}" y="${y+1}" width="38" height="38" rx="1" fill="#ffdb56" stroke="#bd8e20" stroke-width="1.5"/><path d="M${x+4} ${y+34}V${y+4}h30" fill="none" stroke="#fff3ae" stroke-width="3"/><path d="M${x+36} ${y+6}v30H${x+6}" fill="none" stroke="#e2aa29" stroke-width="3"/>`).join('');
+      return { sideColor:'#c28e22', detail:tiles };
+    }
+    if (item.id === 'shop_cyber') return { sideColor:'#292546', faceColor:'#c1fff5',
+      back:'<rect x="10" y="49" width="13" height="35" rx="5" fill="#243550" stroke="#77e8e2" stroke-width="1.5"/><rect x="97" y="49" width="17" height="35" rx="5" fill="#243550" stroke="#e7a0ef" stroke-width="1.5"/>',
+      detail:`<defs><linearGradient id="${id('cyber-mask')}" x2="1" y2="1"><stop stop-color="#334b66"/><stop offset=".55" stop-color="#152238"/><stop offset="1" stop-color="#4b2f5c"/></linearGradient></defs><path d="M23 43Q60 24 97 43v43q0 14-37 23-37-9-37-23Z" fill="${url('cyber-mask')}" stroke="#8dd9e2" stroke-width="1.5"/>` +
+        '<path d="M26 44 37 24l13 12m44 8L83 24 70 36" fill="#384a68" stroke="#cea3ef" stroke-width="1.5"/><path d="m32 40 6-9 5 6m45 3-6-9-5 6" fill="#7de9df"/><path d="M28 47v25m64-25v25" stroke="#72e8e5" stroke-width="2" stroke-linecap="round"/><path d="M30 87h10m40 0h10M33 92h7m40 0h7" stroke="#eaa4e9" stroke-width="2" stroke-linecap="round"/><path d="M51 101h18" stroke="#77d9df" stroke-width="2"/>' +
+        motion('<circle cx="16" cy="58" r="2" fill="#adfff0"/><circle cx="106" cy="58" r="2" fill="#ffc2ef"/>', 'motion-energy'),
+      eyes:'<g class="cubie-eyes" fill="none" stroke="#c3fff2" stroke-width="5" stroke-linecap="round"><path d="M35 63q10-16 20 0M91 63q10-16 20 0"/></g>',
+      mouth:'<path class="cubie-smile" d="M59 91q13 17 26 0" fill="none" stroke="#c3fff2" stroke-width="4" stroke-linecap="round"/>' };
+    if (item.id === 'shop_matrix') {
+      const symbols = ['0', '1', '7', '+', '∑', '9', '⊕', '3'];
+      const columns = Array.from({ length: 8 }, (_, column) => {
+        const glyphs = Array.from({ length: 24 }, (_, row) => {
+          const phase = row % 8;
+          const color = phase === 7 ? '#bbffd0' : '#29ec78';
+          return `<text x="${26 + column * 9.5}" y="${-68 + row * 12}" fill="${color}" opacity="${.2 + phase * .1}">${symbols[(phase * 3 + column * 5) % symbols.length]}</text>`;
+        }).join('');
+        return `<g class="matrix-code-column" style="animation-duration:${2.8 + column * .23}s;animation-delay:${-column * .63}s">${glyphs}</g>`;
+      }).join('');
+      return { sideColor: '#0b2116', faceColor: '#ffffff', detail:
+        `<defs>${clip}</defs><g clip-path="${url('body')}" font-family="monospace" font-size="8" text-anchor="middle">${columns}</g>` +
+        '<rect x="21" y="29" width="78" height="78" rx="13" fill="none" stroke="#267749" stroke-width=".8"/>' };
     }
     if (item.id === 'shop_honey') {
       const cells = Array.from({ length: 7 }, (_, row) =>
@@ -840,7 +1087,13 @@ const CubieCustoms = (() => {
         '<circle cx="60" cy="24" r="1.7" fill="#5d493d"/>' };
     }
     if (item.id === 'shop_jellyfish') return { detail:
-      motion('<path d="M20 43q40-45 80 0" fill="#ecd0fa"/><circle cx="40" cy="33" r="3" fill="#fff4ff"/>', 'motion-bell', '60px 43px') +
+      `<defs><radialGradient id="${id('jelly-bell')}" cx=".38" cy=".2" r=".9"><stop stop-color="#fff1ff" stop-opacity=".95"/><stop offset=".45" stop-color="#e3b6f5" stop-opacity=".85"/><stop offset="1" stop-color="#9273d2" stop-opacity=".9"/></radialGradient></defs>` +
+      motion(`<path d="M10 39C13 14 33-3 60-3s47 17 50 42Q60 52 10 39Z" fill="${url('jelly-bell')}" stroke="#f3d7ff" stroke-width="1.5"/>` +
+        '<path d="M38 39C31 22 42 4 54 0M62 0c16 6 26 23 20 39" fill="none" stroke="#fff1ff" stroke-width="1.4" opacity=".45"/>' +
+        '<ellipse cx="60" cy="39" rx="49" ry="8" fill="#9875c9" stroke="#efd0ff" stroke-width="1.4"/>' +
+        '<path d="M13 39q8 10 16 1 8 12 16 2 8 12 16 1 8 11 16-1 8 9 16-2 8 6 14-1" fill="none" stroke="#efbcf5" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M23 24Q32 9 46 7" fill="none" stroke="#fff8ff" stroke-width="3" stroke-linecap="round" opacity=".85"/>' +
+        '<ellipse cx="33" cy="19" rx="4" ry="2" fill="#fff" opacity=".7"/><circle cx="83" cy="23" r="3" fill="#fbe7ff"/><circle cx="91" cy="29" r="1.6" fill="#fbe7ff"/>', 'motion-bell', '60px 43px') +
       [28,47,72,90].map((x,i)=>motion(`<path d="M${x} 104q${i%2?9:-9} 14 1 24" fill="none" stroke="#ba97e8" stroke-width="5" stroke-linecap="round"/>`, 'motion-tentacle', `${x}px 104px`, `animation-delay:${-i*.6}s`)).join('') };
     if (['wizard', 'moon', 'star', 'attack_core_lens_fracture'].includes(item.id))
       return { detail: item.detail + sparkle(26,35,-.3,3) + sparkle(94,24,-1.5) + sparkle(89,96,-2.1,3) };
@@ -929,9 +1182,25 @@ const CubieCustoms = (() => {
     }
     if (item.id === 'shop_snowglobe') {
       const snow = Array.from({length:18},(_,i)=>`<circle class="globe-snow" style="animation-delay:${-i*.37}s;animation-duration:${3+i%4}s" cx="${25+i*23%70}" cy="${30+i*11%60}" r="${.8+i%3*.4}" fill="#fff"/>`).join('');
-      return { detail: `<defs>${clip}<linearGradient id="${id('glass')}" x2="1" y2="1"><stop stop-color="#effaff" stop-opacity=".7"/><stop offset=".45" stop-color="#7ab6da" stop-opacity=".15"/><stop offset="1" stop-color="#4f80b0" stop-opacity=".6"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('glass')}"/>${snow}<path d="M20 98q14-10 30-2t50-1v15H20Z" fill="#f0fbff"/></g><path d="M28 53V43q0-9 12-9m43 0 8 5" fill="none" stroke="#f3feff" stroke-width="3" stroke-linecap="round"/><path d="M16 105h88v10q-44 10-88 0Z" fill="#574777" stroke="#c3b3e0" stroke-width="1.5"/><ellipse cx="60" cy="105" rx="44" ry="5" fill="#9a88bd" stroke="#d3c9ee"/><path d="M24 114q36 6 72 0" fill="none" stroke="#c4acd9" stroke-width="1.5"/>` };
+      return { sideOffset: 0, shadowOffset: 0, sideColor: '#8ebbd5', shadowColor: '#658eae', detail: `<defs>${clip}<linearGradient id="${id('glass')}" x2="1" y2="1"><stop stop-color="#effaff" stop-opacity=".7"/><stop offset=".45" stop-color="#7ab6da" stop-opacity=".15"/><stop offset="1" stop-color="#4f80b0" stop-opacity=".6"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('glass')}"/>${snow}<path d="M20 98q14-10 30-2t50-1v15H20Z" fill="#f0fbff"/></g><path d="M28 53V43q0-9 12-9m43 0 8 5" fill="none" stroke="#f3feff" stroke-width="3" stroke-linecap="round"/><path d="M16 105h88v10q-44 10-88 0Z" fill="#574777" stroke="#c3b3e0" stroke-width="1.5"/><ellipse cx="60" cy="105" rx="44" ry="5" fill="#9a88bd" stroke="#d3c9ee"/><path d="M24 114q36 6 72 0" fill="none" stroke="#c4acd9" stroke-width="1.5"/>` };
     }
-    if (item.id === 'shop_aurora') return {detail:`<g class="custom-aurora">${item.detail}</g>`};
+    if (item.id === 'shop_aurora') {
+      const ribbons = [
+        ['M0 46Q30 10 60 35T120 29', '#84ffd4', 0],
+        ['M0 65Q30 29 60 54T120 48', '#79ddff', -2.3],
+        ['M0 108Q30 72 60 97T120 91', '#dfa8ff', -4.6],
+      ].map(([path, color, delay]) => `<g class="aurora-ribbon" style="animation-delay:${delay}s">` +
+        `<path d="${path}" fill="none" stroke="${color}" stroke-width="17" opacity=".2" filter="${url('aurora-blur')}"/>` +
+        `<path d="${path}" fill="none" stroke="${color}" stroke-width="6" opacity=".75"/>` +
+        `<path d="${path}" fill="none" stroke="#e2fff5" stroke-width="1.2" opacity=".85"/>` +
+        `<path class="aurora-current" style="animation-delay:${delay}s" d="${path}" pathLength="100" fill="none" stroke="#effffa" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 24"/></g>`).join('');
+      return { faceColor: '#eafff4', sideColor: '#294c73',
+        back: `<defs><radialGradient id="${id('aurora-halo')}"><stop offset=".25" stop-color="#7ef2c6" stop-opacity=".32"/><stop offset=".7" stop-color="#93b7ff" stop-opacity=".15"/><stop offset="1" stop-color="#c19aff" stop-opacity="0"/></radialGradient></defs><ellipse class="aurora-halo" cx="60" cy="68" rx="66" ry="65" fill="${url('aurora-halo')}"/>`,
+        detail: `<defs>${clip}<filter id="${id('aurora-blur')}" x="-30%" y="-60%" width="160%" height="220%"><feGaussianBlur stdDeviation="3"/></filter><linearGradient id="${id('aurora-night')}" x2=".7" y2="1"><stop stop-color="#273753"/><stop offset=".6" stop-color="#314d75"/><stop offset="1" stop-color="#4e396f"/></linearGradient></defs>` +
+          `<g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('aurora-night')}"/>${ribbons}` +
+          [[29,38],[78,33],[90,78],[31,89],[68,99]].map(([x,y],i)=>sparkle(x,y,-i*.8,1.5)).join('') +
+          '</g><path d="M25 49V40q0-7 8-7m54 70h3q5 0 5-6" fill="none" stroke="#9cf2dd" stroke-width="1.2" opacity=".7"/>' };
+    }
     if (item.id === 'shop_disco') return {detail:item.detail + sparkle(30,38,-.8) + sparkle(86,91,-1.9) + sparkle(80,45,-.2,3)};
     return null;
   }
@@ -1091,7 +1360,96 @@ const CubieCustoms = (() => {
       back: defs + back,
       detail: `<g clip-path="${url('body')}">${shell}</g>${detail}${finish}<g class="attack-fine-detail">${extra}</g>` };
   }
+  function faceBlush(item) {
+    const [left, right, y, rx, ry] = item.id === 'golden_hand' ? [50, 101, 113, 9, 5]
+      : ['diamond', 'star'].includes(item.id) ? [36, 109, 84, 10, 6]
+      : item.id === 'shop_space_junk' ? [40, 103, 84, 8, 5]
+      : item.id === 'shop_hacker' ? [30, 119, 80, 10, 5]
+      : [30, 115, 86, 14.5, 8];
+    return `<g class="cubie-blush" fill="#f17f99"><ellipse cx="${left}" cy="${y}" rx="${rx}" ry="${ry}"/><ellipse cx="${right}" cy="${y}" rx="${rx}" ry="${ry}"/></g>`;
+  }
+  function puzzleCubeSvg() {
+    const palette = ['#ee5254', '#f5a43c', '#ffe064', '#55c780', '#548eea', '#f1f3ef'];
+    // A fixed, balanced scramble keeps previews stable across renders and reloads.
+    const stickers = Array.from({length:54}, (_,i) => palette[Math.floor(i/9)]);
+    let seed = 72841;
+    for (let i = stickers.length-1; i > 0; i--) {
+      seed = (Math.imul(seed,1664525) + 1013904223) >>> 0;
+      const j = seed % (i+1);
+      [stickers[i],stickers[j]] = [stickers[j],stickers[i]];
+    }
+    let sticker = 0;
+    const sides = ['front','right','back','left','top','bottom'];
+    const layers = [-1,0,1].map((y,row) => {
+      const blocks = [];
+      for (let z=-1; z<=1; z++) for (let x=-1; x<=1; x++) {
+        if (x===0 && y===0 && z===0) continue;
+        const faces = sides.map((side,index) => {
+          const external = [z===1,x===1,z===-1,x===-1,y===-1,y===1][index];
+          const color = external ? stickers[sticker++] : null;
+          return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect x=".3" y=".3" width="33.4" height="33.4" rx="1.8" fill="#52616b" stroke="#596873" stroke-width=".4"/>${color ? `<rect class="puzzle-sticker" data-color="${color}" x=".7" y=".7" width="32.6" height="32.6" rx="1.5" fill="${color}"/><path d="M5 14V6q0-1 1-1h20" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".9"/><path d="M29 19v8q0 2-2 2H9" fill="none" stroke="#101820" stroke-opacity=".2" stroke-width=".8"/>` : ''}</svg></div>`;
+        }).join('');
+        blocks.push(`<div class="puzzle-block" style="transform:translate3d(${x*36}px,${y*36}px,${z*36}px)">${faces}</div>`);
+      }
+      return `<div class="puzzle-layer puzzle-layer-${row}">${blocks.join('')}</div>`;
+    }).join('');
+    // The expression is composited above the moving blocks, so no rotating
+    // edge can carry an eye away or draw a seam across Cubie's smile.
+    const expression = '<div class="puzzle-face-overlay"><div class="puzzle-face-anchor"><div class="puzzle-expression"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 145 145"><g class="cubie-eyes" fill="#17251a" stroke="#fff4d5" stroke-width="1" paint-order="stroke"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g><path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="#17251a" stroke="#fff4d5" stroke-width="1" paint-order="stroke"/><g class="cubie-blush" fill="#f17f99"><ellipse cx="30" cy="86" rx="14.5" ry="8"/><ellipse cx="115" cy="86" rx="14.5" ry="8"/></g></svg></div></div></div>';
+    return `<svg class="cubie-custom-art" data-custom="shop_puzzle_cube" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g class="cubie-float"><foreignObject width="145" height="145" class="puzzle-volume"><div xmlns="http://www.w3.org/1999/xhtml" class="puzzle-scene"><div class="puzzle-cube">${layers}</div>${expression}</div></foreignObject></g></svg>`;
+  }
+  function discoSphereSvg() {
+    const colors = ['#b6bbc4', '#d0d3d9', '#a6adb8', '#c3c6cd', '#dde0e5', '#b5b8c5'];
+    const radius = 62, rows = 12, columns = 24;
+    const radians = Math.PI / 180;
+    const halfLongitude = Math.PI / columns;
+    const fixed = value => Number(value.toFixed(4));
+    const tiles = [];
+    for (let row = 0; row < rows; row++) {
+      const top = (90 - row * 180 / rows) * radians;
+      const bottom = top - Math.PI / rows;
+      const yTop = -radius * Math.sin(top), yBottom = -radius * Math.sin(bottom);
+      const zTop = radius * Math.cos(top) * Math.cos(halfLongitude);
+      const zBottom = radius * Math.cos(bottom) * Math.cos(halfLongitude);
+      const topWidth = 2 * radius * Math.cos(top) * Math.sin(halfLongitude);
+      const bottomWidth = 2 * radius * Math.cos(bottom) * Math.sin(halfLongitude);
+      const width = Math.max(topWidth, bottomWidth);
+      const height = Math.hypot(yBottom - yTop, zBottom - zTop);
+      const tilt = Math.atan2(zBottom - zTop, yBottom - yTop) / radians;
+      // Trapezoids share exact spherical corner positions, including the poles.
+      const points = [[(width-topWidth)/2,0],[(width+topWidth)/2,0],
+        [(width+bottomWidth)/2,height],[(width-bottomWidth)/2,height]]
+        .map(point => point.map(fixed).join(',')).join(' ');
+      for (let column = 0; column < columns; column++) {
+        const longitude = -180 + (column + .5) * 360 / columns;
+        const eye = Math.abs(longitude) === 22.5 && (row === 3 || row === 4);
+        const smile = (row === 7 && Math.abs(longitude) <= 22.5)
+          || (row === 6 && Math.abs(longitude) === 22.5);
+        const tile = `<polygon points="${points}" fill="${colors[(row*3+column)%colors.length]}" stroke="#747d8b" stroke-width=".6"/>`;
+        const face = eye ? `<g class="cubie-eyes"><polygon points="${points}" fill="#253449"/></g>`
+          : smile ? `<polygon class="cubie-smile" points="${points}" fill="#253449"/>` : '';
+        const blush = row === 5 && [37.5, 52.5].includes(Math.abs(longitude))
+          ? `<g class="cubie-blush"><polygon points="${points}" fill="#f17f99"/></g>` : '';
+        const transform = `translate(-50%, -50%) rotateY(${longitude}deg) translate3d(0, ${fixed((yTop+yBottom)/2)}px, ${fixed((zTop+zBottom)/2)}px) rotateX(${fixed(tilt)}deg)`;
+        tiles.push(`<div class="disco-tile" style="width:${fixed(width)}px;height:${fixed(height)}px;transform:${transform}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fixed(width)} ${fixed(height)}">${tile}${face}${blush}</svg></div>`);
+      }
+    }
+    return `<svg class="cubie-custom-art" data-custom="shop_disco" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g class="cubie-float"><foreignObject x="0" y="0" width="145" height="145" class="disco-volume"><div xmlns="http://www.w3.org/1999/xhtml" class="disco-scene"><div class="disco-sphere">${tiles.join('')}</div><div class="disco-shading"></div></div></foreignObject></g></svg>`;
+  }
+  function threeDCubieSvg() {
+    return '<svg class="cubie-custom-art" data-custom="three_d" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">' +
+      '<g class="cubie-3d-float"><path d="M72 8 132 40 72 72 12 40Z" fill="#dfffad" stroke="#eaffc9" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<path d="M72 72 132 40V106L72 138Z" fill="#719e47" stroke="#517c34" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<path d="M12 40 72 72V138L12 106Z" fill="#b8eb77" stroke="#8dbb55" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<path d="M12 40 72 72 132 40M72 72V138" fill="none" stroke="#efffc9" stroke-width="1.2" stroke-linejoin="round"/>' +
+      '<g transform="matrix(.413793 .220690 0 .455172 12 40)"><g class="cubie-eyes" fill="#263c22"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g>' +
+      '<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="#263c22"/>' +
+      '<g class="cubie-blush" fill="#f17f99"><ellipse cx="30" cy="86" rx="14.5" ry="8"/><ellipse cx="115" cy="86" rx="14.5" ry="8"/></g></g></g></svg>';
+  }
   function svg(item) {
+    if (item.id === 'shop_puzzle_cube') return puzzleCubeSvg();
+    if (item.id === 'three_d') return threeDCubieSvg();
+    if (item.id === 'shop_disco') return discoSphereSvg();
     const uid = ++artId;
     const enhanced = polishAttackArt(item, animatedArt(item, uid), uid);
     let detail = enhanced?.detail || item.detail;
@@ -1124,6 +1482,7 @@ const CubieCustoms = (() => {
       (enhanced?.eyes || `<g fill="${faceColor}" class="cubie-eyes"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/>${enhanced?.eyeHighlights || ""}</g>`) +
       (enhanced?.eyeEffects || "") +
       (enhanced?.mouth || `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${faceColor}"/>`) +
+      faceBlush(item) +
       (item.id === 'shop_koi' ? '</g>' : '') +
       (item.id === 'shop_koi' ? '</g>' : '') +
       '</g></svg>';

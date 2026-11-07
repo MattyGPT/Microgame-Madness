@@ -1023,7 +1023,10 @@ function fitArcade() {
   const headingMargin = parseFloat(getComputedStyle(heading).marginBottom);
   const chromeHeight = heading.offsetHeight + headingMargin + footer.offsetHeight
     + $("touch-controls").offsetHeight + $("player-health").offsetHeight + 28;
-  const viewportHeight = window.visualViewport?.height ?? innerHeight;
+  // Pinch zoom shrinks the visual viewport in CSS pixels, not the page's
+  // layout. Undo that scale so zoom magnifies the fight instead of shrinking it.
+  const viewport = window.visualViewport;
+  const viewportHeight = viewport ? Math.round(viewport.height * viewport.scale) : innerHeight;
   $("arena").style.setProperty("--player-health-height", `${$("player-health").offsetHeight}px`);
   const height = Math.max(1, viewportHeight - chromeHeight);
   const width = Math.min($("arena").clientWidth - 2, height * 680 / 560);
@@ -2039,6 +2042,22 @@ coreOrigin = new CoreOrigin.Film($("core-origin"), {
 });
 initializeGlobalLeaderboards();
 initializeAchievements();
+// Save elapsed open-page time across visits; a fresh load starts a fresh clock.
+let websiteTimeCheckpoint = performance.now();
+function saveWebsiteTime() {
+  const now = performance.now();
+  const seconds = Math.floor((now - websiteTimeCheckpoint) / 1000);
+  if (seconds <= 0) return;
+  websiteTimeCheckpoint += seconds * 1000;
+  updateAchievements(achievementTracker.spendTime(seconds));
+}
+setInterval(saveWebsiteTime, 10000);
+document.addEventListener("visibilitychange", saveWebsiteTime);
+window.addEventListener("pagehide", saveWebsiteTime);
+// A page restored from the back/forward cache starts another visit interval.
+window.addEventListener("pageshow", event => {
+  if (event.persisted) websiteTimeCheckpoint = performance.now();
+});
 applyCubieCustom();
 selectGame("hangman");
 if (saved.unlocks.singularity || saved.player.trim().toUpperCase() === "GRAVITRON")
@@ -2055,7 +2074,8 @@ const gameLayout = new ResizeObserver(() => fitArcade());
 for (const selector of [".game-heading", ".game-footer", "#touch-controls", "#player-health"])
   gameLayout.observe(document.querySelector(selector));
 function resizeGameArea() {
-  if (!$("game-canvas").hidden) showGameArea();
+  // Resizing (including pinch zoom) must not recenter a user's zoomed view.
+  fitArcade();
 }
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);

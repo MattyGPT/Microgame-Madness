@@ -272,6 +272,9 @@ h1 em {
 .pixel-face::before { left: 16px; }
 .pixel-face::after { right: 16px; }
 .pixel-face.blushing::before, .pixel-face.blushing::after { opacity: .95; }
+.pixel-face.custom-equipped::before, .pixel-face.custom-equipped::after { display: none; }
+.cubie-blush { opacity: 0; transition: opacity 120ms ease; }
+.pixel-face.blushing .cubie-blush { opacity: .95; }
 @keyframes mascot-float {
   0%, 100% { transform: translateY(0) rotate(-14deg); }
   50% { transform: translateY(-11px) rotate(-11deg); }
@@ -2084,6 +2087,13 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .globe-snow { animation: globe-snowfall 4s linear infinite; }
 @keyframes globe-snowfall { from { transform: translate(-3px, -65px); } to { transform: translate(3px, 76px); } }
 .custom-aurora { animation: custom-aurora-shift 5s ease-in-out infinite alternate; }
+.aurora-ribbon { transform-origin:60px 68px; animation:aurora-drift 7s ease-in-out infinite alternate; }
+.aurora-current { animation:aurora-current 4.5s linear infinite; }
+.aurora-halo { transform-origin:60px 68px; animation:aurora-glow 5s ease-in-out infinite alternate; }
+@keyframes aurora-drift { from { transform:translate(-7px,-3px) skewY(-5deg); } to { transform:translate(7px,4px) skewY(5deg); } }
+@keyframes aurora-current { to { stroke-dashoffset:-104; } }
+@keyframes aurora-glow { from { opacity:.65; transform:scale(.95); } to { opacity:1; transform:scale(1.08); } }
+@media (prefers-reduced-motion:reduce) { .aurora-ribbon, .aurora-current, .aurora-halo { animation:none; } }
 @keyframes custom-aurora-shift { to { filter: hue-rotate(45deg) brightness(1.15); opacity: .85; } }
 @media (prefers-reduced-motion: reduce) {
   .custom-sparkle, .whale-galaxy, .whale-fin, .whale-tail, .whale-spout,
@@ -2417,3 +2427,191 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 @keyframes attack-glimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; filter: drop-shadow(0 0 1.5px #b5fff1); } }
 @keyframes attack-energy-flow { to { stroke-dashoffset: -100; } }
 @keyframes attack-orbit-halo { to { transform: rotate(360deg); } }
+
+.cabinet-scan { animation: cabinet-scan 4s linear infinite; }
+@keyframes cabinet-scan { to { transform: translateY(54px); } }
+
+/* Joined latitude bands form a complete mirrored sphere, including its poles. */
+.disco-volume { overflow: visible; }
+.disco-scene { width: 145px; height: 145px; position: relative; perspective: 650px; overflow: visible; }
+.disco-sphere {
+  width: 145px;
+  height: 145px;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(-12deg) rotateY(0deg);
+  animation: disco-turn 12s linear infinite;
+}
+.disco-tile {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+}
+.disco-tile svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.disco-shading {
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 32% 25%, #ffffff55, transparent 40%),
+    radial-gradient(circle at 40% 35%, transparent 36%, #111a2944 76%, #111a2980 100%);
+}
+/* Linger around the smile, accelerate across the back, then ease back in. */
+@keyframes disco-turn {
+  0% { transform: rotateX(-12deg) rotateY(0deg); }
+  25% { transform: rotateX(-12deg) rotateY(45deg); }
+  40% { transform: rotateX(-12deg) rotateY(90deg); }
+  50% { transform: rotateX(-12deg) rotateY(180deg); }
+  60% { transform: rotateX(-12deg) rotateY(270deg); }
+  75% { transform: rotateX(-12deg) rotateY(315deg); }
+  100% { transform: rotateX(-12deg) rotateY(360deg); }
+}
+
+/* Loco's body and face jiggle together. */
+.cubie-custom-art[data-custom="shop_loco"] .cubie-float {
+  transform-origin: 72.5px 90px;
+  animation: loco-jiggle .7s ease-in-out infinite;
+}
+@keyframes loco-jiggle {
+  0%, 100% { transform: rotate(-14deg) scale(1, 1); }
+  25% { transform: translate(-3px, 1px) rotate(-19deg) scale(1.045, .955); }
+  50% { transform: translate(0, -2px) rotate(-13deg) scale(.97, 1.035); }
+  75% { transform: translate(3px, 1px) rotate(-8deg) scale(1.045, .955); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art[data-custom="shop_loco"] .cubie-float { animation: none; }
+}
+
+.matrix-code-column { animation:matrix-code-fall 3s linear infinite; }
+@keyframes matrix-code-fall { from { transform:translateY(0); } to { transform:translateY(96px); } }
+@media (prefers-reduced-motion:reduce) { .matrix-code-column { animation:none; } }
+
+.cubie-3d-float { transform-origin: 72px 73px; animation: cubie-3d-bob 3.8s ease-in-out infinite; }
+@keyframes cubie-3d-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .cubie-3d-float { animation: none; } }
+
+.choo-wheel { animation: choo-wheel 2s linear infinite; }
+@keyframes choo-wheel { to { transform: rotate(360deg); } }
+.choo-steam { animation: choo-steam 2.4s ease-out infinite; }
+@keyframes choo-steam { from { transform: translate(0, 0); opacity: .75; } to { transform: translate(16px, -28px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .choo-wheel, .choo-steam { animation: none; } }
+
+.cubie-custom-art[data-custom="shop_balloon"] .cubie-float { animation: balloon-bob 4s ease-in-out infinite; transform-origin: 72.5px 72.5px; }
+@keyframes balloon-bob { 0%, 100% { transform: translate(-2px, 2px) rotate(-7deg); } 50% { transform: translate(3px, -7px) rotate(5deg); } }
+.balloon-string { transform-origin: 60px 116px; animation: balloon-string 3s ease-in-out infinite alternate; }
+@keyframes balloon-string { from { transform: rotate(-9deg); } to { transform: rotate(10deg); } }
+@media (prefers-reduced-motion: reduce) { .cubie-custom-art[data-custom="shop_balloon"] .cubie-float, .balloon-string { animation: none; } }
+
+/* Party Cubie: an eight-second celebration with a quiet, readable face. */
+.party-edge-glow { filter: drop-shadow(0 0 1.6px #ffe4a7aa) drop-shadow(0 0 3.2px #c493ff77); pointer-events: none; }
+.cubie-custom-art[data-custom="party"] .cubie-float { animation: party-dance 8s ease-in-out infinite; }
+.party-hat { transform-origin: 60px 33px; animation: party-hat 8s ease-in-out infinite; }
+.party-confetti { animation: party-confetti 8s cubic-bezier(.2,.5,.45,1) infinite; }
+.party-sparkle { transform-box: fill-box; transform-origin: center; animation: party-sparkle 4s ease-in-out infinite; }
+.party-firework { animation: party-firework 8s ease-out infinite; }
+.party-aura { transform-origin: 60px 62px; animation: party-aura 8s ease-in-out infinite; }
+.party-orbit { transform-origin: 60px 68px; animation: party-orbit 24s linear infinite; }
+.party-ribbon { transform-origin: 0px 0px; animation: party-ribbon 4s ease-in-out infinite alternate; }
+.party-popper { transform-origin: 0px 10px; animation: party-popper 8s ease-in-out infinite; }
+.party-popper-flash { animation: party-popper-flash 8s ease-in-out infinite; animation-delay: inherit; }
+.party-sheen { animation: party-sheen 8s ease-in-out infinite; }
+.party-hat-shine { animation: party-hat-shine 8s ease-in-out infinite; }
+.party-topper { animation: party-topper 8s ease-in-out infinite; }
+.party-bow { transform-origin: 60px 100px; animation: party-bow 8s ease-in-out infinite; }
+@keyframes party-dance {
+  0%, 100% { transform: translateY(0) rotate(-12deg); }
+  18%, 58% { transform: translateY(-7px) rotate(-8deg); }
+  26%, 66% { transform: translateY(-3px) rotate(-15deg); }
+  38%, 78% { transform: translateY(-9px) rotate(-11deg); }
+}
+@keyframes party-hat {
+  0%, 44%, 100% { transform: rotate(-2deg); }
+  18%, 58% { transform: translateY(-1px) rotate(4deg); }
+  28%, 68% { transform: rotate(-5deg); }
+}
+@keyframes party-confetti {
+  0%, 100% { transform: translate(0, 9px) rotate(0deg) scale(.7); opacity: 0; }
+  12% { opacity: 1; }
+  38% { transform: translate(var(--party-drift), -18px) rotate(var(--party-twist)) scale(1); opacity: 1; }
+  80% { transform: translate(calc(var(--party-drift) * 1.5), 14px) rotate(calc(var(--party-twist) * 2)) scale(.8); opacity: .65; }
+  96% { opacity: 0; }
+}
+@keyframes party-sparkle { 0%, 100% { opacity: .35; transform: scale(.65); } 45% { opacity: 1; transform: scale(1.15); } }
+@keyframes party-firework {
+  0%, 12%, 64%, 100% { transform: scale(.2); opacity: 0; }
+  20% { transform: scale(.5); opacity: .9; }
+  36% { transform: scale(1); opacity: .85; }
+  58% { transform: scale(1.18); opacity: 0; }
+}
+@keyframes party-aura { 0%, 100% { opacity: .55; transform: scale(.95); } 25%, 65% { opacity: 1; transform: scale(1.03); } }
+@keyframes party-orbit { to { transform: rotate(360deg); } }
+@keyframes party-ribbon { from { transform: rotate(-5deg) scaleY(.94); } to { transform: rotate(5deg) scaleY(1.04); } }
+@keyframes party-popper { 0%, 14%, 40%, 100% { transform: rotate(0deg); } 20% { transform: translateY(3px) rotate(-7deg); } 29% { transform: rotate(3deg); } }
+@keyframes party-popper-flash { 0%, 12%, 32%, 100% { opacity: 0; } 19%, 23% { opacity: 1; } }
+@keyframes party-sheen { 0%, 12% { transform: translateX(-50px); } 48%, 100% { transform: translateX(150px); } }
+@keyframes party-hat-shine { 0%, 38% { transform: translateX(-50px); } 70%, 100% { transform: translateX(90px); } }
+@keyframes party-topper { 0%, 100% { transform: rotate(-10deg) scale(.9); } 40% { transform: rotate(80deg) scale(1.12); } 75% { transform: rotate(170deg) scale(.95); } }
+@keyframes party-bow { 0%, 100% { transform: scale(1); } 20%, 60% { transform: scale(1.08, .94); } 30%, 70% { transform: scale(.98, 1.04); } }
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art[data-custom="party"] * { animation: none !important; }
+  .party-firework { opacity: .65; transform: scale(.85); }
+  .party-confetti { opacity: .8; }
+  .party-sheen, .party-hat-shine, .party-popper-flash { opacity: 0; }
+}
+
+.rainbow-crayon-sparkle { animation: rainbow-crayon-sparkle 2.2s ease-in-out infinite alternate; }
+@keyframes rainbow-crayon-sparkle { from { opacity: .3; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rainbow-crayon-sparkle { animation: none; } }
+
+/* Puzzle Cube: real blocks turn in three independently animated layers. */
+.puzzle-volume { overflow: visible; }
+.puzzle-scene { width: 145px; height: 145px; position: relative; perspective: 700px; overflow: visible; }
+.puzzle-cube, .puzzle-face-anchor {
+  position: absolute; left: 50%; top: 50%; width: 0; height: 0;
+  transform-origin: 0 0;
+  transform-style: preserve-3d;
+  transform: scale(.9) rotateX(-16deg) rotateY(-22deg);
+}
+.puzzle-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; transform-style: preserve-3d; animation: puzzle-top 16s cubic-bezier(.65,0,.35,1) infinite; }
+.puzzle-layer-1 { animation-name: puzzle-middle; }
+.puzzle-layer-2 { animation-name: puzzle-bottom; }
+.puzzle-block { position: absolute; left: -17.8px; top: -17.8px; width: 35.6px; height: 35.6px; transform-style: preserve-3d; }
+.puzzle-face { position: absolute; inset: 0; backface-visibility: hidden; }
+.puzzle-face svg { display: block; width: 35.6px; height: 35.6px; }
+.puzzle-face-front { transform: translateZ(17.8px); }
+.puzzle-face-right { transform: rotateY(90deg) translateZ(17.8px); }
+.puzzle-face-back { transform: rotateY(180deg) translateZ(17.8px); }
+.puzzle-face-left { transform: rotateY(-90deg) translateZ(17.8px); }
+.puzzle-face-top { transform: rotateX(90deg) translateZ(17.8px); }
+.puzzle-face-bottom { transform: rotateX(-90deg) translateZ(17.8px); }
+.puzzle-face-right svg, .puzzle-face-left svg { filter: brightness(.88); }
+.puzzle-face-back svg, .puzzle-face-bottom svg { filter: brightness(.74); }
+/* Separate compositing keeps the familiar face above every turning seam. */
+.puzzle-face-overlay { position: absolute; inset: 0; perspective: 700px; pointer-events: none; }
+.puzzle-expression { position: absolute; left: -54px; top: -54px; width: 108px; height: 108px; transform: translateZ(54px); }
+.puzzle-expression svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@keyframes puzzle-top {
+  0%, 8%, 38%, 46%, 78%, 100% { transform: rotateY(0deg); }
+  16%, 30% { transform: rotateY(90deg); }
+  54%, 70% { transform: rotateY(-90deg); }
+}
+@keyframes puzzle-middle {
+  0%, 40%, 72%, 100% { transform: rotateY(0deg); }
+  48%, 64% { transform: rotateY(90deg); }
+}
+@keyframes puzzle-bottom {
+  0%, 24%, 56%, 80%, 100% { transform: rotateY(0deg); }
+  32%, 48% { transform: rotateY(-90deg); }
+  88%, 94% { transform: rotateY(90deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art[data-custom="shop_puzzle_cube"] * { animation: none !important; }
+}
+
+.shop-sun-rays { transform-origin:60px 68px; animation:shop-sun-rays 35s linear infinite; }
+@keyframes shop-sun-rays { to { transform:rotate(360deg); } }
+.shop-six-twinkle, .shop-bulb-glow { animation:shop-six-glow 2.8s ease-in-out infinite alternate; }
+@keyframes shop-six-glow { from { opacity:.4; } to { opacity:1; } }
+@media (prefers-reduced-motion:reduce) { .shop-sun-rays, .shop-six-twinkle, .shop-bulb-glow { animation:none; } }

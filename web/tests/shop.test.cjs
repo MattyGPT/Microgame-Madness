@@ -40,7 +40,7 @@ test('purchases deduct exactly once, persist ownership, and gate equipment', () 
   const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
   assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
   assert.deepEqual(Shop.restore({ units: -1, owned: ['gaster', item.id, item.id, '__proto__'] }, Customs.catalog), { units: 0, owned: [item.id] });
-  assert.equal(Customs.catalog.filter(c => c.price).length, 53);
+  assert.equal(Customs.catalog.filter(c => c.price).length, 65);
 });
 
 test('original shop prices increase tenfold without removing existing ownership', () => {
@@ -49,8 +49,8 @@ test('original shop prices increase tenfold without removing existing ownership'
   assert.deepEqual(items.slice(0, 12).map(c => c.price), prices);
   const wallet = Shop.restore({ units: 0, owned: ['shop_blue_mint'] }, Customs.catalog);
   assert.equal(Customs.selected('shop_blue_mint', {}, wallet.owned).id, 'shop_blue_mint');
-  assert.equal(new Set(items.map(c => c.detail)).size, 53);
-  assert.equal(new Set(items.map(c => c.flavor)).size, 53);
+  assert.equal(new Set(items.map(c => c.detail)).size, 65);
+  assert.equal(new Set(items.map(c => c.flavor)).size, 65);
 });
 
 test('Hacker Cubie costs exactly 4000 Cash and keeps purchased ownership', () => {
@@ -77,4 +77,21 @@ test('Space Junk Cubie costs 1230 Cash and purchased equipment persists', () => 
   assert.equal(wallet.units, 0);
   const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
   assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
+});
+
+test('Puzzle Cube costs 2000 Cash, persists ownership, and keeps a balanced scramble', () => {
+  const item = Customs.catalog.find(c => c.id === 'shop_puzzle_cube');
+  assert.equal(item.price, 2000);
+  const wallet = Shop.restore({ units: 1999999 }, Customs.catalog);
+  assert.equal(Shop.buy(wallet, item), false);
+  wallet.units++;
+  assert.equal(Shop.buy(wallet, item), true);
+  assert.equal(wallet.units, 0);
+  assert.equal(Shop.buy(wallet, item), false);
+  const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
+  assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
+  const colors = [...Customs.svg(item).matchAll(/data-color="(#[a-f\d]+)"/g)].map(match => match[1]);
+  assert.equal(colors.length, 54);
+  assert.equal(new Set(colors).size, 6);
+  for (const color of new Set(colors)) assert.equal(colors.filter(c => c === color).length, 9);
 });

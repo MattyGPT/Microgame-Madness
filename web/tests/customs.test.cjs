@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('138 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 138);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 138);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 138);
+test('155 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 155);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 155);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 155);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -233,4 +233,65 @@ test('Chocolate Cubie counts 20 actual healing pickups across modes and reloads 
   tracker.start('core_practice', 'final_cutscene');
   tracker.observe({mode:'core_practice', difficulty:'final_cutscene', over:true, healing_collected:30});
   assert.equal(tracker.data.stats.healingItems, 20);
+});
+
+test('3D Cubie unlocks on click 500 and recognizes saved clicks', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'three_d');
+  let tracker = new Tracker({ stats: { cubePets: 499 } });
+  tracker.visit();
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, 'classic');
+  assert.ok(tracker.secret('cube').earned.some(a => a.id === 'cube_pet_500'));
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, item.id);
+  assert.ok(!tracker.secret('cube').earned.some(a => a.id === 'cube_pet_500'));
+  const existing = new Tracker({ stats: { cubePets: 600 } });
+  existing.visit();
+  assert.equal(Customs.selected(item.id, existing.data.unlocked).id, item.id);
+});
+
+test('Choo Choo unlocks at five cumulative hours, persists, and rejects invalid time', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'choo_choo');
+  assert.equal(item.tier, 'rainbow');
+  let tracker = new Tracker();
+  tracker.visit();
+  for (const bad of [-1, NaN, Infinity, '18000', 1.5]) tracker.spendTime(bad);
+  assert.equal(tracker.data.stats.websiteSeconds, 0);
+  tracker.spendTime(9000);
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  tracker.visit();
+  tracker.spendTime(8999);
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, 'classic');
+  assert.ok(tracker.spendTime(1).earned.some(a => a.id === 'website_5_hours'));
+  const stamp = tracker.data.unlocked.website_5_hours;
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, item.id);
+  assert.ok(!tracker.spendTime(10).earned.some(a => a.id === 'website_5_hours'));
+  assert.equal(tracker.data.unlocked.website_5_hours, stamp);
+});
+
+test('Party Cubie continues past five hours and unlocks at ten hours across visits', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'party');
+  assert.equal(item.tier, 'empyrorite');
+  let tracker = new Tracker({ stats: { websiteSeconds: 18000 } });
+  tracker.visit();
+  tracker.spendTime(17999);
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, 'classic');
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.ok(tracker.spendTime(1).earned.some(a => a.id === 'website_10_hours'));
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, item.id);
+  assert.equal(tracker.spendTime(10).changed, false);
+  const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(Customs.selected(item.id, restored.data.unlocked).id, item.id);
+});
+
+test('Rainbow Crayon renders its detailed rainbow artwork rather than its fallback', () => {
+  const item = Customs.catalog.find(c => c.id === 'shop_rainbow_crayon');
+  const art = Customs.svg(item);
+  assert.equal(item.price, 2026);
+  assert.match(art, /linearGradient id="crayon-rainbow-/);
+  assert.match(art, /rainbow-crayon-sparkle/);
+  assert.match(art, /crayon-shade-/);
 });

@@ -118,3 +118,66 @@ test('ring particles share a continuous closed circuit across front and rear lay
   }
   await page.screenshot({ path: testInfo.outputPath('ring-circuits.png'), fullPage: true });
 });
+
+test('petting blush follows custom faces and disappears after petting', async ({ page }, testInfo) => {
+  await gallery(page);
+  await page.evaluate(() => {
+    document.querySelectorAll('.sample').forEach(el => {
+      el.classList.add('pixel-face', 'custom-equipped', 'blushing');
+      el.style.cssText = 'position:relative;top:auto;left:auto;margin:0;width:90px;height:90px;animation:none;transform:none';
+    });
+  });
+  await page.waitForTimeout(150);
+  const blushes = page.locator('.cubie-blush');
+  expect(await blushes.count()).toBeGreaterThanOrEqual(Customs.catalog.length);
+  expect(await blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) > .9))).toBe(true);
+  expect(await page.locator('.sample').evaluateAll(els => els.every(el => getComputedStyle(el, '::before').display === 'none' && getComputedStyle(el, '::after').display === 'none'))).toBe(true);
+  await expect(page.locator('[data-skin="golden_hand"] .cubie-blush ellipse').first()).toHaveAttribute('cy', '113');
+  expect(await page.locator('[data-skin="three_d"] .cubie-blush').evaluate(el => el.parentNode.getAttribute('transform'))).toContain('matrix(');
+  await expect(page.locator('[data-skin="shop_koi"] .koi-face .cubie-blush')).toHaveCount(1);
+  await expect(page.locator('[data-skin="shop_disco"] .disco-tile .cubie-blush')).toHaveCount(4);
+  await page.locator('.sample').evaluateAll(els => els.forEach(el => el.classList.remove('blushing')));
+  await page.waitForTimeout(150);
+  expect(await blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) === 0))).toBe(true);
+});
+
+test('Puzzle Cube turns independent layers, loops seamlessly, and stays still with reduced motion', async ({ page }, testInfo) => {
+  const item = Customs.catalog.find(c => c.id === 'shop_puzzle_cube');
+  await page.setContent(`<style>${css}</style><div style="width:145px;height:145px;margin:100px auto">${Customs.svg(item)}</div>`);
+  const inspect = phase => page.evaluate(phase => {
+    document.getAnimations().forEach(animation => {
+      animation.pause(); animation.currentTime = animation.animationName === 'custom-float' ? 0 : animation.effect.getTiming().duration * phase;
+    });
+    return [...document.querySelectorAll('.puzzle-layer')].map(el => getComputedStyle(el).transform);
+  }, phase);
+  const start = await inspect(0);
+  const face = page.locator('.puzzle-expression');
+  const originalFace = await face.boundingBox();
+  await expect(page.locator('.puzzle-layer .cubie-eyes')).toHaveCount(0);
+  await expect(page.locator('.puzzle-expression .cubie-eyes')).toHaveCount(1);
+  for (const phase of [.12, .48, .9]) {
+    await inspect(phase);
+    const bounds = await face.boundingBox();
+    for (const dimension of ['x', 'y', 'width', 'height'])
+      expect(bounds[dimension]).toBeCloseTo(originalFace[dimension], 3);
+    const origins = await page.locator('.puzzle-layer').evaluateAll(layers => layers.map(layer => getComputedStyle(layer).transformOrigin));
+    expect(origins).toEqual(['0px 0px', '0px 0px', '0px 0px']);
+  }
+  const turned = await inspect(.2);
+  expect(turned[0]).not.toEqual(start[0]);
+  expect(turned[1]).toEqual(start[1]);
+  expect(turned[2]).toEqual(start[2]);
+  await page.screenshot({ path: testInfo.outputPath('puzzle-cube-turn.png') });
+  expect(await inspect(1)).toEqual(start);
+  // Every original face contains several colors; the top/bottom remain
+  // scrambled throughout their turns, so the animation cannot become solved.
+  for (const side of ['front', 'right', 'back', 'left', 'top', 'bottom']) {
+    const colors = await page.locator(`.puzzle-face-${side} .puzzle-sticker`).evaluateAll(els => els.map(el => el.dataset.color));
+    expect(colors).toHaveLength(9);
+    expect(new Set(colors).size).toBeGreaterThan(2);
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+  await expect(page.locator('.cubie-smile')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('puzzle-cube-still.png') });
+});

@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 209);
+  assert.equal(catalog.length, 214);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
@@ -39,7 +39,7 @@ test('Determination combines losses across all seven minigames and awards crysta
     const [mode, difficulty] = modes[lost % modes.length];
     tracker.start(mode, difficulty);
     const state = { mode, difficulty, over: true, won: false, damage_taken: 1 };
-    assert.deepEqual(ids(tracker.observe(state)), []);
+    assert.deepEqual(ids(tracker.observe(state)), lost === 13 ? ['arcade_deaths_10'] : []);
     assert.equal(tracker.data.stats.totalLosses, lost + 1);
     assert.equal(tracker.progress(item), lost + 1);
     assert.equal(tracker.observe(state).changed, false);
@@ -548,7 +548,7 @@ test('all added milestones unlock exactly at their threshold, including five new
   assert.equal(tracker.data.stats.pumpkinFlawlessWins, 4);
   assert.equal(points.rainbow, 2430);
   assert.ok(points.rainbow > points.diamond);
-  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 22);
+  assert.equal(catalog.filter(item => item.tier === 'rainbow').length, 23);
 });
 
 test('retiering recalculates existing profile scores without changing dates or re-awarding medals', () => {

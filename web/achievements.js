@@ -21,6 +21,9 @@ const Achievements = (() => {
   add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
   add("cube_pet_100", "Cubie's Best Friend", "crystal", "Arcade", "Pet Cubie 100 times.", "cubePets", 100);
   add("healing_20", "Sweet Recovery", "silver", "Arcade", "Collect 20 healing items in total across fights and Core attack practice.", "healingItems", 20);
+  add("website_10_hours", "The Party Never Stops", "empyrorite", "Arcade", "Spend 10 hours total on the website across visits (36,000 seconds).", "websiteSeconds", 36000);
+  add("website_5_hours", "All Aboard!", "rainbow", "Arcade", "Spend 5 hours total on the website across visits (18,000 seconds).", "websiteSeconds", 18000);
+  add("cube_pet_500", "A New Dimension", "diamond", "Arcade", "Click Cubie 500 times in total.", "cubePets", 500);
   add("cube_pet_1000", "A Thousand Little Hugs", "empyrorite", "Arcade", "Pet Cubie 1,000 times.", "cubePets", 1000);
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
@@ -242,6 +245,8 @@ const Achievements = (() => {
   add("pumpkin_merciful", "Mercy for the King", "rainbow", "Pumpkin King", "Survive 5 minutes in one Pumpkin King fight without firing a single shot, in any mode.", "pumpkinMercifulBest", 300);
   add("pumpkin_speedrunner", "Beat the Clock", "diamond", "Pumpkin King", "Defeat the Pumpkin King in 70 seconds or less, in any mode.", "pumpkinSpeedrun");
   add("magenta_counter_100", "The Golden Hand", "rainbow", "Pumpkin King", "Counter 100 magenta fingers across Pumpkin King and King's Wrath fights.", "magentaCounterHits", 100);
+  add("arcade_deaths_10", "Back with a Hiss", "silver", "Arcade", "Die 10 times across Turtle Dodge, Boss Crush, Pumpkin King, King's Wrath, or Singularity Core (including Core practice).", "arcadeDeaths", 10);
+  add("dodge_square_deaths_50", "Square One Again", "gold", "Turtle Dodge", "Die to the square O block 50 times across Easy, Normal, Hard, or Merciless. This is the normally yellow piece; Merciless recolors it red.", "dodgeSquareDeaths", 50);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -300,6 +305,12 @@ const Achievements = (() => {
         if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
         stats.bossRunActive = 0;
         stats.bossSovereignRunActive = 0;
+      });
+    }
+    spendTime(seconds) {
+      if (!Number.isSafeInteger(seconds) || seconds <= 0) return { earned: [], changed: false };
+      return this.update(stats => {
+        stats.websiteSeconds = Math.min(36000, stats.websiteSeconds + seconds);
       });
     }
     abandon() {
@@ -381,6 +392,11 @@ const Achievements = (() => {
             stats[reward.id] += Math.max(0, current - previous);
             round.survivals[reward.index] = Math.max(previous, current);
           }
+        }
+        if (s.over === true && s.won === false && (["dodge", "boss", "pumpkin"].includes(s.mode) || core || wrath || corePractice)) {
+          stats.arcadeDeaths++;
+          if (s.mode === "dodge" && ["easy", "normal", "hard", "merciless"].includes(s.difficulty) && s.death_cause === "o_block")
+            stats.dodgeSquareDeaths++;
         }
         if (s.mode === 'core_practice') {
           if (s.over) round.finished = true;

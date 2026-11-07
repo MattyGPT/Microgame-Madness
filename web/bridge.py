@@ -166,6 +166,7 @@ class BrowserGame:
                           death_age=self.death_age,
                           won=getattr(game, "won", False), score=game.score,
                           death_message=getattr(game, "death_message", None),
+                          death_cause=getattr(game, "death_cause", None),
                           damage_taken=getattr(game, "damage_taken", None),
                           attacks_completed=getattr(game, "attacks_completed", 0),
                           attack_survivals=list(getattr(game, "attack_survivals", [])),
