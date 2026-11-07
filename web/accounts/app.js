@@ -99,7 +99,7 @@ const AccountApp = (() => {
         .finally(() => { this.isolating = false; });
       return true;
     }
-    get blocked() { return !this.initialized || !!this.controller?.state()?.importRequired; }
+    get blocked() { return !this.initialized || this.busy || this.isolating || !!this.controller?.state()?.importRequired; }
     enqueue(kind, payload, options = {}) {
       const immutable = copy(payload);
       options = { occurredAt: Date.now(), ...options };

@@ -52,7 +52,10 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
     if (url.pathname === '/functions/v1/accounts') {
       if (request.headers().authorization !== 'Bearer account-access' || service.anonymous)
         return route.fulfill({ status: 401, headers, json: { error: { code: 'sign_in_required', message: 'Sign in first.' } } });
-      if (body.action === 'snapshot') return route.fulfill({ headers, json: snapshot() });
+      if (body.action === 'snapshot') {
+        await service.snapshotWait;
+        return route.fulfill({ headers, json: snapshot() });
+      }
       if (body.action === 'history') {
         const runs = [...service.runs.values()].filter(run => (!body.mode || run.mode === body.mode)
           && (!body.outcome || run.outcome === body.outcome) && (!body.difficulty || run.difficulty === body.difficulty));
@@ -130,7 +133,17 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await page.locator('#account-email').fill('private-player@example.test');
   await page.locator('#account-create').click();
   await expect(page.locator('#account-code-step')).toBeVisible();
+  let finishSnapshot;
+  service.snapshotWait = new Promise(resolve => { finishSnapshot = resolve; });
   await verify(page);
+  try {
+    await expect(page.locator('#account-dialog')).toHaveAttribute('aria-busy', 'true');
+    await page.locator('#account-close').click();
+    await page.locator('[data-game="hangman"]').click();
+    await page.locator('[data-difficulty="easy"]').click();
+    expect(await page.evaluate(() => active)).toBe(false);
+  } finally { finishSnapshot(); }
+  await openProfile(page);
   await expect(page.locator('#account-import')).toBeVisible();
   await expect(page.locator('#account-status')).toContainText('Review your guest progress');
   expect(service.revision).toBe(0); // Confirmation does not silently import.
