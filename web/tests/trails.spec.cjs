@@ -1,5 +1,10 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
+  // Legacy fixture is migrated into the authoritative journal on first load.
+  await page.addInitScript(units => {
+    if (!localStorage.getItem('microgame-madness.v1'))
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({ shop: { units, owned: [] } }));
+  }, 1000000);
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
@@ -7,7 +12,6 @@ test.beforeEach(async ({ page }) => {
 test('48 shop trails are sorted, purchased once, equipped separately, and retained after reload',async({page},testInfo)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.locator('[data-game="shop"]').click();
-  await page.evaluate(()=>{saved.shop.units=1000000;renderShop();});
   await page.locator('#shop-trails-tab').click();
   await expect(page.locator('#shop-grid')).toBeHidden();
   await expect(page.locator('#trail-grid article')).toHaveCount(48);

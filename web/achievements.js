@@ -285,13 +285,14 @@ const Achievements = (() => {
       return Math.min(item.target, value);
     }
     update(change) {
+      this.observedAt = Date.now();
       const before = JSON.stringify(this.data);
       change(this.data.stats);
       this.data.stats.magentaCounterHits = this.data.stats.wrathCounterHits + this.data.stats.pumpkinCounterHits;
       const earned = [];
       for (const item of catalog) {
         if (!this.data.unlocked[item.id] && this.progress(item) >= item.target) {
-          this.data.unlocked[item.id] = new Date().toISOString();
+          this.data.unlocked[item.id] = new Date(this.observedAt).toISOString();
           earned.push(item);
         }
       }
@@ -485,3 +486,6 @@ const Achievements = (() => {
   return { catalog, points, Tracker, attackRewards };
 })();
 if (typeof module !== "undefined") module.exports = Achievements;
+
+// Portable catalog access for the shared browser/server account rules.
+if (typeof globalThis !== "undefined") globalThis.Achievements = Achievements;

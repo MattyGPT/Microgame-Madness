@@ -1490,3 +1490,6 @@ const CubieCustoms = (() => {
   return { catalog, tierLabels, unlocked, selected, svg, testerCodeActive, redeemTesterCode };
 })();
 if (typeof module !== "undefined") module.exports = CubieCustoms;
+
+// Portable catalog access for the shared browser/server account rules.
+if (typeof globalThis !== "undefined") globalThis.CubieCustoms = CubieCustoms;

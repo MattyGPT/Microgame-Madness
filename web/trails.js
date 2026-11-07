@@ -145,3 +145,6 @@ const TurtleTrails = (() => {
   return { catalog, selected, Field, preview, allowedModes };
 })();
 if (typeof module !== 'undefined') module.exports = TurtleTrails;
+
+// Portable catalog access for the shared browser/server account rules.
+if (typeof globalThis !== "undefined") globalThis.TurtleTrails = TurtleTrails;

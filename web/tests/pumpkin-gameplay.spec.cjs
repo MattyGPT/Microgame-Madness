@@ -42,8 +42,9 @@ test('Pumpkin King classic colors and smoother artwork keep blue and orange eye 
 });
 
 test("Pumpkin King offers four HP choices with separate scores", async ({ page }) => {
-  await openGame(page);
-  await page.evaluate(() => localStorage.setItem("microgame-madness.v1", JSON.stringify({
+  await page.addInitScript(() => {
+    if (localStorage.getItem("microgame-madness.v1")) return;
+    localStorage.setItem("microgame-madness.v1", JSON.stringify({
     player: "Mode Tester",
     scores: {
       "pumpkin:coward": [{ player: "Mode Tester", score: 123 }],
@@ -51,8 +52,9 @@ test("Pumpkin King offers four HP choices with separate scores", async ({ page }
       "pumpkin:baby": [{ player: "Mode Tester", score: 789 }],
       "pumpkin:come_on": [{ player: "Mode Tester", score: 923 }],
     },
-  })));
-  await page.reload();
+  }));
+  });
+  await openGame(page);
   await expect(page.locator("#runtime-status")).toContainText("All games ready", { timeout: 30000 });
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator("#difficulty-choices button")).toHaveCount(4);

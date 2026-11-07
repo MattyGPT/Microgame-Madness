@@ -1,6 +1,6 @@
 # Optional accounts and progression design
 
-Status: Draft for design review  
+Status: Design baseline; implementation under code review
 Date: November 7, 2026  
 Scope: Microgame Madness browser application
 
@@ -10,7 +10,7 @@ Optional accounts let players preserve their arcade progress, continue on anothe
 
 The first release should demonstrate one complete journey: a guest earns progress, creates an account, and continues on another device with the same achievements, Cash, equipment, unlocks, and settings. Reliable sync and migration are the principal engineering work. Richer rankings and social features build on that foundation.
 
-This specification defines proposed behavior, data boundaries, review decisions, and acceptance criteria. It does not authorize implementation or assign development tasks. After design review, an implementation plan can define interfaces, dependency order, subagent ownership, integration checkpoints, and verification work.
+This specification defines behavior, data boundaries, review decisions, and acceptance criteria. The [implementation status](accounts-implementation-status.md) records the delivered scope and remaining hosted release gates; the implementation plan defines ownership and verification work.
 
 ## Goals and boundaries
 
@@ -239,7 +239,7 @@ Account caches are namespaced by stable owner. Multi-tab notifications trigger a
 
 ### Streaks and time
 
-Streaks need ordering, unlike ordinary totals. Proposed initial rule: a streak chain belongs to one device's ordered play stream and may continue across visits there. Devices cannot concatenate partial streaks. Earned streak achievements sync; an unfinished streak does not transfer to another device. Abandonment and damage still reset the applicable chain. This changes cross-device expectations and requires explicit review.
+Streaks need ordering, unlike ordinary totals. Proposed initial rule: a streak chain belongs to one tab's ordered play stream and continues across reloads there. Devices cannot concatenate partial streaks. Earned streak achievements sync; an unfinished streak does not transfer to another device. Abandonment and damage still reset the applicable chain. This changes cross-device expectations and requires explicit review.
 
 For page-time achievements, preserve the existing capped elapsed-page behavior on a device, but count overlapping intervals across tabs/devices only once when the server can establish overlap. Offline intervals are client-reported casual progress with bounded duration. Exact interval accounting and treatment of unreliable clocks require a reviewed policy; it must not grant extra time merely because two tabs are open.
 
@@ -433,7 +433,7 @@ All recommendations below are proposals. The implementation plan uses explicit a
 | D04 | Existing-account legacy import | Bests/unlocks allowed; one aggregate baseline per account; no later balance/counter addition | Foundation blocker |
 | D05 | Imported purchased cosmetics and tester entitlements | Preserve as casual provenance; no competitive or administrative privileges | Foundation blocker |
 | D06 | Offline account purchases | Require connection; show offline earnings as pending | Foundation blocker |
-| D07 | Concurrent streaks | Per-device ordered chains; no cross-device concatenation | Foundation blocker |
+| D07 | Concurrent streaks | Per-tab ordered chains; no concatenation across tabs or devices | Foundation blocker |
 | D08 | Page-time overlap and unreliable offline clocks | Deduplicate overlap and bound intervals; define exact clock fallback | Foundation blocker |
 | D09 | Secrets and account names | Separate Arcade codes input; update hints and compatibility behavior | Foundation blocker |
 | D10 | Sign-out with pending work | Offer sync or retention for same owner; explicit separate discard action | Foundation blocker |

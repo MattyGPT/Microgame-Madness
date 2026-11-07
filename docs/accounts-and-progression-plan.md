@@ -1,8 +1,10 @@
 # Accounts and progression implementation plan
 
-Status: Draft for review, implementation not started  
+Status: Implementation under code review; hosted rollout gates pending
 Date: November 7, 2026  
 Design: [Optional accounts and progression](accounts-and-progression-design.md)
+
+See [implementation status](accounts-implementation-status.md) for delivered scope, decisions, and remaining launch gates. The packages below retain the original review and acceptance checklist.
 
 Build optional accounts and dependable saves first, then expand personal history and rankings. Keep guest play available throughout. The first integration milestone is a real guest-to-account journey: play a round, retain progress through a retry, sign in on another device, and see the same acknowledged progress.
 
@@ -21,7 +23,7 @@ Apply these assumptions consistently across work packages:
 - **D01–D03 and D12:** email codes first; optional guest/account ranking publication; editable nonunique names and opaque public identifiers; private history and profiles by default.
 - **D04–D05:** one initial legacy baseline, closed after onboarding; later legacy imports can add permitted personal bests/unlocks but cannot add balances, cumulative counters, or streaks. Imported entitlements have casual provenance and confer no privileged role.
 - **D06:** account purchases require a connection and acknowledged balance. Guests retain local purchases; account earnings can queue offline.
-- **D07:** unfinished streaks stay within a device's ordered stream. Earned achievements sync. G0 must define how multiple tabs share or serialize that device stream.
+- **D07:** unfinished streaks stay within a tab's ordered stream and survive reloads. Earned achievements sync. Tabs have distinct streams, including when Duplicate Tab copies sessionStorage; streams never concatenate.
 - **D08:** time credit must not multiply across tabs/devices. G0 must resolve offline clock handling and interval overlap; no subagent invents a competing rule.
 - **D09–D10:** separate Arcade codes input; explicit handling of pending work during sign-out, with owner-isolated storage.
 - **D11:** include a basic recent-results list in R1, with full filtering/statistics in R2. Record results from the start.
@@ -122,7 +124,7 @@ G2 uses a new-format guest with no legacy baseline to keep the first path narrow
 
 **Owner:** coordinator. **Dependencies:** design and this plan. **Scope:** foundation decisions, environment inventory, baseline evidence.
 
-- Record the accepted or amended D01–D12/D18 decisions, including the deferred merge policy. For D08, produce executable examples for duplicate intervals, clock rollback, skewed devices, offline intervals, and the existing time cap. For D07, define one device stream across tabs and interrupted runs.
+- Record the accepted or amended D01–D12/D18 decisions, including the deferred merge policy. For D08, produce executable examples for duplicate intervals, clock rollback, skewed devices, offline intervals, and the existing time cap. For D07, define per-tab streams and interrupted-run recovery without concatenating concurrent streaks.
 - Inventory all writes in `web/app.js`, achievement observers, shop purchases, secret entry, and leaderboard queues. List every supported mode/difficulty and existing exclusions; include King's Wrath, Core practice, Key Rush exit, and mid-run counters.
 - Audit configured backend migrations, auth settings, public keys, session shape, and existing rows in the intended test environment. Do not log production tokens or private payloads. If hosted access is unavailable, mark the hosted release gate pending while local development proceeds.
 - Run existing checks and record pre-existing failures separately. Freeze representative anonymized/synthetic legacy saves and gameplay traces for parity tests.

@@ -159,19 +159,19 @@ test("The King's Wrath Random Order saves separate records and offers global ran
 });
 
 test("The King's Wrath keeps practice records and wins separate from the full fight", async ({ page }) => {
-  await openGame(page);
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     const body = (await response.text()).replace('self.game = KingsWrath(attack=difficulty)',
       'self.game = KingsWrath(attack=difficulty)\n            from boss_crush import Projectile\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]');
     await route.fulfill({ response, body });
   });
-  await page.evaluate(() => {
-    const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
+  await page.addInitScript(() => {
+    if (localStorage.getItem('microgame-madness.v1')) return;
+    const profile = { scores: {} };
     profile.scores['pumpkin:baby'] = [{ player: 'Original player', score: 1234 }];
     localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
   });
-  await page.reload();
+  await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#player').fill('Practice player');
   await page.locator('[data-game="wrath"]').click();

@@ -11,6 +11,19 @@ function storage() {
 }
 function response(data, status = 200) { return new Response(JSON.stringify(data), { status }); }
 
+test('legacy pending scores cannot be replayed as a different account or guest', async () => {
+  const client = new Client(config, { storage: storage(), fetch: async () => { throw new Error('offline'); } });
+  let user = { id: 'original-guest', is_anonymous: true };
+  client.accountSession = { snapshot: () => ({ user }), ensureAnonymous: async () => user, token: async () => 'token' };
+  await assert.rejects(client.submit(entry));
+  assert.equal(client.pendingOwner, 'original-guest');
+  user = { id: 'permanent-account', is_anonymous: false };
+  await assert.rejects(client.flush(), /account synchronization/);
+  user = { id: 'different-guest', is_anonymous: true };
+  await assert.rejects(client.flush(), /another guest identity/);
+  assert.equal(Object.keys(client.pending).length, 1);
+});
+
 test('every mode can be browsed without signing up or changing the existing profile', async () => {
   const store = storage(), original = store.getItem('microgame-madness.v1'), calls = [];
   const client = new Client(config, { storage: store, fetch: async (url, options) => {

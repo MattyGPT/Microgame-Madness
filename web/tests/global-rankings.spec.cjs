@@ -10,16 +10,26 @@ async function mockGlobalLeaderboards(page, service) {
   await page.route('https://leaderboard.test/**', async route => {
     const request = route.request();
     const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'apikey,authorization,content-type',
-      'access-control-allow-methods': 'POST,OPTIONS' };
+      'access-control-allow-methods': 'GET,POST,OPTIONS' };
     if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
     if (service.offline) return route.fulfill({ status: 503, headers, json: {} });
-    const body = request.postDataJSON();
+    const body = request.method() === 'GET' ? {} : request.postDataJSON();
+    if (request.url().endsWith('/get_account_seasons')) return route.fulfill({ headers, json: [] });
+    if (request.url().endsWith('/auth/v1/user')) {
+      const id = (request.headers().authorization || '').replace('Bearer ', '');
+      return route.fulfill({ headers, json: { id, is_anonymous: true } });
+    }
     if (request.url().includes('/auth/')) {
       const id = body.refresh_token || `guest-${++service.guests}`;
-      return route.fulfill({ headers, json: { access_token: id, refresh_token: id, expires_in: 3600, user: { id } } });
+      return route.fulfill({ headers, json: { access_token: id, refresh_token: id, expires_in: 3600, user: { id, is_anonymous: true } } });
     }
     const key = `${body.p_mode}:${body.p_difficulty}`;
     const identity = (request.headers().authorization || '').replace('Bearer ', '');
+    service.visibility ||= new Map();
+    if (request.url().endsWith('/set_guest_leaderboard_visibility')) {
+      service.visibility.set(identity, body.p_visible);
+      return route.fulfill({ headers, json: body.p_visible });
+    }
     if (request.url().endsWith('/submit_leaderboard_score')) {
       const id = `${key}:${identity}`, previous = service.scores.get(id);
       const score = Math.max(previous?.score || 0, body.p_score);
@@ -27,13 +37,18 @@ async function mockGlobalLeaderboards(page, service) {
       return route.fulfill({ headers, json: score });
     }
     service.requested.add(key);
-    const rows = [...service.scores.values()].filter(row => row.key === key).sort((a, b) => b.score - a.score);
+    const rows = [...service.scores.values()].filter(row => row.key === key && service.visibility.get(row.identity) !== false).sort((a, b) => b.score - a.score);
     return route.fulfill({ headers, json: rows.slice(0, 10).map((row, i) => ({
       rank: i + 1, player: row.player, score: row.score, is_you: row.identity === identity,
     })) });
   });
 }
 async function finishHangman(page, name) {
+  await page.evaluate(async () => {
+    await accountApp.ready;
+    try { await accountApp.setting({ leaderboard: true }); } catch { /* Offline opt-in is saved locally and retried. */ }
+    if (!accountApp.controller.state().profile.privacy.leaderboard) throw new Error('Sharing preference was not saved.');
+  });
   await page.locator('#player').fill(name);
   await page.locator('[data-difficulty="easy"]').click();
   for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
@@ -83,10 +98,11 @@ test('global rankings can browse all 24 modes without starting a round', async (
 test('global scores are shared across independent browsers and preserve the original local profile', async ({ page, context }, testInfo) => {
   await openGame(page);
   const service = { scores: new Map(), guests: 0, requested: new Set() };
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
     profile.scores['hangman:hard'] = [{ player: 'Old champion', score: 5 }];
-    localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
+    await accountApp.controller.importProfile(profile, { baseline: false });
+    accountApp.applyCurrent();
   });
   await mockGlobalLeaderboards(page, service);
   await page.reload();
@@ -114,6 +130,19 @@ test('global scores are shared across independent browsers and preserve the orig
       .toEqual([{ player: 'Old champion', score: 5 }]);
     expect(Number(await page.locator('#profile-score').textContent())).toBeGreaterThanOrEqual(Number(originalPoints));
     await page.locator('#global-panel').screenshot({ path: testInfo.outputPath('global-leaderboard.png') });
+    // Withdrawal is retained offline and hides existing rows after reconnect.
+    service.offline = true;
+    await page.evaluate(async () => { try { await accountApp.setting({ leaderboard: false }); } catch { /* Pending network update. */ } });
+    expect(await page.evaluate(() => accountApp.controller.state().profile.privacy.leaderboard)).toBe(false);
+    service.offline = false;
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect.poll(() => [...service.visibility.values()].filter(value => !value).length).toBe(1);
+    await other.locator('#leaderboard-refresh').click();
+    await expect(other.locator('#global-scores')).not.toContainText('First browser');
+    await expect(other.locator('#global-scores')).toContainText('Second browser');
+    await page.evaluate(() => accountApp.setting({ leaderboard: true }));
+    await other.locator('#leaderboard-refresh').click();
+    await expect(other.locator('#global-scores')).toContainText('First browser');
   } finally { await otherContext.close(); }
 });
 

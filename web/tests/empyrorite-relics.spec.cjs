@@ -27,6 +27,12 @@ test('Empyrorite relics preview while locked and equip after their achievements'
       }
     }));
   }, ids);
+  // Persist this collection fixture through the supported progress-import operation.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.importProfile(saved);
+    accountApp.applyCurrent();
+  });
   const emperor = page.locator('#customs-grid .custom-tile[data-custom="phantom_emperor"]');
   await expect(emperor.locator('.custom-equip')).toBeEnabled();
   await emperor.locator('.custom-equip').click();
