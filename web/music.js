@@ -483,8 +483,113 @@ const ArcadeMusic = (() => {
         [12, 11, 12, 15, 19, 18, 15, 12], [12, 15, 19, 24, 19, 15, 12, 11],
         [19, 18, 15, 12, 11, 12, 15, 19]] },
   ].map(track => Object.freeze({ ...track, loop: true }));
+  // Original electronic arena scores: individual hooks, harmony and drum feels.
+  // Thirty-two bars each: opening, main hook, breakdown, then a lifted reprise.
+  const geomayhemTracks = [
+    { title: "Mint Condition", bpm: 124, root: 48, color: "#71f5d2", groove: "dance",
+      harmony: [0, 9, 5, 7], minor: false, bell: .7,
+      hook: [12,16,19,0,21,19,16,14], reply: [19,16,14,12,0,9,14,16] },
+    { title: "Molten Momentum", bpm: 132, root: 38, color: "#ffba69", groove: "stomp",
+      harmony: [0, 0, 8, 7], minor: true, bell: 1.8,
+      hook: [12,0,12,15,19,17,15,0], reply: [19,18,17,15,12,0,10,12] },
+    { title: "Ultraviolet Signal", bpm: 138, root: 45, color: "#b695ff", groove: "breaks",
+      harmony: [0, 3, 10, 5], minor: true, bell: 2.5,
+      hook: [19,12,0,15,22,19,17,15], reply: [24,22,19,0,17,19,15,12] },
+    { title: "Icebound Velocity", bpm: 118, root: 50, color: "#a9edff", groove: "breaks",
+      harmony: [0, 8, 3, 10], minor: true, bell: 3,
+      hook: [24,0,19,17,0,15,19,22], reply: [27,24,22,19,17,0,14,12] },
+    { title: "Heart of the Reactor", bpm: 142, root: 41, color: "#ff8fa5", groove: "dance",
+      harmony: [0, 8, 3, 7], minor: true, bell: 1.1,
+      hook: [12,15,19,22,0,19,24,22], reply: [19,17,15,12,15,17,19,0] },
+    { title: "Livewire Lockdown", bpm: 156, root: 42, color: "#f9ff72", groove: "breaks",
+      harmony: [0, 10, 5, 7], minor: true, bell: 2,
+      hook: [12,12,0,19,15,12,22,19], reply: [24,22,24,19,0,18,15,12] },
+    { title: "Ashphalt Rush", bpm: 148, root: 40, color: "#ff7968", groove: "stomp",
+      harmony: [0, 3, 5, 10], minor: true, bell: 1.5,
+      hook: [12,15,17,18,19,0,17,15], reply: [22,19,17,15,12,10,12,0] },
+    { title: "Moonmaze", bpm: 126, root: 47, color: "#becaff", groove: "breaks",
+      harmony: [0, 5, 8, 7], minor: true, bell: 2.8,
+      hook: [12,0,19,22,17,0,15,14], reply: [24,22,0,19,15,17,14,12] },
+    { title: "Spectrum Shatter", bpm: 162, root: 48, color: "#ff9ed9", groove: "dance",
+      harmony: [0, 5, 9, 7], minor: false, bell: 2.2,
+      hook: [12,19,16,24,21,19,0,16], reply: [28,26,24,19,21,16,14,19] },
+    { title: "Critical Geometry", bpm: 174, root: 38, color: "#ffffff", groove: "breaks",
+      harmony: [0, 8, 5, 7], minor: true, bell: 1.7,
+      hook: [12,0,13,12,19,18,15,12], reply: [24,22,19,18,19,15,13,12] },
+  ].map((track, i) => Object.freeze({ ...track, id: `geomayhem_level_${i + 1}`, level: i + 1 }));
+
+  function composeGeomayhem(track, sampleRate, notes) {
+    const beat = 60 / track.bpm, duration = 128 * beat;
+    const out = new Float32Array(Math.round(duration * sampleRate));
+    const cache = new Map();
+    function voice(pitch, start, length, gain, kind) {
+      const key = `${pitch}:${length}:${kind}`;
+      if (!cache.has(key)) {
+        const data = new Float32Array(Math.ceil(length * sampleRate));
+        const hz = 440 * 2 ** ((pitch - 69) / 12);
+        for (let i = 0; i < data.length; i++) {
+          const t = i / sampleRate, phase = 2 * Math.PI * hz * t;
+          const envelope = Math.max(0, Math.min(1, t / .008, (length - t) / .045));
+          // Rounded FM keys, warm pads and a firm sub bass; no pulse oscillators.
+          const wave = kind === "bass" ? Math.sin(phase) + .22 * Math.sin(2 * phase)
+            : kind === "pad" ? (Math.sin(phase) + .3 * Math.sin(phase * 1.003)) * .55
+            : Math.sin(phase + track.bell * Math.exp(-t * 8) * Math.sin(phase * 2));
+          data[i] = wave * envelope * (kind === "lead" ? Math.exp(-t * 3) : 1);
+        }
+        cache.set(key, data);
+      }
+      const data = cache.get(key), offset = Math.round(start * sampleRate);
+      for (let i = 0; i < data.length && offset + i < out.length; i++) out[offset + i] += data[i] * gain;
+      if (kind === "lead") notes.push({ start, duration: length });
+    }
+    let seed = 4739 + track.level;
+    function drum(start, kind, gain = 1) {
+      const length = kind === "hat" ? .045 : .19, offset = Math.round(start * sampleRate);
+      let last = 0;
+      for (let i = 0; i < length * sampleRate && offset + i < out.length; i++) {
+        const t = i / sampleRate;
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        const noise = seed / 2147483648 - 1;
+        const wave = kind === "kick" ? Math.sin(2 * Math.PI * (48 * t + 3 * (1 - Math.exp(-t * 38))))
+          : kind === "hat" ? (noise - last) * .2 : noise * .5 + Math.sin(2 * Math.PI * 180 * t) * .2;
+        out[offset + i] += wave * Math.min(1, t / .002) * Math.exp(-t / length * 6) * gain * .4;
+        last = noise;
+      }
+    }
+    for (let bar = 0; bar < 32; bar++) {
+      const start = bar * 4 * beat, breakdown = bar >= 16 && bar < 20;
+      const root = track.root + track.harmony[bar % 4];
+      const third = track.minor ? 3 : 4;
+      for (const interval of [0, third, 7]) voice(root + 12 + interval, start, beat * 3.9, .045, "pad");
+      const motif = bar % 8 < 4 ? track.hook : track.reply;
+      motif.forEach((n, i) => {
+        if (!n || (bar < 4 && i % 2) || (breakdown && i % 2)) return;
+        const pitch = track.root + n + (bar >= 24 ? 12 : 0);
+        voice(pitch, start + i * beat / 2, beat * .65, .2, "lead");
+        // Quiet dotted-eighth echoes add space without obscuring the hook.
+        voice(pitch, start + (i / 2 + .75) * beat, beat * .45, .045, "echo");
+      });
+      for (let i = 0; i < 8; i++) {
+        voice(root + (i % 4 === 3 ? 7 : 0), start + i * beat / 2, beat * .38, breakdown ? .09 : .18, "bass");
+        if (!breakdown) drum(start + i * beat / 2, "hat", i % 2 ? .5 : .3);
+      }
+      const kicks = breakdown ? [0] : track.groove === "dance" ? [0,1,2,3]
+        : track.groove === "stomp" ? [0,.75,2,2.5] : [0,1.5,2.75];
+      kicks.forEach(n => drum(start + n * beat, "kick"));
+      if (!breakdown) {
+        [1,3].forEach(n => drum(start + n * beat, "snare", .7));
+        if (bar % 8 === 7) [3.25,3.5,3.75].forEach(n => drum(start + n * beat, "snare", .35));
+      }
+    }
+    let peak = .82;
+    for (const value of out) peak = Math.max(peak, Math.abs(value));
+    for (let i = 0; i < out.length; i++) out[i] *= .82 / peak
+      * Math.min(1, i / (sampleRate * .008), (out.length - 1 - i) / (sampleRate * .015));
+    return out;
+  }
   const loopThemes = ["core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
-    ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id)];
+    ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
+    ...geomayhemTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
     .map(([id, score]) => Object.freeze({ id, title: score.title, bpm: score.bpm, credit: score.credit || "Original composition" })));
   const grooves = {
@@ -639,6 +744,7 @@ const ArcadeMusic = (() => {
       category: loopThemes.includes(id) ? "Game theme" : "Arcade soundtrack" })),
     { id: "singularity", title: "Singularity Core", bpm: 78, category: "Game theme" },
     ...bossTracks.map(track => ({ ...track, category: "Boss Crush" })),
+    ...geomayhemTracks.map(track => ({ ...track, category: "Geomayhem" })),
     ...rockTracks.map(track => ({ ...track, category: "Rock" })),
     ...chamberTracks.map(track => ({ ...track, category: "Instrumental dance" })),
   ].map(({ id, title, bpm, category }) => Object.freeze({ id, title, bpm, category })));
@@ -980,6 +1086,8 @@ const ArcadeMusic = (() => {
     return samples;
   }
   function compose(track, sampleRate = 22050, notes = []) {
+    const arena = geomayhemTracks.find(song => song.id === track);
+    if (arena) return composeGeomayhem(arena, sampleRate, notes);
     const chamber = chamberTracks.find(song => song.id === track);
     if (chamber) return composeChamber(chamber, sampleRate, notes);
     if (track === "singularity") return composeCinematicCore(sampleRate, notes);
@@ -1269,6 +1377,6 @@ const ArcadeMusic = (() => {
       this.onPlaybackChange?.();
     }
   }
-  return { compose, composeGaster, gasterDuration, Player, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, jukeboxTracks };
+  return { compose, composeGaster, gasterDuration, Player, geomayhemTracks, tracks, arcadeTracks: tracks, dodgeTracks, bossTracks, rockTracks, pickRockTrack, jukeboxTracks };
 })();
 if (typeof module !== "undefined") module.exports = ArcadeMusic;

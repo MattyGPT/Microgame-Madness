@@ -284,6 +284,8 @@ $("game-canvas").addEventListener("lostpointercapture", () => { geomayhemFiring 
 
 // Each sleeve has its own palette; related songs share a visual motif.
 const songSleeves = {
+  ...Object.fromEntries(ArcadeMusic.geomayhemTracks.map(track =>
+    [track.id, [track.color, "#7284cf", "circuit"]])),
   starburst_255: ["#ffdc65", "#ff6295", "bolt"],
   slow_orbit: ["#b3c9ff", "#776ba4", "moon"],
   christmas_99: ["#fff4cf", "#cf404a", "star"],
@@ -2053,6 +2055,7 @@ function syncMusic() {
     theme: coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
+      : active && selected === "geomayhem" ? `geomayhem_level_${snapshot.level}`
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty === "impossible" ? "merciless" : selectedDifficulty}`
