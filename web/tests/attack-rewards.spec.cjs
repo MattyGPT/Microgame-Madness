@@ -1,23 +1,13 @@
-const { test, expect } = require('@playwright/test');
-const path = require('node:path');
-const fs = require('node:fs');
+const { test, expect } = require('./fixtures/game.cjs');
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const name = path.basename(new URL(route.request().url()).pathname);
-    const file = path.resolve('node_modules/pyodide', name);
-    if (!fs.existsSync(file)) return route.abort();
-    return route.fulfill({ path: file, contentType: name.endsWith('.wasm') ? 'application/wasm'
-      : name.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-    headers: { 'access-control-allow-origin': '*' } });
-  });
   await page.route('**/app.js*', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace('const pyodide = await loadPyodide(',
       'const pyodide = window.attackTestRuntime = await loadPyodide(') });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 async function clearCelebrations(page) {
@@ -39,7 +29,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   expect(await page.evaluate(() => saved.achievements.stats.survive_pumpkin_bone_gauntlet)).toBe(9);
   expect(await page.evaluate(() => !!saved.achievements.unlocked.survive_pumpkin_bone_gauntlet)).toBe(false);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.evaluate(() => {
     selectGame('wrath'); startGame('bone_gauntlet'); active = false;
     attackTestRuntime.runPython('from bridge import session\ngame = session.game\ngame.invulnerable = 1000000\ngame.touches_king = lambda: False\ngame.update(9, set())');
@@ -80,6 +70,6 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   await tile.locator('.custom-equip').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'attack_core_photon_rain');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'attack_core_photon_rain');
 });

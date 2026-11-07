@@ -9,8 +9,11 @@ permissions:
 jobs:
   test:
     name: Python and JavaScript tests
+    concurrency:
+      group: game-test-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -23,9 +26,40 @@ jobs:
       - run: python3 -m unittest discover -v
       - run: npm ci --ignore-scripts
       - run: npm test
+  build:
+    name: Build browser artifact
+    concurrency:
+      group: game-build-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python3 scripts/build_web.py
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - name: Package the build with its source revision
+        run: |
+          tar -C dist -czf browser-build.tar.gz .
+          echo "$GITHUB_SHA" > build-sha.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-build
+          path: |
+            browser-build.tar.gz
+            build-sha.txt
+          overwrite: true
+          retention-days: 7
   browser:
     name: Browser tests (${{ matrix.shard }}/4)
-    needs: test
+    concurrency:
+      group: game-browser-${{ github.workflow }}-${{ github.ref }}-${{ matrix.shard }}
+      cancel-in-progress: true
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -42,14 +76,49 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser -- --workers=2 --fully-parallel --shard=${{ matrix.shard }}/4
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - uses: actions/download-artifact@v4
         with:
-          name: browser-test-results-${{ matrix.shard }}
-          path: |
-            playwright-report/
-            test-results/
+          name: browser-build
+          path: browser-build
+      - name: Unpack the build for this revision
+        run: |
+          test "$(cat browser-build/build-sha.txt)" = "$GITHUB_SHA"
+          mkdir -p dist
+          tar -xzf browser-build/browser-build.tar.gz -C dist
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser:built -- --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: browser-report-${{ matrix.shard }}
+          path: blob-report/
+          overwrite: true
+          retention-days: 7
+  report:
+    name: Combined browser report
+    concurrency:
+      group: game-report-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    needs: browser
+    if: ${{ !cancelled() && needs.browser.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: browser-report-*
+          path: browser-reports
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html browser-reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-report
+          path: playwright-report/
+          overwrite: true
           retention-days: 7

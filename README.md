@@ -37,7 +37,6 @@ Web checks require Node 22+:
 
 ```sh
 npm ci
-npm run build
 npm test
 npx playwright install chromium
 npm run test:browser

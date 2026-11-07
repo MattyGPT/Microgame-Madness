@@ -1,11 +1,6 @@
-const {test,expect}=require('@playwright/test');
-const fs=require('node:fs'),path=require('node:path');
+const {test,expect}=require('./fixtures/game.cjs');
 test('pinch zoom preserves every fight canvas and does not force scrolling',async({page,context})=>{
- await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**',route=>{
-  const file=path.basename(new URL(route.request().url()).pathname),local=path.resolve('node_modules/pyodide',file);
-  return fs.existsSync(local)?route.fulfill({path:local,contentType:file.endsWith('.wasm')?'application/wasm':file.endsWith('.js')?'application/javascript':'application/octet-stream',headers:{'access-control-allow-origin':'*'}}):route.abort();
- });
- await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready');
+ await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
  await page.evaluate(()=>{unlockSingularity(false);});
  const cdp=await context.newCDPSession(page);
  const size=()=>page.locator('#game-canvas').evaluate(el=>({width:parseFloat(el.style.width),height:parseFloat(el.style.height)}));

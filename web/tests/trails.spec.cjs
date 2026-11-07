@@ -1,13 +1,7 @@
-const { test, expect } = require('@playwright/test');
-const path = require('node:path');
-const fs = require('node:fs');
+const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file=path.basename(new URL(route.request().url()).pathname), local=path.resolve('node_modules/pyodide',file);
-    return fs.existsSync(local) ? route.fulfill({path:local,contentType:file.endsWith('.wasm')?'application/wasm':file.endsWith('.js')?'application/javascript':'application/octet-stream',headers:{'access-control-allow-origin':'*'}}) : route.abort();
-  });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('48 shop trails are sorted, purchased once, equipped separately, and retained after reload',async({page},testInfo)=>{
@@ -28,7 +22,7 @@ test('48 shop trails are sorted, purchased once, equipped separately, and retain
   await expect(page.locator('#shop-balance')).toHaveText('950 Cubie Cash');
   await page.screenshot({path:testInfo.outputPath('turtle-trail-shop.png')});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.reload();await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await page.reload();await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(()=>({id:saved.turtleTrail,owned:saved.shop.owned.includes('trail_mint_mist'),cash:CubieShop.balance(saved.shop)})))
     .toEqual({id:'trail_mint_mist',owned:true,cash:950});
   await page.locator('[data-game="shop"]').click();await page.locator('#shop-trails-tab').click();

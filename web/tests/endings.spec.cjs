@@ -1,23 +1,13 @@
-const { test, expect } = require('@playwright/test');
-const fs = require('node:fs');
-const path = require('node:path');
+const { test, expect } = require('./fixtures/game.cjs');
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    if (!fs.existsSync(local)) return route.abort();
-    return route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } });
-  });
   await page.route('**/app.js*', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace('const pyodide = await loadPyodide(',
       'const pyodide = window.endingRuntime = await loadPyodide(') });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility:hidden!important; }' });
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();

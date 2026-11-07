@@ -127,18 +127,16 @@ test('petting blush follows custom faces and disappears after petting', async ({
       el.style.cssText = 'position:relative;top:auto;left:auto;margin:0;width:90px;height:90px;animation:none;transform:none';
     });
   });
-  await page.waitForTimeout(150);
   const blushes = page.locator('.cubie-blush');
   expect(await blushes.count()).toBeGreaterThanOrEqual(Customs.catalog.length);
-  expect(await blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) > .9))).toBe(true);
+  await expect.poll(() => blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) > .9))).toBe(true);
   expect(await page.locator('.sample').evaluateAll(els => els.every(el => getComputedStyle(el, '::before').display === 'none' && getComputedStyle(el, '::after').display === 'none'))).toBe(true);
   await expect(page.locator('[data-skin="golden_hand"] .cubie-blush ellipse').first()).toHaveAttribute('cy', '113');
   expect(await page.locator('[data-skin="three_d"] .cubie-blush').evaluate(el => el.parentNode.getAttribute('transform'))).toContain('matrix(');
   await expect(page.locator('[data-skin="shop_koi"] .koi-face .cubie-blush')).toHaveCount(1);
   await expect(page.locator('[data-skin="shop_disco"] .disco-tile .cubie-blush')).toHaveCount(4);
   await page.locator('.sample').evaluateAll(els => els.forEach(el => el.classList.remove('blushing')));
-  await page.waitForTimeout(150);
-  expect(await blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) === 0))).toBe(true);
+  await expect.poll(() => blushes.evaluateAll(els => els.every(el => Number(getComputedStyle(el).opacity) === 0))).toBe(true);
 });
 
 test('Puzzle Cube turns independent layers, loops seamlessly, and stays still with reduced motion', async ({ page }, testInfo) => {

@@ -1,16 +1,7 @@
-const { test, expect } = require('@playwright/test');
-const fs = require('node:fs');
-const path = require('node:path');
+const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    return fs.existsSync(local) ? route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } }) : route.abort();
-  });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and clean exit', async ({ page }, testInfo) => {
@@ -63,7 +54,7 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
   await page.keyboard.press('Escape');
   await expect(page.locator('#core-origin')).toBeHidden();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#core-origin')).toBeHidden();
   await page.locator('#player').fill('Player');
   await page.locator('#player').fill('GRAVITRON');

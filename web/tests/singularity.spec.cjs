@@ -1,25 +1,9 @@
-const { test, expect } = require('@playwright/test');
-const path = require('node:path');
-const fs = require('node:fs');
+const { test, expect } = require('./fixtures/game.cjs');
+
+test.use({ deterministicMusic: true });
 
 test.beforeEach(async ({ page }) => {
-  // Keep unrelated score tests deterministic; music-award tests explicitly select their song.
-  await page.route('**/music.js*', async route => {
-    const response = await route.fetch();
-    await route.fulfill({ response, body: (await response.text()).replace(
-      'constructor(context, destination = context.destination, random = Math.random)',
-      'constructor(context, destination = context.destination, random = () => .12)') });
-  });
 
-
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    if (!fs.existsSync(local)) return route.abort();
-    return route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } });
-  });
   // Expose the existing runtime only in this test response, without production hooks.
   await page.route('**/app.js*', async route => {
     const response = await route.fetch();
@@ -28,7 +12,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({ response, body });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.evaluate(() => testRuntime.runPython('from bridge import session'));
   await page.evaluate(() => {
     document.querySelector('#achievement-celebrations').style.display = 'none';
@@ -204,7 +188,7 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   await page.locator('#exit').click();
   await page.locator('#player').fill('Core Tester');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(card).toBeVisible();
   await expect(page.locator('[data-game]:visible')).toHaveCount(10);
   await card.click();
@@ -384,7 +368,7 @@ test('all 15 Core attacks render and only the final laser wins', async ({ page }
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.achievements.unlocked.core_win)).toBe(earned.victory);
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBe(earned.flawless);
 });

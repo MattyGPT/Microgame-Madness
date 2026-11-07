@@ -1,20 +1,10 @@
-const { test, expect } = require('@playwright/test');
-const path = require('node:path');
-const fs = require('node:fs');
+const { test, expect } = require('./fixtures/game.cjs');
 
 test('jukebox picks songs, pauses, mutes, stops, and restores game music', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    if (!fs.existsSync(local)) return route.abort();
-    return route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } });
-  });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="jukebox"]').click();
   const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value));
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');
