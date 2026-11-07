@@ -404,7 +404,7 @@ class Geomayhem:
                 enemy.x += (self.x - enemy.x) / distance * speed * dt
                 enemy.y += (self.y - enemy.y) / distance * speed * dt
             if distance < enemy.radius + 13:
-                self._damage(16 if enemy.kind in ("elite", "boss") else 10)
+                self._damage(24 if enemy.kind in ("elite", "boss") else 15)
             if enemy.kind in ("shooter", "elite", "boss") and not enemy.frozen:
                 enemy.attack_in -= dt
                 if enemy.attack_in <= 0:
@@ -421,7 +421,7 @@ class Geomayhem:
             hazard[1] += hazard[3] * dt
             hazard[4] -= dt
             if math.hypot(hazard[0] - self.x, hazard[1] - self.y) < 18:
-                self._damage(8)
+                self._damage(12)
                 hazard[4] = 0
         self.hazards = [h for h in self.hazards if h[4] > 0
                         and self.left - 30 < h[0] < self.right + 30
@@ -457,6 +457,8 @@ class Geomayhem:
         if self.spawned >= self.quota and not self.enemies:
             self.cleared += 1
             self.score += 100 * self.level
+            self.xp += sum(g[2] for g in self.gems)
+            self.gems.clear()
             self.shots.clear()
             self.hazards.clear()
             self.lives = min(self.max_lives, self.lives + 8)

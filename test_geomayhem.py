@@ -54,16 +54,13 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(game.wave, 2)
         self.assertGreater(game.break_left, 0)
 
-    def test_wave_clear_leaves_xp_on_ground_until_collected(self):
+    def test_wave_clear_collects_all_xp_and_offers_earned_upgrades(self):
         game = self.game()
-        game.gems = [[200, 150, game.xp_needed]]
+        game.gems = [[200, 150, game.xp_needed], [-400, -300, 3]]
         game.spawned = game.quota
         game.update(.01, set())
         self.assertEqual(game.wave, 2)
-        self.assertEqual((game.xp, game.rank, game.offers), (0, 1, []))
-        self.assertEqual(len(game.gems), 1)
-        game.x, game.y = 200, 150
-        game.update(.01, set())
+        self.assertEqual(game.xp, 3)
         self.assertEqual(game.gems, [])
         self.assertEqual(game.rank, 2)
         self.assertTrue(game.offers)
@@ -230,9 +227,9 @@ class GeomayhemTests(unittest.TestCase):
         game = self.game()
         game.enemies = [enemy(0, 0)]
         game.update(.05, set())
-        self.assertEqual(game.lives, 90)
+        self.assertEqual(game.lives, 85)
         game.update(.05, set())
-        self.assertEqual(game.lives, 90)
+        self.assertEqual(game.lives, 85)
         game.invulnerable, game.lives = 0, 1
         game.update(.05, set())
         self.assertFalse(game.alive)
@@ -242,6 +239,22 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(game.snapshot(), before)
         self.assertEqual(self.game().stars, 1)
         self.assertEqual(self.game().lives, 100)
+
+    def test_stronger_elite_boss_and_projectile_damage(self):
+        for kind in ("elite", "boss"):
+            with self.subTest(kind=kind):
+                game = self.game()
+                target = enemy(0, 0)
+                target.kind = kind
+                game.enemies = [target]
+                game.update(.01, set())
+                self.assertEqual(game.lives, 76)
+                self.assertEqual(game.damage_taken, 24)
+        game = self.game()
+        game.hazards = [[0, 0, 0, 0, 5]]
+        game.update(.01, set())
+        self.assertEqual(game.lives, 88)
+        self.assertEqual(game.damage_taken, 12)
 
     def test_levelups_add_drones_and_other_weapons_without_replacing_the_starter(self):
         game = self.game()

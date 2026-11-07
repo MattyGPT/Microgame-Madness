@@ -148,14 +148,13 @@ test('level ten ends at wave twenty and a defeated Cubie can restart', async ({ 
   await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/10 · WAVE 1/20');
 });
 
-test('wave clears leave XP to collect, and the enlarged arena keeps mouse aim aligned', async ({ page }) => {
+test('wave clears collect remaining XP, and the enlarged arena keeps mouse aim aligned', async ({ page }) => {
   await page.locator('[data-difficulty="level_1"]').click();
   await model(page, 'session.game.gems = [[200, 150, session.game.xp_needed]]\nsession.game.spawned = session.game.quota\nsession.game.enemies.clear()');
   await expect(page.locator('#geomayhem-wave')).toContainText('WAVE 2/20');
-  await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
-  expect(await model(page, 'session.game.rank')).toBe(1);
-  expect(await model(page, 'len(session.game.gems)')).toBe(1);
-  await model(page, 'session.game.x, session.game.y = 200, 150\nsession.game.break_left = 100');
+  expect(await model(page, 'session.game.rank')).toBe(2);
+  expect(await model(page, 'len(session.game.gems)')).toBe(0);
+  await model(page, 'session.game.break_left = 100');
   await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
   await page.locator('[data-upgrade="weapon"]').click();
   await model(page, 'session.game.x = session.game.y = 0');

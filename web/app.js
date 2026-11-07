@@ -5,7 +5,7 @@ const modes = {
   geomayhem: {
     title: "Geomayhem", category: "11 / SURVIVOR · EARLY BUILD", art: "◇",
     heading: "Small Cubie. Maximum mayhem.",
-    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP for level-up choices, and walk over glowing weapon drops to equip them. Your three slots include your starting weapon. A and B drones attack automatically; other weapons fire together. Weapons evolve at three and five stars. Clearing waves never collects XP for you. All levels are open; each run starts fresh.",
+    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP for level-up choices, and walk over glowing weapon drops to equip them. Your three slots include your starting weapon. A and B drones attack automatically; other weapons fire together. Weapons evolve at three and five stars. Clearing a wave collects all remaining XP crystals. All levels are open; each run starts fresh.",
     accent: "#71f5d2", controls: "WASD / arrows move · Aim with mouse · Hold left click to fire · R pauses",
     choiceLabel: "Choose a level · 20 waves each", localOnly: true, temporary: true, difficulties: {},
   },
