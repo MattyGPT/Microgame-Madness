@@ -53,7 +53,7 @@ async function choosePractice(page) {
 
 test('practice final cutscene plays, pauses, and replays without rewards', async ({ page }) => {
   await choosePractice(page);
-  const profileBefore = await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores]));
+  const profileBefore = await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores], (key, value) => key === "websiteSeconds" ? undefined : value));
   await page.locator('[data-difficulty="final_cutscene"]').click();
   expect(await page.evaluate(() => snapshot.laser_firing)).toBe(true);
   await page.locator('#pause').click();
@@ -63,7 +63,7 @@ test('practice final cutscene plays, pauses, and replays without rewards', async
   await page.locator('#overlay-action').click();
   await expect(page.locator('#overlay')).toBeVisible();
   await expect(page.locator('#overlay')).toContainText('Cutscene complete');
-  expect(await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores]))).toBe(profileBefore);
+  expect(await page.evaluate(() => JSON.stringify([saved.achievements, saved.scores], (key, value) => key === "websiteSeconds" ? undefined : value))).toBe(profileBefore);
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="final_cutscene"]').click();
   expect(await page.evaluate(() => snapshot.laser_firing)).toBe(true);

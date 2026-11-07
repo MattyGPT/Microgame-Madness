@@ -595,7 +595,8 @@ function updateAchievements(result) {
   renderAchievements();
   celebrateAchievements(result.earned);
   showAchievementToasts([...result.earned, ...newCustomNotifications()]);
-  if (selected === "customs") renderCustoms();
+  // Playtime saves do not change Customs; keep previews and focused cards intact.
+  if (selected === "customs" && result.earned.length) renderCustoms();
 }
 function initializeAchievements() {
   const visibleCards = new IntersectionObserver(entries => {
@@ -2085,9 +2086,17 @@ requestAnimationFrame(frame);
 const gameLayout = new ResizeObserver(() => fitArcade());
 for (const selector of [".game-heading", ".game-footer", "#touch-controls", "#player-health"])
   gameLayout.observe(document.querySelector(selector));
+let arenaLayoutWidth = document.documentElement.clientWidth;
+let arenaLayoutHeight = innerHeight;
 function resizeGameArea() {
-  // Resizing (including pinch zoom) must not recenter a user's zoomed view.
-  fitArcade();
+  const width = document.documentElement.clientWidth, height = innerHeight;
+  const layoutChanged = width !== arenaLayoutWidth || height !== arenaLayoutHeight;
+  arenaLayoutWidth = width; arenaLayoutHeight = height;
+  // Refit/recenter on real window or orientation changes, but never on pinch
+  // zoom: the visual viewport changes while the underlying layout stays put.
+  if (layoutChanged && !$("game-canvas").hidden && (window.visualViewport?.scale ?? 1) === 1)
+    showGameArea();
+  else fitArcade();
 }
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);

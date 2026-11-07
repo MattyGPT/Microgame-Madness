@@ -133,7 +133,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
 
 test('Empyrorite challenges cover Merciless and Boss Crush while Chaos, Perfected is Rainbow', async ({ page }, testInfo) => {
   await page.locator('#achievements-tab').click();
-  await expect(page.locator('.achievement-card[data-tier="empyrorite"]')).toHaveCount(11);
+  await expect(page.locator('.achievement-card[data-tier="empyrorite"]')).toHaveCount(12);
   for (const [id, title, requirement] of [
     ['dodge_merciless_300', 'Beyond the Last Mercy', '300 seconds in one Merciless'],
     ['boss_clean_streak_20', 'Sovereign of the Arena', '20 consecutive Boss Crush fights'],

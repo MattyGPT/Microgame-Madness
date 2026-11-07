@@ -16,7 +16,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="jukebox"]').click();
-  const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements]));
+  const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value));
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');
   await expect(page.locator('[data-difficulty]')).toHaveCount(await page.evaluate(() => ArcadeMusic.jukeboxTracks.length));
   await page.locator('#difficulty-choices').screenshot({ path: testInfo.outputPath('song-cards.png') });
@@ -42,7 +42,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   await page.locator('[data-difficulty="pumpkin"]').click();
   await page.keyboard.press('Escape');
   await expect(page.locator('#jukebox-pause')).toBeDisabled();
-  expect(await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements]))).toBe(before);
+  expect(await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value))).toBe(before);
   await page.locator('[data-game="hangman"]').click();
   await expect(page.locator('#jukebox-controls')).toBeHidden();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
