@@ -4,7 +4,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="jukebox"]').click();
   const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value));
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');

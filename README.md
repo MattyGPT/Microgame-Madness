@@ -252,9 +252,9 @@ npm run test:browser
 
 The JavaScript tests check achievement thresholds, persistence, and duplicate prevention, and run the packaged Python modules in the actual Pyodide WebAssembly runtime. Playwright exercises the interface in desktop and mobile Chromium, including each game, scores across reloads, pause controls, layout width, and loading errors. Browser tests serve the exact pinned Pyodide npm distribution locally instead of depending on CDN uptime. CI also installs Chromium's system dependencies.
 
-Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web/tests/fixtures/game.cjs`: it installs the pinned local runtime before navigation. Install test-specific routes before calling `openGame(page)`; use explicit reloads when testing persistence. Each test retains a fresh browser context.
+Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web/tests/fixtures/game.cjs`: it installs the pinned local runtime before navigation. Install test-specific routes before calling `openGame(page)`; use explicit reloads when testing persistence. Each test retains a fresh browser context. Local browser runs use parallel workers; use `--workers=1` when debugging. Runtime startup retains a 30-second allowance, while ordinary assertions fail after 10 seconds. CI records traces on the first retry and merges all shard results into one downloadable `browser-report`.
 
-Pull requests run Python/JavaScript checks and all four browser shards concurrently. The publish workflow reruns them on `main` and requires every check to pass before deployment.
+Pull requests run Python/JavaScript checks alongside a browser build and four browser shards. The shards download the same build artifact and run `npm run test:browser:built` without rebuilding it. Browser fixtures mock leaderboard configuration to keep production services out of the suite. Superseded checks for the same workflow/ref are cancelled. The publish workflow reruns checks on `main` and requires every check to pass before deployment.
 
 ## GitHub Pages
 
@@ -262,7 +262,7 @@ Play the browser version at **https://mattygpt.github.io/Microgame-Madness/**.
 
 The repository and website are public. GitHub Pages publishes through GitHub Actions, with the repository variable `PAGES_ENABLED` set to `true`.
 
-Each push to `main` runs the Python, WebAssembly, and browser checks, then builds and deploys only the generated `dist/` directory. Shared rule changes therefore reach both the Python source and the published browser game. Local score files and the desktop runtime are excluded from the deployment package.
+Each push to `main` builds a browser artifact, runs the Python, WebAssembly, and browser checks, then deploys that tested artifact without rebuilding. The artifact includes the source revision and preserves `.nojekyll`. Only the publishing job is serialized; before publishing it verifies that the tested revision is still the head of `main`. Manual publishing is also limited to `main`. Shared rule changes therefore reach both the Python source and the published browser game. Local score files and the desktop runtime are excluded from the deployment package.
 
 To republish the current `main` branch manually:
 

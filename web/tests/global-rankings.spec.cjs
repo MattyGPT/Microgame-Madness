@@ -59,7 +59,7 @@ test('global rankings can browse all 24 modes without starting a round', async (
   const service = { scores: new Map(), guests: 0, requested: new Set() };
   await mockGlobalLeaderboards(page, service);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#global-tab').click();
   const modes = await page.evaluate(() => Leaderboards.difficulties);
   for (const [mode, values] of Object.entries(modes)) {
@@ -90,7 +90,7 @@ test('global scores are shared across independent browsers and preserve the orig
   });
   await mockGlobalLeaderboards(page, service);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   const originalPoints = await page.locator('#profile-score').textContent();
   await finishHangman(page, 'First browser');
   await page.locator('#global-tab').click();
@@ -102,7 +102,7 @@ test('global scores are shared across independent browsers and preserve the orig
     await routeLocalRuntime(other);
     await mockGlobalLeaderboards(other, service);
     await other.goto(page.url());
-    await expect(other.locator('#runtime-status')).toContainText('All games ready');
+    await expect(other.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
     await other.locator('#global-tab').click();
     await expect(other.locator('#global-scores')).toContainText('First browser');
     await finishHangman(other, 'Second browser');
@@ -122,13 +122,13 @@ test('global outages keep games playable and queued scores retry after reload', 
   const service = { scores: new Map(), guests: 0, requested: new Set(), offline: true };
   await mockGlobalLeaderboards(page, service);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await finishHangman(page, 'Offline player');
   await page.locator('#global-tab').click();
   await expect(page.locator('#leaderboard-submission')).toContainText('Saved locally');
   await expect(page.locator('#leaderboard-status')).toContainText('unavailable');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   service.offline = false;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await page.locator('#global-tab').click();

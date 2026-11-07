@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({ response, body });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.evaluate(() => testRuntime.runPython('from bridge import session'));
   await page.evaluate(() => {
     document.querySelector('#achievement-celebrations').style.display = 'none';
@@ -188,7 +188,7 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   await page.locator('#exit').click();
   await page.locator('#player').fill('Core Tester');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(card).toBeVisible();
   await expect(page.locator('[data-game]:visible')).toHaveCount(10);
   await card.click();
@@ -368,7 +368,7 @@ test('all 15 Core attacks render and only the final laser wins', async ({ page }
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.achievements.unlocked.core_win)).toBe(earned.victory);
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBe(earned.flawless);
 });

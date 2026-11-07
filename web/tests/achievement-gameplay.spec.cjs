@@ -141,7 +141,7 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
     await page.getByRole('button', { name: 'Dismiss achievement notification' }).first().click();
   await expect(page.locator('#achievement-toast')).toContainText('diamond achievement · +810 points');
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('1140');
 });
 
@@ -228,7 +228,7 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
     wounded = false;
   }
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText(String(baseScore + reward + 10));
 });
 
@@ -359,12 +359,12 @@ test('five actual clean Boss Crush wins earn crystal and unfinished rounds reset
   await expect(page.locator('#profile-score')).toHaveText('2400');
   instantWin = false;
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="boss"]').click();
   await page.locator('[data-difficulty="mean"]').click();
   await page.locator('#pause').click();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => achievementTracker.data.stats.bossCleanStreak)).toBe(0);
   await expect(page.locator('#profile-score')).toHaveText('2400');
   // Exiting a different unfinished run must persist the reset immediately too.
@@ -384,7 +384,7 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
     localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Returning Player', scores: {}, achievements: { stats: { visits: 1 }, unlocked, score: 1090 } }));
   }, date);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('3790');
   await expect(page.locator('#achievement-toast')).toBeHidden();
   await expect(page.locator('.achievement-confetti')).toHaveCount(0);
@@ -409,7 +409,7 @@ test('retiered profiles show corrected points and Rainbow awards have six-color 
     await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', setup) });
   });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await expect(page.locator('#overlay-title')).toHaveText('You did it!');

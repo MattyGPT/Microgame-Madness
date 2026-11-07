@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('Empyrorite relics preview while locked and equip after their achievements', async ({ page }, testInfo) => {
@@ -31,7 +31,7 @@ test('Empyrorite relics preview while locked and equip after their achievements'
   await expect(emperor.locator('.custom-equip')).toBeEnabled();
   await emperor.locator('.custom-equip').click();
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','phantom_emperor');
   await page.emulateMedia({reducedMotion:'reduce'});
   await expect(page.locator('#cube .emperor-seal')).toHaveCSS('animation-name','none');

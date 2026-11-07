@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
     },
   })));
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.clock.install();
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
 });

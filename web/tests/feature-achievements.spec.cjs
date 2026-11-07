@@ -4,7 +4,7 @@ test.use({ deterministicMusic: true });
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
 test('Determination tracks real losses across reloads and awards crystal on the fiftieth loss', async ({ page }, testInfo) => {
@@ -14,7 +14,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   });
   await page.evaluate(() => { saved.achievements.stats.totalLosses = 48; persist(); });
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="determination"]');
   await card.scrollIntoViewIfNeeded();
@@ -37,7 +37,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(49);
   const before = Number(await page.locator('#profile-score').textContent());
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-difficulty="easy"]').click();
   await page.locator('#exit').click();
   expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(49);
@@ -57,7 +57,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   await card.screenshot({ path: testInfo.outputPath('determination-earned.png') });
   const date = await page.evaluate(() => saved.achievements.unlocked.determination);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText(String(before + 270));
   expect(await page.evaluate(() => saved.achievements.unlocked.determination)).toBe(date);
   expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(50);
@@ -104,7 +104,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const date = await page.evaluate(() => saved.achievements.unlocked.core_flawless);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText(String(before + 7290 * 2));
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBe(date);
   await page.locator('#achievements-tab').click();
@@ -151,7 +151,7 @@ test('Rainbow retiering keeps the existing Chaos, Perfected date and recalculate
     } }));
   }, date);
   await page.reload();
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('2440');
   expect(await page.evaluate(() => saved.achievements.unlocked.wrath_perfect_shuffle)).toBe(date);
   await expect(page.locator('#achievement-toast')).toBeHidden();

@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
       'const pyodide = window.endingRuntime = await loadPyodide(') });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility:hidden!important; }' });
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();

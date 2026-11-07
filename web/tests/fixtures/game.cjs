@@ -23,6 +23,11 @@ const test = base.extend({
   deterministicMusic: [false, { option: true }],
   page: async ({ page, deterministicMusic }, use) => {
     await routeLocalRuntime(page);
+    // Test built assets without contacting a production leaderboard.
+    // Leaderboard specs can override this route with their own mock service.
+    await page.route('**/leaderboard-config.json', route => route.fulfill({
+      json: { url: '', key: '' },
+    }));
     if (deterministicMusic) {
       await page.route('**/music.js*', async route => {
         const response = await route.fetch();
@@ -39,7 +44,7 @@ const test = base.extend({
 
 async function openGame(page) {
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 }
 
 module.exports = { test, expect, openGame, routeLocalRuntime };

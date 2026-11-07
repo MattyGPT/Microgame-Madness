@@ -9,7 +9,7 @@ test('all Pumpkin King attacks and five candies render without changing combat',
       'const pyodide = window.artRuntime = await loadPyodide(') });
   });
   await page.goto('/');
-  await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility: hidden !important; }' });
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();

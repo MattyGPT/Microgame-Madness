@@ -53,7 +53,7 @@ test("Pumpkin King offers four HP choices with separate scores", async ({ page }
     },
   })));
   await page.reload();
-  await expect(page.locator("#runtime-status")).toContainText("All games ready");
+  await expect(page.locator("#runtime-status")).toContainText("All games ready", { timeout: 30000 });
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator("#difficulty-choices button")).toHaveCount(4);
   const coward = page.getByRole("button", { name: /^Coward Mode/ });
