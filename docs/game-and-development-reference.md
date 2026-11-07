@@ -355,3 +355,20 @@ Mobile arcade games use a drag joystick with eight-direction movement and a cent
 **Puzzle Cube Cubie:** a Rainbow shop Custom for **2,000 Cubie Cash**. Its scrambled six-color cube has independently turning 3D layers in a seamless, endlessly unsolved loop. Reduced motion keeps the scrambled cube still.
 
 **Mobile fight zoom:** pinch zoom magnifies the existing fight canvas without shrinking it or forcing the page to scroll back to the arena. The shared layout handles Turtle Dodge, Boss Crush, Pumpkin King, King's Wrath, Singularity Core, and Core practice; genuine viewport changes still resize the arena.
+
+
+## Impossible Turtle Dodge
+
+Impossible uses a 420×340 arena (Merciless is 440×360), white blocks and deadly white borders. Blocks are 18% smaller with matching hitboxes, move 20% faster than Merciless at the same elapsed time, and sway twice as far. Pausing is disabled. Local scores and global leaderboard records use `dodge:impossible`; Cash conversion uses a 6× difficulty multiplier. It shares Merciless's music.
+
+Survive in a **single run** to earn these medals and Customs:
+
+| Seconds | Achievement | Tier | Cubie |
+|---:|---|---|---|
+| 15 | Into the Whiteout | Silver | — |
+| 30 | White-Knuckle Dodge | Gold | Whiteout Cubie |
+| 60 | Ride the Slipstream | Diamond | Slipstream Cubie |
+| 120 | Absolute Zero Fear | Rainbow | Absolute Zero Cubie |
+| 180 | Beyond Impossible | Empyrorite | White Dwarf Cubie |
+
+Existing general Turtle Dodge milestones, near misses, and O-block death progress also work in Impossible. Merciless records do not grant Impossible rewards. Desktop users can select `dodge_impossible`; the existing `impossible` command-line argument continues to launch Boss Crush. Before enabling the new global leaderboard in production, apply `supabase/migrations/20261108000000_dodge_impossible.sql`.

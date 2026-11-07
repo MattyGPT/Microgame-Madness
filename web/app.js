@@ -69,6 +69,7 @@ const modes = {
         "Merciless",
         "Deadly edges, a smaller arena, and no pausing.",
       ],
+      impossible: ["Impossible", "An even smaller arena. Smaller white blocks fall faster and sway harder. White edges kill. No pausing."],
     },
   },
   boss: {
@@ -212,6 +213,10 @@ const songSleeves = {
   rock_static: ["#dfef9e", "#9e9a79", "signal"],
   rock_midnight: ["#b8b8ff", "#698ab6", "circuit"],
   rock_victory: ["#ffdf7c", "#c39a4c", "crown"],
+  dragon_dance: ["#ffb584", "#79cfa4", "flame"],
+  lantern_market: ["#ffd48c", "#ce779b", "lantern"],
+  rain_on_glass: ["#afdfff", "#a6a0de", "rain"],
+  sunwheel_parade: ["#ffe18b", "#ec9675", "sunrise"],
 };
 const sleevePaths = {
   pixels: "M12 12h12v12H12z M40 12h12v12H40z M26 26h12v12H26z M12 40h12v12H12z M40 40h12v12H40z",
@@ -915,7 +920,7 @@ function saveRound() {
   if (roundSaved || !snapshot) return;
   accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
   roundSaved = true;
-  if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) playSound("boss_laugh");
+  if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath"].includes(selected)) playSound("boss_laugh");
   if (modes[selected].temporary) return;
   if (snapshot.over) countCompletedMinigame();
   lastCashReward = CubieShop.reward(saved.shop, selected, selectedDifficulty, snapshot.score);
@@ -1280,7 +1285,7 @@ function startGame(difficulty) {
 }
 function showOverlay(title, copy, button, kicker) {
   $("overlay").classList.toggle("boss-defeat", !!snapshot?.over && !snapshot.won
-    && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected));
+    && ["boss", "pumpkin", "wrath"].includes(selected));
   $("overlay-title").textContent = title;
   $("overlay-copy").textContent = copy;
   $("overlay-action").textContent = button;
@@ -1481,7 +1486,8 @@ function draw(s) {
   }
   ctx.restore();
   ctx.strokeStyle =
-    selected === "dodge" && s.difficulty === "merciless"
+    selected === "dodge" && s.difficulty === "impossible" ? "#ffffff"
+      : selected === "dodge" && s.difficulty === "merciless"
       ? "#ff4565"
       : "#45534b";
   ctx.lineWidth = 2;
@@ -1562,7 +1568,7 @@ function frame(now) {
   }
   if (!active && ready && snapshot?.over && !snapshot.won && !document.hidden
       && !gasterActive && !coreOrigin?.open && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
-      && ["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) {
+      && ["boss", "pumpkin", "wrath"].includes(selected)) {
     try {
       snapshot = send("defeat_frame", { dt: (now - lastFrame) / 1000 });
       draw(snapshot);
@@ -1919,7 +1925,7 @@ function syncMusic() {
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
-      : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
+      : active && selected === "dodge" ? `dodge_${selectedDifficulty === "impossible" ? "merciless" : selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),

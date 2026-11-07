@@ -72,10 +72,18 @@ const CubieCustoms = (() => {
       .sort((a, b) => tierOrder.indexOf(a) - tierOrder.indexOf(b))[0];
     catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
+  const impossibleCubies = [
+    ['whiteout', 'Whiteout Cubie', 30, '#dfefff', 'Found a smile in the middle of a whiteout.'],
+    ['slipstream', 'Slipstream Cubie', 60, '#a9d9f0', 'Leans into every impossible turn.'],
+    ['absolute_zero', 'Absolute Zero Cubie', 120, '#c3f0f4', 'Ice-cold focus. A warm little heart.'],
+    ['white_dwarf', 'White Dwarf Cubie', 180, '#f7f1da', 'A tiny star that outlasted the impossible.'],
+  ];
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
   add("party", "Party Cubie", "website_10_hours", "#7555b5",
     '<path d="M35 31 60-14 85 31Z" fill="#ed8dce"/>', square,
     { faceColor: "#fff5cf", flavor: "Ten hours together. Every moment deserves confetti." });
+  for (const [key,name,seconds,color,flavor] of impossibleCubies)
+    add(key, name, `dodge_impossible_${seconds}`, color, `<circle cx="60" cy="68" r="36" fill="${color}"/>`, square, { flavor });
   add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
     '<path d="M21 34h78v12H21Z" fill="#173f66"/><path d="M25 43h70v47H25Z" fill="#78c7e0" stroke="#e7b85c" stroke-width="2"/>' +
     '<path d="M22 94h76v13H22Z" fill="#ce4758"/><path d="M14 107h92l10 13H4Z" fill="#324c69" stroke="#a5bed2" stroke-width="2"/>' +
@@ -651,6 +659,53 @@ const CubieCustoms = (() => {
       return { sideOffset: ['ice','sugar'].includes(key)?7:0, shadowOffset: ['ice','sugar'].includes(key)?11:0, sideColor: palette[2], shadowColor: palette[2],
         back, detail: `<defs><radialGradient id="${id('everyday-gloss')}" cx=".28" cy=".2" r=".95"><stop stop-color="${palette[0]}"/><stop offset=".55" stop-color="${palette[1]}"/><stop offset="1" stop-color="${palette[2]}"/></radialGradient></defs><g fill="${url('everyday-gloss')}">${item.body}</g>${trim}`,
       };
+    }
+    if (item.id === 'white_dwarf') {
+      const star = (x,y,r) => `M${x} ${y-r} ${x+r*.25} ${y-r*.25} ${x+r} ${y} ${x+r*.25} ${y+r*.25} ${x} ${y+r} ${x-r*.25} ${y+r*.25} ${x-r} ${y} ${x-r*.25} ${y-r*.25}Z`;
+      const defs = `<defs>${clip}
+        <radialGradient id="${id('dwarf-aura')}"><stop stop-color="#f3e8ff" stop-opacity=".5"/><stop offset=".48" stop-color="#c6eaff" stop-opacity=".24"/><stop offset="1" stop-color="#b6ceff" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id('dwarf-pearl')}" x2=".8" y2="1"><stop stop-color="#fffef4"/><stop offset=".23" stop-color="#f6f4ff"/><stop offset=".49" stop-color="#cce6f5"/><stop offset=".7" stop-color="#b8b5df"/><stop offset="1" stop-color="#76658f"/></linearGradient>
+        <linearGradient id="${id('dwarf-gold')}" x2=".7" y2="1"><stop stop-color="#fffce2"/><stop offset=".22" stop-color="#ffe3a0"/><stop offset=".48" stop-color="#ad793d"/><stop offset=".68" stop-color="#fff0b5"/><stop offset="1" stop-color="#b8905e"/></linearGradient>
+        <linearGradient id="${id('dwarf-gem')}" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".35" stop-color="#c6f7ff"/><stop offset=".6" stop-color="#a9a4fa"/><stop offset="1" stop-color="#57477d"/></linearGradient>
+        <linearGradient id="${id('dwarf-shine')}"><stop stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fffef0" stop-opacity=".65"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      </defs>`;
+      const rays = Array.from({length:16},(_,i)=>`<g transform="rotate(${i*22.5} 60 68)"><path d="M56 13 60 ${i%2?-2:-12} 64 13 60 21Z" fill="${url('dwarf-gold')}" opacity="${i%2?.5:.85}"/><path d="M60 10V${i%2?1:-7}" stroke="#fffde5" stroke-width=".8"/></g>`).join('');
+      const satellites = Array.from({length:6},(_,i)=>{
+        const angle=i*Math.PI/3, x=60+Math.cos(angle)*66, y=68+Math.sin(angle)*57;
+        return `<g transform="translate(${x} ${y})"><g class="dwarf-satellite" style="animation-delay:${-i*.65}s"><path d="M0-6 4 0 0 6-4 0Z" fill="${url('dwarf-gem')}" stroke="#fff3cf" stroke-width=".8"/><path d="M0-6V6L4 0Z" fill="#fff" opacity=".35"/></g></g>`;
+      }).join('');
+      const mantle = [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':'translate(0 0)'}"><path d="M24 39Q7 44 5 72L-1 104 16 96 25 114 33 92Z" fill="#4b476a" stroke="${url('dwarf-gold')}" stroke-width="1.6"/><path d="M21 49Q11 70 9 91l10-5 5 10" fill="none" stroke="#a7bcdb" stroke-width="1"/><path d="M18 63 15 73 20 79" fill="none" stroke="#f4e3b2" stroke-width=".8"/></g>`).join('');
+      return { sideOffset:8, shadowOffset:13, sideColor:'#867aa9', shadowColor:'#302d49', faceColor:'#424465',
+        back: defs + `<ellipse class="dwarf-aura" cx="60" cy="68" rx="84" ry="86" fill="${url('dwarf-aura')}"/><g class="dwarf-corona">${rays}</g>` +
+          `<g class="dwarf-orbit"><circle cx="60" cy="68" r="58" fill="none" stroke="${url('dwarf-gold')}" stroke-width="1.3"/><circle cx="60" cy="68" r="62" fill="none" stroke="#e1f6ff" stroke-width=".7" stroke-dasharray="1 7"/>${satellites}</g>${mantle}`,
+        detail: `<g fill="${url('dwarf-pearl')}">${item.body}</g><g clip-path="${url('body')}"><g class="dwarf-surface" fill="none" stroke="#fff" stroke-width=".65" opacity=".32"><path d="M10 41Q44 22 74 40T115 42M8 47Q43 28 75 46T115 48M8 53Q43 34 75 52T115 54M9 91Q42 75 74 91T115 91M9 97Q42 81 74 97T115 97"/></g><g transform="rotate(-25 60 68)"><rect class="dwarf-shine" x="-35" y="10" width="24" height="130" fill="${url('dwarf-shine')}"/></g></g>` +
+          `<path d="M25 49V40q0-7 8-7h53M95 88v9q0 6-7 6H35" fill="none" stroke="#fffdf0" stroke-width="1.8"/><path d="M21 46 28 39v52l-7 7M99 46l-7-7v52l7 7" fill="${url('dwarf-gold')}"/>` +
+          `<path d="M25 92 40 98 60 90 80 98 95 92l-6 16H31Z" fill="#51476d" stroke="${url('dwarf-gold')}" stroke-width="1.6"/><path d="m35 101 7 2 18-8 18 8 7-2" fill="none" stroke="#fce5a8" stroke-width=".8"/><path d="${star(60,101,6)}" fill="${url('dwarf-gem')}" stroke="#fff0c4" stroke-width=".7"/>` +
+          `<g class="dwarf-crown"><path d="m28 31-3-17 17 9 7-21 11 15L71 2l7 21 17-9-3 17-15 8H43Z" fill="${url('dwarf-gold')}" stroke="#fff4d1" stroke-width="1.1"/><path d="m33 29-2-7 12 7 8-17 9 14 9-14 8 17 12-7-2 7-12 5H45Z" fill="#6b5b83"/><path d="M31 32q29 12 58 0" fill="none" stroke="#fff2c6" stroke-width="2"/><path class="dwarf-heart" d="${star(60,21,12)}" fill="${url('dwarf-gem')}" stroke="#fff" stroke-width="1.2"/><path d="M60 9v24l12-12Z" fill="#fff" opacity=".4"/></g>` +
+          [[18,30,3],[104,93,3],[37,21,2],[83,39,2]].map(([x,y,r],i)=>`<path class="dwarf-twinkle" style="animation-delay:${-i*.7}s" d="${star(x,y,r)}" fill="#fff8da"/>`).join(''),
+      };
+    }
+    if (impossibleCubies.some(([key]) => key === item.id)) {
+      const key = item.id;
+      const gold = key === 'white_dwarf';
+      const edge = gold ? '#ffe3a5' : '#b8f5ff';
+      const defs = `<defs><linearGradient id="${id('impossible-shell')}" x2=".8" y2="1"><stop stop-color="#fff"/><stop offset=".45" stop-color="${item.color}"/><stop offset="1" stop-color="${gold?'#b9a5ce':'#6b9bc3'}"/></linearGradient></defs>`;
+      let back = '', trim = '';
+      if (key === 'whiteout') {
+        back = '<path d="M22 37Q3 22-6 36M98 37q19-15 28-1" fill="none" stroke="#ddefff" stroke-width="5" stroke-linecap="round"/>';
+        trim = '<path d="M20 48q40-16 80 0v22q-40 14-80 0Z" fill="#334b6c" stroke="#f7ffff" stroke-width="2"/><path d="m28 51 20-4-15 19Zm50-3 12 3-8 15" fill="#81cae5" opacity=".65"/><path d="M20 94q40 10 80 0v12H20Z" fill="#6a97b7"/><path class="impossible-ribbon" d="M91 100q19 1 30 14l-6 10q-15-15-24-14Z" fill="#b6e6ec"/>';
+      } else if (key === 'slipstream') {
+        back = '<g class="impossible-ribbon" fill="#bfeaff" stroke="#efffff" stroke-width="1.2"><path d="M23 49-7 29 3 56-14 51 3 77 24 86ZM97 49l30-20-10 27 17-5-17 26-21 9Z"/></g>';
+        trim = '<path d="m24 35 13 4 9-11m50 7-13 4-9-11M22 94l20 8 18-8 18 8 20-8" fill="none" stroke="#f6ffff" stroke-width="3"/><path d="M25 44v39m70-39v39" stroke="#5b9fc5" stroke-width="2"/>';
+      } else if (key === 'absolute_zero') {
+        back = '<g class="impossible-glow" fill="#a8e5fa" stroke="#f2ffff" stroke-width="1.2"><path d="m12 38 5-20 9 18-7 13Zm94 40 7-19 8 17-7 14ZM45 24l5-22 9 24Zm23 0L80 4l-1 25Z"/></g>';
+        trim = '<path d="M20 42 32 30h55l13 12-11 54-14 12H36L20 93Z" fill="none" stroke="#efffff" stroke-width="3"/><path d="m30 42 14-9 18 1-33 34Zm40 63 19-24-1 15Z" fill="#fff" opacity=".4"/><path d="M85 33 73 45l8 9-9 8M24 86l13-8-4-12" fill="none" stroke="#f4ffff" stroke-width="1.4"/>';
+      } else {
+        back = '<g class="impossible-glow"><circle cx="60" cy="68" r="58" fill="none" stroke="#fff0bf" stroke-width="1.5"/><path d="m60 0 6 20-6 9-6-9Zm0 136 6-20-6-9-6 9ZM-8 68l20-6 9 6-9 6Zm136 0-20-6-9 6 9 6Z" fill="#fff6d2"/></g>';
+        trim = '<path d="m30 30 30-13 30 13-7 9H37Z" fill="#fff3c7" stroke="#cab07e" stroke-width="1.5"/><path d="m60 21 4 7-4 7-4-7Z" fill="#bfa4f2"/><path d="M22 89 40 99 60 92 80 99 98 89v17H22Z" fill="#756792"/><path d="m26 93 14 10 20-7 20 7 14-10" fill="none" stroke="#fff0bd" stroke-width="2"/>';
+      }
+      return { sideColor:gold?'#8d80a1':'#527da2', shadowColor:'#293950', faceColor:key==='whiteout'?'#f0ffff':'#293e5b', back,
+        detail: defs + `<g fill="${url('impossible-shell')}">${item.body}</g><path d="M26 48V39q0-5 6-5h49" fill="none" stroke="#fff" stroke-width="2"/>${trim}` };
     }
     if (item.id === 'shop_rainbow_crayon') {
       const colors = ['#ff527e','#ff9c35','#ffe653','#65e892','#47d6f5','#8b85ff','#da81ed'];
@@ -1381,17 +1436,18 @@ const CubieCustoms = (() => {
     let sticker = 0;
     const sides = ['front','right','back','left','top','bottom'];
     const layers = [0,1,2].map(row => {
-      const faces = sides.map(side => {
-        const cap = side === 'top' || side === 'bottom';
-        const external = !cap || (side === 'top' ? row === 0 : row === 2);
-        const height = cap ? 108 : 36;
-        const tiles = external ? Array.from({length: cap ? 9 : 3}, (_,i) => {
-          const color = stickers[sticker++], x = i%3*36, y = Math.floor(i/3)*36;
-          return `<rect class="puzzle-sticker" data-color="${color}" x="${x+.65}" y="${y+.65}" width="34.7" height="34.7" rx="1.5" fill="${color}"/><path d="M${x+3} ${y+13}V${y+4}q0-1 1-1h25" fill="none" stroke="#fff" stroke-opacity=".32" stroke-width=".7"/><path d="M${x+33} ${y+22}v9q0 2-2 2H${x+9}" fill="none" stroke="#101820" stroke-opacity=".16" stroke-width=".7"/>`;
-        }).join('') : '';
-        return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 ${height}"><rect width="108" height="${height}" fill="${external ? '#64717b' : '#424e59'}"/>${tiles}</svg></div>`;
+      const blocks = Array.from({length:9}, (_,block) => {
+        const column = block % 3, depth = Math.floor(block / 3);
+        const faces = sides.map(side => {
+          const external = {front:depth===2, back:depth===0, left:column===0,
+            right:column===2, top:row===0, bottom:row===2}[side];
+          const color = external ? stickers[sticker++] : '#28333e';
+          const tile = external ? `<rect class="puzzle-sticker" data-color="${color}" x="1.5" y="1.5" width="33" height="33" rx="2.3" fill="${color}"/><path d="M4 13V5q0-1 1-1h24" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".8"/><path d="M32 22v8q0 2-2 2H9" fill="none" stroke="#101820" stroke-opacity=".22" stroke-width=".8"/>` : '';
+          return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" rx=".6" fill="#28333e"/>${tile}</svg></div>`;
+        }).join('');
+        return `<div class="puzzle-block" style="left:${column*36}px;transform:translateZ(${(depth-1)*36}px)">${faces}</div>`;
       }).join('');
-      return `<div class="puzzle-layer puzzle-layer-${row}" style="top:${row*36-54}px">${faces}</div>`;
+      return `<div class="puzzle-layer puzzle-layer-${row}" style="top:${row*36-54}px">${blocks}</div>`;
     }).join('');
     // The expression is composited above the solid slices, so no rotating
     // edge can carry an eye away or draw a seam across Cubie's smile.

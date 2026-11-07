@@ -147,7 +147,7 @@ class DifficultyTests(unittest.TestCase):
         self.assertTrue(game.rules.can_pause)
         self.assertFalse(game.rules.deadly_edges)
         self.assertEqual(dodge_score_file("easy"), DODGE_SCORE_FILE)
-        self.assertEqual(len({dodge_score_file(mode) for mode in DIFFICULTIES}), 4)
+        self.assertEqual(len({dodge_score_file(mode) for mode in DIFFICULTIES}), 5)
 
     def test_speed_increases_and_merciless_spawns_more_often(self):
         games = [DodgeGame(difficulty=mode) for mode in DIFFICULTIES]
@@ -169,19 +169,19 @@ class DifficultyTests(unittest.TestCase):
             else:
                 self.assertGreater(len(speeds), 1)
             for block in game.blocks:
-                if mode in ("hard", "merciless"):
-                    self.assertEqual(block.color, "#ffdf00" if mode == "hard" else "#ff3030")
+                if mode in ("hard", "merciless", "impossible"):
+                    self.assertEqual(block.color, {"hard": "#ffdf00", "merciless": "#ff3030", "impossible": "#ffffff"}[mode])
                     self.assertGreater(block.sway_amplitude, 0)
                 else:
                     self.assertEqual(block.sway_amplitude, 0)
             positions = [block.x for block in game.blocks]
             game.update(0.1, set())
             moved = any(block.x != x for block, x in zip(game.blocks, positions))
-            self.assertEqual(moved, mode in ("hard", "merciless"))
+            self.assertEqual(moved, mode in ("hard", "merciless", "impossible"))
             for block in game.blocks:
                 for x, y in block.centers():
-                    self.assertGreaterEqual(x - CELL / 2, game.left)
-                    self.assertLessEqual(x + CELL / 2, game.right)
+                    self.assertGreaterEqual(x - block.cell_size / 2, game.left)
+                    self.assertLessEqual(x + block.cell_size / 2, game.right)
 
     def test_individual_speed_changes_actual_fall_distance(self):
         game = DodgeGame(difficulty="normal")

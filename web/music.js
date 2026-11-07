@@ -533,12 +533,114 @@ const ArcadeMusic = (() => {
   function pickRockTrack(random = Math.random) {
     return rockTracks[Math.floor(random() * rockTracks.length)];
   }
+  // Original chamber-pop dances. Additive/decaying instrument voices instead
+  // of pulse waves; no borrowed recordings or transcribed reference melodies.
+  const chamberTracks = [
+    { id: "dragon_dance", title: "Dragon Dance", bpm: 128, bars: 80, root: 50,
+      chords: [[0,4,7,11],[9,12,16,19],[5,9,12,16],[7,11,14,17]],
+      motifs: [[12,16,19,16,14,12,9,11],[12,14,16,21,19,16,14,11],
+        [21,19,16,14,16,12,11,9],[17,16,14,11,12,16,19,24]] },
+    { id: "lantern_market", title: "Lantern Market", bpm: 116, bars: 40, root: 48,
+      chords: [[0,3,7,10],[5,8,12,15],[8,12,15,19],[7,11,14,17]],
+      motifs: [[12,15,19,22,19,15,14,12],[15,14,12,10,12,15,17,19],
+        [24,22,19,17,15,14,12,10],[19,17,14,11,14,17,19,23]] },
+    { id: "rain_on_glass", title: "Rain on Glass", bpm: 92, bars: 32, root: 53,
+      chords: [[0,4,7,11],[4,7,11,14],[9,12,16,19],[5,9,12,16]],
+      motifs: [[19,16,14,12,16,11,12,14],[16,19,23,21,19,16,14,11],
+        [21,19,16,12,9,12,16,19],[17,16,12,9,12,14,16,12]] },
+    { id: "sunwheel_parade", title: "Sunwheel Parade", bpm: 138, bars: 40, root: 55,
+      chords: [[0,4,7,9],[5,9,12,16],[2,5,9,12],[7,11,14,17]],
+      motifs: [[12,12,16,19,21,19,16,14],[17,21,24,21,19,17,16,12],
+        [14,17,21,19,17,14,12,9],[19,23,26,23,21,19,16,14]] },
+  ];
+  function composeChamber(song, sampleRate, notes) {
+    const beat = 60 / song.bpm, end = song.bars * 4 * beat;
+    const out = new Float32Array(Math.ceil((end + 2) * sampleRate));
+    const cache = new Map();
+    function instrument(pitch, start, length, gain, kind) {
+      const frequency = 440 * 2 ** ((pitch - 69) / 12);
+      const key = `${pitch}:${length}:${kind}`;
+      if (!cache.has(key)) {
+        const data = new Float32Array(Math.ceil(length * sampleRate));
+        for (let i = 0; i < data.length; i++) {
+          const t = i / sampleRate, phase = 2 * Math.PI * frequency * t;
+          const attack = kind === 'flute' ? .045 : .008;
+          const env = Math.min(1, t / attack, (length - t) / .08);
+          let value = 0;
+          for (let h = 1; h <= 6 && frequency * h < sampleRate * .45; h++) {
+            const weight = kind === 'flute' ? (h === 1 ? 1 : .12 / h)
+              : kind === 'bass' ? 1 / h ** 2.5 : 1 / h ** 1.5;
+            const decay = kind === 'flute' ? .4 : kind === 'piano' ? 2 + h * .7 : 4 + h;
+            value += Math.sin(phase * h + (kind === 'flute' ? .025 * Math.sin(t * 32) : 0))
+              * weight * Math.exp(-t * decay);
+          }
+          data[i] = value * Math.max(0, env);
+        }
+        cache.set(key, data);
+      }
+      const offset = Math.round(start * sampleRate), data = cache.get(key);
+      for (let i = 0; i < data.length && offset + i < out.length; i++) out[offset + i] += data[i] * gain;
+      if (kind === 'flute') notes.push({ start, duration: length });
+    }
+    let seed = song.root;
+    function drum(start, kick, gain) {
+      const length = kick ? .22 : .09, offset = Math.round(start * sampleRate);
+      let phase = 0;
+      for (let i = 0; i < length * sampleRate && offset + i < out.length; i++) {
+        const t = i / sampleRate;
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        phase += 2 * Math.PI * (48 + 90 * Math.exp(-t * 35)) / sampleRate;
+        out[offset + i] += (kick ? Math.sin(phase) : (seed / 2147483648 - 1))
+          * Math.exp(-t * (kick ? 22 : 65)) * Math.min(1, t / .003) * gain;
+      }
+    }
+    for (let bar = 0; bar < song.bars; bar++) {
+      const start = bar * 4 * beat, section = Math.floor(bar / 8);
+      const intro = bar < 4, bridge = section === 4 || section === 5;
+      const reprise = section >= 7, closing = bar >= song.bars - 4;
+      const chord = song.chords[Math.floor(bar / 2) % 4];
+      const motif = song.motifs[(Math.floor(bar / 2) + (bridge ? 2 : 0)) % 4];
+      for (let k = 0; k < 8; k++) {
+        const human = k % 2 ? .012 : 0;
+        instrument(song.root + chord[k % 4] + 12, start + k * beat / 2 + human,
+          beat * 1.2, .085 * (k % 2 ? .8 : 1), 'pluck');
+        if (!intro && !closing && (!bridge || k % 2 === 0)) {
+          const pitch = song.root + motif[k] + (bar % 4 === 3 && k === 7 ? -2 : 0);
+          instrument(pitch, start + k * beat / 2, beat * (bridge ? .88 : .46), .19, 'flute');
+          if (reprise && k % 2 === 0) instrument(pitch - 12, start + k * beat / 2,
+            beat * .65, .055, 'piano');
+        }
+      }
+      for (const k of [0, 1.5, 2.5]) for (const note of chord)
+        instrument(song.root + note + (bridge ? 12 : 0), start + k * beat, beat * 1.3, .055, 'piano');
+      for (const k of [0, 2]) instrument(song.root + chord[0] - 12,
+        start + k * beat, beat * 1.8, .24, 'bass');
+      if (!intro && !bridge && !closing) {
+        for (const k of [0, 2]) drum(start + k * beat, true, .22);
+        for (let k = 0; k < 8; k++) drum(start + (k / 2 + .02) * beat, false, k % 2 ? .045 : .025);
+        if (bar % 8 === 7) for (const k of [3, 3.25, 3.5, 3.75]) drum(start + k * beat, false, .07);
+      }
+    }
+    // Short room reflections retain rhythmic definition; gentle headroom and
+    // a release tail avoid abrupt endings when the jukebox repeats the piece.
+    const delay = Math.round(.071 * sampleRate);
+    for (let i = out.length - 1; i >= delay; i--) out[i] += out[i - delay] * .13;
+    let peak = 0;
+    for (let i = 0; i < out.length; i++) {
+      out[i] *= Math.max(0, Math.min(1, i / (sampleRate * .025), (out.length - 1 - i) / (sampleRate * 1.5)));
+      peak = Math.max(peak, Math.abs(out[i]));
+    }
+    const scale = .82 / Math.max(.82, peak);
+    for (let i = 0; i < out.length; i++) out[i] *= scale;
+    return out;
+  }
   const jukeboxTracks = Object.freeze([
     ...Object.entries(scores).map(([id, score]) => ({ id, title: score.title, bpm: score.bpm,
       category: loopThemes.includes(id) ? "Game theme" : "Arcade soundtrack" })),
     { id: "singularity", title: "Singularity Core", bpm: 78, category: "Game theme" },
     ...bossTracks.map(track => ({ ...track, category: "Boss Crush" })),
     ...rockTracks.map(track => ({ ...track, category: "Rock" })),
+    ...chamberTracks.map(track => ({ ...track, category: "Instrumental dance" })),
   ].map(({ id, title, bpm, category }) => Object.freeze({ id, title, bpm, category })));
   function composeRock(track, sampleRate, notes) {
     const beat = 60 / track.bpm, duration = 32 * 4 * beat + (track.loop ? 0 : 1.2);
@@ -878,6 +980,8 @@ const ArcadeMusic = (() => {
     return samples;
   }
   function compose(track, sampleRate = 22050, notes = []) {
+    const chamber = chamberTracks.find(song => song.id === track);
+    if (chamber) return composeChamber(chamber, sampleRate, notes);
     if (track === "singularity") return composeCinematicCore(sampleRate, notes);
     const rock = rockTracks.find(song => song.id === track) || bossTracks.find(song => song.id === track);
     if (rock) return composeRock(rock, sampleRate, notes);

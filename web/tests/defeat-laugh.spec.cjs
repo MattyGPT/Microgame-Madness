@@ -4,7 +4,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
 
-test('defeated bosses visibly laugh after combat stops, with reduced motion support', async ({ page }) => {
+test('defeated bosses visibly laugh after combat stops, with reduced motion support', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/app.js*', async route => {
@@ -13,7 +13,7 @@ test('defeated bosses visibly laugh after combat stops, with reduced motion supp
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
-  for (const [mode, difficulty] of [['boss','mean'], ['boss','impossible'], ['pumpkin','baby'], ['wrath','color_memory'], ['singularity','gravitron'], ['core_practice','railgun_array']]) {
+  for (const [mode, difficulty] of [['boss','mean'], ['boss','cruel'], ['boss','nightmare'], ['boss','impossible'], ['pumpkin','baby'], ['wrath','color_memory']]) {
     await page.evaluate(({mode,difficulty}) => {
       saved.unlocks.singularity = true;
       selectGame(mode); startGame(difficulty);
@@ -26,7 +26,7 @@ test('defeated bosses visibly laugh after combat stops, with reduced motion supp
     const before = await page.evaluate(() => ({commands:JSON.stringify(snapshot.commands),score:snapshot.score}));
     await expect.poll(() => page.evaluate(() => JSON.stringify(snapshot.commands))).not.toBe(before.commands);
     expect(await page.evaluate(() => snapshot.score)).toBe(before.score);
-    if(mode === 'pumpkin') await page.locator('#game-canvas').screenshot({path:'/tmp/pumpkin-happy-laugh.png'});
+    await page.locator('#game-canvas').screenshot({path:testInfo.outputPath(`${mode}-${difficulty}-laugh.png`)});
   }
   await page.emulateMedia({ reducedMotion:'reduce' });
   const age = await page.evaluate(() => laughRuntime.runPython('session.game.defeat_laugh_age'));

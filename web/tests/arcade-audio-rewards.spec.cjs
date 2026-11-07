@@ -39,7 +39,7 @@ test('audible Christmas song unlocks persistent Gold Santa, muted selection does
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'santa');
 });
 
-test('each boss laughs once on defeat, never on victory', async ({ page }) => {
+test('only character bosses laugh on defeat; Core and victories stay silent', async ({ page }) => {
   const heard = await page.evaluate(() => {
     const events = []; const original = playSound;
     playSound = event => events.push(event);
@@ -52,5 +52,5 @@ test('each boss laughs once on defeat, never on victory', async ({ page }) => {
     playSound = original;
     return events;
   });
-  expect(heard.filter(event => event === 'boss_laugh')).toHaveLength(5);
+  expect(heard.filter(event => event === 'boss_laugh')).toHaveLength(3);
 });

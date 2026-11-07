@@ -52,6 +52,7 @@ class Difficulty:
     bounds: tuple = (LEFT, RIGHT, BOTTOM, TOP)
     can_pause: bool = True
     deadly_edges: bool = False
+    block_scale: float = 1.0
 
 
 DIFFICULTIES = {
@@ -63,6 +64,10 @@ DIFFICULTIES = {
                             spawn_scale=0.55, color="#ff3030", sway=18,
                             bounds=(-220, 220, -180, 180),
                             can_pause=False, deadly_edges=True),
+    "impossible": Difficulty(speed_scale=3.6, speed_variation=(0.95, 1.25),
+                             spawn_scale=0.5, color="#ffffff", sway=36,
+                             bounds=(-210, 210, -170, 170), block_scale=0.82,
+                             can_pause=False, deadly_edges=True),
 }
 
 
@@ -78,8 +83,14 @@ class Block:
     near_player: bool = False
     near_miss_awarded: bool = False
 
+    cell_size: float = CELL
+
+    @property
+    def size(self):
+        return self.cell_size * 0.94
+
     def centers(self):
-        return [(self.x + x * CELL, self.y + y * CELL) for x, y in self.cells]
+        return [(self.x + x * self.cell_size, self.y + y * self.cell_size) for x, y in self.cells]
 
 
 def polygon_touches_rectangle(polygon, left, right, bottom, top):
@@ -104,7 +115,7 @@ def polygon_touches_rectangle(polygon, left, right, bottom, top):
 
 
 def touches_block(x, y, block, margin=0):
-    half = BLOCK_SIZE / 2 + margin
+    half = block.size / 2 + margin
     for bx, by in block.centers():
         left, right = bx - x - half, bx - x + half
         bottom, top = by - y - half, by - y + half
@@ -150,14 +161,15 @@ class DodgeGame:
         min_x = min(x for x, y in cells)
         min_y = min(y for x, y in cells)
         cells = tuple((x - min_x, y - min_y) for x, y in cells)
-        width = max(x for x, y in cells) * CELL
-        x = self.rng.uniform(self.left + CELL / 2, self.right - CELL / 2 - width)
+        cell = CELL * self.rules.block_scale
+        width = max(x for x, y in cells) * cell
+        x = self.rng.uniform(self.left + cell / 2, self.right - cell / 2 - width)
         variation = self.rules.speed_variation
         multiplier = self.rng.uniform(*variation) if variation[0] != variation[1] else variation[0]
         phase = self.rng.uniform(0, math.tau) if self.rules.sway else 0
-        self.blocks.append(Block(x, self.top + CELL, cells,
+        self.blocks.append(Block(x, self.top + cell, cells,
                                  self.rules.color or COLORS[index], multiplier,
-                                 phase, self.rules.sway))
+                                 phase, self.rules.sway, cell_size=cell))
 
     def update(self, dt, keys):
         """Substeps keep fast pieces from jumping through the player."""
@@ -190,8 +202,8 @@ class DodgeGame:
                     phase = block.sway_phase + step * 2
                     block.x += block.sway_amplitude * (math.sin(phase) - math.sin(block.sway_phase))
                     block.sway_phase = phase
-                    width = max(x for x, y in block.cells) * CELL
-                    block.x = max(self.left + CELL / 2, min(self.right - CELL / 2 - width, block.x))
+                    width = max(x for x, y in block.cells) * block.cell_size
+                    block.x = max(self.left + block.cell_size / 2, min(self.right - block.cell_size / 2 - width, block.x))
                 if touches_block(self.x, self.y, block):
                     if self.alive:
                         self.death_cause = "o_block" if tuple(block.cells) == SHAPES[1] else "block"
@@ -210,7 +222,7 @@ class DodgeGame:
                 self.near_misses += 1
             remaining = []
             for block in self.blocks:
-                if max(y for x, y in block.centers()) + CELL / 2 < self.bottom:
+                if max(y for x, y in block.centers()) + block.cell_size / 2 < self.bottom:
                     self.dodged += 1
                 else:
                     remaining.append(block)

@@ -126,7 +126,7 @@ class BrowserGame:
                 self.completed += 1
                 self.new_round(now)
         elif action == "defeat_frame":
-            if (self.mode in ("boss", "pumpkin", "wrath", "singularity", "core_practice")
+            if (self.mode in ("boss", "pumpkin", "wrath")
                     and not self.game.alive and not self.game.won):
                 dt = max(0, min(float(request.get("dt", 0)), .05))
                 self.game.defeat_laugh_age = getattr(self.game, "defeat_laugh_age", 0) + dt
@@ -228,7 +228,7 @@ class BrowserGame:
                 for block in game.blocks:
                     outline = block_outline_color(block.color)
                     for x, y in block.centers():
-                        rect(x, y, BLOCK_SIZE, BLOCK_SIZE, block.color, outline, BLOCK_OUTLINE_WIDTH)
+                        rect(x, y, block.size, block.size, block.color, outline, BLOCK_OUTLINE_WIDTH)
             if self.death_age is not None:
                 for x, y, size in death_pixels(game.x, game.y, self.death_age):
                     rect(x, y, size, size, "#ffffff")

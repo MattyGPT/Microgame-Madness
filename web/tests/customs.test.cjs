@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('155 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 155);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 155);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 155);
+test('159 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 159);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 159);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 159);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -151,12 +151,18 @@ test('Boss Cubie unlocks at ten Boss Crush wins, including saved progress', () =
   assert.match(custom.flavor, /dry erase marker/);
 });
 
-test('Forever Friend unlocks at 1000 cumulative pets, persists, and migrates existing pet counts', () => {
+test('Forever Friend unlocks at 5000 cumulative pets, persists, and migrates existing pet counts', () => {
   const { Tracker } = require('../achievements.js');
   const item = Customs.catalog.find(c => c.id === 'forever_friend');
   assert.equal(item.tier, 'empyrorite');
   assert.equal(item.price, undefined);
-  let tracker = new Tracker({ stats: { cubePets: 998 } });
+  const below = new Tracker({ stats: { cubePets: 1000 } });
+  below.visit();
+  assert.equal(Customs.selected(item.id, below.data.unlocked).id, 'classic');
+  const existing = new Tracker({ stats: { cubePets: 1000 }, unlocked: { cube_pet_1000: '2026-01-01' } });
+  existing.visit();
+  assert.equal(Customs.selected(item.id, existing.data.unlocked).id, item.id);
+  let tracker = new Tracker({ stats: { cubePets: 4998 } });
   tracker.visit();
   tracker.secret('cube');
   assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, 'classic');
@@ -171,7 +177,7 @@ test('Forever Friend unlocks at 1000 cumulative pets, persists, and migrates exi
   assert.ok(!tracker.secret('cube').earned.some(a => a.id === 'cube_pet_1000'));
   assert.equal(tracker.score, score);
   assert.equal(tracker.data.unlocked.cube_pet_1000, stamp);
-  for (const pets of [1000, 1200]) {
+  for (const pets of [5000, 5200]) {
     const old = new Tracker({ stats: { cubePets: pets } });
     assert.ok(old.visit().earned.some(a => a.id === 'cube_pet_1000'));
     assert.equal(Customs.selected(item.id, old.data.unlocked).id, item.id);
