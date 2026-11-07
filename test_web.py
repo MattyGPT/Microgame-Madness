@@ -15,7 +15,7 @@ from boss_crush import BossCrush, BOSS_DIFFICULTIES
 from pumpkin_king import PumpkinKing, PUMPKIN_DIFFICULTIES
 from kings_wrath import KingsWrath, RANDOM_ORDER, WRATH_ATTACKS
 from web.bridge import BrowserGame
-from scripts.build_web import build, leaderboard_config, OUTPUT, PYTHON_SOURCES
+from scripts.build_web import build, leaderboard_config, PYTHON_SOURCES
 
 
 class SharedRulesTests(unittest.TestCase):
@@ -342,13 +342,16 @@ class PackagingTests(unittest.TestCase):
                     self.assertEqual(previous.read_text(), "Last good build")
 
     def test_package_contains_only_allowlisted_browser_files(self):
-        build()
-        files = {str(p.relative_to(OUTPUT)) for p in OUTPUT.rglob("*") if p.is_file()}
-        expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
-        expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
-        self.assertEqual(files, expected)
-        for name in PYTHON_SOURCES:
-            self.assertEqual((OUTPUT / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            with patch("scripts.build_web.OUTPUT", output):
+                build()
+                files = {str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
+                expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
+                expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
+                self.assertEqual(files, expected)
+                for name in PYTHON_SOURCES:
+                    self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
 
 
 if __name__ == "__main__":

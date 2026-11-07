@@ -1,14 +1,5 @@
-const { test, expect } = require('@playwright/test');
-const fs = require('node:fs');
-const path = require('node:path');
+const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
-  await page.route('https://cdn.jsdelivr.net/pyodide/v0.29.3/full/**', route => {
-    const file = path.basename(new URL(route.request().url()).pathname);
-    const local = path.resolve('node_modules/pyodide', file);
-    return fs.existsSync(local) ? route.fulfill({ path: local,
-      contentType: file.endsWith('.wasm') ? 'application/wasm' : file.endsWith('.js') ? 'application/javascript' : 'application/octet-stream',
-      headers: { 'access-control-allow-origin': '*' } }) : route.abort();
-  });
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
 });

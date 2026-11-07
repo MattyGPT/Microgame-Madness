@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { PGlite } = require('@electric-sql/pglite');
-const { difficulties } = require('../leaderboards.js');
+const { difficulties } = require('../../leaderboards.js');
 
 test('PostgreSQL enforces mode isolation, best scores, ownership, and public read-only rankings', async t => {
   const db = new PGlite();
@@ -17,7 +17,7 @@ test('PostgreSQL enforces mode isolation, best scores, ownership, and public rea
       select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
     $$;
   `);
-  const migrations = path.resolve(__dirname, '../../supabase/migrations');
+  const migrations = path.resolve(__dirname, '../../../supabase/migrations');
   for (const file of fs.readdirSync(migrations).filter(file => file.endsWith('.sql')).sort())
     await db.exec(fs.readFileSync(path.join(migrations, file), 'utf8'));
   const first = '00000000-0000-0000-0000-000000000001';
