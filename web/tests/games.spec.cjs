@@ -617,7 +617,7 @@ test('King of Suffering rejects a healed win and awards 810 for a true no-hit wi
     const response = await route.fetch();
     const preparation = 'self.game = PumpkinKing(difficulty=difficulty)\n            from boss_crush import Projectile, HealingPickup\n            self.game.begin_attack(0)\n'
       + (wounded ? '            self.game.hurt()\n            self.game.healing_pickups = [HealingPickup(self.game.x, self.game.y)]\n            self.game.update_healing(.01)\n' : '')
-      + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+      + '            self.game.elapsed = 100\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
     await route.fulfill({ response, body: (await response.text()).replace('self.game = PumpkinKing(difficulty=difficulty)', preparation) });
   });
   async function win() {
@@ -736,7 +736,7 @@ test(`${difficulty} flawless achievement rejects healed damage and restores the 
     const response = await route.fetch();
     const setup = 'self.game = BossCrush(difficulty)\n            from boss_crush import Projectile\n'
       + (wounded ? '            self.game.hurt()\n            self.game.lives = self.game.max_lives\n' : '')
-      + '            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
+      + '            self.game.elapsed = 100\n            self.game.hp = 5\n            self.game.shots = [Projectile(self.game.boss_x, self.game.boss_y, 0, 520)]';
     await route.fulfill({ response, body: (await response.text()).replace('self.game = BossCrush(difficulty)', setup) });
   });
   for (const score of [baseScore, baseScore + reward + 10]) {
