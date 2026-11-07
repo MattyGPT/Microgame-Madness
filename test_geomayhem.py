@@ -205,6 +205,19 @@ class GeomayhemTests(unittest.TestCase):
             game._update_shots(.05)
             self.assertLess(shot.vx, 0, trait)
 
+    def test_higher_xp_costs_require_the_full_amount_at_each_rank(self):
+        game = self.game()
+        for cost in (12, 20, 27, 35):
+            game.xp = cost - 1
+            game.update(.01, set())
+            self.assertEqual(game.offers, [])
+            self.assertEqual(game.snapshot()["xp_needed"], cost)
+            game.xp += 1
+            game.update(.01, set())
+            self.assertTrue(game.offers)
+            self.assertEqual(game.xp, 0)
+            self.assertTrue(game.choose("weapon"))
+
     def test_xp_pauses_world_offers_weapon_until_five_and_rejects_stale_choices(self):
         game = self.game()
         for star in range(2, 6):

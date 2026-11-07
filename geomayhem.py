@@ -101,7 +101,7 @@ class Geomayhem:
 
     @property
     def xp_needed(self):
-        return 8 + (self.rank - 1) * 5
+        return math.ceil((8 + (self.rank - 1) * 5) * 1.5)
 
     @property
     def quota(self):
