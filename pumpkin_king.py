@@ -103,6 +103,7 @@ class PumpkinKing(BossCrush):
         self.counter_time = self.counter_cooldown = 0.0
         self.counter_held = False
         self.counter_hits = 0
+        self.shots_fired = 0
         self.sound_events = []
         self.intro_done = False
         self.attack_index = -1
@@ -414,6 +415,7 @@ class PumpkinKing(BossCrush):
             self.fire_in = max(0, self.fire_in-step)
             if self.intro_done and "f" in keys and self.fire_in <= 0:
                 self.shots.append(Projectile(self.x, self.y+PLAYER_TOP+6, 0, 520))
+                self.shots_fired += 1
                 self.fire_in = 0.18
             shots = []
             for shot in self.shots:

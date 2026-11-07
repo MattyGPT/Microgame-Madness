@@ -73,6 +73,15 @@ const CubieCustoms = (() => {
     catalog.push({ id, name, tier, flavor: flavorText[id], achievements, color, detail, body, ...layers });
   }
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
+  add("chocolate", "Chocolate Cubie", "healing_20", "#64351f",
+    '<rect x="23" y="31" width="74" height="74" rx="7" fill="#442518"/>' +
+    Array.from({length:9}, (_, i) => {
+      const x = 26 + i%3*23, y = 34 + Math.floor(i/3)*23;
+      return `<rect x="${x}" y="${y}" width="20" height="20" rx="2" fill="${i%2 ? '#875034' : '#79442c'}"/><path d="M${x+2} ${y+17}v-15h15" fill="none" stroke="#b87a51" stroke-width="1.3"/><path d="M${x+4} ${y+18}h14v-14" fill="none" stroke="#542a1a" stroke-width="1.5"/>`;
+    }).join('') +
+    '<path d="M19 88 31 94 43 88 56 96 69 91 82 98 101 87v22H19Z" fill="#bbc9d9" stroke="#eff6ff" stroke-width="1"/><path d="m22 90 9 14 12-14 13 17 13-14 13 15 16-17" fill="none" stroke="#8397ae" stroke-width="1.2"/><path d="M18 101q42 9 84 0v14H18Z" fill="#9e4661"/><path d="M24 109h72" stroke="#e8a8b3" stroke-width="1.4"/>',
+    '<path d="M27 28H70Q67 39 79 39Q75 51 88 50Q87 61 100 59V101Q100 108 93 108H27Q20 108 20 101V35Q20 28 27 28Z"/>',
+    { faceColor: "#fff0cc", flavor: "Twenty little pick-me-ups. One very sweet smile." });
   add("satellite", "Satellite Cubie", "play_singularity", "#bac7d8",
     '<rect x="26" y="34" width="68" height="68" rx="9" fill="#d6e0ea" stroke="#71859e" stroke-width="1.5"/><path d="M32 39h56M31 96h58" stroke="#f5fbff" stroke-width="2"/>' +
     '<g class="cubie-motion motion-sway" style="transform-origin:60px 28px"><path d="M60 29V10l12-7" fill="none" stroke="#92a9c2" stroke-width="3"/><circle cx="73" cy="3" r="4" fill="#86e6ff" stroke="#e0faff" stroke-width="1.2"/><path d="M48 15q12 12 24 0" fill="#8da1bb" stroke="#e4efff" stroke-width="1.5"/></g>' +
@@ -113,20 +122,22 @@ const CubieCustoms = (() => {
     '<path d="M49 34q-8 9-10 21M28 60q-2 13 2 23" fill="none" stroke="#ffca68" stroke-width="3" stroke-linecap="round"/>',
     '<path d="M60 31C48 22 39 28 34 33C13 33 16 91 30 101C39 110 51 109 60 105C69 109 81 110 90 101C104 91 107 33 86 33C81 28 72 22 60 31Z"/>');
   add("bookworm", "Bookworm Cubie", "hangman_win", "#f3d3a0",
-    '<path d="M60 32v70" stroke="#a87952" stroke-width="4"/>' +
-    '<path d="M15 88v6q24-8 45 4M105 88v6q-24-8-45 4" fill="none" stroke="#a87952" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M60 32v74" fill="none" stroke="#a87952" stroke-width="2"/>' +
+    '<path d="M15 29v73q24-8 45 4 21-12 45-4V29" fill="none" stroke="#a87952" stroke-width="2" stroke-linejoin="round"/>' +
     '<path d="M79 28v24l-6-5-6 5V28" fill="#e77f89"/>',
-    '<path d="M15 29q24-10 45 3 21-13 45-3v73q-24-8-45 4-21-12-45-4z"/>', {
-      underBody: '<path d="m105 94 8.07 7.29v6" fill="none" stroke="#795237" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
-    });
+    '<path d="M15 29q24-10 45 3 21-13 45-3v73q-24-8-45 4-21-12-45-4z"/>');
   add("wizard", "Word Wizard", "hangman_5", "#c6b2f5",
     '<path d="M28 31L60 1l32 30Z" fill="#7c5bb8"/><path d="M16 31h88" stroke="#b29be6" stroke-width="8"/><path d="M60 10l2.2 5.5 5.8.5-4.5 3.7 1.5 5.8-5-3.2-5 3.2 1.5-5.8L52 16l5.8-.5Z" fill="#fff1a8"/>');
   add("detective", "Clue Cubie", "hangman_hard", "#d5b88b",
-    '<path d="M33 30V17h52v13M20 31h80" fill="#856948" stroke="#856948" stroke-width="8"/><path d="M29 101l13-15 18 17 18-17 13 15" fill="#887458"/><path d="M60 104v-12" stroke="#3b3030" stroke-width="4"/>');
+    '<path d="M33 30V17h52v13M20 31h80" fill="#856948" stroke="#856948" stroke-width="8"/>' +
+    '<path d="M20 86 38 84 50 89h20l12-5 18 2v8q0 14-14 14H34q-14 0-14-14Z" fill="#887052"/>' +
+    '<path d="M48 88h24l-12 17Z" fill="#f6e4bc"/><path d="m57 92 3-3 3 3-2 4 3 9-4 3-4-3 3-9Z" fill="#493b34"/>' +
+    '<path d="m38 84 14 5 8 19-19-13 4-3-9-3ZM82 84l-14 5-8 19 19-13-4-3 9-3Z" fill="#b99a72" stroke="#6c563e" stroke-width="1" stroke-linejoin="round"/>' +
+    '<path d="M27 99h11m44 0h11M27 101h11m44 0h11" fill="none" stroke="#d0af81" stroke-width="1"/><path d="M60 104v4" stroke="#584632" stroke-width="1"/><g fill="#493b34"><circle cx="48" cy="102" r="1.3"/><circle cx="72" cy="102" r="1.3"/></g>');
   add("envelope", "Letter Carrier", "hangman_perfect", "#fff0c3",
     '<path d="M22 31l38 28 38-28M22 104l21-20M98 104L77 84" fill="none" stroke="#d9ad68" stroke-width="3"/><rect x="81" y="32" width="13" height="14" fill="#f3a4bd"/>');
   add("santa", "Santa Cubie", "santa_song", "#d94c55",
-    '<path d="M24 75q7 35 36 43 29-8 36-43l-13 8-9-4-14 10-14-10-9 4Z" fill="#fff8e7" stroke="#ddcdb5" stroke-width="2"/><path d="M25 29Q35-8 68 4q25 3 31 24L83 22Q70 7 63 18L56 30Z" fill="#ce3546" stroke="#8b283f" stroke-width="2"/><rect x="20" y="23" width="80" height="13" rx="6" fill="#fff8e7"/><circle cx="100" cy="29" r="9" fill="#fff8e7"/><path d="M28 28h60" stroke="#fff" stroke-width="3" stroke-linecap="round"/>');
+    '<path d="M24 68Q29 77 39 73Q50 68 60 75Q70 68 81 73Q91 77 96 68Q98 87 88 98L83 96Q79 110 70 110L60 119 50 110Q41 110 37 96L32 98Q22 87 24 68Z" fill="#fff8e7" stroke="#ddcdb5" stroke-width="1.5"/><path d="M60 75Q47 67 38 80Q48 84 60 77Q72 84 82 80Q73 67 60 75Z" fill="#fffdf5"/><path d="M34 85q3 14 12 17m40-17q-3 14-12 17M54 100l6 9 6-9" fill="none" stroke="#e8ddc7" stroke-width="1.2" stroke-linecap="round"/><path d="M25 29Q35-8 68 4q25 3 31 24L83 22Q70 7 63 18L56 30Z" fill="#ce3546" stroke="#8b283f" stroke-width="2"/><rect x="20" y="23" width="80" height="13" rx="6" fill="#fff8e7"/><circle cx="100" cy="29" r="9" fill="#fff8e7"/><path d="M28 28h60" stroke="#fff" stroke-width="3" stroke-linecap="round"/>');
   add("rainbow", "Rainbow Reader", "hangman_250", "#f7b0d3",
     '<path d="M20 43h80M20 36h80" stroke="#ffdf91" stroke-width="7"/><path d="M20 99h80M20 91h80" stroke="#85dcd2" stroke-width="7"/><path d="M30 25q30-37 60 0" fill="none" stroke="#b9a2ef" stroke-width="8"/>');
   add("typewriter", "Click Clack", "typing_5", "#a8d9d7",
@@ -168,7 +179,12 @@ const CubieCustoms = (() => {
   add("astronaut", "Space Shell", "dodge_120", "#c2d4f2",
     '<rect x="27" y="38" width="66" height="56" rx="22" fill="#a5b8de" stroke="#eff3ff" stroke-width="5"/><rect x="10" y="52" width="12" height="30" rx="4" fill="#eff3ff"/><rect x="98" y="52" width="12" height="30" rx="4" fill="#eff3ff"/><path d="M38 31v-9h44v9" fill="#eff3ff"/>');
   add("ninja", "Merciless Ninja", "dodge_merciless", "#afbed7",
-    '<path d="M20 32h80v16H20z" fill="#66598c"/><path class="cubie-motion motion-sway" style="transform-origin:99px 37px" d="M99 37l17-12-4 22z" fill="#66598c"/><path d="M22 94h76v12H22z" fill="#66598c"/><path d="m56 35 4-5 4 5-4 5z" fill="#ffe4a1"/>');
+    '<path d="M23 35Q60 28 97 35L100 47Q60 41 20 47Z" fill="#66598c"/><path d="M27 36Q60 31 93 36" fill="none" stroke="#9689b6" stroke-width="1.5" stroke-linecap="round"/><path d="M23 45Q60 40 97 45" fill="none" stroke="#50446f" stroke-width="1.2"/>' +
+    '<path d="M20 91Q60 97 100 91V94Q100 108 86 108H34Q20 108 20 94Z" fill="#66598c"/><path d="M23 96Q60 102 97 96" fill="none" stroke="#9689b6" stroke-width="1.5" stroke-linecap="round"/><path d="M25 103Q60 108 95 103" fill="none" stroke="#50446f" stroke-width="1" stroke-linecap="round"/>' +
+    '<path d="M57 33Q60 29 63 33L65 36Q60 43 55 36Z" fill="#ffe4a1"/><path d="M94 36Q104 31 107 39Q108 47 99 48L95 44Z" fill="#77679e"/><path d="M99 36q-3 6 2 10" fill="none" stroke="#a294c3" stroke-width="1.3" stroke-linecap="round"/>', square, {
+      back: '<path class="cubie-motion ninja-bandana-tail ninja-bandana-lower" d="M99 40C112 40 113 57 133 51L125 65C108 67 108 47 98 47Z" fill="#51436f" stroke="#83729f" stroke-width="1" stroke-linejoin="round"/>' +
+        '<path class="cubie-motion ninja-bandana-tail" d="M98 37C112 22 126 39 141 22L137 40C121 51 110 33 99 44Z" fill="#77679e" stroke="#ac9bcd" stroke-width="1" stroke-linejoin="round"/>',
+    });
   add("comet", "Comet Cubie", "dodge_360", "#f4d7b2",
     '<path d="M87 43a34 34 0 0 1 4 46" fill="none" stroke="#fff1bb" stroke-width="4" stroke-linecap="round"/>' +
     '<circle cx="33" cy="76" r="5" fill="#dcae81"/><circle cx="72" cy="98" r="3" fill="#dcae81"/>',
@@ -184,7 +200,7 @@ const CubieCustoms = (() => {
       flavor: "Cubie drew those angry eyebrows on with dry erase marker. Still smiling underneath.",
     });
   add("knight", "Arena Knight", "boss_win", "#b6c4d5",
-    '<path d="M25 36l35-19 35 19M60 18v22" fill="none" stroke="#77899e" stroke-width="6"/><path d="M20 88l-9 15 19 7M100 88l9 15-19 7" fill="#77899e"/><path d="M57 18V5h16" stroke="#e78d9f" stroke-width="8"/>');
+    '<path d="M25 36l35-19 35 19M60 18v22" fill="none" stroke="#77899e" stroke-width="6"/><path d="M20 88l-9 15 19 7M100 88l9 15-19 7" fill="#77899e"/><path d="M57 18V2" fill="none" stroke="#77899e" stroke-width="3" stroke-linecap="round"/><path class="cubie-motion knight-flag" d="M58 3C69-10 83 13 96-2L91 13C78 29 68 3 58 14Z" fill="#e78d9f" stroke="#f7b9c7" stroke-width="1" stroke-linejoin="round"/>');
   add("dragon", "Cruel Dragon", "boss_cruel", "#b6d88c",
     '<path d="M25 33L22 9l20 20M78 29L98 9l-3 24" fill="#f7dfa7"/><path class="cubie-motion motion-wing" style="transform-origin:20px 61px;animation-duration:1.6s" d="M20 61L3 43v44l18-10" fill="#76a86e"/><path class="cubie-motion motion-wing" style="transform-origin:100px 61px;animation-duration:1.6s" d="M100 61l17-18v44l-18-10" fill="#76a86e"/><path d="M40 98l6 8 7-8 7 8 7-8 7 8 6-8" fill="#82ae6c"/>');
   add("moon", "Dream Cubie", "boss_nightmare", "#c7bdf4",
@@ -202,7 +218,12 @@ const CubieCustoms = (() => {
   add("crown", "Royal Cubie", "pumpkin_3", "#ffcfa0",
     '<path d="M27 31L21 5l23 15L60 1l16 19L99 5l-6 26z" fill="#ffcf62" stroke="#d49d3a" stroke-width="3"/><circle cx="60" cy="23" r="5" fill="#ec8c90"/>');
   add("scarecrow", "Harvest Helper", "pumpkin_10", "#e9c69a",
-    '<path d="M18 31h84L77 13H43z" fill="#bc8c51"/><path d="M30 25l12-19 31 6 17 13" fill="#d4ab69"/><path d="M21 88L4 83M22 94L6 98M99 88l17-5M98 94l16 4" stroke="#e3bb68" stroke-width="4"/><path d="M30 106l15-16 15 16 15-16 15 16" fill="#b77664"/>');
+    '<path d="M18 31h84L77 13H43Z" fill="#bc8c51"/><path d="M30 25l12-19 31 6 17 13" fill="#d4ab69"/><path d="M34 22q26 6 51 0" fill="none" stroke="#8c623e" stroke-width="4"/><path d="m44 11-4 7m12-5-3 7m12-5-2 6m11-4v5M25 29h68" fill="none" stroke="#f1d28e" stroke-width="1" stroke-linecap="round"/>' +
+    '<path d="M21 88L4 83M22 94L6 98M99 88l17-5M98 94l16 4" stroke="#e3bb68" stroke-width="4" stroke-linecap="round"/>' +
+    '<path d="M20 86Q60 90 100 86V94Q100 108 86 108H34Q20 108 20 94Z" fill="#b77664"/><path d="M23 92h74M25 99h70M29 87v16M39 88v18M81 88v18M91 87v16" fill="none" stroke="#e7ab83" stroke-width="1" opacity=".75"/>' +
+    '<path d="M33 91H87V108H34Q30 108 30 104V96Z" fill="#507a79"/><path d="M26 80h8l8 18-8 3ZM86 80h8l-8 21-8-3Z" fill="#507a79"/><path d="m29 82 9 16m53-16-9 16M34 105h48" fill="none" stroke="#a6bba0" stroke-width=".9" stroke-dasharray="2 2"/>' +
+    '<rect x="33" y="92" width="7" height="6" rx="1.4" fill="#e4bd6d" stroke="#8c6d3e" stroke-width=".8"/><rect x="80" y="92" width="7" height="6" rx="1.4" fill="#e4bd6d" stroke="#8c6d3e" stroke-width=".8"/><path d="M35 94h3m44 0h3" stroke="#fff0b5" stroke-width="1"/>' +
+    '<path d="M49 95h22v7q-11 8-22 0Z" fill="#406565" stroke="#acc0a2" stroke-width=".8" stroke-dasharray="2 1.5"/><path d="M51 98h18" stroke="#274e50" stroke-width="1"/><path d="m74 100 9-1 1 7-9 1Z" fill="#d9ab77" stroke="#795b46" stroke-width=".7"/><path d="m76 101 1 4m3-4 1 4" stroke="#fff0c2" stroke-width=".7"/>');
   add("ghost", "Boo Cubie", "name_boo", "#e0e8ff",
     '<ellipse cx="32" cy="78" rx="9" ry="5" fill="#c9bcf0"/><ellipse cx="88" cy="78" rx="9" ry="5" fill="#c9bcf0"/>',
     '<path d="M18 109V63a42 42 0 0 1 84 0v46l-14-9-14 9-14-9-14 9-14-9z"/>');
@@ -270,11 +291,31 @@ const CubieCustoms = (() => {
     '<path d="M20 92Q60 112 100 92" stroke="#79fff2" fill="none"/>', square,
     { flavor: "Seven minutes beneath the impossible. Even the deep sea held its breath." });
   add("jester", "Royal Jester", "wrath_win_5", "#eab4ca",
-    '<path d="M24 34L15 8l31 14L60 3l14 19 31-14-9 26" fill="#b2a0e3"/><g class="cubie-motion motion-bells" style="transform-origin:60px 30px" fill="#ffe399"><circle cx="15" cy="8" r="5"/><circle cx="60" cy="5" r="5"/><circle cx="105" cy="8" r="5"/></g><path d="M23 98l14 13 13-13 10 13 10-13 13 13 14-13" fill="#b2a0e3"/>');
+    '<g class="cubie-motion motion-sway" style="transform-origin:34px 29px;animation-duration:4s"><path d="M22 31Q10 28 9 17Q6 0 26 6Q43 10 48 30Z" fill="#9874c5" stroke="#674788" stroke-width="1.2"/><path d="M16 14Q24 7 36 21" fill="none" stroke="#c9acee" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="18" r="5" fill="#f6ce71" stroke="#ad7e37" stroke-width="1"/><path d="M7 17h4m-2 0v4" stroke="#a97832" stroke-width=".8"/><circle cx="7.5" cy="16" r="1.2" fill="#fff5c9"/></g>' +
+    '<g class="cubie-motion motion-sway" style="transform-origin:84px 29px;animation-duration:4.4s;animation-delay:-1s"><path d="M73 30Q81 6 100 6Q117 6 111 22Q103 16 98 32Z" fill="#c95b85" stroke="#904063" stroke-width="1.2"/><path d="M83 22Q95 7 106 13" fill="none" stroke="#f09fbb" stroke-width="2" stroke-linecap="round"/><circle cx="111" cy="22" r="5" fill="#f6ce71" stroke="#ad7e37" stroke-width="1"/><path d="M109 21h4m-2 0v4" stroke="#a97832" stroke-width=".8"/><circle cx="109.5" cy="20" r="1.2" fill="#fff5c9"/></g>' +
+    '<g class="cubie-motion motion-sway" style="transform-origin:60px 28px;animation-duration:4.8s;animation-delay:-.5s"><path d="M43 30Q40 7 54-4Q71-17 79 3L75 9Q63-3 65 13L74 30Z" fill="#7552ab" stroke="#54397d" stroke-width="1.2"/><path d="M49 23Q47 4 60-3" fill="none" stroke="#b597de" stroke-width="2" stroke-linecap="round"/><circle cx="77" cy="8" r="5" fill="#f6ce71" stroke="#ad7e37" stroke-width="1"/><path d="M75 7h4m-2 0v4" stroke="#a97832" stroke-width=".8"/><circle cx="75.5" cy="6" r="1.2" fill="#fff5c9"/></g>' +
+    '<path d="M22 27Q60 20 98 27L100 37Q60 31 20 37Z" fill="#76529c" stroke="#e8c16f" stroke-width="1.3"/><path d="M25 29Q60 23 95 29" fill="none" stroke="#c6a5df" stroke-width="1"/><path d="m55 28 5-4 5 4-5 5Z" fill="#ffe3a0"/>' +
+    '<path d="M20 87Q60 93 100 87V94Q100 108 86 108H34Q20 108 20 94Z" fill="#8c65b1"/><path d="M60 91Q80 90 100 87V94Q100 108 86 108H60Z" fill="#c1628b"/><path d="M60 96v11" stroke="#e9b775" stroke-width="1"/>' +
+    '<path d="M22 86 37 89 48 86 60 90 72 86 83 89 98 86 90 99 78 94 69 101 60 95 51 101 42 94 30 99Z" fill="#fff0c5" stroke="#c59858" stroke-width="1" stroke-linejoin="round"/>' +
+    '<g fill="#f7d581" stroke="#b28341" stroke-width=".6"><circle cx="30" cy="99" r="1.7"/><circle cx="51" cy="101" r="1.7"/><circle cx="69" cy="101" r="1.7"/><circle cx="90" cy="99" r="1.7"/></g><path d="m39 100 3-3 3 4-3 4Zm36 1 3-4 3 3-3 5Z" fill="#e9bfeb"/><path d="M29 105Q60 110 91 105" fill="none" stroke="#f3d18d" stroke-width="1.3" stroke-linecap="round"/>');
   add("patchwork", "Never Give Up", "determination", "#cdb5dd",
     '<path d="M20 29h28v16H20M75 89h25v17H75" fill="#f4c988"/><path d="M23 41h24M78 93h19" stroke="#795f8a" stroke-width="3" stroke-dasharray="3 3"/><path d="M26 84l14 10M27 90l11-5" stroke="#795f8a" stroke-width="3"/>');
   add("heart", "Best Friend Cubie", "cube_pet_100", "#ffb6c6",
     '<path class="cubie-motion motion-heart" style="transform-origin:60px 28px" d="M45 17c-13-13-24 7 15 21 39-14 28-34 15-21L60 28z" fill="#ec6e97"/><ellipse cx="30" cy="80" rx="9" ry="5" fill="#ee8aa8"/><ellipse cx="90" cy="80" rx="9" ry="5" fill="#ee8aa8"/>');
+  add("merciful", "Merciful Cubie", "pumpkin_merciful", "#f5b2d0",
+    '<path d="M26 37q34-14 68 0" fill="none" stroke="#fff0f6" stroke-width="3"/>', square,
+    { flavor: "Five minutes. Not one shot. A softer kind of strength." });
+  add("speedrunner", "Speedrunner Cubie", "pumpkin_speedrunner", "#70d8db",
+    '<path d="m68 31-24 38h17l-9 34 29-45H63Z" fill="#fff4a9"/>', square,
+    { flavor: "The King was still finishing the dramatic entrance." });
+  add("golden_hand", "Hand Cubie", "magenta_counter_100", "#e5b84f",
+    '<path d="M39 80q16-12 40-2M44 92q13-7 30-3" fill="none" stroke="#a67924" stroke-width="2"/>',
+    '<path d="M34 105Q23 98 20 84L11 64Q7 54 14 51q6-3 12 8l8 12V21q0-14 10-14 9 0 9 14v33V12q0-13 10-13 10 0 10 13v43V22q0-13 9-13 10 0 10 13v39V39q0-12 9-12 9 0 9 12v43q0 17-17 25l-2 5H37Z"/>',
+    { flavor: "A hundred royal replies. Every one delivered by hand." });
+  add("prismatic", "Prismatic Cubie", "collect_prismatic", "rgba(220,248,255,.025)",
+    '<path d="M35 28h50l15 15v50l-15 15H35L20 93V43Z" fill="none" stroke="#e7fcff"/>',
+    '<path d="M35 28h50l15 15v50l-15 15H35L20 93V43Z"/>',
+    { flavor: "Every triumph leaves a little light inside." });
   add("forever_friend", "Forever Friend Cubie", "cube_pet_1000", "#a5e5cb",
     '<path d="m25 35-5-22 22 12L60 8l18 17 22-12-5 22Z" fill="#f8d791" stroke="#c49a58" stroke-width="2"/><g class="cubie-motion motion-heart" style="transform-origin:60px 22px"><path d="M60 29C35 17 48 6 60 17 72 6 85 17 60 29Z" fill="#ed87b4"/></g><ellipse cx="30" cy="80" rx="8" ry="5" fill="#f3afbd"/><ellipse cx="90" cy="80" rx="8" ry="5" fill="#f3afbd"/><path d="m22 96 21-5 17 9 17-9 21 5-8 12H30Z" fill="#f8d791"/><path d="M60 105c-20-10-10-20 0-10 10-10 20 0 0 10Z" fill="#ed87b4"/>', square,
     { flavor: "A thousand little hugs. A friendship without an ending.", back: '<g class="cubie-motion motion-wing" style="transform-origin:60px 62px;animation-duration:4s"><path d="M29 83Q-3 73 1 32l13 12 2-19 17 26 10 17M91 83q32-10 28-51l-13 12-2-19-17 26-10 17" fill="#d5fff0" stroke="#80c9b1" stroke-width="2"/><path d="m8 49 19 20m85-20L93 69" stroke="#f8d791" stroke-width="3"/></g>' });
@@ -297,7 +338,8 @@ const CubieCustoms = (() => {
     '<path d="m13 12 3 9 9 3-9 3-3 9-3-9-9-3 9-3Z" fill="#ffe9a0"/><path d="m104 91 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#ffe9a0"/>');
   add("medal_crystal", "Crystal Cubie", "collect_crystal", "#ba9aeb",
     '<path d="m25 36 30-8-15 28Zm70 0-30-8 15 28ZM25 101l15-19 20 22Zm70 0L80 82l-20 22Z" fill="#e6d7ff"/>' +
-    '<path d="M40 28 30 7 20 29M58 28 62 0 74 28M83 28 99 10 100 35" fill="#9f7ad1" stroke="#d5b7ff" stroke-width="2"/>' +
+    '<path d="M30 32 38 7 46 32ZM52 32 60 0 68 32ZM74 32 82 7 90 32Z" fill="#9f7ad1" stroke="#d5b7ff" stroke-width="2"/>' +
+    '<path d="M38 7v25h8ZM60 0v32h8ZM82 7v25h8Z" fill="#c5a6ee"/>' +
     '<path d="M27 58v30M91 49v28" stroke="#f6edff" stroke-width="3"/>');
   add("medal_diamond", "Diamond Cubie", "collect_diamond", "#84deee",
     '<path d="M20 42 40 28h40l20 14-20 13H40Z" fill="#d4faff"/>' +
@@ -318,7 +360,7 @@ const CubieCustoms = (() => {
   // Attack-earned outfits use the same silhouette, depth, and face as Cubie.
   const attackArt = {
     pumpkin_color_memory: ['#91d9f5',
-      '<path d="M60 28h26q14 0 14 14v52q0 14-14 14H60Z" fill="#ffb86e"/><path class="cubie-motion motion-energy" d="M32 18h12v12H32M52 18h12v12H52M72 18h12v12H72" fill="#72c9ff"/><path class="cubie-motion motion-energy" style="animation-delay:-1.8s" d="M42 9h12v12H42M62 9h12v12H62M82 9h12v12H82" fill="#ffab60"/><path d="M28 97h64" stroke="#fff1cc" stroke-width="4"/>',
+      '<path class="cubie-motion prism-orange" d="M60 28h26q14 0 14 14v52q0 14-14 14H60Z" fill="#ffb86e"/><path class="cubie-motion prism-blue" d="M32 18h12v12H32M52 18h12v12H52M72 18h12v12H72" fill="#72c9ff"/><path class="cubie-motion prism-orange" d="M42 9h12v12H42M62 9h12v12H62M82 9h12v12H82" fill="#ffab60"/><path d="M28 97h64" stroke="#fff1cc" stroke-width="4"/>',
       'Blue means still. Orange means dance. Cubie remembers both.'],
     pumpkin_bone_gauntlet: ['#e8dfc1',
       '<g class="cubie-motion motion-hover" style="animation-duration:4.5s" fill="#faf4dc"><path d="M29 25h62v9H29Z"/><circle cx="28" cy="25" r="7"/><circle cx="28" cy="34" r="7"/><circle cx="92" cy="25" r="7"/><circle cx="92" cy="34" r="7"/></g><path d="M24 44v43M96 44v43" stroke="#baa987" stroke-width="5"/><path d="M35 96h50M39 102h42" stroke="#fff9e6" stroke-width="4"/>',
@@ -327,10 +369,15 @@ const CubieCustoms = (() => {
       '<g fill="none" stroke-width="5"><path d="M8 78Q60 123 112 78" stroke="#ffb262"/><path d="M8 40Q60 1 112 40" stroke="#70d8f4"/></g><path d="m60 10 9 12-9 12-9-12Z" fill="#ffe4a0"/>',
       'Ten spins later, the outfit is dizzy. Cubie is fine.'],
     pumpkin_magenta_fingers: ['#efa9d5',
-      '<path class="cubie-motion motion-sway" style="transform-origin:59px 31px" d="M32 31V15q0-7 7-7t7 7V6q0-6 6-6t6 6v10V8q0-6 6-6t6 6v11-4q0-6 6-6t6 6v16Z" fill="#bf548f"/><path d="M26 92h68v12H26Z" fill="#a94d85"/><path d="M34 98h52" stroke="#ffd4e9" stroke-width="3"/><path d="m10 50-5 10 8-2-3 12M109 50l5 10-8-2 3 12" fill="none" stroke="#ffd38b" stroke-width="3"/>',
+      '<path class="cubie-motion motion-sway" style="transform-origin:59px 31px" d="M32 31V15q0-7 7-7t7 7V6q0-6 6-6t6 6v10V8q0-6 6-6t6 6v11-4q0-6 6-6t6 6v16Z" fill="#bf548f"/><path d="M26 92h68v12H26Z" fill="#a94d85"/><path d="M34 98h52" stroke="#ffd4e9" stroke-width="3"/><g fill="none" stroke="#ffd38b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="cubie-motion counter-shock" d="m10 50-5 10 8-2-3 12"/><path class="cubie-motion counter-shock" style="animation-delay:-.6s" d="m109 50 5 10-8-2 3 12"/></g>',
       'A tiny high five with extremely good timing.'],
     pumpkin_chaos: ['#edb39d',
-      '<path d="M20 42q0-14 14-14h26L20 62Z" fill="#9dcbed"/><path d="M100 83v11q0 14-14 14H60Z" fill="#b5a0e7"/><path class="cubie-motion motion-hover" d="m28 23 9-15 12 14 14-16 10 15 13-9 8 13" fill="none" stroke="#f6df91" stroke-width="5"/><path d="m7 57 8 6-8 6m106 5-8 6 8 6M30 98l13-6 8 9 12-8 8 7 16-6" fill="none" stroke="#874e78" stroke-width="3"/>',
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:2px;--chaos-y:1px;--chaos-tilt:5deg" d="M20 42q0-14 14-14h26L20 62Z" fill="#53caff"/>' +
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:-2px;--chaos-y:-1px;--chaos-tilt:-5deg;animation-delay:-.3s,-.45s" d="M100 83v11q0 14-14 14H60Z" fill="#cf77ff"/>' +
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:1px;--chaos-y:-5px;--chaos-tilt:6deg;--chaos-speed:.65s;animation-delay:-.1s,-.2s" d="m28 23 9-15 12 14 14-16 10 15 13-9 8 13" fill="none" stroke="#ffce49" stroke-width="5" stroke-linejoin="round"/>' +
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:-4px;--chaos-y:-3px;--chaos-tilt:-12deg;--chaos-speed:.55s;animation-delay:0s,-.35s" d="m7 57 8 6-8 6" fill="none" stroke="#e367b8" stroke-width="3" stroke-linecap="round"/>' +
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:4px;--chaos-y:3px;--chaos-tilt:12deg;--chaos-speed:.7s;animation-delay:-.2s,-.6s" d="m113 74-8 6 8 6" fill="none" stroke="#71d7ff" stroke-width="3" stroke-linecap="round"/>' +
+      '<path class="cubie-motion chaos-cosmetic" style="--chaos-x:1px;--chaos-y:2px;--chaos-tilt:-4deg;--chaos-speed:.8s;animation-delay:-.4s,-.75s" d="M30 98l13-6 8 9 12-8 8 7 16-6" fill="none" stroke="#a769d4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
       'All the patterns at once. All the snacks afterward.'],
     pumpkin_royal_slams: ['#d8bd88',
       '<path d="M23 31 19 10l22 12L60 3l19 19 22-12-4 21Z" fill="#f7d16a"/><path d="M18 47h15v38H18ZM87 47h15v38H87Z" fill="#856d60"/><path d="M21 53h9M21 62h9M90 53h9M90 62h9" stroke="#d9c1a1" stroke-width="3"/><path d="M29 95h62v10H29Z" fill="#856d60"/>',
@@ -436,7 +483,7 @@ const CubieCustoms = (() => {
     ["music_box", "Music Box Cubie", 1200, "crystal", "#b69cce", "Tiny songs for very big feelings.", "<path d=\"M23 31h74v10H23ZM23 96h74v11H23Z\" fill=\"#705c99\" /><path d=\"M29 35h62m-62 65h62\" fill=\"none\" stroke=\"#e5c790\" stroke-width=\"2\" stroke-linecap=\"round\" /><path d=\"M100 72h11v-8\" fill=\"none\" stroke=\"#d7b987\" stroke-width=\"4\" stroke-linecap=\"round\" /><circle cx=\"111\" cy=\"62\" r=\"4\" fill=\"#e6cfa4\"/><g class=\"cubie-motion motion-sway\" style=\"transform-origin:60px 27px;\"><path d=\"M50 27V9l25-5v17h-4V11l-17 4v12Z\" fill=\"#f3dba0\" /><circle cx=\"47\" cy=\"27\" r=\"5\" fill=\"#f3dba0\"/><circle cx=\"68\" cy=\"22\" r=\"5\" fill=\"#f3dba0\"/></g>"],
     ["phoenix", "Phoenix Cubie", 1450, "diamond", "#efa278", "Every setback comes with a new sunrise.", "<g class=\"cubie-motion motion-thrust\" style=\"transform-origin:60px 32px;animation-duration:2s\"><path d=\"M38 32 44 8l17 12L77 4l9 28Z\" fill=\"#ffd48a\" /><path d=\"m46 31 9-14 9 12 13-16-3 20Z\" fill=\"#ffe9ad\" /></g><path d=\"M30 99q30 13 60 0\" fill=\"none\" stroke=\"#ffe3a2\" stroke-width=\"4\" stroke-linecap=\"round\" />", {"back": "<g class=\"cubie-motion motion-wing\" style=\"transform-origin:60px 55px;animation-duration:2.5s\"><path d=\"M23 62Q-5 38 4 21l18 14-4-24 29 39M97 62q28-24 19-41l-18 14 4-24-29 39\" fill=\"#d97362\" /><path d=\"M12 35 29 53m79-18-17 18\" fill=\"none\" stroke=\"#ffd395\" stroke-width=\"4\" stroke-linecap=\"round\" /></g>"}],
     ["storm", "Storm Cubie", 1550, "diamond", "#8b9bbb", "Every cloud deserves a dramatic entrance.", "<path d=\"M16 36q-2-17 16-16 6-19 25-11 15-15 27 3 20-3 21 17l4 7Z\" fill=\"#c1c9e2\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><path d=\"m20 73-13 20h12l-5 18 20-26H22Zm82-28-12 20h12l-5 18 20-26h-12Z\" fill=\"#ffe09a\" /></g><path d=\"M30 100h59\" fill=\"none\" stroke=\"#c4d8f0\" stroke-width=\"3\" stroke-linecap=\"round\" />"],
-    ["koi", "Koi Cubie", 1600, "diamond", "#efead6", "Swims upstream. Waves to everyone downstream.", "<path d=\"M25 35q15-13 28-4l-8 13-20 4Zm63-6 9 14-13 8-8-16ZM26 94l19-4 7 15H30Z\" fill=\"#e8936d\" /><path d=\"M24 38h10v7H24m53 50h16v9H77Z\" fill=\"#637c85\" /><path d=\"M28 101h32\" fill=\"none\" stroke=\"#fff8e8\" stroke-width=\"2\" stroke-linecap=\"round\" />", {"back": "<g class=\"cubie-motion motion-paddle\" style=\"transform-origin:60px 69px;\"><path d=\"M22 56Q-3 52 8 82l18-9M98 56q25-4 14 26l-18-9M48 105l-9 18 21-8 21 8-9-18Z\" fill=\"#f1bd9a\" stroke=\"#d38d70\" stroke-width=\"2\"/></g>"}],
+    ["koi", "Koi Cubie", 1600, "diamond", "#efead6", "Swims upstream. Waves to everyone downstream.", '<path d="M39 30q21-8 40 5l-9 15-25-5Z" fill="#e96c43"/>', { body: '<path d="M60 28C35 28 19 43 24 65C28 86 45 98 53 108H67C75 98 92 86 96 65C101 43 85 28 60 28Z"/>' }],
     ["moon_rabbit", "Moon Rabbit Cubie", 1650, "diamond", "#dfd4ec", "Delivers wishes by moonlight.", "<g class=\"cubie-motion motion-sway\" style=\"transform-origin:36px 33px;\"><path d=\"M28 33Q12-7 29-3q16 4 16 36Z\" fill=\"#e9def2\" /><path d=\"M31 25Q23 3 29 5q7 5 8 20Z\" fill=\"#cca5ca\" /></g><g class=\"cubie-motion motion-sway\" style=\"transform-origin:84px 33px;animation-delay:-1.7s\"><path d=\"M76 33q0-40 17-36 17 7-1 36Z\" fill=\"#e9def2\" /><path d=\"M83 25q1-22 8-20 5 6-1 20Z\" fill=\"#cca5ca\" /></g><path d=\"M26 96q9-14 22 0m24 0q13-14 22 0\" fill=\"#c3acd8\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><circle cx=\"60\" cy=\"25\" r=\"6\" fill=\"#fff0bd\"/></g>"],
     ["kaleidoscope", "Kaleidoscope Cubie", 1900, "rainbow", "#c7b9dd", "Every turn reveals another little wonder.", "<g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 28px;animation-duration:14s\"><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#ed9baf\" transform=\"rotate(0 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#f3d887\" transform=\"rotate(60 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#9fdab5\" transform=\"rotate(120 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#91cfe4\" transform=\"rotate(180 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#a5adeb\" transform=\"rotate(240 60 28)\"/><path d=\"M60 28 51 13 60 1 69 13Z\" fill=\"#c8a4df\" transform=\"rotate(300 60 28)\"/><circle cx=\"60\" cy=\"28\" r=\"5\" fill=\"#fff2d5\"/></g><g class=\"cubie-motion motion-color\" style=\"transform-origin:60px 68px;\"><path d=\"M24 93 42 88l18 12 18-12 18 5-18 13-18-6-18 6Z\" fill=\"#a2decb\" /><path d=\"M25 37h70\" fill=\"none\" stroke=\"#ffe7a6\" stroke-width=\"4\" stroke-linecap=\"round\" /></g>"],
     ["carnival", "Carnival Cubie", 2000, "rainbow", "#ecb0c1", "The parade starts whenever you smile.", "<path d=\"M16 38 60 1l44 37Z\" fill=\"#ef7f97\" /><path d=\"M60 1 36 38h17Zm0 0 7 37h17Z\" fill=\"#fbe5a4\" /><path d=\"M16 38h88v8H16Z\" fill=\"#a2cfd1\" /><path d=\"M29 97h62\" fill=\"none\" stroke=\"#f5e4b5\" stroke-width=\"5\" stroke-linecap=\"round\" /><g class=\"cubie-motion motion-sway\" style=\"transform-origin:60px 3px;\"><path d=\"M60 3V-8l20 6-20 5Z\" fill=\"#96d7c6\" /></g><circle cx=\"31\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/><circle cx=\"60\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/><circle cx=\"89\" cy=\"100\" r=\"3\" fill=\"#ca83b4\"/>"],
@@ -454,6 +501,14 @@ const CubieCustoms = (() => {
     '<path d="M60 28 56 42 64 49 57 58 63 66 55 77 62 84 58 96 63 108" fill="none" stroke="#b28fff" stroke-width="3"/>',
     '<rect x="20" y="28" width="80" height="80" rx="5"/>', {
       price: 4000, tier: "empyrorite", flavor: "Half hello, half system error. Do not shake the hand.",
+    });
+  add("shop_crabby", "Crabby Cubie", null, "#123c79",
+    '<path d="M28 43q0-8 8-8h48M27 85v10q0 6 7 6h49" fill="none" stroke="#3677b5" stroke-width="2"/><path d="M33 36h47" stroke="#78b9df" stroke-width="1.2"/><g fill="#2c64a0"><circle cx="29" cy="77" r="2"/><circle cx="91" cy="77" r="2"/></g>' +
+    [0, 1].map(side => `<g transform="${side ? 'translate(120 0) scale(-1 1)' : 'translate(0 0)'}"><g transform="translate(-6 52)"><path d="M29 17C17 13 15 0 1 4C-7 6-8 17-1 22" fill="none" stroke="#143c73" stroke-width="14" stroke-linecap="round"/><path d="M27 16Q14 2 2 7" fill="none" stroke="#3474aa" stroke-width="5" stroke-linecap="round"/><g class="cubie-motion crabby-claw" style="animation-delay:${side ? '-1.1' : '0'}s"><g class="cubie-motion crabby-pincer crabby-pincer-left" style="animation-delay:${side ? '-1.1' : '0'}s"><path d="M-4 7C-22 8-27 25-21 39C-17 48-9 54-2 55C-8 45-11 36-7 31C-2 25 2 16-4 7Z" fill="#245e9a" stroke="#397bb3" stroke-width="1"/><path d="M-21 39C-17 48-9 54-2 55C-6 48-9 41-9 36Q-16 33-21 39Z" fill="#e74a53"/><path d="M-19 25Q-21 35-15 41" fill="none" stroke="#74a6c5" stroke-width="1.5" stroke-linecap="round"/></g><g class="cubie-motion crabby-pincer crabby-pincer-right" style="animation-delay:${side ? '-1.1' : '0'}s"><path d="M3 8C19 8 24 22 21 34C19 44 11 51 4 54C9 43 12 34 8 30C2 24-2 16 3 8Z" fill="#2869a2" stroke="#397bb3" stroke-width="1"/><path d="M21 34C19 44 11 51 4 54C8 45 10 39 10 34Q16 30 21 34Z" fill="#f05c61"/><path d="M18 35Q17 42 12 46" fill="none" stroke="#ffa2a2" stroke-width="1.3" stroke-linecap="round"/></g><path d="M-12 15C-19 1-9-9 3-7C17-5 20 7 12 19Q1 29-12 15Z" fill="#22598f"/><path d="M-10 4Q-4-3 5 0" fill="none" stroke="#5994bd" stroke-width="2" stroke-linecap="round"/><g fill="#3975a6"><circle cx="-6" cy="12" r="1.4"/><circle cx="3" cy="15" r="1"/><circle cx="8" cy="7" r="1.3"/></g></g></g></g>`).join(''), square, {
+      price: 1020, tier: "diamond", faceColor: "#e2f5ff",
+      flavor: "Six little steps. Two big hugs. Mind the pincers.",
+      back: [0, 1].map(side => `<g transform="${side ? 'translate(120 0) scale(-1 1)' : 'translate(0 0)'}">` +
+        ['M25 65Q8 51-5 62Q-14 68-17 79', 'M23 79Q2 72-8 83Q-17 91-18 101', 'M26 93Q6 96 0 110Q-4 118-2 124'].map((d,i) => `<g class="crabby-leg"><path d="${d}" fill="none" stroke="#0c2855" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${i%2 ? '#3d76ae' : '#285b96'}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></g>`).join('') + '</g>').join(''),
     });
   const spaceJunkShards = [
     'M21 31 43 28 39 42 24 48 19 40Z',
@@ -492,6 +547,7 @@ const CubieCustoms = (() => {
   // Every front is fitted to Classic Cubie's 145px square; accessories can
   // extend past it without shrinking the character or changing its face.
   const bodyBounds = {
+    golden_hand: [9, -1, 101, 113],
     pumpkin: [18.8723, 26.3594, 82.2554, 81.5819],
     phantom_emperor: [18.8723, 26.3594, 82.2554, 81.5819],
     phantom_king: [18.8723, 26.3594, 82.2554, 81.5819],
@@ -527,6 +583,79 @@ const CubieCustoms = (() => {
         front: `<defs><clipPath id="${id(name)}"><rect x="-20" y="${upperFront ? -50 : cy}" width="160" height="${upperFront ? cy + 50 : 180}"/></clipPath></defs>` + group('front'),
       };
     };
+    if (item.id === 'attack_core_event_lattice') {
+      const rails = 'M27 41V35h66v66H27V41';
+      const nodes = [27,40,53,67,80,93].flatMap((x,i) => [35,101].map((y,j) =>
+        `<g class="cubie-motion lattice-node" style="animation-delay:${-(i+j*3)*.24}s"><circle cx="${x}" cy="${y}" r="3.6" fill="#62eaff" opacity=".22"/><rect x="${x-1.5}" y="${y-1.5}" width="3" height="3" rx=".5" fill="#d3fff6"/></g>`)).join('');
+      const tiles = [[5,51,-.2],[105,73,-1.1]].map(([x,y,delay]) =>
+        `<g transform="translate(${x} ${y})"><g class="cubie-motion lattice-tile" style="animation-delay:${delay}s"><path d="M0 0h12v12H0Z" fill="#254f79" stroke="#8affed" stroke-width="1.2"/><path d="M3 3h6v6H3Z" fill="#70dedf"/><path d="M0 0 3 3m9-3-3 3M0 12l3-3m9 3-3-3" stroke="#b5fff1" stroke-width=".7"/></g></g>`).join('');
+      return { faceColor: '#effff6', sideColor: '#53537f', shadowColor: '#282b4c',
+        detail: `<defs>${clip}<linearGradient id="${id('lattice-shell')}" x2=".8" y2="1"><stop stop-color="#bd9de0"/><stop offset=".35" stop-color="#8665b3"/><stop offset="1" stop-color="#444a80"/></linearGradient><linearGradient id="${id('lattice-scan')}" x2="0" y2="1"><stop stop-color="#82ffee" stop-opacity="0"/><stop offset=".85" stop-color="#82ffee" stop-opacity=".12"/><stop offset="1" stop-color="#bffff6" stop-opacity=".4"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('lattice-shell')}"/>` +
+          `<path d="M28 43H92M28 55H92M28 67H92M28 79H92M28 91H92M39 36V100M51 36V100M63 36V100M75 36V100M87 36V100" fill="none" stroke="#a9d9ef" stroke-width=".6" opacity=".22"/><g class="cubie-motion lattice-scan"><rect x="24" y="15" width="72" height="18" fill="${url('lattice-scan')}"/><path d="M24 33H96" stroke="#b5fff1" stroke-width="1" opacity=".6"/></g><path d="${rails}" fill="none" stroke="#384c72" stroke-width="4" stroke-linejoin="round"/><path d="${rails}" fill="none" stroke="#8fcbe8" stroke-width="1.2"/><path class="cubie-motion lattice-current" d="${rails}" pathLength="100" fill="none" stroke="#b5fff1" stroke-width="2.2" stroke-dasharray="5 20" stroke-linecap="round"/>${nodes}<path d="M24 47V40q0-8 8-8h48M96 87v9q0 8-8 8H43" fill="none" stroke="#e6d8ff" stroke-width="1.2" opacity=".8"/></g>${tiles}` };
+    }
+    if (item.id === 'bookworm') {
+      return { sideOffset: 0, shadowOffset: 0, sideColor: 'transparent', shadowColor: 'transparent',
+        back: `<g transform="translate(0 7)" fill="#795237">${item.body}</g><g transform="translate(0 3.5)" fill="#e6c38f">${item.body}</g><path d="M15 102v7m45-3v7m45-11v7" fill="none" stroke="#a87952" stroke-width="1"/>`,
+        detail: item.detail };
+    }
+    if (item.id === 'chocolate') {
+      const wrapperStart = item.detail.indexOf('<path d="M19 88');
+      return { sideOffset: 5, shadowOffset: 9, sideColor: '#442518', shadowColor: '#2e1a13',
+        detail: `<defs>${clip}</defs><g clip-path="${url('body')}">${item.detail.slice(0, wrapperStart)}</g><path d="M70 28Q67 39 79 39Q75 51 88 50Q87 61 100 59" fill="none" stroke="#b78053" stroke-width="1.5" stroke-linecap="round"/>${item.detail.slice(wrapperStart)}` };
+    }
+    if (item.id === 'shop_koi') {
+      const fin = `<path d="M29 58Q7 52-2 77Q9 88 30 75Z" fill="#f2d1ad" stroke="#ba9c7d" stroke-width="1.1"/><path d="M27 62 3 77M27 66 8 81M27 70l-12 12" fill="none" stroke="#fff4dc" stroke-width="1"/>`;
+      return { sideOffset: 2, shadowOffset: 4, sideColor: '#c7bd9b', shadowColor: '#807e69',
+        back: `<g class="cubie-motion koi-fin" style="transform-origin:28px 65px">${fin}</g><g transform="translate(120 0) scale(-1 1)"><g class="cubie-motion koi-fin" style="transform-origin:28px 65px;animation-delay:-.7s">${fin}</g></g><g class="cubie-motion koi-tail" style="transform-origin:60px 103px"><path d="M53 101Q45 115 33 125L34 140 60 125 86 140 87 125Q75 115 67 101Z" fill="#f3d6b7" stroke="#bc9d7c" stroke-width="1.2"/><path d="M55 109 39 132M59 113l-7 15M65 109l16 23M61 113l7 15" stroke="#fff8e8" stroke-width="1.2"/><path d="M53 101h14l7 12-14 7-14-7Z" fill="#e67b4b"/></g>`,
+        detail: `<defs>${clip}<linearGradient id="${id('koi-pearl')}" x2="1" y2=".2"><stop stop-color="#c8c1a5"/><stop offset=".35" stop-color="#fff9e5"/><stop offset=".7" stop-color="#f0e8cc"/><stop offset="1" stop-color="#c4b89a"/></linearGradient></defs><g clip-path="${url('body')}"><path d="M15 25h90v88H15Z" fill="${url('koi-pearl')}"/><path d="M34 29Q56 19 80 34L73 46Q58 52 43 42Z" fill="#e66a3c"/><path d="M18 57Q32 48 43 61L38 80 24 82Z" fill="#ed8051"/><path d="M83 64Q103 60 102 83L85 97 74 84Z" fill="#e56338"/><path d="M45 94Q56 87 67 98L71 113H49Z" fill="#ed7b43"/><path d="M29 41 38 38 44 46 34 51ZM82 53l14-6 5 12-10 8ZM31 84l12-4 6 10-8 6Z" fill="#394b50"/><path d="M28 60Q24 42 43 34M85 40q10 12 7 23" fill="none" stroke="#fffdf0" stroke-width="1.5"/><path d="M49 54q10-5 20 0M47 61q12-5 24 0M47 68q13-5 26 0" fill="none" stroke="#b8ab8a" stroke-width=".6" opacity=".4"/></g><path d="M34 39Q20 28 16 37M86 39q14-11 18-2" fill="none" stroke="#e7d5af" stroke-width="1.8" stroke-linecap="round"/>` };
+    }
+    if (item.id === 'merciful') {
+      return { sideColor: '#bd709c', faceColor: '#8e4169',
+        eyes: '<g class="cubie-eyes" fill="none" stroke="#8e4169" stroke-width="6" stroke-linecap="round"><path d="M34 63q10-17 20 0M92 63q10-17 20 0"/></g>',
+        detail: `<defs>${clip}<linearGradient id="${id('mercy')}" x2=".6" y2="1"><stop stop-color="#ffe8f3"/><stop offset=".5" stop-color="#f4b0d0"/><stop offset="1" stop-color="#d97faf"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('mercy')}"/><path d="M25 52V42q0-9 10-9h43" fill="none" stroke="#fff6f9" stroke-width="2"/><ellipse cx="30" cy="77" rx="8" ry="4" fill="#e97cab"/><ellipse cx="90" cy="77" rx="8" ry="4" fill="#e97cab"/><path d="M21 99q39-15 78 0v10H21Z" fill="#fff0e5"/></g>` +
+          motion('<path d="M60 26C29 9 44-8 60 6 76-8 91 9 60 26Z" fill="#f28bb6" stroke="#ffe5ef" stroke-width="2"/><path d="M46 7q4-5 8-1" fill="none" stroke="#fff6f9" stroke-width="2" stroke-linecap="round"/>', 'motion-heart', '60px 12px') +
+          '<path d="M58 99 41 91v16l17-5m4-3 17-8v16l-17-5" fill="#d883b2"/><circle cx="60" cy="101" r="4" fill="#ffe4ed"/>',
+        back: motion('<path d="M22 76Q0 65 4 47q15 1 23 17M98 76q22-11 18-29-15 1-23 17" fill="#fff2ec" stroke="#efbfce" stroke-width="1.5"/>', 'motion-wing') };
+    }
+    if (item.id === 'speedrunner') {
+      return { sideColor: '#287f91',
+        back: motion('<path d="M15 53H-9m24 13H-1m15 14H-5" stroke="#b7f6f2" stroke-width="3" stroke-linecap="round"/>', 'motion-thrust'),
+        detail: `<defs>${clip}<linearGradient id="${id('runner')}" x2=".8" y2="1"><stop stop-color="#bbffef"/><stop offset=".45" stop-color="#55c5d2"/><stop offset="1" stop-color="#277998"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="20" y="28" width="80" height="80" fill="${url('runner')}"/><path d="m85 29-14 22h10l-8 24 23-34H85l9-12Z" fill="#fff0aa"/><path d="M20 93h80v15H20Z" fill="#effaf1"/>${Array.from({length:8},(_,i)=>`<path d="M${20+i*10} ${i%2?100:93}h10v8h-10Z" fill="#255769"/>`).join('')}</g><path d="M19 38q41-10 82 0v7q-41-10-82 0Z" fill="#f6dc80"/><path d="m98 40 20 3-8 8 12 7-24-9" fill="#e5a858"/>` +
+          '<rect x="54" y="-1" width="12" height="6" rx="2" fill="#f3d487"/><circle cx="60" cy="17" r="15" fill="#e7d394" stroke="#fff5ca" stroke-width="2"/><circle cx="60" cy="17" r="11" fill="#18485a"/><path d="M60 8v3m-9 6h3m15 0h-3m-6 9v-3" stroke="#b9f5eb" stroke-width="1.5"/>' +
+          motion('<path d="M60 17v-7" stroke="#fff0a3" stroke-width="2" stroke-linecap="round"/>', 'motion-spin', '60px 17px', 'animation-duration:3s') + '<circle cx="60" cy="17" r="2" fill="#fff0a3"/>' };
+    }
+    if (item.id === 'golden_hand') {
+      return { sideColor: '#a27422', shadowColor: '#342919',
+        eyes: '<g class="cubie-eyes" fill="#694813"><path d="M58 99v10h7V99Zm27 0v10h7V99Z"/></g>',
+        mouth: '<path class="cubie-smile" d="M67 118v5h17v-5" fill="none" stroke="#694813" stroke-width="4" stroke-linejoin="round"/>',
+        detail: `<defs>${clip}<linearGradient id="${id('hand-gold')}" x2=".9" y2=".5"><stop stop-color="#8e5b15"/><stop offset=".17" stop-color="#f4cc66"/><stop offset=".36" stop-color="#fff3bb"/><stop offset=".55" stop-color="#dba83a"/><stop offset=".78" stop-color="#fff1a5"/><stop offset="1" stop-color="#b68020"/></linearGradient></defs><g clip-path="${url('body')}"><rect x="0" y="-4" width="115" height="120" fill="${url('hand-gold')}"/><path d="M39 65V21q0-8 5-8m15 42V11q0-7 5-7m15 57V22q0-7 5-7m14 55V39q0-6 5-6M26 75 15 58" fill="none" stroke="#fff6c6" stroke-width="2" stroke-linecap="round"/><path d="M34 71q16-8 21 8m-14 9q19-13 44-5M46 96q12-8 32-5M53 48h-9m28-5h-9m28 9h-8m26 11h-8" fill="none" stroke="#a77524" stroke-width="1.3" opacity=".8"/><path d="M34 103h62v12H34Z" fill="#805522"/><path d="M35 104h60v6H35Z" fill="#f8d573"/><path d="m64 102 6 5-6 5-6-5Z" fill="#f795d9" stroke="#fff2c2"/></g>${sparkle(43,12,-.4,3)}${sparkle(84,76,-1.8,3)}` };
+    }
+    if (item.id === 'prismatic') {
+      const outline = 'M35 28h50l15 15v50l-15 15H35L20 93V43Z';
+      const inset = 'M38 35h44l11 11v44l-11 11H38L27 90V46Z';
+      const facets = ['M35 28h50l-3 7H38Z', 'M85 28l15 15-7 3-11-11Z',
+        'M100 43v50l-7-3V46Z', 'M100 93l-15 15-3-7 11-11Z',
+        'M85 108H35l3-7h44Z', 'M35 108 20 93l7-3 11 11Z',
+        'M20 93V43l7 3v44Z', 'M20 43l15-15 3 7-11 11Z'];
+      const spectrum = ['#ff245b','#ff8a00','#ffec00','#24ff83','#00dfff','#5850ff','#ed35ff'];
+      return { sideColor: 'transparent', shadowColor: 'transparent', sideOffset: 0, shadowOffset: 0,
+        eyes: `<g class="cubie-eyes" fill="${url('prism-face')}" stroke="#f1fdff" stroke-width="1.15"><path d="m38 48 11 0 3 4v18l-3 4H38l-3-4V52Z"/><path d="m96 48 11 0 3 4v18l-3 4H96l-3-4V52Z"/><path d="M38 54v15m58-15v15" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M42 51h6m52 0h6" stroke="#a9eaff" stroke-width=".7"/></g>`,
+        mouth: `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${url('prism-face')}" stroke="#f1fdff" stroke-width="1.1"/>`,
+        back: `<g transform="translate(6 7)" fill="none" stroke="#a9d9f3" stroke-width=".6" opacity=".25"><path d="${outline}"/><path d="M35 28 85 108M85 28 35 108" stroke-dasharray="1 4" opacity=".35"/></g>`,
+        detail: `<defs>${clip}<linearGradient id="${id('prism-glass')}" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".12"/><stop offset=".25" stop-color="#d8f5ff" stop-opacity=".01"/><stop offset=".7" stop-color="#cde3ff" stop-opacity=".015"/><stop offset="1" stop-color="#fff" stop-opacity=".08"/></linearGradient><linearGradient id="${id('prism-face')}" x2="1" y2=".4"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".23" stop-color="#c5edff" stop-opacity=".06"/><stop offset=".72" stop-color="#d7dcff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient><linearGradient id="${id('prism-bevel')}" x2=".8" y2="1"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".2" stop-color="#c5efff" stop-opacity=".14"/><stop offset=".48" stop-color="#aaa5ff" stop-opacity=".04"/><stop offset=".75" stop-color="#d5faff" stop-opacity=".4"/><stop offset="1" stop-color="#fff" stop-opacity=".7"/></linearGradient><linearGradient id="${id('prism-spectrum')}" x2="1" y2="0">${spectrum.map((c,i)=>`<stop offset="${i/6}" stop-color="${c}" stop-opacity="1"/>`).join('')}</linearGradient></defs>` +
+          `<g clip-path="${url('body')}"><path d="${outline}" fill="${url('prism-glass')}"/>${facets.map((d,i)=>`<path d="${d}" fill="${url('prism-bevel')}" opacity="${i%3 ? '.65' : '.95'}" stroke="#d6f5ff" stroke-opacity=".35" stroke-width=".4"/>`).join('')}<path d="${inset}" fill="none" stroke="${url('prism-spectrum')}" stroke-width="1.8"/><path d="M29 48 40 37h40M91 86l-11 13H40" fill="none" stroke="#fff" stroke-width=".65" opacity=".75"/><path d="M30 46 41 36 88 90 79 99Z" fill="#e7faff" opacity=".025"/><g class="prismatic-shine"><path d="M-63 20h7L44 120h-7Z" fill="${url('prism-spectrum')}" opacity=".8"/><path d="M-54 20h1.2L47 120h-1.2Z" fill="#fff" opacity=".65"/><path d="M-49 20h2L53 120h-2Z" fill="#c2eaff" opacity=".18"/></g><g transform="translate(120 136) scale(-1 -1)"><g class="prismatic-shine prismatic-reflection"><path d="M-65 20h4L39 120h-4Z" fill="${url('prism-spectrum')}" opacity=".65"/></g></g></g>` +
+          `<path d="${outline}" fill="none" stroke="${url('prism-spectrum')}" stroke-width="2.8" opacity=".95"/><path d="${outline}" fill="none" stroke="#f3fdff" stroke-width=".8"/><path d="M35 29h49l14 14M21 46v44l14 16M87 105l11-12V78" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M35 28 41 35M85 28l-3 7M100 93l-7-3M35 108l3-7" stroke="#fff" stroke-width=".8"/>${sparkle(35,28,-.3,3.5)}${sparkle(99,92,-2,2.7)}${sparkle(85,29,-1.1,1.7)}${sparkle(28,93,-3.1,1.5)}` };
+    }
+    if (item.id === 'shop_honey') {
+      const cells = Array.from({ length: 7 }, (_, row) =>
+        Array.from({ length: 7 }, (_, column) => {
+          const x = 11.34 + column * 17.32 + (row % 2) * 8.66;
+          const y = 23 + row * 15;
+          const color = ['#f6c653', '#efb438', '#f9cd65'][(row + column) % 3];
+          return `<path d="M${x} ${y-10}l8.66 5v10l-8.66 5-8.66-5V${y-5}Z" fill="${color}" stroke="#b87925" stroke-width="1.6"/>`;
+        }).join('')).join('');
+      return { detail: `<defs>${clip}</defs><g clip-path="${url('body')}">${cells}</g>` };
+    }
     if (item.id === 'forever_friend') {
       const heart = 'M0 9C-24-4-16-23 0-12C16-23 24-4 0 9Z';
       const jewel = (x, y, scale = 1) => `<g transform="translate(${x} ${y}) scale(${scale})"><path d="${heart}" fill="${url('friend-ruby')}" stroke="#ffe5ae" stroke-width="1.4"/><path d="M0-12-12-13-8-3 0 9 8-3 12-13Z" fill="#ffb2d5" opacity=".55"/><path d="m0-12-8 9h16Z" fill="#fff0ef" opacity=".7"/><path d="M-12-12-15-7" stroke="#fff8f0" stroke-width="2" stroke-linecap="round"/></g>`;
@@ -618,7 +747,7 @@ const CubieCustoms = (() => {
     }
     if (item.id === 'shop_space_junk') {
       return { sideOffset: 0, shadowOffset: 0, sideColor: 'none', shadowColor: 'none',
-        detail: spaceJunkShards.map((d, i) => `<g class="cubie-motion space-junk-fragment" style="animation-delay:${-i*.43}s;animation-duration:${3.4+i%3*.6}s"><path d="${d}" fill="${['#28374e', '#3c4e68', '#25344a'][i%3]}" stroke="#65cfff" stroke-width="1.2" stroke-linejoin="bevel"/><path d="${d}" fill="none" stroke="#b1edff" stroke-width=".5" stroke-dasharray="6 32"/></g>`).join('') };
+        detail: spaceJunkShards.map((d, i) => `<g class="cubie-motion space-junk-fragment" style="animation-delay:${-i*.43}s;animation-duration:${2.6+i%4*.45}s;--junk-x:${[-3, 1, 3, -4, 0, 4, -3, 0, 3, -2, 1, 3][i]}px;--junk-y:${[-3, -4, -3, -1, -2, 1, 2, 2, 2, 3, 4, 3][i]}px;--junk-turn:${i%2 ? 7 : -7}deg"><path d="${d}" fill="${['#28374e', '#3c4e68', '#25344a'][i%3]}" stroke="#65cfff" stroke-width="1.2" stroke-linejoin="bevel"/><path d="${d}" fill="none" stroke="#b1edff" stroke-width=".5" stroke-dasharray="6 32"/></g>`).join('') };
     }
     if (item.id === 'singularity') {
       const pieces = Array.from({length: 8}, (_, i) => {
@@ -686,7 +815,15 @@ const CubieCustoms = (() => {
     if (item.id === 'attack_core_photon_rain') return { detail:
       '<path d="M14 29Q60-16 106 29q-12-10-23 0-12-10-23 0-12-10-23 0-12-10-23 0Z" fill="#6a8ebf"/><path d="M60 7v22M35 27q6-16 25-20 19 4 25 20" fill="none" stroke="#a3e8ff" stroke-width="2"/>' +
       [[8,48],[110,69],[33,92]].map(([x,y], i) => `<g transform="translate(${x} ${y})">` + motion('<path d="m0-5 4 9-4 4-4-4Z" fill="#e5faff"/>', 'motion-rain', '0px 0px', `animation-delay:${-i*.7}s`) + '</g>').join('') };
-    if (item.id === 'attack_core_crossfire_engine') return { detail: item.detail, back: motion(item.back, 'motion-energy') };
+    if (item.id === 'attack_core_crossfire_engine') {
+      const beams = ['M10 16 110 116', 'M110 16 10 116'].map((path, i) =>
+        `<g class="crossfire-sweep crossfire-sweep-${i}"><path d="${path}" fill="none" stroke="${i ? '#ff9172' : '#ed719e'}" stroke-width="14" opacity=".18"/>` +
+        `<g class="crossfire-pulse" style="animation-delay:${-i*.8}s"><path d="${path}" fill="none" stroke="#d66888" stroke-width="8"/><path d="${path}" fill="none" stroke="#ffe4b7" stroke-width="3"/></g>` +
+        `<path class="crossfire-flow" style="animation-delay:${-i*.4}s" d="${path}" pathLength="100" fill="none" stroke="#fffef0" stroke-width="4" stroke-linecap="round" stroke-dasharray="4 18"/>` +
+        `<circle cx="${i ? 110 : 10}" cy="16" r="5" fill="#fff0c3"/><circle cx="${i ? 10 : 110}" cy="116" r="5" fill="#fff0c3"/></g>`).join('');
+      return { back: beams, detail: item.detail +
+        '<g class="crossfire-pulse"><circle cx="60" cy="23" r="7" fill="#ffcd8a" opacity=".3"/><circle cx="60" cy="23" r="3" fill="#fff9d9"/></g>' };
+    }
     if (item.id === 'attack_core_orbital_saws') return { detail: item.detail, back: motion(item.back, 'motion-spin', '60px 68px', 'animation-duration:8s') };
     if (item.id === 'attack_core_echo_protocol') return { detail: item.detail, back:
       motion('<rect x="7" y="10" width="80" height="80" rx="14" fill="#406c82"/>', 'motion-echo') +
@@ -816,8 +953,147 @@ const CubieCustoms = (() => {
       return tag.replace("<path", `<path class="custom-sparkle" style="animation-delay:${-(index++ * .9 + .4)}s"`);
     });
   }
+  // Shared material treatment, with attack-specific hardware and light effects.
+  // Keep the existing animated accessories and unlock catalog as the source.
+  function polishAttackArt(item, enhanced, uid) {
+    if (!item.id.startsWith('attack_') || item.id === 'attack_core_event_lattice') return enhanced;
+    const key = item.id.slice(7);
+    const id = name => `attack-${name}-${uid}`;
+    const url = name => `url(#${id(name)})`;
+    const tint = (hex, target, amount) => '#' + hex.slice(1).match(/../g).map((part, i) =>
+      Math.round(parseInt(part, 16) * (1-amount) + target[i] * amount).toString(16).padStart(2,'0')).join('');
+    const light = tint(item.color, [255,255,255], .6);
+    const dark = tint(item.color, [20,30,55], .55);
+    const accent = key.startsWith('pumpkin') ? '#ffe6b0' : '#acfff1';
+    const pulse = (art, delay = 0) => `<g class="cubie-motion attack-glimmer" style="animation-delay:${delay}s">${art}</g>`;
+    const flow = (d, color = accent) => `<path class="cubie-motion attack-energy-flow" d="${d}" pathLength="100" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="3 17" stroke-linecap="round"/>`;
+    const rivet = (x,y) => `<circle cx="${x}" cy="${y}" r="2" fill="${dark}" stroke="${light}" stroke-width=".6"/><path d="M${x-1} ${y}h2" stroke="${light}" stroke-width=".6"/>`;
+    const gem = (x,y,color) => `<g transform="translate(${x} ${y})"><path d="M0-5 4 0 0 5-4 0Z" fill="${color}" stroke="#f4ffff" stroke-width=".65"/><path d="M0-5V5L4 0Z" fill="#fff" opacity=".25"/></g>`;
+    let extra = '', rear = '';
+    switch (key) {
+      case 'pumpkin_color_memory':
+        extra = '<path d="M60 32v68" stroke="#efffff" stroke-width=".8" opacity=".55"/>' +
+          [32,52,72].map(x=>`<path d="M${x+2} 28v-8h8M${x+12} 19v-8h8" fill="none" stroke="#efffff" stroke-width=".9" opacity=".85"/>`).join('') +
+          flow('M28 97H92');
+        break;
+      case 'pumpkin_bone_gauntlet':
+        extra = '<path d="M26 46v39M94 46v39" stroke="#fff9e3" stroke-width="1.4" stroke-linecap="round"/>' +
+          [24,96].map(x=>[45,84].map(y=>`<ellipse cx="${x}" cy="${y}" rx="4" ry="3" fill="#f6ebd0" stroke="#9c917d" stroke-width=".7"/>`).join('')).join('') +
+          '<path d="M38 95h44M42 101h36" stroke="#c9bda0" stroke-width=".8"/>' + pulse(gem(60,22,'#f8e9b8'));
+        break;
+      case 'pumpkin_rotating_rings':
+        extra = flow('M8 78Q60 123 112 78','#fff3b0') + flow('M8 40Q60 1 112 40','#dbffff') +
+          '<path d="M8 81Q60 126 112 81M8 37Q60-2 112 37" fill="none" stroke="#d9beff" stroke-width=".7" opacity=".7"/>' + pulse(gem(60,22,'#ffd480'));
+        rear = '<ellipse class="cubie-motion attack-orbit-halo" cx="60" cy="68" rx="58" ry="50" fill="none" stroke="#b2eaff" stroke-width=".7" stroke-dasharray="1 7"/>';
+        break;
+      case 'pumpkin_magenta_fingers':
+        extra = '<path d="M37 27V16M49 25V9M61 26V12M73 26v-9" stroke="#ffc3e9" stroke-width="1.2" stroke-linecap="round"/><path d="M35 29q23-7 43 0" fill="none" stroke="#783265" stroke-width="1.4"/>' +
+          rivet(30,98) + rivet(90,98) + flow('M37 98H83','#fff0c8');
+        break;
+      case 'pumpkin_chaos':
+        extra = '<g class="cubie-motion chaos-cosmetic" style="--chaos-x:1px;--chaos-y:-2px;--chaos-tilt:5deg">' +
+          '<path d="M24 41q0-9 10-9h15M96 88v6q0 10-10 10H75" fill="none" stroke="#ddffff" stroke-width="1.3"/><path d="m29 24 8-12 12 14 14-16 10 15 13-9 7 10" fill="none" stroke="#fff1bc" stroke-width=".8"/></g>';
+        break;
+      case 'pumpkin_royal_slams':
+        extra = '<path d="M25 29 23 17 42 28 60 10 78 28 97 17 95 29" fill="none" stroke="#fff1b2" stroke-width="1.3"/><path d="M20 49h10v34H20M90 49h10v34H90" fill="none" stroke="#ede1c4" stroke-width=".8"/>' +
+          [38,60,82].map((x,i)=>pulse(gem(x,28,i===1?'#ff8b9d':'#82dfef'),-i*.7)).join('') +
+          rivet(34,100)+rivet(86,100)+flow('M41 100H79','#fff0b2');
+        break;
+      case 'pumpkin_haunted_quadrants':
+        extra = '<path d="M27 94h13v8H27M44 94h14v8H44M62 94h13v8H62M79 94h13v8H79" fill="none" stroke="#fff0ff" stroke-width=".6"/>' +
+          [8,112].map((x,i)=>`<g transform="translate(${x} 63)"><g class="cubie-motion motion-hover" style="animation-delay:${-i*1.4}s"><path d="M-4 7V-3q0-8 5-8t5 8V7L3 4 0 7Z" fill="#d9d6ff" opacity=".55"/><path d="M-1-3v3m4-3v3" stroke="#746490" stroke-width="1"/></g></g>`).join('');
+        break;
+      case 'core_railgun_array':
+        extra = '<path d="M12 34v46M23 34v46M97 34v46M108 34v46" stroke="#d0e5f4" stroke-width=".8"/>' +
+          [17,102].map(x=>flow(`M${x} 76V34`,'#eeffff')+rivet(x,81)).join('') +
+          '<path d="M45 18h30v4H45Z" fill="#5f7589"/>' + pulse('<path d="M49 20h22" stroke="#fff4b8" stroke-width="1.6"/>');
+        break;
+      case 'core_accretion_sweep':
+        extra = '<path d="M13 80Q58 118 110 73" fill="none" stroke="#fff1d7" stroke-width="1.2"/>' + flow('M13 83Q58 121 110 76','#fff6d8') +
+          flow('M20 39Q60 4 100 39','#d9ffff') + pulse(gem(60,19,'#ffe2b4'));
+        rear = '<ellipse class="cubie-motion attack-orbit-halo" cx="60" cy="67" rx="62" ry="45" fill="none" stroke="#d5b4ff" stroke-width=".7" stroke-dasharray="2 9"/>';
+        break;
+      case 'core_collapsing_horizons':
+        extra = '<path d="M30 40v-6h60v6M30 94v5h60v-5" fill="none" stroke="#f4eaff" stroke-width=".8"/>' +
+          flow('M12 45V19H108V45M12 86V115H108V86','#ceffff') +
+          [12,108].map(x=>pulse(gem(x,49,'#ffcfa0'),-x/80)).join('');
+        break;
+      case 'core_target_lock':
+        extra = '<circle cx="60" cy="14" r="7" fill="none" stroke="#ffe2cd" stroke-width=".9"/><path d="M32 41v-8h11M77 33h11v8M32 93v7h11M77 100h11v-7" fill="none" stroke="#ffe7d6" stroke-width="1"/>' +
+          pulse('<circle cx="60" cy="14" r="4" fill="#fff0a9"/><circle cx="60" cy="14" r="14" fill="none" stroke="#ffb891" stroke-width=".6"/>');
+        break;
+      case 'core_binary_stars':
+        extra = flow('M24 94Q60 112 96 94','#d8ffff') +
+          '<ellipse cx="60" cy="17" rx="36" ry="14" fill="none" stroke="#b9dced" stroke-width=".6" opacity=".7"/>' +
+          [0,1].map(i=>`<g transform="translate(60 17)"><g class="cubie-motion motion-binary" style="animation-delay:${-i*3}s"><path d="M0-8 2 0 0 8-2 0Z" fill="#fff" opacity=".85"/></g></g>`).join('');
+        break;
+      case 'core_gravity_guillotine':
+        extra = '<path d="M14 32v70M23 32v70M97 32v70M106 32v70" stroke="#d2e5f1" stroke-width=".8"/>' +
+          `<g class="cubie-motion motion-blade"><path d="M28 21h63v9L28 44Z" fill="none" stroke="#fff" stroke-width=".85"/><path d="m29 42 62-13" stroke="#b8ffff" stroke-width="1.5"/></g>` +
+          [18,102].map(x=>[36,98].map(y=>rivet(x,y)).join('')).join('');
+        break;
+      case 'core_photon_rain':
+        extra = '<path d="M20 25Q60-10 100 25M37 24Q43 10 59 9M63 9Q79 11 84 24" fill="none" stroke="#d5ffff" stroke-width="1.1"/>' +
+          [[7,40],[111,60],[19,93],[101,97]].map(([x,y],i)=>`<g transform="translate(${x} ${y})"><g class="cubie-motion motion-rain" style="animation-delay:${-i*.5}s"><path d="M0-7V2" stroke="#adf6ff" stroke-width=".8"/><circle cy="4" r="1.5" fill="#f1ffff"/></g></g>`).join('');
+        break;
+      case 'core_crossfire_engine':
+        extra = '<path d="M47 19h26v7H47Z" fill="none" stroke="#ffe6d1" stroke-width=".8"/>' +
+          [27,93].map(x=>rivet(x,35)+rivet(x,100)).join('') + pulse(gem(60,23,'#ffe3ab'));
+        break;
+      case 'core_dark_matter_mines':
+        extra = [33,88].map((x,i)=>`<g class="cubie-motion attack-glimmer" style="animation-delay:${-i*.8}s"><circle cx="${x}" cy="20" r="12" fill="none" stroke="#e1bdff" stroke-width=".7" stroke-dasharray="2 3"/><circle cx="${x}" cy="20" r="5" fill="none" stroke="#ffa6e5" stroke-width="1"/><path d="M${x-2} 18h4v4h-4Z" fill="#fff0ff"/></g>`).join('') + flow('M28 99l7-7 7 7 7-7 7 7 7-7 7 7 7-7 7 7 7-7','#efc9ff');
+        break;
+      case 'core_polarity_inversion':
+        extra = '<path d="M60 31v72" stroke="#e8ffff" stroke-width=".8" opacity=".6"/><path d="M10 45v38q0 10 10 10M110 45v38q0 10-10 10" fill="none" stroke="#e3d6ff" stroke-width=".8"/>' +
+          flow('M12 45V83Q12 91 20 91','#a3ffff') + flow('M108 45V83Q108 91 100 91','#ffb8ea') +
+          pulse('<path d="M25 35h16M33 30v10M79 35h16" stroke="#fff" stroke-width="1"/>');
+        break;
+      case 'core_orbital_saws':
+        rear = '<g class="cubie-motion motion-spin" style="transform-origin:60px 68px;animation-duration:8s"><circle cx="60" cy="68" r="49" fill="none" stroke="#e8f5ff" stroke-width="1"/>' +
+          Array.from({length:20},(_,i)=>`<path d="M60 13l3 8" transform="rotate(${i*18} 60 68)" stroke="#d4e5ee" stroke-width="1"/>`).join('') + '</g>';
+        extra = [34,86].map(x=>rivet(x,36)+rivet(x,100)).join('') + flow('M40 100H80','#c4ffff');
+        break;
+      case 'core_echo_protocol':
+        rear = [0,1].map(i=>`<g class="cubie-motion motion-echo" style="animation-delay:${-i*1.4}s"><rect x="${7+i*6}" y="${10+i*9}" width="80" height="80" rx="14" fill="none" stroke="#c7fff6" stroke-width="1" opacity=".6"/></g>`).join('');
+        extra = [7,113].map((x,i)=>`<g transform="translate(${x} 60)"><g class="cubie-motion attack-glimmer" style="animation-delay:${-i}s"><path d="M-2-12q-9 12 0 24M3-17q-14 17 0 34" fill="none" stroke="#c5ffff" stroke-width=".8"/></g></g>`).join('');
+        break;
+      case 'core_lens_fracture':
+        extra = '<path d="M34 29 44 10 56 28M66 28 76 14 90 29M44 10l4 18M76 14l7 15" fill="none" stroke="#fff" stroke-width="1"/>' +
+          '<path d="M24 44 39 33 47 48M96 87 82 103 75 91" fill="none" stroke="#b8ffff" stroke-width=".7"/>' +
+          [0,1].map(i=>pulse(gem(i?108:12,i?85:50,i?'#d4b7ff':'#a6efff'),-i*1.3)).join('');
+        break;
+      case 'core_total_collapse':
+        extra = '<path d="m29 28 9 13-9 4 8 8M91 28 82 40l10 7-7 7M28 103l12-12-7-4M92 103 80 92l8-6" fill="none" stroke="#ffdcf3" stroke-width="1"/>' +
+          [0,1,2,3].map(i=>`<g transform="translate(${i%2?111:9} ${38+Math.floor(i/2)*54})"><g class="cubie-motion motion-hover" style="animation-delay:${-i*.8}s"><path d="M0-5 4-1 2 5-4 2Z" fill="#ba82c0" stroke="#ffd8ed" stroke-width=".8"/></g></g>`).join('');
+        rear = '<ellipse class="cubie-motion attack-orbit-halo" cx="60" cy="67" rx="61" ry="55" fill="none" stroke="#d39bd7" stroke-width="1" stroke-dasharray="2 8"/>';
+        break;
+    }
+    // Give each accessory its own beveled material instead of flattening the
+    // entire character with a filter. CSS color swaps still override these fills.
+    let materialDefs = '', index = 0;
+    const materials = new Map();
+    const polish = markup => markup.replace(/fill="(#[a-f\d]{6})"/gi, (_, color) => {
+      if (!materials.has(color)) {
+        const name = `material-${index++}`;
+        materials.set(color, name);
+        materialDefs += `<linearGradient id="${id(name)}" x2=".75" y2="1"><stop stop-color="${tint(color,[255,255,255],.45)}"/><stop offset=".32" stop-color="${color}"/><stop offset=".78" stop-color="${tint(color,[12,23,45],.22)}"/><stop offset="1" stop-color="${tint(color,[255,255,255],.18)}"/></linearGradient>`;
+      }
+      return `fill="${url(materials.get(color))}"`;
+    });
+    const detail = polish(enhanced?.detail || item.detail);
+    const back = polish(enhanced?.back ?? item.back ?? '') + rear;
+    const shell = key === 'pumpkin_color_memory'
+      ? `<rect x="20" y="28" width="80" height="80" fill="${url('clear-shade')}"/>`
+      : `<rect x="20" y="28" width="80" height="80" fill="${url('shell')}"/>`;
+    const defs = `<defs><clipPath id="${id('body')}">${item.body}</clipPath>${materialDefs}<linearGradient id="${id('shell')}" x2=".7" y2="1"><stop stop-color="${light}"/><stop offset=".35" stop-color="${item.color}"/><stop offset="1" stop-color="${tint(item.color,[25,35,65],.35)}"/></linearGradient><linearGradient id="${id('clear-shade')}" x2=".8" y2="1"><stop stop-color="#fff" stop-opacity=".25"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#142741" stop-opacity=".22"/></linearGradient></defs>`;
+    const finish = `<g class="attack-finish" clip-path="${url('body')}"><path d="M25 48V41q0-8 9-8h45M95 86v9q0 8-9 8H43" fill="none" stroke="${light}" stroke-width="1.1" opacity=".8"/><path d="M23 51v43q0 11 11 11h49" fill="none" stroke="${dark}" stroke-width=".7" opacity=".65"/></g>`;
+    return { ...enhanced, sideColor: tint(item.color,[22,35,58],.48), shadowColor: tint(item.color,[15,23,40],.75),
+      back: defs + back,
+      detail: `<g clip-path="${url('body')}">${shell}</g>${detail}${finish}<g class="attack-fine-detail">${extra}</g>` };
+  }
   function svg(item) {
-    const enhanced = animatedArt(item, ++artId);
+    const uid = ++artId;
+    const enhanced = polishAttackArt(item, animatedArt(item, uid), uid);
     let detail = enhanced?.detail || item.detail;
     const back = enhanced?.back ?? item.back ?? "";
     const faceColor = enhanced?.faceColor || item.faceColor || "#17251a";
@@ -837,15 +1113,19 @@ const CubieCustoms = (() => {
       `<g class="${className}" fill="${color}" transform="translate(${offset} ${offset})"><g transform="${fit}">${item.body}</g></g>`;
     return `<svg class="cubie-custom-art${item.id === 'medal_empyrorite' ? ' cubie-empyrorite' : ''}" data-custom="${item.id}" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">` +
       '<g class="cubie-float">' +
+      (item.id === 'shop_koi' ? '<g class="koi-orientation" transform="rotate(180 72.5 72.5)">' : '') +
       `<g class="cubie-back" transform="${fit}" stroke-linejoin="round">${back}</g>` +
       silhouette(enhanced?.shadowColor || '#202b22', enhanced?.shadowOffset ?? 25, 'cubie-shadow') +
       silhouette(enhanced?.sideColor || (item.id === 'classic' ? '#6d8b44' : sideColor(item.color)), enhanced?.sideOffset ?? 13, 'cubie-side') +
       `<g class="cubie-underbody" transform="${fit}" stroke-linejoin="round">${item.underBody || ''}</g>` +
       silhouette(item.color, 0, 'cubie-front') +
       `<g class="cubie-trim" transform="${fit}" stroke-linejoin="round">${detail}</g>` +
+      (item.id === 'shop_koi' ? '<g class="koi-face" transform="translate(0 -18) rotate(180 72.5 76)">' : '') +
       (enhanced?.eyes || `<g fill="${faceColor}" class="cubie-eyes"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/>${enhanced?.eyeHighlights || ""}</g>`) +
       (enhanced?.eyeEffects || "") +
       (enhanced?.mouth || `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${faceColor}"/>`) +
+      (item.id === 'shop_koi' ? '</g>' : '') +
+      (item.id === 'shop_koi' ? '</g>' : '') +
       '</g></svg>';
   }
   return { catalog, tierLabels, unlocked, selected, svg, testerCodeActive, redeemTesterCode };

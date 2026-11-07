@@ -13,4 +13,8 @@
 #core-origin button:focus-visible { outline:2px solid #9febff; outline-offset:4px; }
 .origin-progress { position:absolute; bottom:0; left:0; width:100%; height:2px; background:linear-gradient(90deg,#6953a6,#b5f6ff); transform-origin:left; }
 .origin-description { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+#core-origin [data-origin-sound] { min-width:116px; min-height:48px; padding:11px 14px; border:3px solid #a3dff5; font-size:15px; font-weight:700; background:#18243b; box-shadow:0 0 0 3px #a3dff51a; }
+#core-origin [data-origin-sound]:hover { background:#293c57; border-color:#d8f5ff; }
+#core-origin [data-origin-sound][aria-pressed="false"] { background:#303030; border-color:#939393; color:#dedede; box-shadow:0 0 0 3px #9393931a; }
+#core-origin [data-origin-sound][aria-pressed="false"]:hover { background:#414141; border-color:#b5b5b5; }
 @media(max-width:600px) { .origin-header { font-size:9px; letter-spacing:.12em; flex-direction:column; gap:7px; } .origin-title { top:64%; } .origin-title h2 { font-size:clamp(25px,7vw,42px); } .origin-title span { font-size:9px; letter-spacing:.06em; } .origin-controls { justify-content:center; left:12px; right:12px; } #core-origin button { padding:10px 12px; } }

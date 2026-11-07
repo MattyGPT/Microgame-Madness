@@ -170,6 +170,8 @@ class BrowserGame:
                           attacks_completed=getattr(game, "attacks_completed", 0),
                           attack_survivals=list(getattr(game, "attack_survivals", [])),
                           counter_hits=getattr(game, "counter_hits", 0),
+                          shots_fired=getattr(game, "shots_fired", None),
+                          fight_elapsed=game.elapsed,
                           healing_collected=getattr(game, "healing_collected", 0),
                           near_misses=getattr(game, "near_misses", 0),
                           elapsed=int(game.elapsed), can_pause=game.rules.can_pause and game.alive,

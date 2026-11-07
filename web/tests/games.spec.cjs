@@ -169,7 +169,7 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
     await expect(page.locator("#overlay")).toBeHidden();
     if (testInfo.project.name === "mobile") {
       await expect(page.locator("#touch-controls")).toBeVisible();
-      await page.locator('[data-key="Left"]').tap();
+      await page.locator("#touch-joystick").tap({ position: { x: 10, y: 52 } });
     } else {
       await page.keyboard.press("ArrowLeft");
       await page.keyboard.press("f");
@@ -2240,8 +2240,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(132);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 132 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(138);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 138 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
@@ -2327,7 +2327,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('80 / 132 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('81 / 138 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
@@ -2432,7 +2432,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     expect(order.actual).toEqual(order.expected);
   };
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(52);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(53);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
@@ -2547,4 +2547,49 @@ test('Hacker Cubie can be purchased for 4000 Cash and keeps its corrupted face w
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_hacker');
+});
+
+test('mobile joystick supports diagonals, a second finger, and safe release in every arcade game', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Touch controls require a coarse pointer');
+  const client = await page.context().newCDPSession(page);
+  const touch = (type, touchPoints) => client.send('Input.dispatchTouchEvent', { type, touchPoints });
+  await page.evaluate(() => unlockSingularity(false));
+  for (const mode of ['dodge', 'boss', 'pumpkin', 'singularity']) {
+    await page.locator(`[data-game="${mode}"]`).click();
+    await page.locator('#difficulty-choices button').first().click();
+    // Freeze combat while exercising real touch input so enemy hits cannot end the test.
+    await page.evaluate(() => { lastFrame = performance.now(); window.requestAnimationFrame = () => 0; });
+    const stick = page.locator('#touch-joystick');
+    await expect(stick).toBeInViewport({ ratio: 1 });
+    await expect(page.locator('[data-key="Left"]')).toHaveCount(0);
+    const box = await stick.boundingBox();
+    const center = { id: 1, x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await touch('touchStart', [center]);
+    await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual([]);
+    const diagonal = { ...center, x: center.x + 24, y: center.y - 24 };
+    await touch('touchMove', [diagonal]);
+    await expect.poll(() => page.evaluate(() => [...joystickKeys].sort())).toEqual(['Right', 'Up']);
+    if (['boss', 'pumpkin'].includes(mode)) {
+      const fire = await page.locator('#touch-fire').boundingBox();
+      const second = { id: 2, x: fire.x + fire.width / 2, y: fire.y + fire.height / 2 };
+      await touch('touchStart', [diagonal, second]);
+      await expect.poll(() => page.evaluate(() => keys.has('f'))).toBe(true);
+      await expect.poll(() => page.evaluate(() => [...joystickKeys].sort())).toEqual(['Right', 'Up']);
+      await touch('touchEnd', [second]);
+      await expect.poll(() => page.evaluate(() => keys.has('f'))).toBe(false);
+    }
+    await touch('touchMove', [{ ...center, x: center.x - 85 }]);
+    await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual(['Left']);
+    await touch('touchCancel', []);
+    await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual([]);
+    await expect(stick).not.toHaveClass(/pressed/);
+    await touch('touchStart', [diagonal]);
+    await page.evaluate(() => clearKeys());
+    await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual([]);
+    await touch('touchEnd', []);
+    await touch('touchStart', [diagonal]);
+    await touch('touchEnd', []);
+    await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual([]);
+    await page.locator('#exit').click();
+  }
 });

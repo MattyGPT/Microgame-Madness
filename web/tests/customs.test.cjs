@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('132 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 132);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 132);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 132);
+test('138 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 138);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 138);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 138);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
@@ -193,4 +193,44 @@ test('Singularity Cubie unlocks only from a completed one-HP Core victory and pe
     const restored = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
     assert.equal(Customs.unlocked(item, restored.data.unlocked), expected);
   }
+});
+
+test('Chocolate Cubie counts 20 actual healing pickups across modes and reloads exactly once', () => {
+  const { Tracker } = require('../achievements.js');
+  const item = Customs.catalog.find(c => c.id === 'chocolate');
+  assert.equal(item.tier, 'silver');
+  let tracker = new Tracker();
+  for (const [mode, difficulty, pickups] of [
+    ['boss', 'mean', 5], ['pumpkin', 'baby', 4], ['wrath', 'color_memory', 3],
+    ['singularity', 'gravitron', 4], ['core_practice', 'orbital_saws', 3],
+  ]) {
+    const before = tracker.data.stats.healingItems;
+    tracker.start(mode, difficulty);
+    const state = { mode, difficulty, over: false, healing_collected: pickups };
+    tracker.observe(state);
+    tracker.observe(state);
+    tracker.observe({ ...state, healing_collected: pickups - 1 });
+    tracker.observe(state);
+    assert.equal(tracker.data.stats.healingItems, before + pickups);
+    tracker.observe({ ...state, over: true, won: false });
+    assert.equal(tracker.data.stats.healingItems, before + pickups);
+    tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  }
+  assert.equal(tracker.data.stats.healingItems, 19);
+  assert.equal(Customs.unlocked(item, tracker.data.unlocked), false);
+  tracker.start('boss', 'mean');
+  for (const invalid of [-1, NaN, Infinity, '1', 1.5, undefined])
+    tracker.observe({mode:'boss', difficulty:'mean', over:false, healing_collected:invalid});
+  assert.equal(tracker.data.stats.healingItems, 19);
+  const state = {mode:'boss', difficulty:'mean', over:false, healing_collected:1};
+  assert.ok(tracker.observe(state).earned.some(a => a.id === 'healing_20'));
+  assert.equal(tracker.observe(state).changed, false);
+  tracker.abandon();
+  tracker.observe({...state, healing_collected:2});
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  assert.equal(tracker.data.stats.healingItems, 20);
+  assert.equal(Customs.selected(item.id, tracker.data.unlocked).id, item.id);
+  tracker.start('core_practice', 'final_cutscene');
+  tracker.observe({mode:'core_practice', difficulty:'final_cutscene', over:true, healing_collected:30});
+  assert.equal(tracker.data.stats.healingItems, 20);
 });

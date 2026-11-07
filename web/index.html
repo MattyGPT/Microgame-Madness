@@ -332,6 +332,10 @@
               <p>Earn Cash by playing, then collect Cubie Customs and Turtle Trails. Your purchases stay in this browser profile.</p>
               <p id="shop-progress"></p><p id="shop-status" role="status" aria-live="polite"></p>
               <details><summary>How to earn Cubie Cash</summary><p>Score × game multiplier × difficulty bonus = converted score. Every 100 converted score earns 1 Cubie Cash. Partial Cash carries over between rounds. Finished rounds earn Cash once, even if you lose; Key Rush also pays when you exit. Temporary Core practice does not award Cash.</p><div id="shop-rates"></div></details>
+              <label class="catalog-search" for="shop-search">Search shop
+                <input id="shop-search" type="search" placeholder="Name, tier, or description…" aria-controls="shop-grid trail-grid" autocomplete="off" />
+              </label>
+              <p id="shop-search-status" class="search-status" role="status"></p>
               <div class="shop-categories" role="group" aria-label="Shop category">
                 <button type="button" id="shop-customs-tab" aria-controls="shop-grid" aria-pressed="true">Cubie Customs · 48</button>
                 <button type="button" id="shop-trails-tab" aria-controls="trail-room" aria-pressed="false">Turtle Trails · 48</button>
@@ -355,6 +359,10 @@
               <div class="customs-toolbar"><h4>Your Customs</h4>
                 <label>Show <select id="customs-filter"><option value="all">All Customs</option><option value="unlocked">Unlocked</option><option value="locked">Locked</option></select></label>
               </div>
+              <label class="catalog-search" for="customs-search">Search Cubie collection
+                <input id="customs-search" type="search" placeholder="Name, tier, or unlock requirement…" aria-controls="customs-grid" autocomplete="off" />
+              </label>
+              <p id="customs-search-status" class="search-status" role="status"></p>
               <div id="customs-grid"></div>
             </section>
             <div id="hangman-game" class="hangman-game" hidden>
@@ -420,11 +428,8 @@
             </div>
           </div>
           <div id="touch-controls" class="touch-controls" hidden>
-            <div class="dpad">
-              <button data-key="Up" aria-label="Move up">↑</button
-              ><button data-key="Left" aria-label="Move left">←</button
-              ><button data-key="Down" aria-label="Move down">↓</button
-              ><button data-key="Right" aria-label="Move right">→</button>
+            <div id="touch-joystick" class="touch-joystick" role="group" aria-label="Movement joystick: drag to move">
+              <span class="joystick-thumb" aria-hidden="true"></span>
             </div>
             <div>
               <button data-key="f" id="touch-fire">Fire</button
@@ -494,6 +499,10 @@
               <option value="earned">Unlocked</option>
               <option value="locked">Locked</option>
             </select>
+            <label class="catalog-search" for="achievement-search">Search achievements
+              <input id="achievement-search" type="search" placeholder="Name, tier, or requirement…" aria-controls="achievements-list" autocomplete="off" />
+            </label>
+            <p id="achievement-search-status" class="search-status" role="status"></p>
             <div id="achievements-list" tabindex="0" aria-label="Achievement collection"></div>
             <p id="achievement-empty" hidden>No achievements in this view yet.</p>
           </section>

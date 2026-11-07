@@ -289,6 +289,8 @@ let roundSaved = false;
 let lastCashReward = 0;
 let currentPlayer = "Player";
 const keys = new Set();
+const joystickKeys = new Set();
+let joystickPointer = null;
 const storageKey = "microgame-madness.v1";
 let saved = { player: "Player", scores: {}, achievements: {}, unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false };
 let storageAvailable = true;
@@ -493,6 +495,31 @@ function createAchievementToast(item) {
   toast.append(badge, detail, close);
   return toast;
 }
+function matchesCatalogSearch(text, query) {
+  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  const haystack = text.toLocaleLowerCase();
+  return words.every(word => haystack.includes(word));
+}
+function filterCatalogGrid(gridId, inputId) {
+  const cards = [...$(gridId).querySelectorAll(".custom-tile")];
+  for (const card of cards)
+    card.hidden = !matchesCatalogSearch(card.textContent, $(inputId).value);
+  return cards.filter(card => !card.hidden).length;
+}
+function updateCustomsSearch() {
+  const count = filterCatalogGrid("customs-grid", "customs-search");
+  $("customs-search-status").textContent = count
+    ? `${count} ${count === 1 ? "Custom" : "Customs"} shown`
+    : "No Customs match your search and filter.";
+}
+function updateShopSearch() {
+  const customs = filterCatalogGrid("shop-grid", "shop-search");
+  const trails = filterCatalogGrid("trail-grid", "shop-search");
+  const count = shopCategory === "trails" ? trails : customs;
+  $("shop-search-status").textContent = count
+    ? `${count} ${shopCategory === "trails" ? "trail" : "Custom"}${count === 1 ? "" : "s"} shown`
+    : "No matches in this category. Try another search or category.";
+}
 function renderAchievements() {
   const unlocked = achievementTracker.data.unlocked;
   $("profile-score").textContent = achievementTracker.score;
@@ -512,10 +539,13 @@ function renderAchievements() {
       card.querySelector("progress").value = earned ? item.target : achievementTracker.progress(item);
     }
     const filter = $("achievement-filter").value;
-    card.hidden = (filter === "earned" && !earned) || (filter === "locked" && earned);
+    card.hidden = (filter === "earned" && !earned) || (filter === "locked" && earned)
+      || !matchesCatalogSearch(card.textContent, $("achievement-search").value);
     if (!card.hidden) visible++;
   }
   $("achievement-empty").hidden = visible > 0;
+  $("achievement-empty").textContent = "No achievements match your search and filter.";
+  $("achievement-search-status").textContent = `${visible} ${visible === 1 ? "achievement" : "achievements"} shown`;
 }
 function populateAchievementCard(card, item, redacted) {
   card.replaceChildren();
@@ -597,6 +627,7 @@ function initializeAchievements() {
     };
   });
   $("achievement-filter").onchange = renderAchievements;
+  $("achievement-search").oninput = renderAchievements;
   updateAchievements(achievementTracker.visit());
   renderAchievements();
 }
@@ -695,13 +726,11 @@ function renderCustoms() {
   });
   $("customs-grid").replaceChildren(...cards);
   previewCustom(CubieCustoms.catalog.find(item => item.id === previewCustomId) || equipped);
-  if (!cards.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "All Customs unlocked. Cubie's closet is complete!";
-    $("customs-grid").append(empty);
-  }
+  updateCustomsSearch();
 }
 $("customs-filter").onchange = renderCustoms;
+$("customs-search").oninput = updateCustomsSearch;
+$("shop-search").oninput = updateShopSearch;
 
 let shopCategory = "customs";
 function setShopCategory(category) {
@@ -710,6 +739,7 @@ function setShopCategory(category) {
   $("trail-room").hidden = category !== "trails";
   $("shop-customs-tab").setAttribute("aria-pressed", String(category === "customs"));
   $("shop-trails-tab").setAttribute("aria-pressed", String(category === "trails"));
+  updateShopSearch();
 }
 $("shop-customs-tab").onclick = () => setShopCategory("customs");
 $("shop-trails-tab").onclick = () => setShopCategory("trails");
@@ -816,6 +846,7 @@ function renderShop() {
     card.append(art, name, tier, flavor, price, button);
     return card;
   }));
+  updateShopSearch();
 }
 function scoreKey() {
   return `${selected}:${selectedDifficulty}`;
@@ -974,6 +1005,7 @@ function send(action, extra = {}) {
 }
 function clearKeys() {
   keys.clear();
+  resetJoystick();
   document
     .querySelectorAll("[data-key]")
     .forEach((button) => button.classList.remove("pressed"));
@@ -1421,7 +1453,7 @@ function frame(now) {
     try {
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
-        keys: [...keys],
+        keys: [...new Set([...keys, ...joystickKeys])],
       });
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
         TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches);
@@ -1676,6 +1708,50 @@ document.addEventListener("selectstart", event => {
 document.addEventListener("contextmenu", event => {
   if (matchMedia("(pointer: coarse)").matches && !event.target.closest?.("input, textarea")) event.preventDefault();
 });
+function resetJoystick() {
+  const stick = $("touch-joystick");
+  const pointer = joystickPointer;
+  joystickPointer = null;
+  joystickKeys.clear();
+  stick.classList.remove("pressed");
+  stick.style.removeProperty("--stick-x");
+  stick.style.removeProperty("--stick-y");
+  if (pointer !== null && stick.hasPointerCapture(pointer)) stick.releasePointerCapture(pointer);
+}
+function moveJoystick(event) {
+  if (event.pointerId !== joystickPointer) return;
+  event.preventDefault();
+  const stick = $("touch-joystick");
+  const rect = stick.getBoundingClientRect();
+  const dx = event.clientX - rect.left - rect.width / 2;
+  const dy = event.clientY - rect.top - rect.height / 2;
+  const distance = Math.hypot(dx, dy);
+  const radius = rect.width / 2 - 23;
+  const scale = distance > radius ? radius / distance : 1;
+  stick.style.setProperty("--stick-x", `${dx * scale}px`);
+  stick.style.setProperty("--stick-y", `${dy * scale}px`);
+  joystickKeys.clear();
+  if (distance < radius * .25) return;
+  // Eight sectors allow diagonals without making cardinal movement twitchy.
+  const sector = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+  for (const key of [
+    ["Right"], ["Right", "Down"], ["Down"], ["Left", "Down"],
+    ["Left"], ["Left", "Up"], ["Up"], ["Right", "Up"],
+  ][(sector + 8) % 8]) joystickKeys.add(key);
+}
+$("touch-joystick").addEventListener("pointerdown", event => {
+  if (joystickPointer !== null || !active || snapshot?.paused || event.button !== 0) return;
+  joystickPointer = event.pointerId;
+  $("touch-joystick").setPointerCapture(event.pointerId);
+  $("touch-joystick").classList.add("pressed");
+  moveJoystick(event);
+});
+$("touch-joystick").addEventListener("pointermove", moveJoystick);
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  $("touch-joystick").addEventListener(type, event => {
+    if (event.pointerId === joystickPointer) resetJoystick();
+  });
+}
 document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();

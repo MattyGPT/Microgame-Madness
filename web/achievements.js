@@ -20,6 +20,7 @@ const Achievements = (() => {
   add("name_rocknroy", "Game Tester", "rainbow", "Arcade", "Turn up the arcade with ROCKNROY.", "name_rocknroy");
   add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
   add("cube_pet_100", "Cubie's Best Friend", "crystal", "Arcade", "Pet Cubie 100 times.", "cubePets", 100);
+  add("healing_20", "Sweet Recovery", "silver", "Arcade", "Collect 20 healing items in total across fights and Core attack practice.", "healingItems", 20);
   add("cube_pet_1000", "A Thousand Little Hugs", "empyrorite", "Arcade", "Pet Cubie 1,000 times.", "cubePets", 1000);
   for (const [game, title, label] of [
     ["hangman", "Hang in There!", "Hangman"],
@@ -238,6 +239,9 @@ const Achievements = (() => {
   add("wrath_win_3", "Third Rehearsal", "silver", "The King's Wrath", "Win 3 King's Wrath practice fights, in any modes.", "wrathWins", 3);
   add("wrath_counter_10", "Talk to the Hand", "silver", "The King's Wrath", "Successfully counter 10 magenta fingers across King's Wrath fights.", "wrathCounterHits", 10);
   add("name_codexisthebest", "Code to the Rainbow", "rainbow", "Arcade", "Enter CODEXISTHEBEST as your arcade name to unlock Codex Cubie.", "name_codexisthebest");
+  add("pumpkin_merciful", "Mercy for the King", "rainbow", "Pumpkin King", "Survive 5 minutes in one Pumpkin King fight without firing a single shot, in any mode.", "pumpkinMercifulBest", 300);
+  add("pumpkin_speedrunner", "Beat the Clock", "diamond", "Pumpkin King", "Defeat the Pumpkin King in 70 seconds or less, in any mode.", "pumpkinSpeedrun");
+  add("magenta_counter_100", "The Golden Hand", "rainbow", "Pumpkin King", "Counter 100 magenta fingers across Pumpkin King and King's Wrath fights.", "magentaCounterHits", 100);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -248,7 +252,8 @@ const Achievements = (() => {
   ]) add(`collect_${tier}`, title, tier, "Arcade",
     `Earn ${target} ${tier} achievement${target === 1 ? "" : "s"} to unlock ${tier === "gold" ? "Golden" : tier[0].toUpperCase() + tier.slice(1)} Cubie. This collection medal does not count toward its own requirement.`,
     `collection_${tier}`, target, { collectionTier: tier });
-  const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive"]);
+  add("collect_prismatic", "A Spectrum of Triumphs", "rainbow", "Arcade", "Earn at least 3 Crystal, 3 Diamond, and 3 Rainbow achievements. This achievement does not count itself.", "prismaticCollection", 3, { collectionTiers: ["crystal", "diamond", "rainbow"] });
+  const statNames = new Set([...catalog.map(item => item.stat), "bossRunActive", "bossSovereignRunActive", "pumpkinCounterHits"]);
   const count = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
 
   class Tracker {
@@ -267,6 +272,8 @@ const Achievements = (() => {
       return catalog.reduce((sum, item) => sum + (this.data.unlocked[item.id] ? points[item.tier] : 0), 0);
     }
     progress(item) {
+      if (item.collectionTiers) return Math.min(item.target, ...item.collectionTiers.map(tier =>
+        catalog.filter(medal => medal.tier === tier && medal.id !== item.id && this.data.unlocked[medal.id]).length));
       const value = item.collectionTier
         ? catalog.filter(medal => medal.tier === item.collectionTier && medal.id !== item.id && this.data.unlocked[medal.id]).length
         : this.data.stats[item.stat];
@@ -275,6 +282,7 @@ const Achievements = (() => {
     update(change) {
       const before = JSON.stringify(this.data);
       change(this.data.stats);
+      this.data.stats.magentaCounterHits = this.data.stats.wrathCounterHits + this.data.stats.pumpkinCounterHits;
       const earned = [];
       for (const item of catalog) {
         if (!this.data.unlocked[item.id] && this.progress(item) >= item.target) {
@@ -322,7 +330,7 @@ const Achievements = (() => {
       return this.update(stats => { stats.gasterCompleted = 1; });
     }
     start(mode, difficulty) {
-      this.round = { mode, difficulty, finished: false, counterHits: 0, survivals: [] };
+      this.round = { mode, difficulty, finished: false, counterHits: 0, healingCollected: 0, survivals: [] };
       if (mode === 'core_practice') return { earned: [], changed: false };
       return this.update(stats => {
         if (stats.bossRunActive) stats.bossCleanStreak = 0;
@@ -343,19 +351,29 @@ const Achievements = (() => {
       const core = s.mode === "singularity" && s.difficulty === "gravitron";
       const wrath = s.mode === "wrath" && wrathModes.includes(s.difficulty);
       const corePractice = s.mode === 'core_practice' && attackRewards.some(reward => reward.family === 'core' && reward.key === s.difficulty);
+      const healingMode = ["boss", "pumpkin"].includes(s.mode) || core || wrath || corePractice;
+      const healing = healingMode ? count(s.healing_collected) : 0;
+      const newHealing = Math.max(0, healing - round.healingCollected);
       const family = core || corePractice ? 'core' : s.mode === 'pumpkin' || wrath ? 'pumpkin' : null;
       const survivalCounts = Array.isArray(s.attack_survivals) && s.attack_survivals.length === (family === 'core' ? 15 : 7)
         ? s.attack_survivals.map(count) : [];
       const newSurvivals = family && survivalCounts.some((value, index) => value > (round.survivals[index] || 0));
       const protocols = Math.min(15, count(s.attacks_completed));
       const randomSets = wrath && s.difficulty === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
-      const counters = wrath ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
+      const counters = (wrath || s.mode === "pumpkin") ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
+      const mercifulTime = s.mode === "pumpkin" && s.shots_fired === 0 && s.lives > 0
+        && Number.isFinite(s.fight_elapsed) && s.fight_elapsed >= 0 ? Math.floor(s.fight_elapsed) : 0;
+      const newPumpkinProgress = s.mode === "pumpkin" && (counters > 0 || mercifulTime > this.data.stats.pumpkinMercifulBest);
       const newCoreProgress = core && (protocols > this.data.stats.coreProtocolsBest ||
         s.damage_taken === 0 && protocols > this.data.stats.coreCleanProtocolsBest);
       const newWrathProgress = wrath && (counters > 0 || randomSets > this.data.stats.wrathRandomSetsBest);
-      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken && !sovereignBroken && !newCoreProgress && !newWrathProgress && !newSurvivals)
+      if (!s.over && !["keyboard", "dodge"].includes(s.mode) && !streakBroken && !sovereignBroken && !newCoreProgress && !newWrathProgress && !newSurvivals && !newHealing && !newPumpkinProgress)
         return { earned: [], changed: false };
       return this.update(stats => {
+        if (newHealing) {
+          stats.healingItems += newHealing;
+          round.healingCollected = healing;
+        }
         if (newSurvivals) {
           for (const reward of attackRewards.filter(reward => reward.family === family)) {
             const previous = round.survivals[reward.index] || 0;
@@ -373,6 +391,11 @@ const Achievements = (() => {
         if (core) {
           stats.coreProtocolsBest = Math.max(stats.coreProtocolsBest, protocols);
           if (s.damage_taken === 0) stats.coreCleanProtocolsBest = Math.max(stats.coreCleanProtocolsBest, protocols);
+        }
+        if (s.mode === "pumpkin") {
+          stats.pumpkinMercifulBest = Math.max(stats.pumpkinMercifulBest, mercifulTime);
+          stats.pumpkinCounterHits += counters;
+          round.counterHits = Math.max(round.counterHits, count(s.counter_hits));
         }
         if (wrath) {
           stats.wrathRandomSetsBest = Math.max(stats.wrathRandomSetsBest, randomSets);
@@ -421,6 +444,8 @@ const Achievements = (() => {
           if (s.remaining === 1) stats.lastChanceWins++;
         } else if (s.mode === "boss" || s.mode === "pumpkin") {
           stats[`${s.mode}Wins`]++;
+          if (s.mode === "pumpkin" && Number.isFinite(s.fight_elapsed) && s.fight_elapsed > 0 && s.fight_elapsed <= 70)
+            stats.pumpkinSpeedrun = 1;
           if (Number.isFinite(s.max_lives) && s.max_lives > 0 && s.lives === s.max_lives) {
             if (s.mode === "pumpkin") stats.pumpkinFullHealth = 1;
             else if (statNames.has(`boss_${s.difficulty}_full`)) stats[`boss_${s.difficulty}_full`] = 1;
