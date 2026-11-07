@@ -268,6 +268,7 @@ class PackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(source / "web", root / "web")
+            shutil.copytree(source / "shared", root / "shared")
             for name in PYTHON_SOURCES:
                 shutil.copy2(source / name, root / name)
             output = root / "dist"
@@ -278,7 +279,7 @@ class PackagingTests(unittest.TestCase):
                 client.write_text(client.read_text() + "\n// Next client release.\n")
                 build()
                 second = (output / "index.html").read_text()
-            for name in ("app.js", "style.css", "achievements.js", "customs.js", "shop.js", "music.js", "leaderboards.js"):
+            for name in ("app.js", "style.css", "achievements.js", "customs.js", "shop.js", "music.js", "leaderboards.js", "account-rules.js", "accounts/store.js", "accounts/session.js", "accounts/sync.js", "accounts/app.js", "accounts/profile.css"):
                 with self.subTest(asset=name):
                     pattern = rf'"(\./{re.escape(name)}\?v=[a-f0-9]+)"'
                     before = re.search(pattern, first)
@@ -349,6 +350,8 @@ class PackagingTests(unittest.TestCase):
                 files = {str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
                 expected = {"index.html", "style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
                 expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
+                expected |= {"account-rules.js", "accounts/profile.css"}
+                expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app")}
                 self.assertEqual(files, expected)
                 for name in PYTHON_SOURCES:
                     self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())

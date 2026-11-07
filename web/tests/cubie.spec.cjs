@@ -129,15 +129,15 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
 
 
 test('Cubie hints after twenty completed minigames, ignores exits, and remembers dismissal', async ({ page }, testInfo) => {
-  await openGame(page);
-  await page.evaluate(() => {
-    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1') || '{}');
+  await page.addInitScript(() => {
+    if (localStorage.getItem('microgame-madness.v1')) return;
+    const saved = {};
     saved.minigamesCompleted = 18;
     saved.minigamesStarted = 20;
     saved.cubieHintShown = false;
     localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
   });
-  await page.reload();
+  await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   const dialog = page.locator('#cubie-hint');
   // Abandoning even a scored Key Rush run must not count as completion.

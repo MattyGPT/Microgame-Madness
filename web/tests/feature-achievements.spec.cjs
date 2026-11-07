@@ -2,7 +2,23 @@ const { test, expect } = require('./fixtures/game.cjs');
 
 test.use({ deterministicMusic: true });
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+  if (testInfo.title.startsWith('Determination tracks')) {
+    await page.addInitScript(() => {
+      if (!localStorage.getItem('microgame-madness.v1'))
+        localStorage.setItem('microgame-madness.v1', JSON.stringify({ achievements: { stats: { totalLosses: 48 } } }));
+    });
+  }
+  if (testInfo.title.startsWith('Rainbow retiering')) {
+    await page.addInitScript(() => {
+      if (localStorage.getItem('microgame-madness.v1')) return;
+      const date = '2026-11-01T10:00:00.000Z';
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({ achievements: {
+        stats: { visits: 1, wrathPerfectShuffle: 1 },
+        unlocked: { welcome: date, wrath_perfect_shuffle: date }, score: 7300,
+      } }));
+    });
+  }
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
@@ -12,7 +28,6 @@ test('Determination tracks real losses across reloads and awards crystal on the 
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace('random.choice(rules["words"])', '"cat"') });
   });
-  await page.evaluate(() => { saved.achievements.stats.totalLosses = 48; persist(); });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#achievements-tab').click();
@@ -103,6 +118,12 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   await page.screenshot({ path: testInfo.outputPath('empyrorite-celebration.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const date = await page.evaluate(() => saved.achievements.unlocked.core_flawless);
+  // This visual test synthesizes the award; import its unlocked medals into durable storage.
+  await page.evaluate(async () => {
+    await accountApp.chain;
+    await accountApp.controller.importProfile(saved);
+    accountApp.applyCurrent();
+  });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText(String(before + 7290 * 2));
@@ -144,13 +165,6 @@ test('Empyrorite challenges cover Merciless and Boss Crush while Chaos, Perfecte
 
 test('Rainbow retiering keeps the existing Chaos, Perfected date and recalculates profile points once', async ({ page }) => {
   const date = '2026-11-01T10:00:00.000Z';
-  await page.evaluate(date => {
-    localStorage.setItem(storageKey, JSON.stringify({ ...saved, achievements: {
-      stats: { visits: 1, wrathPerfectShuffle: 1 },
-      unlocked: { welcome: date, wrath_perfect_shuffle: date }, score: 7300,
-    } }));
-  }, date);
-  await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('2440');
   expect(await page.evaluate(() => saved.achievements.unlocked.wrath_perfect_shuffle)).toBe(date);

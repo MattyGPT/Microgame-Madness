@@ -16,12 +16,15 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
   // A completed real-mode victory unlocks the reward immediately.
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    await accountApp.ready;
+    accountApp.startRun('pumpkin', 'baby');
     updateAchievements(achievementTracker.start('pumpkin', 'baby'));
-    updateAchievements(achievementTracker.observe({
-      mode: 'pumpkin', difficulty: 'baby', over: true, won: true,
-      damage_taken: 2, lives: 13, max_lives: 15,
-    }));
+    const result = { mode: 'pumpkin', difficulty: 'baby', over: true, won: true,
+      score: 0, damage_taken: 2, lives: 13, max_lives: 15 };
+    updateAchievements(achievementTracker.observe(result));
+    accountApp.observe(result, true);
+    await accountApp.chain;
   });
   await expect(pumpkin.locator('.custom-equip')).toBeEnabled();
   await pumpkin.locator('.custom-equip').click();
@@ -53,14 +56,13 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
 });
 
 test('Custom Cubie rejects locked saved outfits and respects reduced motion', async ({ page }) => {
-  await openGame(page);
-  await page.evaluate(() => {
-    const saved = JSON.parse(localStorage.getItem('microgame-madness.v1'));
-    saved.cubieCustom = 'pumpkin';
-    localStorage.setItem('microgame-madness.v1', JSON.stringify(saved));
+  // Seed an old save before first navigation so the actual migration validates
+  // the locked selection. Later localStorage writes are no longer authoritative.
+  await page.addInitScript(() => {
+    localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Player', cubieCustom: 'pumpkin' }));
   });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.reload();
+  await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
   await expect(page.locator('[data-game="customs"] .cubie-float')).toHaveCSS('animation-name', 'none');
@@ -87,17 +89,17 @@ test('locked Customs can be previewed with flavor text without equipping', async
 });
 
 test('Gaster and tier Customs migrate earned medals, preview, equip, and persist', async ({ page }, testInfo) => {
+  // This scenario exercises importing existing earned medals, so seed the
+  // legacy profile before the first IndexedDB migration instead of replacing it.
+  const unlocked = Object.fromEntries(require('../achievements.js').catalog
+    .filter(a => !a.collectionTier).map(a => [a.id, '2026-11-03T12:00:00.000Z']));
+  await page.addInitScript(unlocked => {
+    if (!localStorage.getItem('microgame-madness.v1'))
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({
+        player: 'Player', achievements: { stats: { visits: 1 }, unlocked },
+      }));
+  }, unlocked);
   await openGame(page);
-  await page.evaluate(() => {
-    const profile = JSON.parse(localStorage.getItem('microgame-madness.v1'));
-    const date = '2026-11-03T12:00:00.000Z';
-    profile.achievements = {
-      stats: { visits: 1 },
-      unlocked: Object.fromEntries(Achievements.catalog.filter(a => !a.collectionTier).map(a => [a.id, date])),
-    };
-    localStorage.setItem('microgame-madness.v1', JSON.stringify(profile));
-  });
-  await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="customs"]').click();
   await expect(page.locator('#customs-count')).toHaveText('90 / 155 Customs unlocked');
@@ -230,10 +232,18 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await expect(page.locator('#customs-flavor')).toContainText('Freshly minted');
   await expect(locked.locator('.custom-equip')).toBeDisabled();
   // Exercise the real round-save boundary twice for the same round.
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    await accountApp.ready;
     selectGame('hangman'); selectedDifficulty = 'hard';
-    snapshot = { score: 5, over: true };
-    for (let i = 0; i < 10; i++) { roundSaved = false; saveRound(); saveRound(); }
+    snapshot = { mode: 'hangman', difficulty: 'hard', score: 5, over: true, won: true,
+      mistakes: 0, remaining: 5 };
+    for (let i = 0; i < 10; i++) {
+      accountApp.startRun('hangman', 'hard');
+      roundSaved = false;
+      saveRound(); saveRound();
+    }
+    await accountApp.chain;
+    accountApp.applyCurrent();
   });
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-balance')).toHaveText('600 Cubie Cash');
@@ -280,8 +290,12 @@ test('CODEXISTHEBEST unlocks rainbow Codex Cubie and equipment survives reload',
 });
 
 test('Hacker Cubie can be purchased for 4000 Cash and keeps its corrupted face when equipped', async ({ page }, testInfo) => {
+  // A funded legacy save isolates purchase/rendering from the earning tests.
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('microgame-madness.v1'))
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Player', shop: { units: 4000000, owned: [] } }));
+  });
   await openGame(page);
-  await page.evaluate(() => { saved.shop.units = 4000000; persist(); });
   await page.locator('[data-game="shop"]').click();
   const card = page.locator('#shop-grid .custom-tile[data-custom="shop_hacker"]');
   await expect(card).toHaveAttribute('data-tier', 'empyrorite');

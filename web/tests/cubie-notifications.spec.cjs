@@ -1,5 +1,10 @@
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
+  // Legacy fixture is migrated into the authoritative journal on first load.
+  await page.addInitScript(units => {
+    if (!localStorage.getItem('microgame-madness.v1'))
+      localStorage.setItem('microgame-madness.v1', JSON.stringify({ shop: { units, owned: [] } }));
+  }, 10000000);
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 });
@@ -9,8 +14,10 @@ test('new Customs share the achievement stack once, including purchases, and sta
     while (activeAchievementToasts.size) dismissAchievementToast(activeAchievementToasts.keys().next().value);
   });
   await drain();
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     updateAchievements(achievementTracker.secret('codexisthebest'));
+    accountApp.arcade('secret', { name: 'codexisthebest' });
+    await accountApp.chain;
   });
   const notice = page.locator('#achievement-toast [data-custom-id="codex"]');
   await expect(notice).toBeVisible();
@@ -21,7 +28,6 @@ test('new Customs share the achievement stack once, including purchases, and sta
   await drain();
   await page.evaluate(() => updateAchievements(achievementTracker.secret('codexisthebest')));
   await expect(page.locator('#achievement-toast [data-custom-id]')).toHaveCount(0);
-  await page.evaluate(() => { saved.shop.units = 10000000; persist(); });
   await page.locator('[data-game="shop"]').click();
   const tile = page.locator('#shop-grid .custom-tile').first();
   const id = await tile.getAttribute('data-custom');

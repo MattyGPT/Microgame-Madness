@@ -33,3 +33,6 @@ const CubieShop = (() => {
   return { rates, restore, reward, buy, balance: wallet => Math.floor(wallet.units / 1000) };
 })();
 if (typeof module !== "undefined") module.exports = CubieShop;
+
+// Portable catalog access for the shared browser/server account rules.
+if (typeof globalThis !== "undefined") globalThis.CubieShop = CubieShop;
