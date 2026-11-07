@@ -172,6 +172,18 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   expect(service.state.achievements.stats.hangmanWins).toBe(1);
   expect(service.signupCount).toBe(1);
   expect(service.auth.some(request => request.path.endsWith('/otp') && request.body.create_user === false)).toBe(true);
+  // An expired session offers sign-in directly while keeping its local data.
+  await page.evaluate(() => {
+    accountApp.session.requiresSignIn = true;
+    accountApp.controller.fail(Object.assign(new Error('Sign in again'), { code: 'sign_in_required' }));
+  });
+  await expect(page.locator('#account-auth')).toBeVisible();
+  await expect(page.locator('#account-create')).toBeDisabled();
+  await page.locator('#account-email').fill('private-player@example.test');
+  await page.locator('#account-login').click();
+  await verify(page);
+  await expect(page.locator('#account-auth')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => accountApp.controller.state().profile.shop.units)).toBe(40000);
   // Deliver the same storage notification as a logout in another tab while the
   // profile is open. Its previous private history/name must disappear.
   await page.evaluate(() => {

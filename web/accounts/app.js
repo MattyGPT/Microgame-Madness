@@ -336,6 +336,7 @@ const AccountApp = (() => {
     render(force = false) {
       if (!this.controller) return;
       const state = this.controller.state(), profile = state.profile || {};
+      const needsSignIn = state.status === 'sign_in_required' || this.session?.snapshot().requiresSignIn;
       if (this.displayOwner !== state.owner) {
         this.displayOwner = state.owner;
         this.importSource = null; this.importManifest = null; this.historyCursor = null;
@@ -350,15 +351,15 @@ const AccountApp = (() => {
         auth_required: 'Sign in again to sync', error: 'Progress needs attention', pending: 'Saved on this device · Sync pending' };
       let status = labels[state.status] || (this.signedIn ? state.status || 'Saved' : 'Guest · Saved on this device');
       if (!state.durable) status = 'Storage unavailable · Progress lasts for this visit unless saved online';
-      else if (state.pending && this.signedIn) status = `${state.pending} changes waiting to sync`;
+      else if (state.pending && this.signedIn && !needsSignIn) status = `${state.pending} changes waiting to sync`;
       if (state.importRequired) status = 'Review your guest progress to finish saving your account';
       this.$('account-summary').textContent = status;
       this.$('account-status').textContent = status;
-      this.$('account-auth').hidden = this.signedIn;
+      this.$('account-auth').hidden = this.signedIn && !needsSignIn;
       this.$('account-user-actions').hidden = !this.signedIn;
       this.$('account-sync').disabled = !this.signedIn || state.importRequired;
       const configured = !!(this.config?.url && this.config?.key);
-      this.$('account-create').disabled = !configured; this.$('account-login').disabled = !configured;
+      this.$('account-create').disabled = !configured || this.accountBound; this.$('account-login').disabled = !configured;
       if (!configured) this.$('account-status').textContent += ' · Cloud accounts are not connected yet';
       if (force || !this.nodes.panel.open) {
         this.$('account-name').value = profile.player || 'Player';
