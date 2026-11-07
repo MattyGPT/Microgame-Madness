@@ -161,8 +161,24 @@ test('Puzzle Cube turns independent layers, loops seamlessly, and stays still wi
     for (const dimension of ['x', 'y', 'width', 'height'])
       expect(bounds[dimension]).toBeCloseTo(originalFace[dimension], 3);
     const origins = await page.locator('.puzzle-layer').evaluateAll(layers => layers.map(layer => getComputedStyle(layer).transformOrigin));
-    expect(origins).toEqual(['0px 0px', '0px 0px', '0px 0px']);
+    expect(origins).toEqual(['54px 18px', '54px 18px', '54px 18px']);
   }
+  // Each completed turn parks on the same footprint; only one slice moves
+  // at a time, and all three are aligned during the rests between turns.
+  for (const phase of [.12, .24, .44, .56, .76, .88]) {
+    const transforms = await inspect(phase);
+    expect(transforms.filter((value, i) => value !== start[i])).toHaveLength(1);
+  }
+  for (const phase of [.32, .64, .96]) expect(await inspect(phase)).toEqual(start);
+  const dimensions = await page.locator('.puzzle-layer').evaluateAll(layers => layers.map(layer => {
+    const style = getComputedStyle(layer);
+    return [style.left, style.top, style.width, style.height];
+  }));
+  expect(dimensions).toEqual([
+    ['-54px', '-54px', '108px', '36px'],
+    ['-54px', '-18px', '108px', '36px'],
+    ['-54px', '18px', '108px', '36px'],
+  ]);
   const turned = await inspect(.2);
   expect(turned[0]).not.toEqual(start[0]);
   expect(turned[1]).toEqual(start[1]);

@@ -1380,20 +1380,20 @@ const CubieCustoms = (() => {
     }
     let sticker = 0;
     const sides = ['front','right','back','left','top','bottom'];
-    const layers = [-1,0,1].map((y,row) => {
-      const blocks = [];
-      for (let z=-1; z<=1; z++) for (let x=-1; x<=1; x++) {
-        if (x===0 && y===0 && z===0) continue;
-        const faces = sides.map((side,index) => {
-          const external = [z===1,x===1,z===-1,x===-1,y===-1,y===1][index];
-          const color = external ? stickers[sticker++] : null;
-          return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34"><rect x=".3" y=".3" width="33.4" height="33.4" rx="1.8" fill="#52616b" stroke="#596873" stroke-width=".4"/>${color ? `<rect class="puzzle-sticker" data-color="${color}" x=".7" y=".7" width="32.6" height="32.6" rx="1.5" fill="${color}"/><path d="M5 14V6q0-1 1-1h20" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".9"/><path d="M29 19v8q0 2-2 2H9" fill="none" stroke="#101820" stroke-opacity=".2" stroke-width=".8"/>` : ''}</svg></div>`;
-        }).join('');
-        blocks.push(`<div class="puzzle-block" style="transform:translate3d(${x*36}px,${y*36}px,${z*36}px)">${faces}</div>`);
-      }
-      return `<div class="puzzle-layer puzzle-layer-${row}">${blocks.join('')}</div>`;
+    const layers = [0,1,2].map(row => {
+      const faces = sides.map(side => {
+        const cap = side === 'top' || side === 'bottom';
+        const external = !cap || (side === 'top' ? row === 0 : row === 2);
+        const height = cap ? 108 : 36;
+        const tiles = external ? Array.from({length: cap ? 9 : 3}, (_,i) => {
+          const color = stickers[sticker++], x = i%3*36, y = Math.floor(i/3)*36;
+          return `<rect class="puzzle-sticker" data-color="${color}" x="${x+.65}" y="${y+.65}" width="34.7" height="34.7" rx="1.5" fill="${color}"/><path d="M${x+3} ${y+13}V${y+4}q0-1 1-1h25" fill="none" stroke="#fff" stroke-opacity=".32" stroke-width=".7"/><path d="M${x+33} ${y+22}v9q0 2-2 2H${x+9}" fill="none" stroke="#101820" stroke-opacity=".16" stroke-width=".7"/>`;
+        }).join('') : '';
+        return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 ${height}"><rect width="108" height="${height}" fill="${external ? '#64717b' : '#424e59'}"/>${tiles}</svg></div>`;
+      }).join('');
+      return `<div class="puzzle-layer puzzle-layer-${row}" style="top:${row*36-54}px">${faces}</div>`;
     }).join('');
-    // The expression is composited above the moving blocks, so no rotating
+    // The expression is composited above the solid slices, so no rotating
     // edge can carry an eye away or draw a seam across Cubie's smile.
     const expression = '<div class="puzzle-face-overlay"><div class="puzzle-face-anchor"><div class="puzzle-expression"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 145 145"><g class="cubie-eyes" fill="#17251a" stroke="#fff4d5" stroke-width="1" paint-order="stroke"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g><path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="#17251a" stroke="#fff4d5" stroke-width="1" paint-order="stroke"/><g class="cubie-blush" fill="#f17f99"><ellipse cx="30" cy="86" rx="14.5" ry="8"/><ellipse cx="115" cy="86" rx="14.5" ry="8"/></g></svg></div></div></div>';
     return `<svg class="cubie-custom-art" data-custom="shop_puzzle_cube" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g class="cubie-float"><foreignObject width="145" height="145" class="puzzle-volume"><div xmlns="http://www.w3.org/1999/xhtml" class="puzzle-scene"><div class="puzzle-cube">${layers}</div>${expression}</div></foreignObject></g></svg>`;
