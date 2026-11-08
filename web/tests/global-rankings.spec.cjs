@@ -69,7 +69,7 @@ test('unconfigured global rankings leave local scores and achievements usable', 
   expect(await page.evaluate(() => localStorage.getItem('microgame-madness.v1'))).toBe(before);
 });
 
-test('global rankings can browse all 24 modes without starting a round', async ({ page }) => {
+test('global rankings can browse all 26 modes without starting a round', async ({ page }) => {
   await openGame(page);
   const service = { scores: new Map(), guests: 0, requested: new Set() };
   await mockGlobalLeaderboards(page, service);
@@ -85,8 +85,8 @@ test('global rankings can browse all 24 modes without starting a round', async (
       await expect.poll(() => service.requested.has(`${mode}:${difficulty}`)).toBe(true);
     }
   }
-  expect(service.requested.size).toBe(24);
-  expect(service.guests).toBe(0);
+  expect(service.requested.size).toBe(26);
+  expect(service.guests).toBe(1); // Default-on sharing establishes a guest identity.
   await page.locator('#global-tab').press('End');
   await expect(page.locator('#global-tab')).toBeFocused();
   await page.locator('#global-tab').press('ArrowRight');
@@ -115,6 +115,7 @@ test('global scores are shared across independent browsers and preserve the orig
   const otherContext = await context.browser().newContext();
   try {
     const other = await otherContext.newPage();
+    await other.addInitScript(() => localStorage.setItem('microgame-madness.welcome.v1', 'complete'));
     await routeLocalRuntime(other);
     await mockGlobalLeaderboards(other, service);
     await other.goto(page.url());

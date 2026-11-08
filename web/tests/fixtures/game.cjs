@@ -37,7 +37,7 @@ const test = base.extend({
         const response = await route.fetch();
         await route.fulfill({ response, body: (await response.text()).replace(
           'constructor(context, destination = context.destination, random = Math.random)',
-          'constructor(context, destination = context.destination, random = () => .12)') });
+          'constructor(context, destination = context.destination, random = () => .2)') });
       });
     }
     await use(page);

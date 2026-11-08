@@ -5,7 +5,7 @@ test.use({ deterministicMusic: true });
 
 test("The King's Wrath has a yellow crown and loads all eight practice modes", async ({ page }, testInfo) => {
   await openGame(page);
-  await expect(page.locator('[data-game]:visible')).toHaveCount(10);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(11);
   const card = page.locator('[data-game="wrath"]');
   await expect(card).toContainText("The King's Wrath");
   expect(await card.locator('svg path').evaluate(el => getComputedStyle(el).fill)).toBe('rgb(255, 224, 102)');

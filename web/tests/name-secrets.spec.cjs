@@ -150,11 +150,13 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
       Object.defineProperty(window, property, { get() { throw new Error('Storage blocked'); } });
   });
   await openGame(page);
+  await page.locator('#welcome-close').click();
   await page.locator('#sound').click();
   const reloaded = page.waitForEvent('load');
   await page.locator('#player').fill('gaster');
   await reloaded;
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await page.locator('#welcome-close').click();
   await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'false');
   await page.evaluate(() => {
     window.gasterGameRemaining = [];
