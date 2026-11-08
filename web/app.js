@@ -408,6 +408,16 @@ const songSleeves = {
   prism_picnic: ["#a8f4ca", "#dca4ee", "crystal"],
   bonus_round_boulevard: ["#ffdb76", "#ef9c58", "coin"],
   aurora_afterparty: ["#91ffd4", "#a18af3", "aurora"],
+  compass_rose: ["#f2d49a", "#459f9b", "compass"],
+  jellyfish_jam: ["#f2a9ee", "#526ddd", "jellyfish"],
+  kite_runner: ["#ffab91", "#66c4dd", "kite"],
+  sands_of_time: ["#e9c17e", "#b4776b", "hourglass"],
+  tape_deck_daydream: ["#f4b6c3", "#8a7ec0", "cassette"],
+  mushroom_meadow: ["#d5ed9a", "#c47d61", "mushroom"],
+  last_train_to_neon: ["#8ee8e1", "#cf69c4", "train"],
+  snowglobe_shuffle: ["#d3efff", "#7899df", "snowflake"],
+  anchor_point: ["#adcde6", "#507c9c", "anchor"],
+  butterfly_byte: ["#e8adff", "#dd817e", "butterfly"],
   dodge_easy: ["#b5eca0", "#69bca1", "shell"],
   dodge_normal: ["#a5ddff", "#718dd1", "rain"],
   dodge_hard: ["#ffdc76", "#779ca0", "waves"],
@@ -431,6 +441,16 @@ const songSleeves = {
   sunwheel_parade: ["#ffe18b", "#ec9675", "sunrise"],
 };
 const sleevePaths = {
+  compass: "M56 32a24 24 0 1 1-48 0 24 24 0 0 1 48 0Z M41 16l-4 21-14 11 4-21Z M27 27l10 10 M32 8v5m0 38v5M8 32h5m38 0h5",
+  jellyfish: "M11 30a21 21 0 0 1 42 0q-5 6-10 0-5 6-11 0-6 6-11 0-5 6-10 0Z M24 13q-6 6-6 13 M19 36q-7 7 0 13t0 11 M32 36q8 6 0 13t0 11 M45 36q-7 7 0 13t0 11",
+  kite: "M31 5 49 23 31 44 13 23Z M31 5v39M13 23h36 M31 44q-12 7 0 12t10 5 M28 48l-6-1 2 6m11 1 6-2-1 6",
+  hourglass: "M15 6h34M15 58h34 M19 6v10q0 8 13 16-13 8-13 16v10m26-52v10q0 8-13 16 13 8 13 16v10 M22 16h20l-10 10Z M22 52l10-11 10 11Z M32 33v3",
+  cassette: "M11 12h42q4 0 4 4v34q0 4-4 4H11q-4 0-4-4V16q0-4 4-4Z M16 21h32v17H16Z M27 29a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z M47 29a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z M27 29h10 M17 54l5-10h20l5 10 M13 17h1m36 0h1",
+  mushroom: "M6 34C7 17 19 8 32 8s25 9 26 26Z M25 34l-4 19q11 7 22 0l-4-19 M25 20a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z M45 25a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z M31 10v6 M11 58l3-7m38 7-3-7",
+  train: "M20 7h24q7 0 7 7v29q0 6-7 6H20q-7 0-7-6V14q0-7 7-7Z M20 17h24v15H20Z M32 17v15 M22 40h3m14 0h3 M21 49l-9 11m31-11 9 11 M17 55h30 M27 11h10",
+  snowflake: "M32 5v54M9 18l46 28M9 46l46-28 M24 10l8 7 8-7m-16 44 8-7 8 7 M10 27l9-3-1-10m36 23-9 3 1 10 M18 50l1-10-9-3m36-23-1 10 9 3 M32 24l7 4v8l-7 4-7-4v-8Z",
+  anchor: "M38 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z M32 18v39 M21 26h22 M8 36q0 18 24 21 24-3 24-21 M8 36l-3 10m3-10 10 6 M56 36l3 10m-3-10-10 6",
+  butterfly: "M30 29C21 8 6 4 7 22q0 15 21 15C7 31 9 59 23 53l9-13 9 13c14 6 16-22-5-16q21 0 21-15c1-18-14-14-23 7 M32 24v21m0-21-7-9m7 9 7-9 M17 20l6 6m24-6-6 6",
   soda: "M18 24h28l-4 33H22Z M17 24h30 M35 24l4-15h11 M25 34h14 M29 42v8m-4-4h8 M12 7v10m-5-5h10 M51 31v8m-4-4h8",
   carousel: "M8 25 32 8l24 17Z M10 29h44 M32 8V3h10l-10 5 M32 29v24 M18 29v14m28-14v14 M12 45h12m16 0h12 M15 53h34l6 6H9Z",
   lemon: "M10 44C9 22 28 10 48 17l6-2-2 7C55 44 32 57 16 48l-7 1Z M18 40c0-12 11-20 23-19 M38 6l-7 12h9l-5 12",
@@ -1418,7 +1438,11 @@ function initializeChaosGuide(blocks) {
     title.textContent = block.name;
     const rarity = document.createElement("p");
     rarity.className = "block-rarity";
-    rarity.textContent = `${block.rarity} · ${block.chance}% of spawns`;
+    rarity.append(`${block.rarity} · `);
+    const chance = document.createElement('span');
+    chance.className = 'block-exact-chance';
+    chance.textContent = `${block.chance}%`;
+    rarity.append(chance, ' of spawns');
     const detail = document.createElement("p");
     detail.textContent = block.description;
     card.append(icon, title, rarity, detail);

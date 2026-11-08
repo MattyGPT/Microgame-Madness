@@ -1268,6 +1268,26 @@ html.account-reduced-motion .turtle-prophecy * { animation: none; }
 .song-card[data-motif="comet"]::before {
   background: radial-gradient(circle, var(--song-color) 1px, transparent 2px) 0 0 / 19px 19px;
 }
+.song-card[data-motif="compass"]::before,
+.song-card[data-motif="hourglass"]::before {
+  background: repeating-radial-gradient(circle at 28px 28px, transparent 0 10px, var(--song-color) 11px 12px, transparent 13px 24px);
+}
+.song-card[data-motif="jellyfish"]::before,
+.song-card[data-motif="anchor"]::before {
+  background: radial-gradient(ellipse at 50% 0, transparent 12px, var(--song-color) 13px 14px, transparent 15px) 0 0 / 36px 20px;
+}
+.song-card[data-motif="kite"]::before,
+.song-card[data-motif="butterfly"]::before {
+  background: repeating-linear-gradient(60deg, transparent 0 16px, var(--song-color) 17px 18px, transparent 19px 34px), repeating-linear-gradient(-60deg, transparent 0 16px, var(--song-color) 17px 18px, transparent 19px 34px);
+}
+.song-card[data-motif="cassette"]::before,
+.song-card[data-motif="train"]::before {
+  background: repeating-linear-gradient(0deg, transparent 0 12px, var(--song-color) 13px 14px, transparent 15px 24px), repeating-linear-gradient(90deg, transparent 0 22px, var(--song-color) 23px 24px, transparent 25px 36px);
+}
+.song-card[data-motif="mushroom"]::before,
+.song-card[data-motif="snowflake"]::before {
+  background: radial-gradient(circle, var(--song-color) 2px, transparent 3px) 0 0 / 24px 24px, radial-gradient(circle, var(--song-color) 1px, transparent 2px) 12px 12px / 24px 24px;
+}
 .song-card .song-art {
   position: absolute;
   top: 12px;
@@ -3611,3 +3631,7 @@ html.account-reduced-motion .cosmos-meteor { opacity: 0; }
 }
 html.account-reduced-motion .jukebox-studio-scene *,
 html.account-reduced-motion .jukebox-note-deluxe * { animation: none !important; }
+
+/* Guide chances use the same tenth-percent tickets as gameplay. */
+.block-guide-card { min-width: 0; }
+.block-exact-chance { font-variant-numeric: tabular-nums; }

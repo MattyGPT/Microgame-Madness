@@ -63,7 +63,8 @@ test('weighted guide preview changes on half-second ticks and Chaos Cubies equip
   const preview=page.locator('[data-game="guide"] .guide-tab-preview');
   await expect(preview).toBeVisible();
   const timings=await page.evaluate(()=>{
-    const before=chaosGuideLastChange;
+    // Use an exact millisecond boundary so float rounding cannot turn 500 into 499.999…
+    const before=chaosGuideLastChange=Math.floor(chaosGuideLastChange);
     animateChaosGuide(before+499);const early=chaosGuideLastChange;
     animateChaosGuide(before+500);return {before,early,after:chaosGuideLastChange};
   });
@@ -293,4 +294,16 @@ test('guide cards animate effects and freeze for reduced motion', async ({page})
   await page.waitForTimeout(200);
   expect(await canvas.evaluate(c=>c.toDataURL())).toBe(frozen);
   expect(errors).toEqual([]);
+});
+
+test('guide spawn percentages use tenths and total exactly one hundred', async ({page}, testInfo) => {
+  await openGame(page);
+  await page.locator('[data-game="guide"]').click();
+  const percentages = await page.locator('.block-exact-chance').allTextContents();
+  expect(percentages.every(value=>/^\d+(\.\d)?%$/.test(value))).toBe(true);
+  expect(percentages.reduce((sum,value)=>sum+Math.round(parseFloat(value)*10),0)).toBe(1000);
+  await expect(page.locator('[data-block="wild_seven"] .block-exact-chance')).toHaveText('0.8%');
+  await expect(page.locator('[data-block="blaster"] .block-exact-chance')).toHaveText('5%');
+  await expect(page.locator('.repeating-digits')).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

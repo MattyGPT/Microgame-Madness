@@ -673,6 +673,113 @@ const ArcadeMusic = (() => {
   for (const [id, title, bpm, progression, bars, options] of arcadeExpansion) {
     scores[id] = song(title, bpm, `${progression} ${progression}`, [...bars, ...bars], options);
   }
+  // Sixteen authored bars per piece: opening motif, answer, contrast, resolution.
+  // song() adds a second chorus with the existing answering voice and octave lift.
+  const arcadeJourneys = [
+    ["compass_rose", "Compass Rose", 124, "D G Bm A D F#m G A Bm G Em A G D A D", [
+      "D5 - A5 F#5 E5 - F#5 A5", "B5 A5 G5 - D5 G5 A5 -",
+      "F#5 B5 D6 B5 A5 F#5 E5 D5", "C#5 E5 A5 - G5 E5 C#5 -",
+      "F#5 A5 D6 - A5 F#5 E5 D5", "C#5 F#5 A5 C#6 B5 A5 F#5 -",
+      "G5 A5 B5 D6 B5 A5 G5 -", "E5 F#5 E5 C#5 A4 - A5 -",
+      "B4 D5 F#5 - A5 F#5 D5 B4", "D5 G5 B5 - A5 G5 D5 -",
+      "E5 G5 B5 D6 E6 D6 B5 G5", "A5 C#6 E6 - D6 C#6 B5 A5",
+      "G5 B5 D6 B5 A5 G5 F#5 E5", "F#5 E5 D5 A4 D5 F#5 A5 -",
+      "E5 A5 C#6 B5 A5 G5 E5 C#5", "D5 F#5 A5 D6 A5 - D5 -",
+    ], {groove:"classic", gate:1.05}],
+    ["jellyfish_jam", "Jellyfish Jam", 96, "Dm7 Gm7 C Fmaj7 Bb Gm A7 Dm Dm7 Am Bb F Gm Dm A7 Dm", [
+      "D5 - F5 - A5 G5 F5 -", "G5 - D5 F5 - Bb5 A5 -",
+      "G5 E5 - C5 E5 - G5 -", "A5 - G5 E5 C5 - A4 -",
+      "D5 F5 - Bb5 A5 F5 - D5", "Bb4 - D5 G5 F5 - D5 -",
+      "C#5 E5 - G5 A5 - G5 E5", "F5 E5 D5 - A4 - D5 -",
+      "A5 C6 - A5 F5 E5 D5 -", "E5 - A5 C6 B5 - A5 -",
+      "F5 Bb5 D6 - C6 Bb5 A5 F5", "E5 - F5 A5 C6 - A5 -",
+      "D6 Bb5 G5 - F5 D5 Bb4 -", "A4 D5 F5 A5 G5 - F5 -",
+      "E5 G5 C#6 - B5 A5 G5 E5", "D5 - A5 - F5 E5 D5 -",
+    ], {groove:"hush", lead:"triangle", gate:1.25, bassOctave:3}],
+    ["kite_runner", "Kite Runner", 164, "G D Em C G Bm C D Em C Am D C G D G", [
+      "G5 D5 G5 A5 B5 - D6 B5", "A5 F#5 D5 F#5 A5 B5 A5 -",
+      "G5 B5 E6 D6 B5 G5 E5 -", "E5 G5 C6 B5 A5 G5 E5 C5",
+      "D5 G5 B5 D6 G6 D6 B5 A5", "F#5 B5 D6 C6 B5 A5 F#5 -",
+      "G5 C6 E6 D6 C6 B5 A5 G5", "F#5 A5 D6 A5 F#5 E5 D5 -",
+      "E5 - G5 B5 E6 B5 G5 E5", "C5 E5 G5 C6 B5 A5 G5 -",
+      "A5 C6 E6 C6 B5 A5 G5 E5", "F#5 A5 C6 D6 C6 A5 F#5 -",
+      "E6 D6 C6 G5 E5 G5 C6 -", "D6 B5 G5 D5 E5 G5 B5 -",
+      "A5 D6 C6 A5 F#5 A5 D6 F#6", "G6 D6 B5 G5 A5 F#5 G5 -",
+    ], {groove:"drive", lead:"triangle", gate:.82}],
+    ["sands_of_time", "Sands of Time", 112, "Am E7 Am Dm F C Dm E7 Am G F E7 Dm Am E7 Am", [
+      "A4 - E5 - A4 B4 C5 -", "B4 - G#4 - E5 D5 B4 -",
+      "C5 E5 A5 - G5 E5 C5 -", "D5 F5 A5 F5 E5 D5 C5 -",
+      "F5 - C5 A4 C5 F5 G5 A5", "G5 E5 C5 - B4 C5 E5 -",
+      "A5 F5 D5 A4 D5 F5 E5 D5", "B4 D5 E5 G#5 B5 A5 G#5 -",
+      "E5 A5 C6 B5 A5 - E5 -", "D5 G5 B5 A5 G5 - D5 -",
+      "C5 F5 A5 G5 F5 - C5 -", "B4 E5 G#5 A5 B5 - G#5 -",
+      "D6 A5 F5 D5 E5 F5 A5 -", "C6 B5 A5 E5 C5 B4 A4 -",
+      "G#4 B4 D5 E5 G#5 B5 E6 -", "A5 E5 C5 B4 A4 - A4 -",
+    ], {groove:"classic", pulse:"narrow", gate:.72, bassGate:.26}],
+    ["tape_deck_daydream", "Tape Deck Daydream", 84, "Ebmaj7 Cm Abmaj7 Bb Ebmaj7 Gm Fm Bb Cm Gm Abmaj7 Eb Fm Ab Bb Ebmaj7", [
+      "G4 - Bb4 D5 - Bb4 G4 -", "Eb5 - D5 C5 G4 - Bb4 -",
+      "C5 Eb5 G5 - Eb5 C5 Bb4 -", "D5 - F5 D5 C5 Bb4 - -",
+      "Bb4 G4 Bb4 D5 F5 - D5 -", "D5 Bb4 G4 - A4 Bb4 D5 -",
+      "Ab4 C5 Eb5 G5 F5 - Eb5 C5", "D5 F5 Bb5 - A5 F5 D5 -",
+      "G5 Eb5 C5 - Bb4 G4 C5 -", "Bb4 D5 G5 F5 D5 - Bb4 -",
+      "C5 - Eb5 G5 Bb5 G5 Eb5 -", "G5 F5 Eb5 Bb4 G4 - Bb4 -",
+      "Ab4 C5 F5 Ab5 G5 F5 Eb5 -", "G5 Eb5 C5 Bb4 Ab4 - C5 -",
+      "D5 F5 Ab5 F5 D5 C5 Bb4 -", "G4 Bb4 Eb5 - D5 Bb4 Eb5 -",
+    ], {groove:"hush", swing:.18, lead:"triangle", gate:1.18, bassOctave:3}],
+    ["mushroom_meadow", "Mushroom Meadow", 108, "F C Dm Bb F Am Gm C Bb F Gm A7 Dm Bb C F", [
+      "F5 A5 - G5 F5 - C5 -", "E5 G5 - E5 D5 C5 E5 -",
+      "F5 A5 D6 - C6 A5 F5 -", "Bb5 A5 F5 D5 F5 - Bb5 -",
+      "A5 G5 F5 - C5 F5 A5 -", "E5 A5 C6 B5 A5 - G5 E5",
+      "G5 Bb5 A5 G5 F5 D5 Bb4 -", "C5 E5 G5 - F5 E5 C5 -",
+      "D5 F5 Bb5 - A5 G5 F5 D5", "C5 F5 A5 C6 A5 G5 F5 -",
+      "Bb5 A5 G5 D5 G5 Bb5 D6 -", "C#6 A5 G5 E5 C#5 E5 A5 -",
+      "D6 C6 A5 F5 D5 - F5 A5", "Bb5 F5 D5 F5 A5 - Bb5 -",
+      "G5 E5 C5 D5 E5 G5 C6 Bb5", "A5 G5 F5 C5 A4 C5 F5 -",
+    ], {groove:"skip", swing:.2, lead:"triangle", gate:.95}],
+    ["last_train_to_neon", "Last Train to Neon", 176, "F#m D A E F#m Bm D C#7 F#m A D E Bm D C#7 F#m", [
+      "F#4 C#5 F#4 A4 C#5 A4 F#4 C#5", "D5 A4 D5 F#5 A5 F#5 E5 D5",
+      "E5 A5 C#6 B5 A5 E5 C#5 E5", "G#5 B5 E6 D6 B5 G#5 E5 -",
+      "F#5 C#6 A5 F#5 G#5 A5 C#6 E6", "D6 B5 F#5 D5 F#5 B5 D6 -",
+      "A5 F#5 D5 A4 D5 F#5 A5 D6", "E#5 G#5 B5 C#6 B5 G#5 E#5 -",
+      "F#5 - C#6 A5 F#5 E5 C#5 -", "E5 A5 C#6 E6 C#6 B5 A5 -",
+      "F#5 A5 D6 F#6 E6 D6 A5 F#5", "G#5 B5 E6 F#6 E6 D6 B5 G#5",
+      "B5 A5 F#5 D5 B4 D5 F#5 B5", "A5 F#5 D5 E5 F#5 A5 D6 -",
+      "C#6 B5 G#5 E#5 C#5 E#5 G#5 B5", "A5 G#5 F#5 C#5 F#5 - F#4 -",
+    ], {groove:"pursuit", pulse:"narrow", gate:.78, bassGate:.2}],
+    ["snowglobe_shuffle", "Snowglobe Shuffle", 118, "Cmaj7 Fmaj7 Em Am Dm G C G Am Em F C Dm F G Cmaj7", [
+      "E5 - G5 B5 G5 - E5 -", "A5 G5 E5 C5 F5 - A5 -",
+      "B5 G5 E5 - D5 E5 G5 -", "C6 B5 A5 E5 C5 - E5 -",
+      "F5 A5 D6 C6 A5 F5 E5 -", "D5 G5 B5 - A5 G5 D5 -",
+      "E5 G5 C6 G5 E5 D5 C5 -", "B4 D5 G5 A5 B5 - D6 -",
+      "E6 C6 A5 - G5 E5 C5 -", "B5 G5 E5 D5 E5 - G5 -",
+      "A5 C6 E6 D6 C6 A5 G5 F5", "G5 E5 C5 E5 G5 B5 C6 -",
+      "D6 C6 A5 F5 E5 D5 A4 -", "C5 F5 A5 C6 A5 G5 F5 -",
+      "B5 A5 G5 D5 F5 E5 D5 B4", "C5 E5 G5 B5 C6 - C5 -",
+    ], {groove:"skip", swing:.14, lead:"triangle", gate:.8}],
+    ["anchor_point", "Anchor Point", 100, "Cm Ab Eb Bb Cm Fm G Cm Ab Eb Fm G Cm Ab G Cm", [
+      "C4 - G4 - C5 Eb5 G5 -", "Ab4 C5 Eb5 - C5 Ab4 G4 -",
+      "G4 Bb4 Eb5 G5 F5 Eb5 Bb4 -", "F4 Bb4 D5 F5 Eb5 D5 Bb4 -",
+      "C5 G4 Eb4 G4 C5 - Eb5 -", "F4 C5 Ab5 G5 F5 Eb5 C5 -",
+      "B4 D5 G5 - F5 D5 B4 G4", "C5 Eb5 G5 Eb5 D5 C5 G4 -",
+      "Ab5 G5 Eb5 C5 Ab4 - C5 -", "G5 F5 Eb5 Bb4 G4 Bb4 Eb5 -",
+      "Ab4 C5 F5 Ab5 G5 F5 Eb5 C5", "D5 G5 B5 D6 C6 B5 G5 -",
+      "Eb5 G5 C6 Bb5 G5 Eb5 D5 C5", "C5 Eb5 Ab5 G5 Eb5 C5 Ab4 -",
+      "B4 D5 F5 G5 B5 G5 D5 B4", "C5 G4 Eb4 G4 C5 - C4 -",
+    ], {groove:"classic", lead:"triangle", gate:1.3, bassGate:.65}],
+    ["butterfly_byte", "Butterfly Byte", 152, "A E F#m D A C#m Bm E F#m D Bm E D A E A", [
+      "A5 - C#6 B5 A5 E5 - C#5", "B5 G#5 - E5 F#5 G#5 B5 -",
+      "C#6 A5 F#5 - A5 C#6 E6 C#6", "D6 A5 - F#5 G#5 A5 D6 -",
+      "C#6 E6 A6 E6 C#6 B5 A5 -", "G#5 E5 C#5 E5 G#5 B5 C#6 -",
+      "F#5 B5 D6 - C#6 B5 A5 F#5", "G#5 B5 E6 D6 B5 G#5 E5 -",
+      "F#5 A5 - C#6 A5 F#5 E5 -", "D5 F#5 A5 D6 C#6 A5 F#5 -",
+      "B5 D6 F#6 E6 D6 B5 A5 F#5", "G#5 B5 D6 E6 F#6 E6 B5 -",
+      "A5 D6 F#6 D6 A5 F#5 E5 D5", "C#5 E5 A5 C#6 B5 A5 E5 -",
+      "B5 G#5 E5 G#5 B5 D6 C#6 B5", "A5 C#6 E6 C#6 B5 G#5 A5 -",
+    ], {groove:"skip", swing:.06, gate:.75}],
+  ];
+  for (const [id, title, bpm, progression, bars, options] of arcadeJourneys) {
+    scores[id] = song(title, bpm, progression, bars, options);
+  }
   const loopThemes = ["chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];

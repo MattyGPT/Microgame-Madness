@@ -15,6 +15,34 @@ class ChaosTests(unittest.TestCase):
     def block(self, game, kind, **extra):
         return Block(game.x, game.y, ((0, 0),), CATALOG[kind]['color'], kind=kind, **extra)
 
+    def test_spawn_tickets_match_guide_exactly_and_total_one_hundred(self):
+        from fractions import Fraction
+        from unittest.mock import patch
+        from chaos_dodge import exact_spawn_percentages, allocate_spawn_tickets, BLOCK_TYPES
+        rates = exact_spawn_percentages()
+        self.assertEqual(sum(rates.values()), 100)
+        self.assertEqual(sum(row['weight'] for row in CATALOG.values()), 1000)
+        self.assertEqual(rates['blaster'], 5)
+        self.assertEqual(rates['wild_seven'], Fraction(4,5))
+        rows = catalog()
+        self.assertEqual(sum(Fraction(str(row['chance'])) for row in rows), 100)
+        for row in rows:
+            self.assertEqual(Fraction(str(row['chance'])), rates[row['id']])
+            self.assertEqual((rates[row['id']]*10).denominator, 1)
+            self.assertGreater(row['weight'], 0)
+        game = self.game()
+        lower = 0
+        for kind, info in CATALOG.items():
+            for ticket in (lower, lower+info['weight']-1):
+                game.blocks = []
+                with patch.object(game.rng, 'randrange', return_value=ticket), patch.object(game, 'make_chaos_block', return_value=kind):
+                    game.spawn_chaos()
+                self.assertEqual(game.blocks, [kind])
+            lower += info['weight']
+        grown = allocate_spawn_tickets(BLOCK_TYPES+(('future', 'Future', '#fff', '?', 2),))
+        self.assertEqual(sum(grown.values()), 1000)
+        self.assertGreater(grown['future'], 0)
+
     def test_thirty_block_expansion_catalog_and_spawn_configuration(self):
         from chaos_dodge import EXPANSION_TYPES, PICKUP_EFFECTS, CONTACT_EFFECTS, MOTION_BLOCKS, TURRET_BLOCKS
         self.assertEqual(len(EXPANSION_TYPES), 30)

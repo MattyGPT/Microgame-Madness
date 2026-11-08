@@ -1,5 +1,6 @@
 """Chaos-only block catalog and simulation; classic Turtle Dodge stays unchanged."""
 import math
+from fractions import Fraction
 
 # One source for the in-game guide, spawn weights, colors and identifying glyphs.
 BLOCK_TYPES = (
@@ -167,11 +168,25 @@ TURRET_BLOCKS = {
     'scatter': {'angles': (7, 0, 1), 'interval': 0.9, 'spin': 0},
 }
 
-# Preserve fixed spawn shares as the catalog grows.
-_fixed_chances = {'wild_seven': .008, 'blaster': .05}
-_total_weight = sum(row[4] for row in BLOCK_TYPES if row[0] not in _fixed_chances) / (1-sum(_fixed_chances.values()))
-BLOCK_TYPES = tuple(row[:4] + (_total_weight*_fixed_chances[row[0]],) + row[5:]
-                    if row[0] in _fixed_chances else row for row in BLOCK_TYPES)
+def allocate_spawn_tickets(rows):
+    """Apportion 1,000 equal tickets, preserving the two fixed spawn rates."""
+    fixed = {'wild_seven': 8, 'blaster': 50}
+    weights = {row[0]: Fraction(str(row[4])) for row in rows if row[0] not in fixed}
+    available = 1000-sum(fixed.values())
+    total = sum(weights.values())
+    quotas = {kind: weight*available/total for kind, weight in weights.items()}
+    tickets = {kind: max(1, quota.numerator//quota.denominator) for kind, quota in quotas.items()}
+    left = available-sum(tickets.values())
+    if left < 0:
+        raise ValueError('Too many block types to give each a positive tenth-percent chance.')
+    # Largest remainders keep the existing balance as close as possible.
+    order = sorted(weights, key=lambda kind: quotas[kind]-tickets[kind], reverse=True)
+    for kind in order[:left]: tickets[kind] += 1
+    return dict(tickets, **fixed)
+
+
+_spawn_tickets = allocate_spawn_tickets(BLOCK_TYPES)
+BLOCK_TYPES = tuple(row[:4]+(_spawn_tickets[row[0]],)+row[5:] for row in BLOCK_TYPES)
 CATALOG = {row[0]: dict(zip(('id', 'name', 'color', 'symbol', 'weight', 'rarity', 'description'), row)) for row in BLOCK_TYPES}
 SAFE_BLOCKS = frozenset(('ricochet_shield', 'sanctuary', 'weak', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'curse', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby'))
 SAFE_BLOCKS = SAFE_BLOCKS | frozenset(PICKUP_EFFECTS)
@@ -223,6 +238,11 @@ NEW_SHAPES = (
 )
 
 
+def exact_spawn_percentages():
+    total = sum(item['weight'] for item in CATALOG.values())
+    return {kind: Fraction(item['weight']*100, total) for kind, item in CATALOG.items()}
+
+
 def catalog():
     total = sum(item['weight'] for item in CATALOG.values())
     # Sample real spawn geometry so the guide cannot drift from gameplay.
@@ -234,7 +254,7 @@ def catalog():
         game.blocks = []
         game.spawn_chaos(kind)
         block = game.blocks[0]
-        result.append(dict(item, chance=round(item['weight'] / total * 100, 1),
+        result.append(dict(item, chance=item['weight'] / 10,
                            preview_cells=block.cells, preview_size=block.cell_size, preview_color=block.color,
                            preview_speed=game.chaos_fall_speed(block), preview_cannons=block.cannons,
                            preview_rotation_speed=block.rotation_speed,
@@ -278,7 +298,13 @@ class ChaosRules:
     def spawn_chaos(self, kind=None):
         if len(self.blocks) >= 80:
             return
-        kind = kind or self.rng.choices(list(CATALOG), weights=[v['weight'] for v in CATALOG.values()])[0]
+        if kind is None:
+            ticket = self.rng.randrange(sum(item['weight'] for item in CATALOG.values()))
+            for candidate, item in CATALOG.items():
+                ticket -= item['weight']
+                if ticket < 0:
+                    kind = candidate
+                    break
         self.blocks.append(self.make_chaos_block(kind))
 
     def make_chaos_block(self, kind):
