@@ -158,10 +158,11 @@ def polygon_touches_triangle(polygon, triangle):
 
 def fan_blades(block):
     blades = []
+    tip = 8.2 if block.kind == 'giga_fan' else 3.2
     for index in range(3):
-        angle = block.age*math.tau*.9/2.4 + index*math.tau/3
-        points = ((block.size*.2, -block.size*.12), (block.size*3.2, -block.size*.3),
-                  (block.size*3.2, block.size*.3))
+        angle = block.age*math.tau/3.75 + index*math.tau/3
+        points = ((block.size*.2, -block.size*.12), (block.size*tip, -block.size*.3),
+                  (block.size*tip, block.size*.3))
         blades.append(tuple((block.x+px*math.cos(angle)-py*math.sin(angle),
                              block.y+px*math.sin(angle)+py*math.cos(angle)) for px, py in points))
     return blades
@@ -169,7 +170,7 @@ def fan_blades(block):
 
 def touches_block(x, y, block, margin=0):
     half = block.size / 2 + margin
-    if block.kind == 'fan':
+    if block.kind in ('fan', 'giga_fan'):
         for blade in fan_blades(block):
             if polygon_touches_triangle(PLAYER_POLYGON, tuple((bx-x, by-y) for bx, by in blade)):
                 return True

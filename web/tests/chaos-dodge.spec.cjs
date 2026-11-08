@@ -11,6 +11,11 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
   const guideCount = await page.evaluate(()=>JSON.parse(document.getElementById('chaos-bootstrap').textContent).length);
   await expect(page.locator('.block-guide-card')).toHaveCount(guideCount);
   await expect(page.locator('#block-guide-room')).toBeVisible();
+  await expect(page.locator('#chaos-screen-key-list li')).toHaveCount(await page.evaluate(()=>chaosStatusDefinitions.length));
+  await expect(page.locator('#chaos-screen-key-list [data-effect="protection_left"]')).toContainText('Pickup-granted protection');
+  await expect(page.locator('#chaos-screen-key-list [data-effect="haste_left"]')).toContainText('Yellow lightning');
+  await expect(page.locator('#chaos-screen-key-list [data-effect="frost_left"]')).toContainText('Icy blue snow');
+
   await expect(page.locator('.block-guide-icon')).toHaveCount(guideCount);
   expect(await page.locator('.block-guide-icon').evaluateAll(canvases=>canvases.every(canvas=>canvas.tagName==='CANVAS' && canvas.width>0))).toBe(true);
   await expect(page.locator('.block-guide-card[data-block="doom"]')).toContainText('Very rare');
@@ -57,20 +62,20 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
   expect(errors).toEqual([]);
 });
 
-test('weighted guide preview changes on half-second ticks and Chaos Cubies equip and persist', async ({page}, testInfo) => {
+test('guide preview changes on 2.5-second ticks and Chaos Cubies equip and persist', async ({page}, testInfo) => {
   const errors=[];page.on('pageerror', e=>errors.push(e.message));
   await openGame(page);
   const preview=page.locator('[data-game="guide"] .guide-tab-preview');
   await expect(preview).toBeVisible();
   const timings=await page.evaluate(()=>{
-    // Use an exact millisecond boundary so float rounding cannot turn 500 into 499.999…
+    // Use an exact millisecond boundary so float rounding cannot turn 2500 into 2499.999…
     const before=chaosGuideLastChange=Math.floor(chaosGuideLastChange);
-    animateChaosGuide(before+499);const early=chaosGuideLastChange;
-    animateChaosGuide(before+500);return {before,early,after:chaosGuideLastChange};
+    animateChaosGuide(before+2499);const early=chaosGuideLastChange;
+    animateChaosGuide(before+2500);return {before,early,after:chaosGuideLastChange};
   });
-  expect(timings.early).toBe(timings.before);expect(timings.after).toBe(timings.before+500);
+  expect(timings.early).toBe(timings.before);expect(timings.after).toBe(timings.before+2500);
   await page.emulateMedia({reducedMotion:'reduce'});
-  expect(await page.evaluate(()=>{const before=chaosGuideLastChange;animateChaosGuide(before+2000);return chaosGuideLastChange===before;})).toBe(true);
+  expect(await page.evaluate(()=>{const before=chaosGuideLastChange;animateChaosGuide(before+5000);return chaosGuideLastChange===before;})).toBe(true);
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
@@ -147,7 +152,7 @@ test('guide preview appears and cycles before the game engine has loaded', async
       window.guideStartupObserver=new MutationObserver(()=>window.guideStartupChanges++);
       window.guideStartupObserver.observe(img,{attributes:true,attributeFilter:['src']});
     });
-    await expect.poll(()=>page.evaluate(()=>window.guideStartupChanges),{timeout:2000}).toBeGreaterThan(0);
+    await expect.poll(()=>page.evaluate(()=>window.guideStartupChanges),{timeout:4500}).toBeGreaterThan(0);
     await page.evaluate(()=>window.guideStartupObserver.disconnect());
   } finally {release();}
   await expect(page.locator('#runtime-status')).toContainText('All games ready',{timeout:30000});
@@ -306,4 +311,59 @@ test('guide spawn percentages use tenths and total exactly one hundred', async (
   await expect(page.locator('[data-block="blaster"] .block-exact-chance')).toHaveText('5%');
   await expect(page.locator('.repeating-digits')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+
+test('arena pickups show timers and Merciless bounds, with refreshed Dodge icon',async({page},testInfo)=>{
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.route('**/app.js*',async route=>{
+    const response=await route.fetch();
+    await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.arenaRuntime = await loadPyodide(')});
+  });
+  await openGame(page);
+  const icon=page.locator('[data-game="dodge"] .card-art');
+  await expect(icon.locator('.dodge-icon-hazards')).toBeVisible();
+  await icon.screenshot({path:testInfo.outputPath('dodge-icon.png')});
+  await page.locator('[data-game="dodge"]').click();
+  await page.locator('[data-difficulty="chaos"]').click();
+  await page.evaluate(()=>{
+    active=false;
+    arenaRuntime.runPython("from bridge import session\nsession.game.blocks=[]\nsession.game.chaos_contact(session.game.make_chaos_block('project_chaos'))");
+    snapshot=send('tick',{dt:0});render();
+  });
+  expect(await page.evaluate(()=>snapshot.bounds)).toEqual([-220,220,-180,180]);
+  for(const effect of ['target_lock_left','danger_edge_left','arena_shrink_left'])
+    await expect(page.locator(`#chaos-status-badges [data-effect="${effect}"]`)).toBeVisible();
+  await page.locator('#arena').screenshot({path:testInfo.outputPath('project-chaos.png')});
+  expect(errors).toEqual([]);
+});
+
+test('all Chaos statuses have screen effects except damage grace',async({page},testInfo)=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await openGame(page);
+  await page.locator('[data-game="dodge"]').click();
+  await page.locator('[data-difficulty="chaos"]').click();
+  await page.evaluate(()=>{active=false;window.screenTestBase={...snapshot,protection_left:0};for(const [key] of chaosStatusDefinitions)screenTestBase[key]=0;});
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,invulnerable:1}));
+  await expect(page.locator('.chaos-status-layer:not([hidden])')).toHaveCount(0);
+  const keys=await page.evaluate(()=>chaosStatusDefinitions.map(([key])=>key==='invulnerable'?'protection_left':key).filter(key=>!['haste_left','frost_left'].includes(key)));
+  for(const key of keys){
+    await page.evaluate(key=>updateChaosEffects({...screenTestBase,[key]:3}),key);
+    const layer=page.locator(`.chaos-status-layer[data-effect="${key}"]`);
+    await expect(layer).toBeVisible();
+    await expect(layer).toHaveCSS('pointer-events','none');
+    await expect(page.locator('.chaos-status-layer:not([hidden])')).toHaveCount(1);
+  }
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,poison_ticks:2,burn_ticks:2,protection_left:2}));
+  await page.screenshot({path:testInfo.outputPath('combined-screen-effects.png')});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,burn_ticks:2}));
+  await expect(page.locator('[data-effect="burn_ticks"].chaos-status-layer .chaos-effect-particle').first()).toHaveCSS('animation-name','none');
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,burn_ticks:2,paused:true}));
+  await expect(page.locator('.chaos-status-layer:not([hidden])')).toHaveCount(0);
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,burn_ticks:2,over:true}));
+  await expect(page.locator('.chaos-status-layer:not([hidden])')).toHaveCount(0);
+  await page.evaluate(()=>updateChaosEffects({...screenTestBase,burn_ticks:2,difficulty:'easy'}));
+  await expect(page.locator('.chaos-status-layer:not([hidden])')).toHaveCount(0);
+  expect(errors).toEqual([]);
 });

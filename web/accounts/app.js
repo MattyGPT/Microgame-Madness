@@ -79,8 +79,10 @@ const AccountApp = (() => {
     },
   };
   class App {
-    constructor({ getProfile, applyProfile, isPlaying, config, onCode, onIdentityLoss }) {
+    constructor({ getProfile, applyProfile, isPlaying, config, onCode, onIdentityLoss, getSoundPreference, onSoundPreference }) {
       this.getProfile = getProfile;
+      this.getSoundPreference = getSoundPreference;
+      this.onSoundPreference = onSoundPreference;
       this.applyProfile = applyProfile;
       this.isPlaying = isPlaying;
       this.configPromise = Promise.resolve(config);
@@ -232,7 +234,9 @@ const AccountApp = (() => {
       });
       this.track(task);
     }
-    async setting(changes) {
+    async setting(changes, { localSoundIntent = true } = {}) {
+      if (localSoundIntent && typeof changes.soundOn === 'boolean')
+        this.onSoundPreference?.(changes.soundOn);
       const generation = this.controller.generation;
       await this.settle();
       this.checkIdentity(generation);
@@ -488,7 +492,7 @@ const AccountApp = (() => {
       if (!configured) this.$('account-status').textContent += ' · Cloud accounts are not connected yet';
       if (force || !this.nodes.panel.open) {
         this.$('account-name').value = profile.player || 'Player';
-        this.$('account-sound').checked = profile.preferences?.soundOn !== false;
+        this.$('account-sound').checked = this.getSoundPreference?.() ?? (profile.preferences?.soundOn !== false);
         this.$('account-motion').checked = !!profile.preferences?.reducedMotion;
         this.$('account-ranking').checked = !!profile.privacy?.leaderboard;
         this.$('account-public').checked = !!profile.privacy?.publicProfile;

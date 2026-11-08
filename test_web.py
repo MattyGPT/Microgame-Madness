@@ -15,7 +15,7 @@ from boss_crush import BossCrush, BOSS_DIFFICULTIES
 from pumpkin_king import PumpkinKing, PUMPKIN_DIFFICULTIES
 from kings_wrath import KingsWrath, RANDOM_ORDER, WRATH_ATTACKS
 from web.bridge import BrowserGame
-from scripts.build_web import build, leaderboard_config, PYTHON_SOURCES
+from scripts.build_web import build, leaderboard_config, language_chart, PYTHON_SOURCES
 
 
 class SharedRulesTests(unittest.TestCase):
@@ -364,6 +364,20 @@ class PackagingTests(unittest.TestCase):
                     with self.subTest(content=content), self.assertRaises(ValueError):
                         build()
                     self.assertEqual(previous.read_text(), "Last good build")
+
+    def test_language_chart_recounts_shipped_sources_and_ignores_media(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / "app.js").write_bytes(b"x" * 30)
+            (output / "game.py").write_bytes(b"x" * 20)
+            (output / "tour.webm").write_bytes(b"x" * 1000)
+            first = language_chart(output, "x" * 50)
+            self.assertIn('data-language="JavaScript" data-bytes="30"', first)
+            self.assertIn('30.0%', first)
+            (output / "new.js").write_bytes(b"x" * 100)
+            updated = language_chart(output, "x" * 50)
+            self.assertIn('data-language="JavaScript" data-bytes="130"', updated)
+            self.assertIn('65.0%', updated)
 
     def test_package_contains_only_allowlisted_browser_files(self):
         with tempfile.TemporaryDirectory() as directory:

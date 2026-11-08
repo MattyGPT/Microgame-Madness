@@ -105,11 +105,12 @@ test('setup can be skipped and reduced-motion tour videos wait for play', async 
 });
 
 
-test('greeting song is available in Jukebox and preview restores music when closed', async ({page})=>{
+test('greeting song is selectable in the jukebox but excluded from arcade shuffle', async ({page})=>{
   await welcome(page);await page.locator('#welcome-next').click();
   await expect.poll(()=>page.evaluate(()=>musicPlayer?.track)).toBe('cubie_hello');
   await page.locator('#welcome-close').click();
   expect(await page.evaluate(()=>musicPlayer.theme)).toBe('arcade');
+  expect(await page.evaluate(()=>musicPlayer.track)).not.toBe('cubie_hello');
   await page.locator('[data-game="jukebox"]').click();
   await expect(page.locator('[data-difficulty="cubie_hello"]')).toContainText('Hello, New Friend!');
   await page.locator('[data-difficulty="cubie_hello"]').click();
@@ -118,4 +119,5 @@ test('greeting song is available in Jukebox and preview restores music when clos
   await page.locator('#account-open').click();await page.locator('#account-welcome').click();
   await expect(page.locator('#welcome-dialog')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>musicPlayer?.playing)).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>musicPlayer?.track)).toBe('cubie_hello');
 });

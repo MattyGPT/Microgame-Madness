@@ -168,7 +168,8 @@ class TurtleDodge:
         self.lunge_warning = self.pen()
         self.hud = self.pen()
         self.message = self.pen()
-        border = self.pen()
+        border = self.arena_border = self.pen()
+        self.arena_border_state = None
         border.color("#ffffff" if isinstance(self.game, DodgeGame) and self.game.difficulty == "impossible" else "#ff3030" if self.game.rules.deadly_edges else "#43536b")
         left, right, bottom, top = self.game.rules.bounds
         border.goto(left, bottom)
@@ -360,6 +361,18 @@ class TurtleDodge:
                 self.finish_round()
         elif self.state == "dying" and now-self.death_started >= DEATH_DURATION:
             self.finish_round()
+        if isinstance(self.game, DodgeGame) and self.game.difficulty == 'chaos':
+            bounds = (self.game.left, self.game.right, self.game.bottom, self.game.top)
+            border_state = (bounds, bool(self.game.danger_edge_left))
+            if border_state != self.arena_border_state:
+                self.arena_border_state = border_state
+                border = self.arena_border
+                border.clear(); border.penup()
+                border.color('#ff4565' if self.game.danger_edge_left else '#43536b')
+                left, right, bottom, top = bounds
+                border.goto(left, bottom); border.pendown()
+                for point in ((right,bottom),(right,top),(left,top),(left,bottom)): border.goto(*point)
+                border.penup()
         self.player.goto(self.game.x, self.game.y)
         self.blocks.clear()
         self.blocks.clearstamps()
@@ -396,7 +409,7 @@ class TurtleDodge:
                             self.blocks.stamp()
                 if self.game.difficulty == "chaos":
                     from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, CATALOG
-                    if block.kind == 'fan':
+                    if block.kind in ('fan', 'giga_fan'):
                         from dodge_model import fan_blades
                         for blade in fan_blades(block):
                             self.blocks.color('#ff4055', block.color)

@@ -54,6 +54,40 @@ def leaderboard_config():
     return {"url": url, "key": key}
 
 
+def language_chart(output, html_source):
+    """Measure first-party source shipped to browsers; omit assets and vendors.
+
+    Use the HTML template rather than the generated chart to avoid counting the
+    chart's own output. Reading the built files includes newly shipped modules.
+    """
+    languages = {".py": ("Python", "#66b9ff"), ".js": ("JavaScript", "#f4d66c"),
+                 ".css": ("CSS", "#b39aff"), ".html": ("HTML", "#ff937c")}
+    counts = {suffix: 0 for suffix in languages}
+    counts[".html"] = len(html_source.encode("utf-8"))
+    for path in output.rglob("*"):
+        if path.is_file() and path.suffix in counts and path.name != "index.html":
+            counts[path.suffix] += path.stat().st_size
+    total = sum(counts.values())
+    if not total:
+        return ""
+    stops, rows, start = [], [], 0
+    for suffix, (name, color) in languages.items():
+        amount = counts[suffix]
+        share = amount / total * 100
+        end = start + share
+        stops.append(f"{color} {start:.6f}% {end:.6f}%")
+        rows.append(f'<li data-language="{name}" data-bytes="{amount}">'
+                    f'<span class="language-swatch" style="--language-color:{color}"></span>'
+                    f'<span>{name}</span><strong>{share:.1f}%</strong></li>')
+        start = end
+    return ('<section class="language-breakdown" aria-labelledby="language-heading">'
+            '<h3 id="language-heading">Behind the games</h3>'
+            '<div class="language-pie" aria-hidden="true" style="background:conic-gradient('
+            + ','.join(stops) + ')"></div><ul class="language-legend">' + ''.join(rows)
+            + '</ul><p>Website source by file size. Recalculated every build. '
+            'Images, videos, and third-party libraries excluded.</p></section>')
+
+
 def build():
     config = leaderboard_config()  # Validate before replacing the last good build.
     if not config["url"]:
@@ -88,7 +122,6 @@ def build():
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     shutil.copytree(ROOT / "web" / "accounts" / "tours", OUTPUT / "accounts" / "tours")
-    (OUTPUT / "index.html").write_text(html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
     python_dir = OUTPUT / "python"
     python_dir.mkdir()
@@ -96,6 +129,9 @@ def build():
         shutil.copy2(ROOT / name, python_dir / name)
     shutil.copy2(ROOT / "web" / "bridge.py", python_dir / "bridge.py")
     (OUTPUT / "python-files.json").write_text(json.dumps([*PYTHON_SOURCES, "bridge.py"]) + "\n")
+    chart = language_chart(OUTPUT, (ROOT / "web" / "index.html").read_text())
+    html = html.replace("<!-- LANGUAGE_BREAKDOWN -->", chart)
+    (OUTPUT / "index.html").write_text(html)
     (OUTPUT / ".nojekyll").touch()
     print(f"Built browser game in {OUTPUT}")
 

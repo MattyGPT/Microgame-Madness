@@ -780,7 +780,7 @@ const ArcadeMusic = (() => {
   for (const [id, title, bpm, progression, bars, options] of arcadeJourneys) {
     scores[id] = song(title, bpm, progression, bars, options);
   }
-  const loopThemes = ["chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
+  const loopThemes = ["cubie_hello", "chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))

@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 47);
+  assert.equal(arcadeTracks.length, 46);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 47);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 46);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('forty-seven distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 47);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 47);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 47);
+test('forty-six distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 46);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 46);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 46);
   assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
   assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
@@ -582,4 +582,20 @@ test('new arcade tempos and cinematic aftermath are available with safe, louder 
   assert.equal(player.current.gain.gain.value, .36);
   player.setState({theme:'arcade', playing:true});
   assert.equal(player.current.gain.gain.value, .22);
+});
+
+
+test('welcome music plays in its cutscene and jukebox but stays out of arcade shuffle', () => {
+  assert.ok(!arcadeTracks.some(track => track.id === 'cubie_hello'));
+  assert.ok(jukeboxTracks.some(track => track.id === 'cubie_hello'));
+  const player = new Player(context());
+  player.buffer = () => ({duration: 60});
+  player.setState({theme:'cubie_hello', playing:true});
+  assert.equal(player.track, 'cubie_hello');
+  assert.equal(player.current.source.loop, true);
+  player.setState({theme:'arcade', playing:true});
+  assert.notEqual(player.track, 'cubie_hello');
+  player.setState({theme:'jukebox:cubie_hello', playing:true});
+  assert.equal(player.track, 'cubie_hello');
+  assert.equal(player.current.source.loop, true);
 });

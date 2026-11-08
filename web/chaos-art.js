@@ -6,6 +6,15 @@ const ChaosArt = (() => {
     thunder: 'M7 28C-2 28-2 14 6 13C3 3 16-2 21 7C29 3 34 13 29 18C36 25 28 31 23 28Z',
   };
   const paths = {
+    amber: 'M9 2h14l7 14-7 14H9L2 16ZM20 16a4 4 0 1 1-8 0 4 4 0 0 1 8 0M8 9l5-3M23 23l-4 3',
+    anti_gravity: 'M16 29V3M6 13 16 3l10 10M5 27h5M22 27h5',
+    target_lock: 'M27 16a11 11 0 1 1-22 0 11 11 0 0 1 22 0M16 1v10M16 21v10M1 16h10M21 16h10',
+    danger_edge: 'M3 3h26v26H3ZM14 8h4v12h-4ZM14 24h4',
+    arena_shrink: 'M3 3h8v3H6v5H3ZM21 3h8v8h-3V6h-5ZM3 21h3v5h5v3H3ZM26 21h3v8h-8v-3h5Z',
+    project_mayhem: 'M3 3h26v26H3ZM16 7l10 18H6ZM16 14v5M16 22v1',
+    project_chaos: 'M3 3h26v26H3ZM24 16a8 8 0 1 1-16 0 8 8 0 0 1 16 0M16 5v22M5 16h22',
+    giga_fan: 'M25 16a9 9 0 1 1-18 0 9 9 0 0 1 18 0M20 16a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+    horizontal: 'M3 16h26M9 9l-7 7 7 7M23 9l7 7-7 7',
     bandage: 'M5 13 13 5l14 14-8 8ZM12 12l8 8M9 16l7-7M16 23l7-7',
     medkit: 'M4 10h24v18H4ZM11 10V5h10v5M16 14v10M11 19h10',
     detox: 'M11 3h10M13 3v9L5 26q11 6 22 0l-8-14V3M10 23l4 3 8-9',
@@ -37,6 +46,9 @@ const ChaosArt = (() => {
     spinner: 'M24 7a12 12 0 1 0 3 15M24 2v7h-7M16 10v12M10 16h12',
     scatter: 'M16 28V4M16 21 3 8M16 21 29 8M11 9l5-5 5 5M3 14V8h6M23 8h6v6',
 
+    second_wind: 'M12 3h8v9h9v8h-9v9h-8v-9H3v-8h9ZM4 5 1 9M28 27l3-4',
+    backdraft: 'M16 2q-8 10-5 16l5-6q9 6 6 14Q8 34 5 22M24 3v10M20 9l4 4 4-4',
+    storm_shelter: 'M16 2 28 7v11q-2 8-12 12Q6 26 4 18V7ZM16 7l-5 10h6l-1 8 7-12h-6Z',
     ricochet_shield: 'M16 3 27 7v10q-1 8-11 12Q6 25 5 17V7ZM10 18l6-7 6 7M16 11v12M2 3l4 2M30 3l-4 2',
     blaster: 'M7 10h18v16H7ZM12 5h8v9h-8ZM12 20h8',
     fan: 'M21 16a5 5 0 1 1-10 0 5 5 0 0 1 10 0',
@@ -136,7 +148,7 @@ const ChaosArt = (() => {
     antidote: 'M10 4h12v6H10z M11 10l-3 5v12h16V15l-3-5 M16 16v7 M12.5 19.5h7',
     thorn: 'M13 28V8a3 3 0 0 1 6 0v20 M13 20H8q-3 0-3-3v-7 M19 16h5q3 0 3-3V7 M10 28h12 M10 11h3 M19 22h3 M2 13h3 M24 9h3',
   };
-  const helpfulKinds = new Set(['bandage','medkit','detox','coolant','compass','battery','snowglobe','sweeper','oasis','clean_slate','ricochet_shield', 'sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
+  const helpfulKinds = new Set(['second_wind','storm_shelter','amber','bandage','medkit','detox','coolant','compass','battery','snowglobe','sweeper','oasis','clean_slate','ricochet_shield', 'sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
   function outlineColor(kind, ghost = false) {
     if (kind === 'thunder') return '#ff4055';
     if (['leafy','elite_leafy'].includes(kind)) return '#ffe45c';
@@ -147,7 +159,7 @@ const ChaosArt = (() => {
   function outerOutlineColor(kind, ghost = false) {
     if (ghost) return null;
     if (helpfulKinds.has(kind)) return '#ff1493';
-    return kind === 'haste' || kind === 'curse' ? '#ffe45c' : null;
+    return ['haste','curse','target_lock','danger_edge','arena_shrink','project_mayhem','project_chaos'].includes(kind) ? '#ffe45c' : null;
   }
   const cache = new Map();
   const filled = new Set(['fire','heal','shield','ghost','bomb','doom','antidote','poison','heavy']);
@@ -158,7 +170,7 @@ const ChaosArt = (() => {
     ctx.scale(2, 2);
     const columns = Math.max(...cells.map(cell => cell[0])) + 1;
     const rows = Math.max(...cells.map(cell => cell[1])) + 1;
-    const scale = Math.min(1.3, 156 / (columns * cellSize), 86 / (rows * cellSize), kind === 'fan' ? .34 : 1.3);
+    const scale = Math.min(1.3, 156 / (columns * cellSize), 86 / (rows * cellSize), kind === 'giga_fan' ? .14 : kind === 'fan' ? .34 : 1.3);
     const step = cellSize * scale, size = step * .94;
     const left = (180 - (columns - 1) * step) / 2;
     const bottom = (110 + (rows - 1) * step) / 2;
@@ -186,7 +198,11 @@ const ChaosArt = (() => {
     const fill = ['elite_leafy','elite_turbo'].includes(kind) ? palette[Math.floor((time+1e-9)*10)%palette.length] : color;
     let x = Math.sin(time*2)*5, y = ((time * (block.preview_speed || 100)/100)%2-1)*10;
     let warning = false, target = null, strike = false;
-    if (['glitch','elite_glitch'].includes(kind)) {
+    if (kind === 'anti_gravity') {
+      y = 20-(time*.4%1)*40;
+    } else if (kind === 'horizontal') {
+      x = (time*.25%1)*100-50; y = 0;
+    } else if (['glitch','elite_glitch'].includes(kind)) {
       const duration = kind === 'glitch' ? 1.2 : 1;
       const tick = time%(1+duration*3+1);
       const positions = [[-30,-12],[28,12],[-20,15],[24,-14]];
@@ -227,7 +243,7 @@ const ChaosArt = (() => {
     ctx.save(); ctx.clearRect(0,0,180,110);
     ctx.beginPath(); ctx.rect(0,0,180,110); ctx.clip();
     const columns = Math.max(...cells.map(c=>c[0]))+1, rows = Math.max(...cells.map(c=>c[1]))+1;
-    const scale = Math.min(1, 102/(columns*cellSize), 60/(rows*cellSize), kind==='fan' ? .34 : 1);
+    const scale = Math.min(1, 102/(columns*cellSize), 60/(rows*cellSize), kind==='giga_fan' ? .14 : kind==='fan' ? .34 : 1);
     const unit = cellSize*scale, size=unit*.94;
     const cx=90+s.x, cy=53+s.y, left=cx-(columns-1)*unit/2, bottom=cy+(rows-1)*unit/2;
     const fields = ['black_hole','repulsor','block_attractor','block_repulsor','gravity_well','force_wave','vortex','chaos_nexus'];
@@ -241,6 +257,24 @@ const ChaosArt = (() => {
         ctx.fillStyle=color;ctx.beginPath();ctx.arc(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r,1.8,0,Math.PI*2);ctx.fill();
       }
       if(kind==='chaos_nexus') {ctx.fillStyle=color;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText(['PULL YOU','PUSH YOU','PULL BLOCKS','PUSH BLOCKS'][Math.floor(time)%4],90,105);}
+    }
+    if (['target_lock','danger_edge','arena_shrink','project_mayhem','project_chaos'].includes(kind)) {
+      const shrinking=['arena_shrink','project_mayhem','project_chaos'].includes(kind);
+      const inset=shrinking?8+(1-Math.cos(time*2))*9:8;
+      ctx.strokeStyle=['danger_edge','project_mayhem','project_chaos'].includes(kind)?'#ff4565':'#c69be9';
+      ctx.lineWidth=2;ctx.strokeRect(inset,inset,180-inset*2,110-inset*2);
+      if(['target_lock','project_chaos'].includes(kind)) for(const side of [-1,1]) {
+        const px=90+side*(60-(time%1)*35);ctx.fillStyle=color;ctx.fillRect(px-3,50,6,6);
+      }
+    }
+    if (kind==='amber') {
+      const flight = cycle<1 ? cycle : cycle<4 ? 1 : cycle-3;
+      for(let i=0;i<5;i++) {
+        const px=25+i*28, py=15+(flight*25+i*9)%65;
+        ctx.fillStyle=cycle>=1&&cycle<4?'#efbe62':'#ffe394';
+        ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();
+        if(cycle>=1&&cycle<4){ctx.strokeStyle='#efbe6288';ctx.strokeRect(px-5,py-5,10,10);}
+      }
     }
     if (s.target) {
       ctx.strokeStyle='#fff29e';ctx.setLineDash([3,3]);ctx.strokeRect(90+s.target[0]-size/2,53+s.target[1]-size/2,size,size);ctx.setLineDash([]);
@@ -328,15 +362,16 @@ const ChaosArt = (() => {
     ctx.restore();
   }
   function draw(ctx, kind, x, y, size, ghost = false, color = '#152033', age = 0, cannons = null) {
-    if (kind === 'fan' || ['blaster','crossbow','diagonal','spinner','scatter'].includes(kind)) {
+    if (['fan','giga_fan'].includes(kind) || ['blaster','crossbow','diagonal','spinner','scatter'].includes(kind)) {
       const full = size/.82;
       ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = color; ctx.strokeStyle = outlineColor(kind); ctx.lineWidth = 2;
-      const angles = kind === 'fan' ? [0, 1, 2].map(i => -(age*2*Math.PI*.9/2.4+i*2*Math.PI/3)) : (cannons || [Math.PI/2]).map(a => -a);
+      const angles = ['fan','giga_fan'].includes(kind) ? [0, 1, 2].map(i => -(age*2*Math.PI/3.75+i*2*Math.PI/3)) : (cannons || [Math.PI/2]).map(a => -a);
       for (const angle of angles) {
         ctx.save(); ctx.rotate(angle); ctx.beginPath();
-        if (kind === 'fan') {
-          ctx.moveTo(full*.2, full*.12); ctx.lineTo(full*3.2, full*.3); ctx.lineTo(full*3.2, -full*.3);
+        if (kind === 'fan' || kind === 'giga_fan') {
+          const tip = kind === 'giga_fan' ? 8.2 : 3.2;
+          ctx.moveTo(full*.2, full*.12); ctx.lineTo(full*tip, full*.3); ctx.lineTo(full*tip, -full*.3);
         } else {
           ctx.rect(full*.2, -full*.13, full*.6, full*.26);
         }

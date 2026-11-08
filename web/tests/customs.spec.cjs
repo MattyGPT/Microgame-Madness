@@ -10,8 +10,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(189);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 189 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(192);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 192 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();
@@ -102,7 +102,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('[data-game="customs"]').click();
-  await expect(page.locator('#customs-count')).toHaveText('124 / 189 Customs unlocked');
+  await expect(page.locator('#customs-count')).toHaveText('124 / 192 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');
@@ -221,7 +221,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     expect(order.actual).toEqual(order.expected);
   };
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(65);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(68);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');

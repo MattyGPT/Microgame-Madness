@@ -7,6 +7,16 @@ from web.bridge import BrowserGame
 
 
 class ChaosTests(unittest.TestCase):
+    def test_guide_dispositions_cover_every_block_and_mixed_effects(self):
+        for block in catalog():
+            self.assertIn(block['disposition'], {'harmful', 'neutral', 'helpful'})
+        for kind in ('electric', 'haste', 'thunder', 'leafy', 'target_lock', 'doom'):
+            self.assertEqual(CATALOG[kind]['disposition'], 'harmful', kind)
+        for kind in ('weak', 'mystery', 'elite_leafy', 'elite_turbo'):
+            self.assertEqual(CATALOG[kind]['disposition'], 'neutral', kind)
+        for kind in ('heal', 'turbo', 'amber', 'ricochet_shield', 'bandage', 'sanctuary'):
+            self.assertEqual(CATALOG[kind]['disposition'], 'helpful', kind)
+
     def game(self):
         game = DodgeGame(random.Random(42), 'chaos')
         game.spawn_in = 999
@@ -14,6 +24,234 @@ class ChaosTests(unittest.TestCase):
 
     def block(self, game, kind, **extra):
         return Block(game.x, game.y, ((0, 0),), CATALOG[kind]['color'], kind=kind, **extra)
+
+    def test_second_wind_regenerates_and_refreshes_without_stacking(self):
+        game = self.game()
+        game.lives = 1
+        game.chaos_contact(self.block(game, 'second_wind'))
+        game.update(.5, set())
+        self.assertEqual(game.lives, 1)
+        game.chaos_contact(self.block(game, 'second_wind'))
+        game.update(.5, set())
+        self.assertEqual(game.lives, 2)
+        game.update(3.51, set())
+        self.assertEqual(game.lives, 5)
+        self.assertEqual(game.regeneration_left, 0)
+        game.update(.5, set())
+        self.assertEqual(game.lives, 5)
+        game.lives = 7.5
+        game.chaos_contact(self.block(game, 'second_wind'))
+        game.update(1, set())
+        self.assertEqual(game.lives, 8)
+
+    def test_second_wind_four_ticks_and_pause(self):
+        game = self.game()
+        game.lives = 2
+        game.chaos_contact(self.block(game, 'second_wind'))
+        game.update(4.01, set())
+        self.assertEqual(game.lives, 6)
+        self.assertEqual(game.regeneration_left, 0)
+        session = BrowserGame(); session.start('dodge', 'chaos', 0)
+        session.game.chaos_contact(self.block(session.game, 'second_wind'))
+        self.assertEqual(session.snapshot()['regeneration_left'], 4)
+        session.dispatch({'action': 'pause'})
+        session.dispatch({'action': 'tick', 'dt': 1})
+        self.assertEqual(session.game.regeneration_left, 4)
+
+    def test_backdraft_and_storm_shelter(self):
+        game = self.game()
+        game.chaos_contact(self.block(game, 'backdraft'))
+        self.assertEqual((game.lives, game.burn_ticks, game.curse_left), (7, 2, 3))
+        for protection in ('shield', 'invulnerable'):
+            game = self.game()
+            setattr(game, protection, 1)
+            game.chaos_contact(self.block(game, 'backdraft'))
+            self.assertEqual((game.lives, game.burn_ticks, game.curse_left), (8, 0, 0))
+        game = self.game()
+        game.chaos_contact(self.block(game, 'storm_shelter'))
+        self.assertEqual((game.protection_left, game.invulnerable, game.repellent_left), (3, 3, 3))
+        game.chaos_contact(self.block(game, 'backdraft'))
+        self.assertEqual((game.lives, game.burn_ticks, game.curse_left), (8, 0, 0))
+
+    def test_pickup_protection_is_distinct_from_damage_grace(self):
+        for kind, duration in [('bubble',2),('aegis',1.5),('clean_slate',.75)]:
+            game=self.game()
+            game.chaos_damage(1,'normal')
+            self.assertEqual(game.protection_left,0)
+            self.assertGreater(game.invulnerable,0)
+            game.chaos_contact(self.block(game,kind))
+            self.assertEqual(game.protection_left,duration)
+            self.assertGreaterEqual(game.invulnerable,duration)
+            game.update(duration+.01,set())
+            self.assertEqual(game.protection_left,0)
+        game=self.game();game.shield=True
+        game.chaos_damage(1,'normal')
+        self.assertEqual(game.protection_left,0)
+
+    def test_overlap_screen_statuses_include_both_elite_effects(self):
+        session=BrowserGame();session.start('dodge','chaos',0)
+        game=session.game
+        game.blocks=[self.block(game,'elite_leafy'),self.block(game,'elite_turbo')]
+        state=session.snapshot()
+        self.assertTrue(state['leafy_active'])
+        self.assertTrue(state['turbo_active'])
+        self.assertEqual(state['protection_left'],0)
+        game.x+=200
+        state=session.snapshot()
+        self.assertFalse(state['leafy_active'])
+        self.assertFalse(state['turbo_active'])
+
+    def test_amber_freezes_existing_and_new_pellets_then_releases_them(self):
+        game=self.game()
+        game.x=game.y=0
+        pellet=Block(100,100,((0,0),),'#fff',cell_size=7,kind='blaster_pellet',velocity_x=240)
+        game.pellets=[pellet]
+        game.chaos_contact(self.block(game,'amber'))
+        self.assertEqual((game.lives,game.pellet_freeze_left),(8,3))
+        game.update(.5,set())
+        self.assertEqual((pellet.x,pellet.y),(100,100))
+        blaster=game.make_chaos_block('blaster')
+        blaster.x,blaster.y,blaster.shot_in=100,100,0
+        game.update_blaster(blaster,.01)
+        positions=[(p.x,p.y) for p in game.pellets]
+        game.update(.5,set())
+        self.assertEqual([(p.x,p.y) for p in game.pellets],positions)
+        game.chaos_contact(self.block(game,'amber'))
+        self.assertEqual(game.pellet_freeze_left,3)
+        game.update(3.01,set())
+        self.assertEqual(game.pellet_freeze_left,0)
+        self.assertGreater(pellet.x,100)
+
+    def test_frozen_pellet_still_hurts_on_contact(self):
+        game=self.game()
+        game.chaos_contact(self.block(game,'amber'))
+        pellet=Block(game.x,game.y,((0,0),),'#fff',cell_size=7,kind='blaster_pellet',velocity_x=240)
+        game.pellets=[pellet]
+        game.update_pellets(.01)
+        self.assertEqual(game.lives,7.5)
+        self.assertEqual(game.pellets,[])
+
+    def test_anti_gravity_spawns_below_rises_and_exits_top(self):
+        game = self.game()
+        game.spawn_chaos('anti_gravity')
+        block = game.blocks[0]
+        block.x = 150
+        self.assertLess(max(y for x,y in block.centers())+block.size/2, game.bottom)
+        before = block.y
+        game.update(.01,set())
+        self.assertGreater(block.y,before)
+        self.assertIn(block,game.blocks)
+        game.stasis_left = 1
+        before = block.y
+        game.update(.01,set())
+        self.assertEqual(block.y,before)
+        game.stasis_left = 0
+        block.y = game.top+block.size
+        game.update(.01,set())
+        self.assertNotIn(block,game.blocks)
+        self.assertEqual(game.dodged,1)
+
+    def test_target_lock_steers_even_sideways_blocks_and_expires(self):
+        game = self.game()
+        game.x = game.y = 0
+        game.chaos_contact(self.block(game,'target_lock'))
+        self.assertEqual(game.target_lock_left,6)
+        self.assertEqual(game.lives,8)
+        block = Block(100,100,((0,0),),'#fff',kind='horizontal',velocity_x=1,speed_multiplier=.5)
+        game.blocks=[block]
+        game.update(.1,set())
+        self.assertLess(block.x,100)
+        game.target_lock_left=.01
+        before=block.x
+        game.update(.02,set())
+        self.assertEqual(game.target_lock_left,0)
+        before=block.x
+        game.update(.02,set())
+        self.assertGreater(block.x,before)
+
+    def test_danger_edges_ignore_shield_protection_and_expire(self):
+        from dodge_model import PLAYER_RIGHT
+        for expired in (False,True):
+            game=self.game()
+            game.chaos_contact(self.block(game,'danger_edge'))
+            self.assertEqual(game.danger_edge_left,6)
+            game.shield=True;game.invulnerable=10
+            game.x=game.right-PLAYER_RIGHT-1
+            if expired: game.danger_edge_left=.001
+            game.update(.02,{'Right'})
+            self.assertEqual(game.alive,expired)
+            if not expired:
+                self.assertEqual((game.lives,game.death_cause),(0,'edge'))
+
+    def test_arena_pickups_resize_safely_and_restore_with_timers(self):
+        for kind, lock, lethal in [('arena_shrink',False,False),('project_mayhem',False,True),('project_chaos',True,True)]:
+            game=self.game()
+            game.x,game.y=280,-220
+            game.chaos_contact(self.block(game,kind))
+            self.assertEqual((game.left,game.right,game.bottom,game.top),DIFFICULTIES['merciless'].bounds)
+            self.assertTrue(game.alive)
+            self.assertEqual(game.lives,8)
+            self.assertEqual(game.arena_shrink_left,3)
+            self.assertEqual(bool(game.target_lock_left),lock)
+            self.assertEqual(bool(game.danger_edge_left),lethal)
+            game.update(3.01,set())
+            self.assertEqual((game.left,game.right,game.bottom,game.top),DIFFICULTIES['chaos'].bounds)
+            self.assertEqual((game.target_lock_left,game.danger_edge_left,game.arena_shrink_left),(0,0,0))
+            self.assertTrue(game.alive)
+
+    def test_arena_effects_are_exported_and_pause_freezes_them(self):
+        session=BrowserGame();session.start('dodge','chaos',0)
+        game=session.game
+        game.chaos_contact(self.block(game,'project_chaos'))
+        state=session.snapshot()
+        self.assertEqual(state['bounds'],list(DIFFICULTIES['merciless'].bounds))
+        for field in ('target_lock_left','danger_edge_left','arena_shrink_left'):
+            self.assertEqual(state[field],3)
+        session.dispatch({'action':'pause'})
+        session.dispatch({'action':'tick','dt':2})
+        self.assertEqual(game.arena_shrink_left,3)
+
+    def test_horizontal_spawns_from_both_sides_at_half_base_speed(self):
+        sides = set()
+        for seed in range(30):
+            game = DodgeGame(random.Random(seed), 'chaos')
+            game.spawn_in = 999
+            game.spawn_chaos('horizontal')
+            block = game.blocks[0]
+            sides.add(block.velocity_x)
+            self.assertEqual(CATALOG['horizontal']['rarity'], 'Common')
+            self.assertAlmostEqual(game.chaos_fall_speed(block), game.speed*.5)
+            if block.velocity_x > 0:
+                self.assertLess(max(x for x,y in block.centers())+block.size/2, game.left)
+            else:
+                self.assertGreater(min(x for x,y in block.centers())-block.size/2, game.right)
+            before_x, before_y = block.x, block.y
+            game.update(.01, set())
+            self.assertGreater((block.x-before_x)*block.velocity_x, 0)
+            self.assertEqual(block.y, before_y)
+            self.assertIn(block, game.blocks)
+        self.assertEqual(sides, {-1,1})
+
+    def test_horizontal_crossing_damage_exit_and_speed_effects(self):
+        for direction in (-1,1):
+            game = self.game()
+            block = self.block(game, 'horizontal', speed_multiplier=.5, velocity_x=direction)
+            game.slowfall_left = 4
+            self.assertAlmostEqual(game.chaos_fall_speed(block), game.speed*.5*.6)
+            game.curse_left = 4
+            self.assertAlmostEqual(game.chaos_fall_speed(block), game.speed*.5*.6*1.4)
+            game.stasis_left = 2
+            self.assertGreater(game.chaos_fall_speed(block), 0)
+            game.blocks = [block]
+            game.update(.01,set())
+            self.assertEqual(game.lives, 7)
+            self.assertNotIn(block, game.blocks)
+            block.y = 100
+            block.x = game.right+block.size if direction > 0 else game.left-block.size
+            game.blocks = [block]
+            game.update(.01,set())
+            self.assertNotIn(block, game.blocks)
+            self.assertEqual(game.dodged, 1)
 
     def test_spawn_tickets_match_guide_exactly_and_total_one_hundred(self):
         from fractions import Fraction
@@ -48,7 +286,7 @@ class ChaosTests(unittest.TestCase):
         self.assertEqual(len(EXPANSION_TYPES), 30)
         names = {row[0] for row in EXPANSION_TYPES}
         self.assertEqual(len(names), 30)
-        self.assertEqual(names, set(PICKUP_EFFECTS)|set(CONTACT_EFFECTS)|set(MOTION_BLOCKS)|set(TURRET_BLOCKS))
+        self.assertEqual(names | {'second_wind', 'storm_shelter', 'backdraft'}, set(PICKUP_EFFECTS)|set(CONTACT_EFFECTS)|set(MOTION_BLOCKS)|set(TURRET_BLOCKS))
         for kind in names:
             game = self.game()
             game.spawn_chaos(kind)
@@ -284,6 +522,33 @@ class ChaosTests(unittest.TestCase):
             self.assertEqual(game.overlap_speed(game), 1)
             self.assertEqual((game.haste_left, game.frost_left), (0, 0))
 
+    def test_giga_fan_blades_eight_times_original_with_matching_damage(self):
+        from dodge_model import fan_blades, touches_block
+        game = self.game()
+        game.spawn_chaos('giga_fan')
+        block = game.blocks[0]
+        block.x = block.y = 0
+        block.sway_amplitude = block.speed_multiplier = 0
+        self.assertEqual(block.cells, ((0,0),))
+        first = fan_blades(block)[0]
+        self.assertAlmostEqual(first[1][0]-first[0][0], block.size*8)
+        self.assertTrue(touches_block(230, 0, block))
+        self.assertFalse(touches_block(270, 0, block))
+        game.x, game.y = 150, 0
+        game.update(.001, set())
+        self.assertEqual(game.lives, 7)
+        self.assertIn(block, game.blocks)
+        block.age = 3.75
+        for a,b in zip(first,fan_blades(block)[0]):
+            self.assertAlmostEqual(a[0],b[0])
+            self.assertAlmostEqual(a[1],b[1])
+        block.y = game.bottom-100
+        game.update(.001, set())
+        self.assertIn(block, game.blocks)
+        block.y = game.bottom-280
+        game.update(.001, set())
+        self.assertNotIn(block, game.blocks)
+
     def test_fan_long_blades_collide_and_stay_until_they_leave_arena(self):
         from dodge_model import fan_blades, touches_block
         game = self.game()
@@ -313,7 +578,7 @@ class ChaosTests(unittest.TestCase):
         game.update(.001, set())
         self.assertEqual(game.lives, 7)
         self.assertIn(block, game.blocks)
-        block.age = 2.4/.9
+        block.age = 3.75
         for before, after in zip(initial, fan_blades(block)):
             for a, b in zip(before, after):
                 self.assertAlmostEqual(a[0], b[0])
@@ -1068,7 +1333,7 @@ class ChaosTests(unittest.TestCase):
         self.assertEqual(block.warning_left, before)
 
     def test_nine_new_types_and_slowed_speed_limit(self):
-        self.assertEqual(len(CATALOG), 120)
+        self.assertEqual(len(CATALOG), 132)
         game = self.game()
         for elapsed in (0, 30, 200):
             game.elapsed = elapsed
@@ -1162,6 +1427,10 @@ class ChaosTests(unittest.TestCase):
             b = game.blocks[0]
             speeds.append(b.speed_multiplier); sizes.add(round(b.cell_size, 1)); sways.add(round(b.sway_amplitude)); kinds.append(b.kind)
             for x, y in b.centers():
+                if b.kind == 'horizontal':
+                    self.assertGreaterEqual(y-b.cell_size/2, game.bottom-1e-9)
+                    self.assertLessEqual(y+b.cell_size/2, game.top+1e-9)
+                    continue
                 self.assertGreaterEqual(x-b.cell_size/2, game.left-1e-9)
                 self.assertLessEqual(x+b.cell_size/2, game.right+1e-9)
         self.assertLess(min(speeds), 1)

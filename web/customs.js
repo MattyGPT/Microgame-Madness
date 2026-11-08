@@ -566,6 +566,15 @@ const CubieCustoms = (() => {
     ["solar_seraph", "Solar Seraph Cubie", 2400, "empyrorite", "#e8c98e", "Carries dawn beneath both wings.", "<g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;\"><ellipse cx=\"60\" cy=\"12\" rx=\"24\" ry=\"7\" fill=\"none\" stroke=\"#ffecac\" stroke-width=\"3\"/><path d=\"M26 45v43m68-43v43\" fill=\"none\" stroke=\"#fff5ce\" stroke-width=\"2\" stroke-linecap=\"round\" /></g><path d=\"M23 94 41 88l19 12 19-12 18 6-18 13-19-7-19 7Z\" fill=\"#f6e4bb\" />", {"back": "<g class=\"cubie-motion motion-wing\" style=\"transform-origin:60px 54px;animation-duration:3s\"><path d=\"M23 71Q-5 61 1 20l12 13 1-23 14 22 6-17 13 34M97 71q28-10 22-51l-12 13-1-23-14 22-6-17-13 34\" fill=\"#fff0ce\" stroke=\"#d8b576\" stroke-width=\"2\"/><path d=\"M12 40 27 61m81-21L93 61\" fill=\"none\" stroke=\"#e6c383\" stroke-width=\"2\" stroke-linecap=\"round\" /></g>"}],
     ["star_cartographer", "Star Cartographer Cubie", 2800, "empyrorite", "#637d9b", "Maps every star. Leaves room for new wishes.", "<path d=\"M23 34h74v68H23Z\" fill=\"#405b7a\" /><path d=\"M29 40 45 35l17 8 23-6 7 9M28 92l18 7 22-9 23 10\" fill=\"none\" stroke=\"#86bbcd\" stroke-width=\"1.5\" stroke-linecap=\"round\" /><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.0s\"><circle cx=\"29\" cy=\"40\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-0.7s\"><circle cx=\"45\" cy=\"35\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-1.4s\"><circle cx=\"62\" cy=\"43\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.0999999999999996s\"><circle cx=\"85\" cy=\"37\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-2.8s\"><circle cx=\"28\" cy=\"92\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-3.5s\"><circle cx=\"46\" cy=\"99\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.199999999999999s\"><circle cx=\"68\" cy=\"90\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-energy\" style=\"transform-origin:60px 68px;animation-delay:-4.8999999999999995s\"><circle cx=\"91\" cy=\"100\" r=\"2.7\" fill=\"#fff1bd\"/></g><g class=\"cubie-motion motion-spin\" style=\"transform-origin:60px 15px;animation-duration:18s\"><path d=\"m60-1 4 12 13 4-13 4-4 12-4-12-13-4 13-4Z\" fill=\"#ffe5a3\" /></g><path d=\"M21 33v70m78-70v70\" fill=\"none\" stroke=\"#c7daea\" stroke-width=\"2\" stroke-linecap=\"round\" />", {"faceColor": "#e7f4f1"}],
   ];
+  shopCustoms.push(
+    ["camera", "Camera Cubie", 350, "silver", "#779ca8", "Collects happy moments. Never asks you to stop smiling.",
+      '<path d="M22 32h76v14H22Z" fill="#334855"/><path d="M35 28V17h34l8 11" fill="#334855" stroke="#b6d3d8" stroke-width="2"/><rect x="42" y="20" width="20" height="8" rx="2" fill="#c3f4ed"/><rect x="78" y="21" width="13" height="7" rx="2" fill="#efb57c"/><circle cx="60" cy="85" r="21" fill="#334855" stroke="#d0e6e4" stroke-width="3"/><circle cx="60" cy="85" r="15" fill="#567b97" stroke="#95c7d5" stroke-width="2"/><path d="M49 81q3-9 12-8" fill="none" stroke="#d0fff3" stroke-width="3"/><path d="M25 51v45m70-45v45" stroke="#496575" stroke-width="4"/>'],
+    ["axolotl", "Axolotl Cubie", 700, "gold", "#f2b1c7", "All smiles. All gills. Always glad you are here.",
+      '<path d="M28 37q32-10 64 0M30 100q30 7 60 0" fill="none" stroke="#ffdce5" stroke-width="3"/><g fill="#d875a2"><circle cx="27" cy="79" r="2"/><circle cx="33" cy="85" r="1.5"/><circle cx="93" cy="79" r="2"/><circle cx="87" cy="85" r="1.5"/></g>',
+      { back: '<g class="cubie-motion motion-sway" style="transform-origin:60px 68px"><path d="M23 52Q-5 43 0 22q20 2 23 30M21 65Q-13 69-10 49q20-7 31 16M23 78Q-2 98-8 77q12-14 31 1M97 52q28-9 23-30-20 2-23 30M99 65q34 4 31-16-20-7-31 16M97 78q25 20 31-1-12-14-31 1" fill="#e97fa9" stroke="#ffc7d9" stroke-width="2"/><path d="M22 51 6 30m15 34-24-9m25 23L0 82M98 51l16-21M99 64l24-9m-25 23 22 4" stroke="#b95486" stroke-width="2" fill="none"/></g>' }],
+    ["hourglass", "Hourglass Cubie", 1200, "diamond", "#badbe0", "There is always time for one more little adventure.",
+      '<path d="M28 35h64L67 66v7l25 28H28l25-28v-7Z" fill="#e6f5ed" stroke="#79a4ae" stroke-width="2"/><path d="M34 40h52L60 64Z" fill="#edc477"/><path d="M32 99 60 80 88 99Z" fill="#edc477"/><path class="cubie-motion motion-energy" d="M60 65v17" stroke="#d5a452" stroke-width="2"/><path d="M24 30v74m72-74v74" stroke="#6d567d" stroke-width="5"/><path d="M16 23h88v12H16ZM16 102h88v12H16Z" fill="#80658d" stroke="#d8b7d4" stroke-width="2"/><path d="M22 27h76M22 110h76" stroke="#f3d8ae" stroke-width="2"/>'],
+  );
   for (const [id, name, price, tier, color, flavor, detail, layers = {}] of shopCustoms)
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
   add("shop_puzzle_cube", "Puzzle Cube Cubie", null, "#548eea",
@@ -1822,6 +1831,19 @@ const CubieCustoms = (() => {
         `<g clip-path="url(#${clipId})"><g transform="rotate(45 60 68)"><g class="cubie-rainbow-stripes">${stripes}</g></g></g>` +
         '<path d="m13 10 3 8 8 3-8 3-3 8-3-8-8-3 8-3Z" fill="#fff1be"/>';
     }
+    if (item.id === 'shop_hourglass') {
+      const sand = `<defs><clipPath id="sand-top-${uid}"><path d="M30 36h60L60 68Z"/></clipPath><clipPath id="sand-bottom-${uid}"><path d="M60 68 90 101H30Z"/></clipPath></defs>` +
+        `<g clip-path="url(#sand-top-${uid})"><rect class="hourglass-sand-top" x="28" y="35" width="64" height="34" fill="#edc477"/></g>` +
+        `<g clip-path="url(#sand-bottom-${uid})"><rect class="hourglass-sand-bottom" x="28" y="68" width="64" height="34" fill="#edc477"/></g>` +
+        '<path class="hourglass-stream" d="M60 65v34" stroke="#c89542" stroke-width="1.6" stroke-dasharray="1 2"/>';
+      detail = detail.replace(/<path d="M34 40[\s\S]*?(?=<path d="M24 30)/, sand);
+    }
+    if (item.id === 'shop_camera') {
+      detail += `<defs><clipPath id="camera-print-${uid}"><rect x="36" y="108" width="48" height="55"/></clipPath></defs>` +
+        `<g clip-path="url(#camera-print-${uid})"><g class="camera-photo"><rect x="39" y="109" width="42" height="47" rx="1" fill="#fff9e9" stroke="#c8d9d5"/><rect x="43" y="113" width="34" height="29" fill="#87c9dd"/><circle cx="68" cy="120" r="4" fill="#ffe69a"/><path d="m43 142 11-18 10 12 6-8 7 14Z" fill="#638d73"/><path d="M49 149h22" stroke="#b3b8a8" stroke-width="1.5"/></g></g>` +
+        '<path d="M36 108h48" stroke="#253c49" stroke-width="4" stroke-linecap="round"/>' +
+        '<g class="camera-flash"><rect x="41" y="19" width="22" height="10" rx="2" fill="#fff"/><path d="M52 0v10M30 7l8 7M74 7l-8 7M25 24h10m34 0h10" stroke="#fff3bd" stroke-width="3" stroke-linecap="round"/><circle cx="52" cy="24" r="18" fill="#fff8d6" opacity=".5"/></g>';
+    }
     detail = twinkleOrnaments(detail);
     const [x, y, width, height] = bodyBounds[item.id] || [20, 28, 80, 80];
     const fit = `scale(${145 / width} ${145 / height}) translate(${-x} ${-y})`;
@@ -1829,6 +1851,7 @@ const CubieCustoms = (() => {
       `<g class="${className}" fill="${color}" transform="translate(${offset} ${offset})"><g transform="${fit}">${item.body}</g></g>`;
     return `<svg class="cubie-custom-art${item.id === 'medal_empyrorite' ? ' cubie-empyrorite' : ''}" data-custom="${item.id}" viewBox="0 0 145 145" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">` +
       '<g class="cubie-float">' +
+      (item.id === 'shop_hourglass' ? '<g class="hourglass-turn">' : '') +
       (item.id === 'shop_koi' ? '<g class="koi-orientation" transform="rotate(180 72.5 72.5)">' : '') +
       `<g class="cubie-back" transform="${fit}" stroke-linejoin="round">${back}</g>` +
       silhouette(enhanced?.shadowColor || '#202b22', enhanced?.shadowOffset ?? 25, 'cubie-shadow') +
@@ -1841,6 +1864,7 @@ const CubieCustoms = (() => {
       (enhanced?.eyeEffects || "") +
       (enhanced?.mouth || `<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="${faceColor}"/>`) +
       faceBlush(item) +
+      (item.id === 'shop_hourglass' ? '</g>' : '') +
       (item.id === 'shop_koi' ? '</g>' : '') +
       (item.id === 'shop_koi' ? '</g>' : '') +
       '</g></svg>';

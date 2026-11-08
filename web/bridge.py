@@ -267,10 +267,13 @@ class BrowserGame:
                 if game.difficulty == "chaos":
                     result["sounds"].extend(game.chaos_sound_events)
                     game.chaos_sound_events.clear()
-                    result.update(regen_in=game.regen_in, shield=game.shield,
+                    leafy_active, turbo_active = game.overlap_statuses()
+                    result.update(regen_in=game.regen_in, shield=game.shield, regeneration_left=game.regeneration_left,
+                                  protection_left=game.protection_left, leafy_active=leafy_active, turbo_active=turbo_active,
                                   invulnerable=game.invulnerable, burn_in=game.burn_in, poison_in=game.poison_in,
                                   burn_ticks=game.burn_ticks, poison_ticks=game.poison_ticks,
                                   haste_left=game.haste_left, frost_left=game.frost_left,
+                                  pellet_freeze_left=game.pellet_freeze_left, target_lock_left=game.target_lock_left, danger_edge_left=game.danger_edge_left, arena_shrink_left=game.arena_shrink_left,
                                   curse_left=game.curse_left, slowfall_left=game.slowfall_left, stasis_left=game.stasis_left, repellent_left=game.repellent_left, vertigo_left=game.vertigo_left)
                 for block in game.blocks:
                     if game.difficulty == "chaos" and block.kind == "thunder":
@@ -328,7 +331,7 @@ class BrowserGame:
                         radius = pellet.size/2
                         commands.append({'kind': 'oval', 'role': 'blaster_pellet',
                                          'coords': [pellet.x-radius, -pellet.y-radius, pellet.x+radius, -pellet.y+radius],
-                                         'fill': pellet.color, 'outline': '#57ff75' if pellet.kind == 'reflected_pellet' else '#ff4055', 'width': 1})
+                                         'fill': '#efbe62' if game.pellet_freeze_left else pellet.color, 'outline': '#57ff75' if pellet.kind == 'reflected_pellet' else '#ff4055', 'width': 1})
             if self.death_age is not None:
                 for x, y, size in death_pixels(game.x, game.y, self.death_age):
                     rect(x, y, size, size, "#ffffff")

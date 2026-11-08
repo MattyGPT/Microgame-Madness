@@ -1385,7 +1385,7 @@ function showGameArea() {
   document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
 }
 let chaosGuideCanvases = [], chaosGuideVisible = new Set(), chaosGuideObserver = null, chaosGuideFrame = 0;
-let chaosGuideBlocks = [], chaosGuideIcon = null, chaosGuideLastChange = 0;
+let chaosGuideBlocks = [], chaosGuideIcon = null, chaosGuideLastChange = 0, chaosGuideScanner = null;
 function animateChaosGuide(now, initial = false) {
   if (selected === 'guide' && !document.hidden && now-chaosGuideFrame >= 1000/30) {
     const age = trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : now/1000;
@@ -1394,15 +1394,10 @@ function animateChaosGuide(now, initial = false) {
     }
     chaosGuideFrame = now;
   }
-  if (!chaosGuideIcon || !chaosGuideBlocks.length || document.hidden) return;
-  if (!initial && (trailReducedMotion.matches || saved.preferences?.reducedMotion || now-chaosGuideLastChange < 500)) return;
-  const block = ChaosArt.pickBlock(chaosGuideBlocks);
-  const thumbnail = ChaosArt.tabPreview(block);
-  chaosGuideIcon.src = thumbnail.src;
-  chaosGuideIcon.dataset.color = thumbnail.color;
-  chaosGuideIcon.dataset.shape = thumbnail.shape;
-  chaosGuideIcon.dataset.block = block.id;
-  chaosGuideLastChange = now;
+  if (!chaosGuideScanner || document.hidden) return;
+  chaosGuideScanner.lastChange = chaosGuideLastChange;
+  chaosGuideScanner.tick(now, trailReducedMotion.matches || !!saved.preferences?.reducedMotion, initial);
+  chaosGuideLastChange = chaosGuideScanner.lastChange;
 }
 function initializeChaosGuide(blocks) {
   chaosGuideBlocks = blocks;
@@ -1415,11 +1410,12 @@ function initializeChaosGuide(blocks) {
       else chaosGuideVisible.delete(entry.target);
     }
   });
-  chaosGuideIcon = document.createElement("img");
-  chaosGuideIcon.className = "guide-tab-preview";
-  chaosGuideIcon.alt = "";
-  document.querySelector('[data-game="guide"] .card-art').replaceChildren(chaosGuideIcon);
-  animateChaosGuide(performance.now(), true);
+  chaosGuideScanner = guidePreviewBootstrap.scanner || new GuideScanner.Scanner(
+    document.querySelector('[data-game="guide"] .card-art'), blocks);
+  chaosGuideScanner.blocks = blocks;
+  chaosGuideIcon = chaosGuideScanner.icon;
+  chaosGuideLastChange = chaosGuideScanner.lastChange;
+  animateChaosGuide(performance.now());
   $("block-guide-grid").replaceChildren(...blocks.map(block => {
     const card = document.createElement("article");
     card.className = "block-guide-card";
@@ -1445,7 +1441,11 @@ function initializeChaosGuide(blocks) {
     rarity.append(chance, ' of spawns');
     const detail = document.createElement("p");
     detail.textContent = block.description;
-    card.append(icon, title, rarity, detail);
+    const disposition = document.createElement("p");
+    disposition.className = "block-disposition";
+    disposition.dataset.disposition = block.disposition;
+    disposition.textContent = block.disposition[0].toUpperCase() + block.disposition.slice(1);
+    card.append(icon, title, rarity, disposition, detail);
     return card;
   }));
 }
@@ -1746,6 +1746,13 @@ function updateDamageFeedback(s) {
 }
 // Small persistent pixel-style badges; only active effects occupy a slot.
 const chaosStatusDefinitions = [
+  ['regeneration_left', 'Regeneration', '#65f2ba', 'M4 0h4v4h4v4H8v4H4V8H0V4h4Z'],
+  ['leafy_active', 'Leafy slow', '#79cf88', 'M1 11Q0 1 11 1q1 10-10 10ZM1 11l8-8'],
+  ['turbo_active', 'Turbo', '#ffbf67', 'M1 1l5 5-5 5M6 1l5 5-5 5'],
+  ['pellet_freeze_left', 'Frozen pellets', '#efbe62', 'M2 0h8l2 6-2 6H2L0 6ZM4 4h4v4H4Z'],
+  ['target_lock_left', 'Target lock', '#ee9c9c', 'M1 1h10v10H1ZM6 0v12M0 6h12'],
+  ['danger_edge_left', 'Lethal edges', '#ff6b83', 'M0 0h12v12H0ZM5 3h2v4H5ZM5 9h2v2H5Z'],
+  ['arena_shrink_left', 'Small arena', '#c69be9', 'M0 0h4v2H2v2H0ZM8 0h4v4h-2V2H8ZM0 8h2v2h2v2H0ZM10 8h2v4H8v-2h2Z'],
   ['vertigo_left', 'Reversed', '#e4a2f1', 'M0 3l3-3v2h7v2H3v2ZM12 9l-3-3v2H2v2h7v2Z'],
   ['shield', 'Shielded', '#91baff', 'M2 1h8v6H9v2H8v1H7v1H5v-1H4V9H3V7H2Z'],
   ['haste_left', 'Speed', '#fff080', 'M6 0h4L7 5h3l-6 7 1-5H2Z'],
@@ -1775,16 +1782,78 @@ function updateChaosStatusBadges(s) {
     }
     const seconds = key === 'burn_ticks' ? s.burn_in + (s.burn_ticks-1)*2
       : key === 'poison_ticks' ? s.poison_in + (s.poison_ticks-1)*3 : s[key];
-    const detail = key === 'shield' ? '' : `${Math.ceil(seconds)}s`;
+    const detail = ['shield','leafy_active','turbo_active'].includes(key) ? '' : `${Math.ceil(seconds)}s`;
     if (badge.lastElementChild.textContent !== detail) badge.lastElementChild.textContent = detail;
   }
   root.classList.toggle("many-effects", activeEffects.length > 6);
   root.hidden = activeEffects.length === 0;
   document.body.classList.toggle("chaos-status-active", activeEffects.length > 0);
 }
+const chaosScreenMotion = {
+  regeneration_left: 'regeneration',
+  leafy_active: 'leaves', turbo_active: 'speed', pellet_freeze_left: 'amber',
+  target_lock_left: 'target', danger_edge_left: 'danger', arena_shrink_left: 'shrink',
+  vertigo_left: 'reverse', shield: 'shield', burn_ticks: 'embers', poison_ticks: 'bubbles',
+  protection_left: 'protection', curse_left: 'fall', slowfall_left: 'float',
+  stasis_left: 'stasis', repellent_left: 'repellent'
+};
+const chaosScreenDescriptions = {
+  regeneration_left: ['Mint rising health crosses', 'Regeneration restores 1 HP each second for 4 seconds, up to maximum health.'],
+  leafy_active: ['Green drifting leaves', 'Move 50% slower while touching Leafy or Elite Leafy.'],
+  turbo_active: ['Orange arrow streaks', 'Move 50% faster while touching Turbo or Elite Turbo.'],
+  pellet_freeze_left: ['Amber boxed symbols', 'Pellets are frozen in place, but can still hurt you.'],
+  target_lock_left: ['Rose crosshairs and focusing border', 'Blocks steer toward you horizontally.'],
+  danger_edge_left: ['Red dashed border and warning symbols', 'Touching an arena edge instantly kills you.'],
+  arena_shrink_left: ['Purple inward-moving border', 'The arena is temporarily shrunk to Merciless size.'],
+  vertigo_left: ['Pink sideways arrows', 'Your movement controls are reversed.'],
+  shield: ['Blue breathing shield border', 'A shield is ready to absorb a hit.'],
+  haste_left: ['Yellow lightning', 'Haste makes you move 45% faster.'],
+  frost_left: ['Icy blue snow', 'Freezing makes you move 50% slower.'],
+  burn_ticks: ['Orange rising embers', 'Burning deals 1 damage every 2 seconds.'],
+  poison_ticks: ['Lime green rising bubbles', 'Poison deals 1 damage every 3 seconds.'],
+  invulnerable: ['White bubbles and double border', 'Pickup-granted protection blocks ordinary contact damage.'],
+  curse_left: ['Violet falling arrows', 'Curse makes blocks fall 40% faster.'],
+  slowfall_left: ['Lavender drifting hourglasses', 'Blocks fall 40% slower.'],
+  stasis_left: ['Cyan pause symbols and dashed border', 'Falling blocks pause; horizontal blocks keep moving.'],
+  repellent_left: ['Periwinkle expanding border', 'You are immune to pushing and pulling fields.']
+};
+function initializeChaosScreenKey() {
+  $('chaos-screen-key-list').replaceChildren(...chaosStatusDefinitions.map(([key, label, color, path]) => {
+    const [appearance, meaning] = chaosScreenDescriptions[key];
+    const item = document.createElement('li');
+    item.dataset.effect = key === 'invulnerable' ? 'protection_left' : key;
+    item.style.setProperty('--effect-color', color);
+    item.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="${path}"/></svg><div><strong>${label}</strong><span class="chaos-key-appearance">${appearance}</span><p>${meaning}</p></div>`;
+    return item;
+  }));
+}
+const chaosScreenLayers = new Map();
+function updateChaosScreenLayers(s, visible) {
+  const host = $('chaos-status-screen-effects');
+  let activeCount = 0;
+  for (const [status, label, color, path] of chaosStatusDefinitions) {
+    if (status === 'haste_left' || status === 'frost_left') continue;
+    const key = status === 'invulnerable' ? 'protection_left' : status;
+    const active = !!(visible && s[key] > 0);
+    let layer = chaosScreenLayers.get(key);
+    if (!layer && active) {
+      layer = document.createElement('div');
+      layer.className = `chaos-screen-effect chaos-status-layer chaos-screen-${chaosScreenMotion[key]}`;
+      layer.dataset.effect = key;
+      layer.style.setProperty('--status-color', color);
+      layer.innerHTML = '<div class="chaos-effect-frame"></div>' + Array.from({length:8}, (_, i) =>
+        `<span class="chaos-effect-particle" style="--particle:${i};--delay:${-i*.63}s"><svg viewBox="0 0 12 12"><path d="${path}"/></svg></span>`).join('');
+      host.append(layer); chaosScreenLayers.set(key, layer);
+    }
+    if (layer) layer.hidden = !active;
+    if (active) activeCount++;
+  }
+  host.style.setProperty('--status-strength', String(1/Math.sqrt(Math.max(1,activeCount))));
+}
 function updateChaosEffects(s) {
   updateChaosStatusBadges(s);
   const visible = s?.mode === "dodge" && s.difficulty === "chaos" && !s.over && !s.paused && !document.hidden;
+  updateChaosScreenLayers(s, visible);
   const haste = visible && s.haste_left > 0, frost = visible && s.frost_left > 0;
   $("chaos-electric").hidden = !haste;
   $("chaos-frost").hidden = !frost;
@@ -2123,7 +2192,8 @@ function draw(s) {
   ctx.globalAlpha = 1;
   ctx.setLineDash([]);
   ctx.strokeStyle =
-    selected === "dodge" && s.difficulty === "impossible" ? "#ffffff"
+    selected === "dodge" && s.danger_edge_left > 0 ? "#ff4565"
+      : selected === "dodge" && s.difficulty === "impossible" ? "#ffffff"
       : selected === "dodge" && s.difficulty === "merciless"
       ? "#ff4565"
       : "#45534b";
@@ -2550,7 +2620,18 @@ document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
 });
-let soundOn = pendingGaster?.soundOn !== false;
+// Playback intent belongs to this browser. Cloud snapshots must not undo a click.
+const soundPreferenceKey = "microgame-madness.sound.v2";
+let localSoundPreference = null;
+try {
+  const stored = localStorage.getItem(soundPreferenceKey);
+  if (stored === "true" || stored === "false") localSoundPreference = stored === "true";
+} catch { /* Keep the choice in memory when storage is unavailable. */ }
+let soundOn = localSoundPreference ?? (pendingGaster?.soundOn !== false);
+function rememberSoundChoice(value) {
+  localSoundPreference = value;
+  try { localStorage.setItem(soundPreferenceKey, String(value)); } catch {}
+}
 let pendingSoundChoice = null;
 let soundSettingChain = Promise.resolve();
 let audioContext;
@@ -2565,26 +2646,31 @@ if (!soundOn) {
   $("sound").setAttribute("aria-pressed", "false");
 }
 $("sound").onclick = () => {
-  soundOn = !soundOn;
+  rememberSoundChoice(!soundOn);
+  setSoundEnabled(localSoundPreference);
   if (!applyingAccountProfile) {
     const choice = pendingSoundChoice = { value: soundOn };
     soundSettingChain = soundSettingChain.then(async () => {
       await accountApp.ready;
-      await accountApp.setting({ soundOn: choice.value });
+      await accountApp.setting({ soundOn: choice.value }, { localSoundIntent: false });
     }).catch(error => accountApp.message(error.message)).finally(() => {
       if (pendingSoundChoice === choice) pendingSoundChoice = null;
     });
   }
+};
+function setSoundEnabled(value) {
+  soundOn = value;
   if (!soundOn) pendingAchievementDing = false;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
-  if (audioMaster) {
-    audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
+  if (audioMaster && audioContext.state !== "closed") {
+    if (audioMaster.gain.cancelAndHoldAtTime) audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
+    else audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
     audioMaster.gain.linearRampToValueAtTime(soundOn ? 1 : 0, audioContext.currentTime + .02);
   }
   syncMusic();
   initializeAudio();
-};
+}
 function syncMusic() {
   if (selected === "jukebox") renderJukebox();
   if (sequencePlayer) {
@@ -2595,7 +2681,7 @@ function syncMusic() {
   if (!musicPlayer) return;
   const welcoming = !!document.querySelector("#welcome-dialog")?.open;
   const state = {
-    theme: welcoming ? "jukebox:cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+    theme: welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "geomayhem" ? `geomayhem_level_${snapshot.level}`
@@ -2644,14 +2730,23 @@ function initializeAudio() {
   if (!soundOn) return;
   try {
     // Cubie’s welcome intro attempts autoplay; interaction resumes it if blocked.
-    if (!audioContext) {
-      audioContext = new AudioContext();
-      audioMaster = audioContext.createGain();
-      audioMaster.connect(audioContext.destination);
-      musicPlayer = new ArcadeMusic.Player(audioContext, audioMaster);
-      musicPlayer.onPlaybackChange = renderNowPlaying;
-      audioContext.addEventListener("statechange", renderNowPlaying);
-      sequencePlayer = new ArcadeEffects.SequencePlayer(audioContext, audioMaster);
+    if (!audioContext || audioContext.state === "closed") {
+      const context = new AudioContext();
+      try {
+        const master = context.createGain();
+        master.connect(context.destination);
+        const music = new ArcadeMusic.Player(context, master);
+        const sequence = new ArcadeEffects.SequencePlayer(context, master);
+        music.onPlaybackChange = renderNowPlaying;
+        context.addEventListener("statechange", renderNowPlaying);
+        audioContext = context;
+        audioMaster = master;
+        musicPlayer = music;
+        sequencePlayer = sequence;
+      } catch (error) {
+        context.close().catch(() => {});
+        throw error;
+      }
     }
     audioContext.resume().then(() => {
       syncMusic();
@@ -2662,9 +2757,9 @@ function initializeAudio() {
     }).catch(() => {});
     syncMusic();
   } catch {
-    soundOn = false;
-    $("sound").textContent = "Sound unavailable";
-    $("sound").setAttribute("aria-pressed", "false");
+    // A temporary browser/audio error is not a request to mute. The next
+    // interaction retries initialization, including partially failed setup.
+    renderNowPlaying();
   }
 }
 document.addEventListener("click", initializeAudio);
@@ -2872,7 +2967,8 @@ function applyAccountProfile(profile) {
       if (CubieCustoms.unlocked(item, saved.achievements.unlocked, saved.shop.owned, saved.testerTon618)) announcedCustoms.add(item.id);
     document.querySelector('[data-game="singularity"]').hidden = !saved.unlocks.singularity;
     $("game-count").textContent = saved.unlocks.singularity ? "12" : "11";
-    if (!pendingSoundChoice && soundOn !== (saved.preferences?.soundOn !== false)) $("sound").click();
+    const desiredSound = localSoundPreference ?? (saved.preferences?.soundOn !== false);
+    if (!pendingSoundChoice && soundOn !== desiredSound) setSoundEnabled(desiredSound);
     document.documentElement.classList.toggle("account-reduced-motion", !!saved.preferences?.reducedMotion);
     renderAchievements(); applyCubieCustom(); showScores();
     if (selected === "shop") renderShop();
@@ -2882,6 +2978,8 @@ function applyAccountProfile(profile) {
   } finally { applyingAccountProfile = false; }
 }
 accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAccountProfile,
+  getSoundPreference: () => soundOn,
+  onSoundPreference: value => { rememberSoundChoice(value); setSoundEnabled(value); },
   isPlaying: () => active, config: leaderboardReady.then(client => ({ url: client.url, key: client.key })),
   onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
@@ -2977,6 +3075,7 @@ window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);
 guidePreviewBootstrap.stop();
 initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
+initializeChaosScreenKey();
 initialize();
 
 

@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('189 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 189);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 189);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 189);
+test('192 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 192);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 192);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 192);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     assert.match(Customs.svg(item), /class="cubie-eyes"/);
