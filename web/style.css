@@ -3635,3 +3635,6 @@ html.account-reduced-motion .jukebox-note-deluxe * { animation: none !important;
 /* Guide chances use the same tenth-percent tickets as gameplay. */
 .block-guide-card { min-width: 0; }
 .block-exact-chance { font-variant-numeric: tabular-nums; }
+
+/* Keep Thunder guide text readable against the dark card. */
+.block-guide-card[data-block="thunder"] .block-rarity { color: #ffe65b; }

@@ -8,13 +8,15 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
   await expect(page.locator('[data-game]:visible')).toHaveCount(11);
   const card = page.locator('[data-game="wrath"]');
   await expect(card).toContainText("The King's Wrath");
-  expect(await card.locator('svg path').evaluate(el => getComputedStyle(el).fill)).toBe('rgb(255, 224, 102)');
+  const crown = card.locator('.wrath-art svg > path').first();
+  await expect(crown).toHaveAttribute('fill', 'url(#wrath-crown-gold)');
+  await expect(card.locator('#wrath-crown-gold stop')).toHaveCount(4);
   await page.evaluate(() => {
     document.querySelector('#achievement-toast').hidden = true;
     document.querySelector('#achievement-celebrations').replaceChildren();
   });
   await page.locator('.game-grid').screenshot({ path: testInfo.outputPath('six-games-yellow-crown.png') });
-  for (const target of [card.locator('svg path'), card.locator('.card-title')]) {
+  for (const target of [crown, card.locator('.card-title')]) {
     await target.click();
     await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
     await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
