@@ -1,7 +1,7 @@
 # Optional accounts and progression design
 
-Status: Design baseline; implementation under code review
-Date: November 7, 2026  
+Status: Handle/password implementation and hosted verification complete; public activation pending review
+Date: November 8, 2026
 Scope: Microgame Madness browser application
 
 Related document: [Implementation plan](accounts-and-progression-plan.md), drafted against the proposed defaults below.
@@ -48,7 +48,7 @@ This specification defines behavior, data boundaries, review decisions, and acce
 | Practice | King's Wrath has its own scores; temporary Core practice has selected progress rewards but no saved scores or Cash | Eligibility must be defined by mode and event, not a generic practice flag |
 | Settings | Some preferences are session-only; reduced motion follows the device | Define which preferences sync and which remain device-specific |
 
-The repository contains the integration and migrations. Deployment configuration, applied migrations, auth settings, email delivery, and production data require an environment audit before implementation rollout.
+The repository contains the integration and migrations. Deployment configuration, applied migrations, auth settings, credential/recovery flows, and production data require an environment audit before implementation rollout.
 
 Source references: [browser profile and game integration](../web/app.js), [leaderboard client](../web/leaderboards.js), [initial leaderboard schema](../supabase/migrations/20261101000000_leaderboards.sql), [achievements](../web/achievements.js), [shop](../web/shop.js), [browser adapter](../web/bridge.py), and [hosting and backend setup](game-and-development-reference.md#connect-the-global-leaderboards).
 
@@ -107,17 +107,28 @@ Use existing game defaults when a preference is absent. Resetting preferences do
 
 ### Sign in and recovery
 
-Proposed first provider: email with a one-time code. It keeps confirmation within the existing game tab and avoids password reset UX. Google sign-in is a later addition unless review prioritizes it. Email confirmation, resend throttling, expired codes, changed email addresses, and account recovery must have deliberate flows.
+As of November 8, 2026, the required account experience is **handle + password, with no real email address, phone number, or real-name field**. This supersedes the email-code design. Accounts remain optional and guest play remains complete. The implementation now uses the Supabase adapter described in [authentication contract](accounts-auth-contract.md); public activation remains pending review.
 
-Creating an account from an anonymous identity links a verified sign-in identity to that user wherever supported. Signing into an existing account is a different flow and may require a controlled transfer of guest data. A successful authentication must not silently replace or merge the guest save.
+Use a unique, case-insensitive login handle separate from the immutable owner UUID. Handle format: 3–24 ASCII letters, digits, and underscores, canonicalized to lowercase. Reserve system/moderator names and enforce uniqueness transactionally. Prompt players to choose a nickname rather than personal information. Default the public display name to the handle; an existing editable display nickname is not a credential. Handle changes are deferred for the first release. Do not infer ownership from any display name.
 
-Supabase supports anonymous identity conversion and email codes, but conversion and existing-account conflicts need distinct application handling. See [anonymous sign-ins](https://supabase.com/docs/guides/auth/auth-anonymous) and [passwordless email](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+Registration asks for a handle and password (with confirmation); sign-in asks for those same credentials. Support password managers and paste. Passwords must be processed by a maintained authentication implementation with salted password hashing, never stored in application state, exports, analytics, or logs. Enforce the provider's reviewed password policy and reject over-limit input rather than silently truncate it. Use generic invalid-credential errors, request limits for registration/login/recovery, and password reauthentication for password changes and deletion. Revoke existing sessions after a password reset.
+
+Recommended no-contact recovery: issue a high-entropy recovery code at registration, show it once, and let the player save it separately. Store only a verifier; consume a recovery code atomically, rotate it after use, and issue a new password/session under the same owner. Progress exports must not include the recovery secret or bypass authentication. If the password and recovery code are both lost, do not promise account recovery or ask for personal facts as proof. Recovery UX and the exact credential policy remain design-review items.
+
+Supabase's documented password API accepts an email or phone identifier, not a username ([password authentication](https://supabase.com/docs/guides/auth/passwords)); its Auth service manages password hashing ([password security](https://supabase.com/docs/guides/auth/password-security)). Therefore this is an authentication-layer change, not a relabeling of the email input. Evaluate two implementations in G0:
+
+1. Retain Supabase Auth behind a server-side handle adapter. Map a handle to a random internal provider identifier, using a synthetic, non-deliverable address only if required by the provider. This is not a collected user email. No outbound mail or real-address fallback is permitted. Prove provider compatibility, anonymous conversion, recovery, rate limits and bypass prevention in a test project before selecting this approach; a synthetic-address scheme is a proposal, not a verified provider feature.
+2. Use an established username/password authentication service or library and integrate its sessions with the existing backend authorization and stable owner UUIDs. Do not implement custom password cryptography or assume the current Supabase JWT/RLS contracts work unchanged.
+
+Creating an account must preserve the guest's stable owner when supported, or use an explicit transactional ownership transfer. Signing into an existing account remains a separate flow with reviewed imports; authentication must not silently replace or merge the guest save. Validate handle reservation and interrupted registration together so a failed conversion neither loses progress nor strands a handle.
+
+The privacy goal is to avoid collecting contact details and real-world identity information. Handles, saved activity, credentials and infrastructure request metadata still need protection and retention controls. Do not describe this as collecting no personal data at all: players may choose identifying handles, and hosting/auth services may log IP addresses. Minimize those logs and inspect provider defaults before rollout.
 
 Opening account UI during a round pauses modes that support pausing. Account switches and imports take effect between rounds. For a mode that cannot pause, defer the flow until the round ends or the player deliberately exits; do not change its timing rules.
 
 ### Public identity and secrets
 
-Use an internal immutable player ID for ownership. Display names remain editable and need not be unique. Public profiles, if enabled, use a separate opaque public identifier; neither email nor the auth user ID appears in ranking responses or URLs.
+Use an internal immutable player ID for ownership. Display names remain editable and need not be unique. Public profiles, if enabled, use a separate opaque public identifier; neither private login/provider identifiers nor the auth user ID appear in ranking responses or URLs.
 
 Move secret entry into an **Arcade codes** control shared by guests and accounts. Preserve existing code effects, unlocks, celebration behavior, and hints. Editing a public name must not accidentally execute a secret or publish a code as the player's name. Any compatibility transition for the old name field must be reviewed with existing secret-related tests.
 
@@ -260,7 +271,7 @@ Ledger integrity prevents duplicate rewards and double spending. It does not pro
 ### Migration guarantees
 
 - Retain a local backup and manifest until cloud acknowledgement and a subsequent read confirm the result.
-- Do not merge by nickname, email text, or user-supplied owner ID.
+- Do not merge by nickname, handle text, or user-supplied owner ID.
 - Make import application atomic and idempotent, with a durable receipt.
 - Keep local legacy scores as an archive; importing a best does not fabricate a historical run.
 - Distinguish imported, legacy-cloud, newly client-reported, and future replay-validated provenance.
@@ -331,7 +342,7 @@ Never backdate a seasonal record from client timestamps or imports. Archive clos
 | Client-reported | New result accepted for schema, ownership, and rules consistency | Current casual rankings and progression |
 | Replay-validated | Future server replay reproduces an eligible result | Separate competitive board if introduced |
 
-Do not label a score “verified” merely because its account has verified an email. Future replay validation would require deterministic inputs, seeded gameplay randomness, stable timing rules, replay versioning, bounded processing, and failure handling. Shared Python rules may help, but replay infrastructure is a separate design. Replays do not establish that a human supplied the inputs.
+Do not label a score “verified” merely because its player has authenticated. Future replay validation would require deterministic inputs, seeded gameplay randomness, stable timing rules, replay versioning, bounded processing, and failure handling. Shared Python rules may help, but replay infrastructure is a separate design. Replays do not establish that a human supplied the inputs.
 
 Provide operator controls to hide a name, suppress an entry, restrict submissions, and inspect relevant receipts. Keep reasons and audit records. Suppression must affect all ranking views and prevent a refresh from immediately restoring the entry. Automated bounds and rate limits reduce abuse; they do not replace moderation or prove honest gameplay.
 
@@ -362,9 +373,9 @@ Account deletion requires recent authentication and explicit confirmation of its
 
 ## Operations and rollout
 
-Configure production auth redirects for the deployed subpath, email templates and delivery, allowed providers, signup/verification rate limits, and anonymous-account abuse controls. Use a separate test backend and exercise actual hosted Auth behavior in addition to database simulation tests.
+Configure production auth redirects for the deployed subpath, handle/password and recovery flows, allowed providers, signup/login/recovery rate limits, and anonymous-account abuse controls. Use a separate test backend and exercise actual hosted Auth behavior in addition to database simulation tests.
 
-Monitor sign-in failures, sync age, rejected operations, duplicate requests, purchase conflicts, import failures, and backend latency. Logs should use operation/request identifiers and error categories without tokens, email codes, or full private payloads. Track storage and email usage before choosing infrastructure budgets; this design does not assume a particular free-tier capacity.
+Monitor sign-in failures, sync age, rejected operations, duplicate requests, purchase conflicts, import failures, and backend latency. Logs should use operation/request identifiers and error categories without tokens, passwords, recovery codes, or full private payloads. Track storage and authentication usage before choosing infrastructure budgets; this design does not assume a particular free-tier capacity.
 
 Proposed retention: account result history and wallet/import receipts remain for the account's lifetime; local acknowledged history can be bounded. Unacknowledged operations are never silently evicted. Compact raw progress events only after their effects and deduplication guarantees survive compaction. Keep operation identifiers/digests or an equivalent durable deduplication scheme for every still-retryable operation. Anonymous-record retention, operational log duration, and backup expiry must be set before launch.
 
@@ -376,7 +387,7 @@ A backend outage leaves loaded games playable and queues work locally. A purchas
 
 | Release | Included | Exit condition |
 | --- | --- | --- |
-| Account and save foundation | Optional email sign-in, guest migration, separate caches, durable sync, preferences, progress and wallet, minimal history storage, export/delete, save status | Guest-to-account-to-second-device journey passes failure and concurrency scenarios |
+| Account and save foundation | Optional handle/password sign-in, guest migration, separate caches, durable sync, preferences, progress and wallet, minimal history storage, export/delete, save status | Guest-to-account-to-second-device journey passes failure and concurrency scenarios |
 | History and rankings | History UI and filters, personal statistics, nearby ranks, pagination, profile visibility, seasons and moderation tools | Eligibility, privacy, versioning, and placement behavior are demonstrably consistent |
 | Challenges and social features | Selected daily challenges, friend comparisons, showcases; stronger validation only if approved | Separate feature designs resolve fairness, abuse, and operating cost |
 
@@ -419,7 +430,9 @@ These are behavioral contracts for the future implementation plan, not a require
 | A29 | Two tabs or devices report overlapping page time | Time follows the reviewed overlap policy; opening another tab does not multiply credit |
 | A30 | Account preferences restore on a different input device | Sound activation and reduced-motion requirements are respected; no game starts automatically |
 
-Verification should combine pure progression/reward tests, database transactions and access-policy tests, hosted Auth integration, and browser tests across multiple tabs/contexts. Existing Python, Pyodide, secret, achievement, shop, and mobile behavior checks remain regression coverage. Database emulation alone cannot verify email delivery, session linking, or production auth redirects.
+The authentication revision additionally requires: registration and login without any contact field; case-collision/racing handle registrations; wrong-password throttling; no plaintext credentials in storage/exports/logs; one-use recovery with replay rejection; password-change/reset session revocation; recent-password deletion; same-owner guest conversion across interruptions; and removal of every email/OTP UI path, including the welcome flow. Public account configuration remains disabled until these pass against the chosen hosted authentication implementation.
+
+Verification should combine pure progression/reward tests, database transactions and access-policy tests, hosted Auth integration, and browser tests across multiple tabs/contexts. Existing Python, Pyodide, secret, achievement, shop, and mobile behavior checks remain regression coverage. Database emulation alone cannot verify credential/recovery flows, session linking, or production auth configuration.
 
 ## Decisions for design review
 
@@ -427,9 +440,9 @@ All recommendations below are proposals. The implementation plan uses explicit a
 
 | ID | Decision | Recommended default | Review timing |
 | --- | --- | --- | --- |
-| D01 | Initial sign-in methods | Email code; Google later | Foundation blocker |
+| D01 | Initial sign-in methods | Handle + password; no real email, phone, or real-name collection | Required November 8; auth implementation selection pending |
 | D02 | Guest leaderboard publication | Explicit opt-in; ask existing players when their participation choice is unknown | Foundation blocker |
-| D03 | Public identity | Nonunique editable name, opaque public ID, separate private email | Foundation blocker |
+| D03 | Public identity | Unique login handle; optional editable display nickname; opaque owner/public IDs; no contact details | Auth revision |
 | D04 | Existing-account legacy import | Bests/unlocks allowed; one aggregate baseline per account; no later balance/counter addition | Foundation blocker |
 | D05 | Imported purchased cosmetics and tester entitlements | Preserve as casual provenance; no competitive or administrative privileges | Foundation blocker |
 | D06 | Offline account purchases | Require connection; show offline earnings as pending | Foundation blocker |

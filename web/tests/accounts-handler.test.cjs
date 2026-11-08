@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const Rules = require('../../shared/account-rules.js');
 const owner = '00000000-0000-0000-0000-000000000001';
 const other = '00000000-0000-0000-0000-000000000002';
+const sessionId = '10000000-0000-0000-0000-000000000001';
+const validToken = `e30.${Buffer.from(JSON.stringify({session_id:sessionId})).toString('base64url')}.signature`;
 const now = Date.parse('2026-11-07T12:00:00Z');
 const operation = (id,kind,payload={}) => ({id,kind,payload,streamId:'device',version:1});
 const json = (value,status=200) => new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}});
@@ -13,12 +15,17 @@ async function fixture(options={}) {
   const transport=async (url,request={}) => {
     const body=request.body?JSON.parse(request.body):{};
     calls.push({url,request,body});
-    if (url.endsWith('/auth/v1/user')) return request.headers.Authorization==='Bearer valid'
-      ?json({id:owner,last_sign_in_at:new Date(options.lastSignIn??now).toISOString()}):json({message:'invalid'},401);
+    if (url.endsWith('/auth/v1/user')) return request.headers.Authorization===`Bearer ${validToken}`
+      ?json({id:owner,is_anonymous:options.anonymous===true,last_sign_in_at:new Date(options.lastSignIn??now).toISOString()}):json({message:'invalid'},401);
+    if(url.includes('/auth/v1/token?grant_type=password')) return body.password==='correct password'?json({access_token:'reauth',user:{id:owner}}):json({},401);
+    if(url.includes('/auth/v1/logout'))return new Response(null,{status:204});
     if(url.includes('/auth/v1/admin/users/')) { authDeletes++; return json({},options.deleteFails&&authDeletes===1?500:200); }
     assert.equal(request.headers.Authorization,'Bearer private-service-key');
-    assert.equal(body.p_owner,owner,'the authenticated owner must override all body owner claims');
+    if(!url.endsWith('/identity_rate_limit'))assert.equal(body.p_owner,owner,'the authenticated owner must override all body owner claims');
     const name=url.split('/').at(-1);
+    if(name==='identity_session_active')return json(!options.revoked);
+    if(name==='identity_rate_limit')return json(true);
+    if(name==='identity_lookup')return json({owner,active:true,provider_identifier:'test@accounts.invalid',handle:'tester'});
     if(name==='account_delete') {deleted=true;state=null;receipts.clear();return json({deleted:true});}
     if(deleted)return json({message:'account_deleted'},400);
     if(name==='account_read')return json({state,revision,public_id:'public-id'});
@@ -43,7 +50,7 @@ async function fixture(options={}) {
   };
   const handler=createHandler({url:'https://test.supabase.co',serviceKey:'private-service-key',rules:Rules,fetch:transport,now:()=>now,allowedOrigins:['https://arcade.example'],writesEnabled:options.writesEnabled,importsEnabled:options.importsEnabled,purchasesEnabled:options.purchasesEnabled});
   const request=(body,headers={})=>handler(new Request('https://test.supabase.co/functions/v1/accounts',{
-    method:'POST',headers:{Authorization:'Bearer valid','Content-Type':'application/json',Origin:'https://arcade.example',...headers},body:JSON.stringify(body)}));
+    method:'POST',headers:{Authorization:`Bearer ${validToken}`,'Content-Type':'application/json',Origin:'https://arcade.example',...headers},body:JSON.stringify(body)}));
   return {calls,request,handler,receipts,getState:()=>state};
 }
 
@@ -89,16 +96,16 @@ test('history input and body limits are enforced without exposing backend detail
   response=await request({action:'export'});assert.equal((await response.json()).version,1);
 });
 
-test('deletion requires recent sign-in and confirmation; failed Auth cleanup is resumable behind the tombstone',async()=>{
+test('deletion requires the current password and confirmation; failed Auth cleanup is resumable behind the tombstone',async()=>{
   const expired=await fixture({lastSignIn:now-11*60000});
   let response=await expired.request({action:'delete',confirmation:'DELETE'});assert.equal(response.status,401);
   assert.equal((await response.json()).error.code,'reauth_required');
   const {request,calls}=await fixture({deleteFails:true});
   response=await request({action:'delete',confirmation:'yes'});assert.equal(response.status,400);
-  response=await request({action:'delete',confirmation:'DELETE'});assert.equal(response.status,503);
+  response=await request({action:'delete',confirmation:'DELETE',password:'correct password'});assert.equal(response.status,503);
   assert.equal((await response.json()).error.code,'deletion_pending');
   response=await request({action:'snapshot'});assert.equal(response.status,410);
-  response=await request({action:'delete',confirmation:'DELETE'});assert.equal(response.status,200);
+  response=await request({action:'delete',confirmation:'DELETE',password:'correct password'});assert.equal(response.status,200);
   assert.equal((await response.json()).deleted,true);
   const adminCall=calls.find(call=>call.url.includes('/auth/v1/admin/users/'));
   assert.ok(adminCall.url.endsWith(owner));assert.equal(adminCall.request.headers.Authorization,'Bearer private-service-key');
@@ -138,4 +145,16 @@ test('failed dependencies remain pending while unrelated operations in a batch s
   response=await request({action:'operations',operations:[parent,child]});data=await response.json();
   assert.deepEqual(data.receipts.map(receipt=>receipt.status),['applied','applied']);
   assert.equal(data.state.preferences.soundOn,false);
+});
+
+test('revoked JWTs cannot read or change account data even before token expiry',async()=>{
+ const {request,calls}=await fixture({revoked:true});
+ assert.equal((await request({action:'snapshot'})).status,401);
+ assert.equal(calls.some(call=>call.url.endsWith('/account_read')),false);
+});
+
+test('anonymous sessions cannot initialize cloud account saves',async()=>{
+ const {request,calls}=await fixture({anonymous:true});
+ assert.equal((await request({action:'snapshot'})).status,403);
+ assert.equal(calls.some(call=>call.url.endsWith('/account_read')),false);
 });

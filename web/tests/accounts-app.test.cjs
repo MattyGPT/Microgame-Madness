@@ -93,3 +93,45 @@ test('a delayed preference update waits for newer gameplay before applying the p
   assert.deepEqual(applied, [true]);
   assert.equal(app.queuedWrites, 0);
 });
+
+test('registration preserves its one-time recovery code if cloud activation fails and clears passwords', async () => {
+  const app = Object.create(App.prototype);
+  const fields = Object.fromEntries(['auth-form', 'handle', 'password', 'confirm', 'recovery', 'recovery-code', 'recovery-step'].map(id => [id, {
+    value: '', hidden: true, reportValidity: () => true, hasAttribute: () => false, focus() {}, select() {},
+  }]));
+  fields.handle.value = 'new_player';
+  fields.password.value = fields.confirm.value = 'Unique password 42!';
+  const root = { querySelector: selector => fields[selector.replace('#account-', '')],
+    querySelectorAll: selector => selector === '[data-password]' ? [] : [fields.password, fields.confirm, fields.recovery] };
+  app.nodes = { panel: root }; app.config = { url: 'https://example.test', key: 'public' };
+  let registered = false;
+  app.session = { register: async () => { registered = true; return { recoveryCode: 'one-time-secret' }; }, snapshot: () => ({ user: { id: 'owner' } }) };
+  app.controller = { activate: async (_owner, options) => {
+    assert.equal(options.bindGuest, true);
+    assert.equal(fields['recovery-code'].value, 'one-time-secret');
+    throw new Error('Network interrupted');
+  } };
+  await assert.rejects(app.authenticate('register'), /Network interrupted/);
+  assert.equal(registered, true);
+  assert.equal(fields['recovery-code'].value, 'one-time-secret');
+  assert.equal(fields['recovery-step'].hidden, false);
+  assert.equal(fields.password.value, '');
+  assert.equal(fields.confirm.value, '');
+});
+
+test('handle defaults wait for guest import and preserve an existing display nickname', async () => {
+  const app = Object.create(App.prototype), changes = [];
+  const state = { importRequired: true, profile: { player: 'Player' } };
+  app.registrationHandle = 'new_player';
+  app.controller = { state: () => state };
+  app.setting = async value => { changes.push(value); };
+  await app.defaultHandle();
+  assert.equal(app.registrationHandle, 'new_player');
+  assert.deepEqual(changes, []);
+  state.importRequired = false; state.profile.player = 'Guest Nickname';
+  await app.defaultHandle();
+  assert.deepEqual(changes, []);
+  state.profile.player = 'Player';
+  await app.defaultHandle('another_player');
+  assert.deepEqual(changes, [{ player: 'another_player' }]);
+});

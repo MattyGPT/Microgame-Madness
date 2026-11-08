@@ -1,5 +1,6 @@
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 const fs = require('node:fs/promises');
+const { accountService } = require('./fixtures/account-service.cjs');
 
 test.use({ deterministicMusic: true });
 
@@ -53,6 +54,11 @@ test('guest profile remains usable when cloud accounts are disconnected', async 
   await expect(page.locator('#account-create')).toBeDisabled();
   await expect(page.locator('#account-login')).toBeDisabled();
   await expect(page.locator('#account-sync')).toBeDisabled();
+  await expect(page.locator('#account-auth input[type="email"]')).toHaveCount(0);
+  await expect(page.locator('#account-password')).toHaveAttribute('autocomplete', 'new-password');
+  await page.locator('#account-password').fill('An unsaved password 42!');
+  await page.locator('[data-password="account-password"]').click();
+  await expect(page.locator('#account-password')).toHaveAttribute('type', 'text');
   await expect(page.locator('#account-ranking')).toBeChecked();
   await expect(page.locator('#account-public')).toBeChecked();
   await expect(page.locator('#account-export')).toBeEnabled();
@@ -61,6 +67,7 @@ test('guest profile remains usable when cloud accounts are disconnected', async 
   await page.screenshot({ path: testInfo.outputPath('account-profile.png') });
   await page.locator('#account-close').click();
   await expect(page.locator('#account-open')).toBeFocused();
+  await expect(page.locator('#account-password')).toHaveValue('');
   expect(errors).toEqual([]);
 });
 
@@ -168,4 +175,72 @@ test('blocked browser storage is reported without blocking guest gameplay', asyn
   await page.locator('[data-difficulty="easy"]').click();
   await expect(page.locator('#hangman-game')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Guess A', exact: true })).toBeEnabled();
+});
+
+
+test('profile recovery, password replacement and recovery rotation keep the same owner', async ({ page }) => {
+  await accountService(page);
+  await openAccountsGame(page); await profile(page);
+  await page.locator('#account-handle').fill('profile_player');
+  await page.locator('#account-password').fill('Unique arcade password 42!');
+  await page.locator('#account-confirm').fill('Unique arcade password 42!');
+  await page.locator('#account-confirm').press('Enter');
+  await expect(page.locator('#account-recovery-step')).toBeVisible();
+  const code = await page.locator('#account-recovery-code').inputValue();
+  await page.locator('#account-recovery-saved').click();
+  await expect(page.locator('#account-import')).toBeVisible();
+  await page.locator('#account-import-confirm').click();
+  await expect(page.locator('#account-import')).toBeHidden();
+  const owner = await page.evaluate(() => accountApp.controller.state().owner);
+  await page.locator('#account-signout').click();
+  await expect(page.locator('#account-auth')).toBeVisible();
+  await page.locator('#account-recover').click();
+  await page.locator('#account-handle').fill('profile_player');
+  await page.locator('#account-recovery').fill(code);
+  await page.locator('#account-password').fill('Replacement password 43!');
+  await page.locator('#account-confirm').fill('Replacement password 43!');
+  await page.locator('#account-recover').click();
+  await expect(page.locator('#account-recovery-step')).toBeVisible();
+  expect(await page.locator('#account-recovery-code').inputValue()).not.toBe(code);
+  await page.locator('#account-recovery-saved').click();
+  await expect.poll(() => page.evaluate(() => accountApp.controller.state().owner)).toBe(owner);
+  await page.getByText('Password & recovery', { exact: true }).click();
+  await page.locator('#account-current-password').fill('Replacement password 43!');
+  await page.locator('#account-new-password').fill('Changed arcade password 44!');
+  await page.locator('#account-new-confirm').fill('Changed arcade password 44!');
+  await page.locator('#account-change-password').click();
+  await expect(page.locator('#account-message')).toContainText('Password changed');
+  await expect(page.locator('#account-current-password')).toHaveValue('');
+  await page.locator('#account-recovery-saved').click();
+  await page.locator('#account-current-password').fill('Changed arcade password 44!');
+  await page.locator('#account-rotate-recovery').click();
+  await expect(page.locator('#account-recovery-step')).toBeVisible();
+  await expect(page.locator('#account-recovery-code')).not.toHaveValue('');
+  await page.locator('#account-recovery-saved').click();
+  expect(await page.evaluate(() => accountApp.controller.state().owner)).toBe(owner);
+});
+
+test('one-time recovery survives a failed first cloud snapshot and clears on another tab account change', async ({ page }) => {
+  await accountService(page);
+  await openAccountsGame(page); await profile(page);
+  await page.route('https://accounts.test/functions/v1/accounts', async route => {
+    if (route.request().method() === 'POST' && route.request().postDataJSON().action === 'snapshot')
+      return route.fulfill({ status: 503, headers: { 'access-control-allow-origin': '*' }, json: { error: { code: 'unavailable', message: 'Temporary snapshot failure' } } });
+    return route.fallback();
+  });
+  await page.locator('#account-handle').fill('snapshot_player');
+  await page.locator('#account-password').fill('Unique arcade password 42!');
+  await page.locator('#account-confirm').fill('Unique arcade password 42!');
+  await page.locator('#account-create').click();
+  await expect(page.locator('#account-dialog')).not.toHaveAttribute('aria-busy', 'true');
+  await expect(page.locator('#account-message')).toContainText('snapshot failure');
+  expect(await page.evaluate(() => accountApp.controller.state().owner)).toBe('guest');
+  await expect(page.locator('#account-recovery-step')).toBeVisible();
+  await expect(page.locator('#account-recovery-code')).not.toHaveValue('');
+  await page.evaluate(() => {
+    localStorage.removeItem(accountApp.session.storageKey);
+    window.dispatchEvent(new StorageEvent('storage', { key: accountApp.session.storageKey }));
+  });
+  await expect(page.locator('#account-recovery-step')).toBeHidden();
+  await expect(page.locator('#account-recovery-code')).toHaveValue('');
 });

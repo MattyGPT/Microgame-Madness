@@ -7,8 +7,8 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
   const config = { url: 'https://accounts.test', key: 'sb_publishable_account_browser_test' };
   const userId = '00000000-0000-0000-0000-000000000123';
   const service = { state: Rules.initial(), revision: 0, receipts: new Map(), runs: new Map(), auth: [],
-    commands: [], anonymous: true, email: null, signupCount: 0, dropped: false };
-  const user = () => ({ id: userId, is_anonymous: service.anonymous, email: service.email,
+    commands: [], anonymous: true, handle: null, password: null, recoveryCode: 'a'.repeat(64), signupCount: 0, dropped: false };
+  const user = () => ({ id: userId, is_anonymous: service.anonymous, handle: service.handle,
     email_confirmed_at: service.anonymous ? null : '2026-11-07T12:00:00Z', last_sign_in_at: new Date().toISOString() });
   const session = () => ({ access_token: service.anonymous ? 'guest-access' : 'account-access',
     refresh_token: 'refresh-one', expires_in: 3600, user: user() });
@@ -27,24 +27,36 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
         return route.fulfill({ headers, json: session() });
       }
       if (url.pathname.endsWith('/user')) {
-        if (request.method() === 'PUT') service.email = body.email;
         return route.fulfill({ headers, json: user() });
-      }
-      if (url.pathname.endsWith('/otp')) {
-        if (body.email !== service.email || body.create_user !== false)
-          return route.fulfill({ status: 400, headers, json: { message: 'Unknown account' } });
-        return route.fulfill({ headers, json: {} });
-      }
-      if (url.pathname.endsWith('/verify')) {
-        if (body.token !== '123456') return route.fulfill({ status: 400, headers, json: { message: 'Code is invalid or expired.' } });
-        if (body.email !== service.email || !['email_change', 'email'].includes(body.type))
-          return route.fulfill({ status: 400, headers, json: { message: 'Verification did not match the request.' } });
-        service.anonymous = false;
-        return route.fulfill({ headers, json: session() });
       }
       if (url.pathname.endsWith('/logout')) return route.fulfill({ status: 204, headers });
       if (url.pathname.endsWith('/token')) return route.fulfill({ headers, json: session() });
       return route.fulfill({ status: 404, headers, json: { message: 'Unknown auth route' } });
+    }
+    if (url.pathname === '/functions/v1/identity') {
+      service.auth.push({ path: url.pathname, method: request.method(), body: {action:body.action} });
+      const fail = () => route.fulfill({status:401,headers,json:{error:{code:'invalid_credentials',message:'Handle or credentials are incorrect.'}}});
+      if (body.action === 'register') {
+        if (!service.anonymous) return fail();
+        service.handle = body.handle.toLowerCase(); service.password = body.password; service.anonymous = false;
+        return route.fulfill({headers,json:{session:session(),recoveryCode:service.recoveryCode}});
+      }
+      if (body.action === 'login') {
+        if (body.handle.toLowerCase() !== service.handle || body.password !== service.password) return fail();
+        return route.fulfill({headers,json:{session:session()}});
+      }
+      if (body.action === 'recover') {
+        if (body.handle.toLowerCase() !== service.handle || body.recoveryCode !== service.recoveryCode) return fail();
+        service.password = body.newPassword; service.recoveryCode = 'b'.repeat(64);
+        return route.fulfill({headers,json:{session:session(),recoveryCode:service.recoveryCode}});
+      }
+      if (['change_password','rotate_recovery'].includes(body.action)) {
+        if (body.password !== service.password) return fail();
+        if(body.action === 'change_password') service.password = body.newPassword;
+        service.recoveryCode = 'c'.repeat(64);
+        return route.fulfill({headers,json:{session:session(),recoveryCode:service.recoveryCode}});
+      }
+      return fail();
     }
     if (url.pathname === '/functions/v1/accounts') {
       if (request.headers().authorization !== 'Bearer account-access' || service.anonymous)

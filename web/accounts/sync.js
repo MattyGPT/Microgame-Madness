@@ -67,7 +67,10 @@ const AccountSync = (() => {
         if (user && !user.is_anonymous) {
           // activate owns rollback; do not replace its restored guest with an
           // empty account when the first cloud snapshot could not be loaded.
-          try { await this.activate(user.id); } catch { /* Error is exposed by activate. */ }
+          try {
+            const existing = await this.store.get(user.id);
+            await this.activate(user.id, { bindGuest: this.session.pendingRegistration?.()?.owner === user.id || existing?.importRequired === true });
+          } catch { /* Error is exposed by activate. */ }
         }
       }
       if (this.owner === 'guest' && this.record?.boundTo) await this.activate('guest');
@@ -89,6 +92,7 @@ const AccountSync = (() => {
       this.tabId = tabId; this.claimedStream = streamId; await this.refreshLocal(); return streamId;
     }
     async activate(owner, { bindGuest = false } = {}) {
+      bindGuest ||= owner !== 'guest' && this.session.pendingRegistration?.()?.owner === owner;
       if (owner !== 'guest' && this.session.snapshot().user?.id !== owner)
         throw fault('wrong_owner', 'Sign in to that account before loading its progress.');
       const previous = { owner: this.owner, record: this.record, claimedStream: this.claimedStream };
@@ -99,9 +103,14 @@ const AccountSync = (() => {
           const response = await this.request('snapshot');
           if (generation !== this.generation) throw fault('stale_session', 'The active account changed.');
           if (!response.state || !Number.isSafeInteger(response.revision)) throw fault('invalid_response', 'The save service did not return a profile.');
-          if (response.revision > 0) throw fault('existing_account', 'This account already has progress. Keep the guest profile separate or import selected records.');
+          const source = await this.store.get('guest');
+          if (source?.boundTo === owner) {
+            // A previous conversion already committed locally before a reload.
+            this.session.completeRegistration?.(owner);
+          } else if (response.revision > 0) throw fault('existing_account', 'This account already has progress. Keep the guest profile separate or import selected records.');
           // Source fencing, destination copy, and import hold are one transaction.
-          await this.store.bind('guest', owner, { snapshot: response });
+          if (source?.boundTo !== owner) await this.store.bind('guest', owner, { snapshot: response });
+          this.session.completeRegistration?.(owner);
         } else {
           if (owner === 'guest') {
             await this.store.mutate('guest', record => record?.boundTo ? this.store.empty('guest') : record || this.store.empty('guest'));
@@ -311,11 +320,11 @@ const AccountSync = (() => {
       if (this.tabId) await this.claimStream(this.tabId);
       this.status = 'guest'; this.error = null; this.emit(); return result;
     }
-    async deleteAccount() {
+    async deleteAccount(password) {
       const owner = this.owner;
       if (owner === 'guest') throw fault('sign_in_required', 'Sign in before deleting an account.');
       this.cancelRetry();
-      await this.request('delete', { confirmation: 'DELETE' });
+      await this.request('delete', { confirmation: 'DELETE', password });
       this.generation++; await this.session.signOut();
       await this.store.remove(owner, { discardPending: true });
       const guest = await this.store.get('guest');

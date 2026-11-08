@@ -1,8 +1,10 @@
+import { identityProvider, validatePassword } from '../_shared/identity.mjs';
 // Portable handler: tested with injected transport, deployed by index.ts.
 // Every computed state write goes through service-only account_commit with CAS.
 /** @param {{url?: string, serviceKey?: string, rules: any, fetch?: typeof globalThis.fetch, now?: () => number, allowedOrigins?: string[], writesEnabled?: boolean, importsEnabled?: boolean, purchasesEnabled?: boolean}} options */
 export function createHandler({ url, serviceKey, rules, fetch: transport = globalThis.fetch, now = Date.now, allowedOrigins = [], writesEnabled = true, importsEnabled = true, purchasesEnabled = true }) {
   const base = String(url || '').replace(/\/$/, '');
+  const identity = identityProvider({ url, serviceKey, fetch: transport });
   const maxBody = 1024 * 1024;
   const safeError = (code, message, status = 400) => Object.assign(new Error(message), { code, status });
   const canonical = value => Array.isArray(value) ? `[${value.map(canonical).join(',')}]`
@@ -75,11 +77,9 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
       if (Number(request.headers.get('content-length')) > maxBody) throw safeError('too_large', 'This request is too large.', 413);
       const token = request.headers.get('authorization') || '';
       if (!/^Bearer \S+$/.test(token)) throw safeError('auth_required', 'Sign in to access your account.', 401);
-      // Auth validates the token against the account; a decoded JWT alone is not authentication.
-      const authResponse = await transport(`${base}/auth/v1/user`, { headers: { apikey: serviceKey, Authorization: token }, signal: AbortSignal.timeout(10000) });
-      if (!authResponse.ok) throw safeError('auth_required', 'Sign in again to sync your progress.', 401);
-      const user = await authResponse.json();
-      if (!user?.id || !/^[0-9a-f-]{36}$/i.test(user.id)) throw safeError('auth_required', 'Sign in again to sync your progress.', 401);
+      // Auth validates the JWT; the database also rejects revoked, unexpired sessions.
+      const user = await identity.authenticate(token);
+      if (user.is_anonymous === true) throw safeError('account_required', 'Create an account to use cloud saves. Guest progress stays on this device.', 403);
       // Bound streaming bodies too: Content-Length can be omitted or forged.
       const reader = request.body?.getReader();
       const chunks = []; let size = 0;
@@ -99,9 +99,14 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
       const owner = user.id; // Never accept body.owner, even when using a privileged database client.
       if (body.action === 'delete') {
         if (body.confirmation !== 'DELETE') throw safeError('confirmation_required', 'Type DELETE to confirm account deletion.');
-        const signedIn = Date.parse(user.last_sign_in_at || '');
-        if (!Number.isFinite(signedIn) || signedIn > now() + 60000 || now() - signedIn > 600000)
-          throw safeError('reauth_required', 'Sign in with a fresh email code before deleting your account.', 401);
+        if (typeof body.password !== 'string' || !body.password) throw safeError('reauth_required', 'Enter your current password to delete your account.', 401);
+        validatePassword(body.password);
+        await identity.rate(request, 'delete', owner);
+        const accountIdentity = await identity.rpc('identity_lookup', { p_owner: owner });
+        if (!accountIdentity?.active) throw safeError('reauth_required', 'Sign in to your account before deleting it.', 401);
+        const verified = await identity.passwordLogin(accountIdentity, body.password);
+        // Reauthentication issued a short-lived session; revoke it immediately.
+        await identity.auth('logout?scope=local', { token: verified.access_token });
         await rpc('account_delete', { p_owner: owner });
         // If Auth cleanup fails, the persistent tombstone already hides data and blocks writes.
         // Calling delete again resumes safely while the auth identity still exists.

@@ -12,7 +12,15 @@
     "test:integration": "node --test web/tests/integration/*.test.cjs",
     "pretest:browser": "npm run build",
     "test:browser": "playwright test",
-    "test:browser:built": "playwright test"
+    "test:browser:built": "playwright test",
+    "test:accounts:hosted": "node --env-file=.env.supabase scripts/verify_hosted_accounts.mjs",
+    "accounts:inspect": "node --env-file=.env.supabase scripts/hosted_accounts_admin.mjs inspect",
+    "accounts:migrate": "node --env-file=.env.supabase scripts/hosted_accounts_admin.mjs migrate",
+    "accounts:deploy": "node --env-file=.env.supabase scripts/hosted_accounts_admin.mjs deploy",
+    "test:accounts:hosted:browser": "node --env-file=.env.supabase scripts/verify_hosted_accounts_browser.mjs",
+    "test:accounts:hosted:identity": "node --env-file=.env.supabase scripts/verify_hosted_identity.mjs",
+    "test:accounts:hosted:pause": "node --env-file=.env.supabase scripts/verify_hosted_pause.mjs",
+    "accounts:build-preview": "node --env-file=.env.supabase scripts/build_accounts_preview.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.14",

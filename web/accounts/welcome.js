@@ -29,6 +29,12 @@ const ArcadeWelcome = (() => {
         if (Object.keys(defaults).length) {
           try { await app.setting(defaults); } catch { /* Saved locally; sync can retry later. */ }
         }
+        app.session?.subscribe(() => {
+          if (this.recoveryOwner && app.session.snapshot().user?.id !== this.recoveryOwner) {
+            this.$('recovery-code').value = ''; this.$('recovery-step').hidden = true; this.recoveryOwner = null;
+            AccountApp.AuthUI.clear(this.dialog); this.render();
+          }
+        });
         if (firstVisit) this.open();
       });
     }
@@ -43,19 +49,17 @@ const ArcadeWelcome = (() => {
         <ol class="welcome-steps" aria-label="Setup steps"><li>Hello</li><li>Account</li><li>Preferences</li><li>Game tour</li></ol>
         <div id="welcome-hello"><p>I’m your arcade buddy. I’ll cheer you on, celebrate your wins, and keep you company between games.</p><p>First, let’s decide how to save your progress and make the arcade feel right for you. Then I’ll show you around!</p></div>
         <div id="welcome-account" hidden>
-          <p>Create an account with your email to save your progress across devices, or keep playing here as a guest.</p>
+          <p>Create an account with a handle and password to save across devices, or keep playing here as a guest.</p>
           <p id="welcome-cloud-note" class="welcome-note"></p>
-          <form id="welcome-email-form"><label>Email address<input id="welcome-email" type="email" autocomplete="email" maxlength="254" required placeholder="you@example.com"></label>
-            <div class="welcome-auth-actions"><button id="welcome-create" type="submit" class="welcome-primary">Create account & keep my progress</button><button id="welcome-login" type="button">I already have an account</button></div>
-          </form>
-          <form id="welcome-code-form" hidden><label>Your email code<input id="welcome-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,12}" minlength="6" maxlength="12" required></label><div class="welcome-auth-actions"><button class="welcome-primary" type="submit">Confirm my email</button><button id="welcome-resend" type="button">Send another code</button><button id="welcome-change-email" type="button">Change email</button></div></form>
+          ${AccountApp.AuthUI.form('welcome')}
+          ${AccountApp.AuthUI.recovery('welcome')}
           <p id="welcome-account-success" hidden>Your account is ready. Let’s choose your preferences!</p>
         </div>
         <form id="welcome-preferences" hidden>
           <label>What should I call you?<input id="welcome-name" maxlength="24" autocomplete="nickname" placeholder="Player"></label>
           <label class="welcome-option"><input id="welcome-sound" type="checkbox" checked><span><strong>Sound & music</strong><small>Hear the arcade’s music and game effects.</small></span></label>
           <label class="welcome-option"><input id="welcome-motion" type="checkbox"><span><strong>Reduce motion</strong><small>Keep decorative animation still and pause tour videos until you press Play.</small></span></label>
-          <label class="welcome-option"><input id="welcome-sharing" type="checkbox" checked><span><strong>Share my leaderboard scores</strong><small>On by default. Shares your display name and best scores, never your email. You can switch it off here.</small></span></label>
+          <label class="welcome-option"><input id="welcome-sharing" type="checkbox" checked><span><strong>Share my leaderboard scores</strong><small>On by default. Shares your display name and best scores, never your password or recovery code. You can switch it off here.</small></span></label>
           <label class="welcome-option"><input id="welcome-public" type="checkbox" checked><span><strong>Public arcade profile</strong><small>On by default. Let other players view your arcade profile. Switch this off if you want it private.</small></span></label>
           <p class="welcome-note">You can change these anytime in Your arcade profile.</p>
         </form>
@@ -66,16 +70,12 @@ const ArcadeWelcome = (() => {
       this.$('cubie').innerHTML = CubieCustoms.svg(CubieCustoms.catalog.find(c => c.id === 'classic'));
       this.$('close').onclick = () => this.finish();
       dialog.addEventListener('cancel', e => { e.preventDefault(); if (!this.busy) this.finish(); });
-      dialog.addEventListener('close', () => { window.dispatchEvent(new Event('arcade-welcome-change')); this.$('video').pause(); document.getElementById('account-open')?.focus({preventScroll:true}); });
+      dialog.addEventListener('close', () => { window.dispatchEvent(new Event('arcade-welcome-change')); this.$('video').pause(); AccountApp.AuthUI.clear(dialog); document.getElementById('account-open')?.focus({preventScroll:true}); });
       this.$('next').onclick = () => this.next();
       this.$('back').onclick = () => { if (this.step === 3 && this.game > 0) this.game--; else this.step--; this.render(); };
       this.$('skip-tour').onclick = () => this.finish();
       this.$('preferences').onsubmit = e => { e.preventDefault(); this.next(); };
-      this.$('email-form').onsubmit = e => { e.preventDefault(); this.sendCode(true); };
-      this.$('login').onclick = () => this.sendCode(false);
-      this.$('resend').onclick = () => this.sendCode(this.upgrade);
-      this.$('change-email').onclick = () => { this.$('code-form').hidden = true; this.$('email-form').hidden = false; this.$('email').focus(); };
-      this.$('code-form').onsubmit = e => { e.preventDefault(); this.verifyCode(); };
+      AccountApp.AuthUI.bind(dialog, 'welcome', mode => this.authenticate(mode), () => this.render());
       this.$('video').addEventListener('error', () => { this.$('video-error').hidden = false; });
       games.forEach((game, i) => {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = game.title;
@@ -102,17 +102,19 @@ const ArcadeWelcome = (() => {
       [...this.dialog.querySelectorAll('.welcome-steps li')].forEach((li,i) => { li.toggleAttribute('data-current', i === this.step); if(i === this.step) li.setAttribute('aria-current','step'); else li.removeAttribute('aria-current'); });
       this.$('progress').textContent = `STEP ${this.step+1} OF 4 · ${this.step===3 ? `GAME ${this.game+1} OF ${games.length}` : 'LET’S MAKE THIS YOUR ARCADE'}`;
       const titles = ['Hi! I’m Cubie.','Want to keep your progress?','Let’s make you comfortable.',games[this.game].title];
-      const lines = ['You can call me they/them or it/its. I’m happy you’re here!','An email account is optional. I’m happy to play either way.','Choose what works for you. We can always change it later.',games[this.game].line];
+      const lines = ['You can call me they/them or it/its. I’m happy you’re here!','An account is optional. I’m happy to play either way.','Choose what works for you. We can always change it later.',games[this.game].line];
       this.$('dialog-title').textContent = titles[this.step]; this.$('line').textContent = lines[this.step];
-      this.$('back').hidden = this.step === 0;
+      this.$('back').hidden = this.step === 0; this.$('back').disabled = !this.$('recovery-step').hidden;
       this.$('skip-tour').hidden = this.step !== 3;
       this.$('next').textContent = this.step === 0 ? 'Let’s go!' : this.step === 1 ? (this.app.signedIn ? 'Choose my preferences' : 'Continue as a guest') : this.step === 2 ? 'Save & show me the games' : this.game === games.length-1 ? 'Let’s play!' : 'Next game →';
       if (this.step === 1) {
         const configured = this.app.session?.configured;
         this.$('create').disabled = !configured || this.app.accountBound;
         this.$('login').disabled = !configured;
-        this.$('cloud-note').textContent = configured ? 'I’ll send you a sign-in code. No password to remember!' : 'Email accounts aren’t connected on this preview. You can still choose your preferences and play as a guest.';
-        if(this.app.signedIn) { this.$('email-form').hidden = true; this.$('code-form').hidden = true; this.$('account-success').hidden = false; }
+        this.$('cloud-note').textContent = configured ? 'Save your recovery code when you create an account. It is your way back if you forget your password.' : 'Cloud accounts aren’t connected on this preview. You can still choose your preferences and play as a guest.';
+        this.$('recover').disabled = !configured;
+        this.$('auth-form').hidden = this.app.signedIn; this.$('account-success').hidden = !this.app.signedIn;
+        this.$('next').disabled = !this.$('recovery-step').hidden;
       }
       if (this.step === 3) {
         const game = games[this.game], video = this.$('video');
@@ -131,29 +133,32 @@ const ArcadeWelcome = (() => {
       enabled.forEach(el => { el.disabled = true; }); this.$('message').textContent = '';
       try { await this.app.ready; await this.app.settle(); await callback(); }
       catch(error) { this.$('message').textContent = error.message || 'Something didn’t save. Please try again, or continue as a guest.'; }
-      finally { enabled.forEach(el => { el.disabled = false; }); this.busy = false; this.app.busy = false; this.dialog.removeAttribute('aria-busy'); this.app.render(); }
+      finally { enabled.forEach(el => { el.disabled = false; }); this.busy = false; this.app.busy = false; this.dialog.removeAttribute('aria-busy'); this.$('next').disabled = this.$('back').disabled = !this.$('recovery-step').hidden; this.app.render(); }
     }
-    sendCode(upgrade) {
-      if (!this.$('email').reportValidity()) return;
-      this.work(async () => {
-        this.email = this.$('email').value.trim(); this.upgrade = upgrade;
-        await this.app.session.requestCode(this.email, {upgrade});
-        this.$('email-form').hidden = true; this.$('code-form').hidden = false;
-        this.$('message').textContent = 'Check your email! Enter the code here to finish.';
-      }).then(() => { if(!this.$('code-form').hidden) this.$('code').focus(); });
-    }
-    verifyCode() {
-      if(!this.$('code').reportValidity()) return;
-      this.work(async () => {
-        await this.app.session.verifyCode(this.email, this.$('code').value.trim(), {upgrade:this.upgrade});
-        await this.app.controller.activate(this.app.session.snapshot().user.id, {bindGuest:this.upgrade});
-        const state = this.app.controller.state();
-        if(this.upgrade && state.importRequired) await this.app.controller.importProfile(state.importProfile, {baseline:true});
-        this.app.applyCurrent(); this.$('code').value = ''; this.render();
+    authenticate(mode) {
+      return this.work(async () => {
+        const values = AccountApp.AuthUI.values(this.dialog, 'welcome', mode); if (!values) return;
+        try {
+          const result = mode === 'register' ? await this.app.session.register(values.handle, values.password)
+            : mode === 'recover' ? await this.app.session.recover(values.handle, values.code, values.password)
+              : await this.app.session.login(values.handle, values.password);
+          this.recoveryOwner = this.app.session.snapshot().user?.id;
+          AccountApp.AuthUI.showRecovery(this.dialog, 'welcome', result?.recoveryCode);
+          await this.app.controller.activate(this.app.session.snapshot().user.id, {bindGuest:mode === 'register'});
+          // Registration explicitly keeps this guest's initial save and journal.
+          const state = this.app.controller.state();
+          if(mode === 'register' && state.importRequired) await this.app.controller.importProfile(state.importProfile, {baseline:true});
+          if (mode === 'register') await this.app.defaultHandle(values.handle.toLowerCase());
+          this.app.applyCurrent();
+          this.$('name').value = this.app.controller.state().profile?.player || '';
+          this.render();
+          if (!this.$('recovery-step').hidden) this.$('recovery-code').focus();
+        } finally { AccountApp.AuthUI.clear(this.dialog); }
       });
     }
     next() {
       if(this.busy) return;
+      if (!this.$('recovery-step').hidden) { this.$('recovery-code').focus(); return; }
       if(this.step === 2) return this.work(async () => {
         const desired = {player:this.$('name').value.trim() || 'Player', soundOn:this.$('sound').checked,
           reducedMotion:this.$('motion').checked, leaderboard:this.$('sharing').checked, publicProfile:this.$('public').checked};
@@ -171,6 +176,7 @@ const ArcadeWelcome = (() => {
     }
     finish() {
       if(this.busy) return;
+      if (!this.$('recovery-step').hidden) { this.$('message').textContent = 'Save your recovery code and acknowledge it before leaving setup.'; this.$('recovery-code').focus(); return; }
       try { localStorage.setItem(key, 'complete'); } catch { /* Memory-only visit. */ }
       firstVisit = false; this.dialog.close();
     }

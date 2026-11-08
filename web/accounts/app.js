@@ -12,6 +12,72 @@ const AccountApp = (() => {
     return Object.fromEntries(snapshotKeys.filter(key => snapshot[key] !== undefined && snapshot[key] !== null)
       .map(key => [key, copy(snapshot[key])]));
   }
+  const AuthUI = {
+    password(prefix, id, label, autocomplete = 'new-password') {
+      return `<label for="${prefix}-${id}">${label}</label><div class="account-password"><input id="${prefix}-${id}" name="${id}" data-sensitive type="password" autocomplete="${autocomplete}" minlength="12" required><button type="button" data-password="${prefix}-${id}" aria-controls="${prefix}-${id}" aria-pressed="false" aria-label="Show ${label.toLowerCase()}">Show</button></div>`;
+    },
+    form(prefix) {
+      return `<form id="${prefix}-auth-form" data-mode="register">
+        <p>Choose a nickname for your handle, not personal information. Handles use 3–24 letters, numbers or underscores.</p>
+        <label for="${prefix}-handle">Handle</label><input id="${prefix}-handle" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" pattern="[A-Za-z0-9_]{3,24}" minlength="3" maxlength="24" required aria-describedby="${prefix}-password-note">
+        <p id="${prefix}-password-note">Use a unique password of 12–72 characters. Accented letters and emoji use more space; the limit is 72 UTF-8 bytes. No contact details are needed.</p>
+        <div id="${prefix}-recovery-input" hidden><label for="${prefix}-recovery">Saved recovery code</label><input id="${prefix}-recovery" name="recovery-code" autocomplete="off" spellcheck="false" autocapitalize="none" maxlength="100" disabled></div>
+        ${this.password(prefix, 'password', 'Password')}
+        <div id="${prefix}-confirm-step">${this.password(prefix, 'confirm', 'Confirm password')}</div>
+        <div class="account-actions"><button type="submit" id="${prefix}-create">Save my progress</button><button type="button" id="${prefix}-login">Sign in</button><button type="button" id="${prefix}-recover">Recover account</button><button type="button" id="${prefix}-new-account" hidden>Create a new account</button></div>
+        <p id="${prefix}-recovery-note" hidden>If you lose both your password and recovery code, we cannot recover your account. Your progress backup cannot sign you in.</p>
+      </form>`;
+    },
+    recovery(prefix) {
+      return `<section id="${prefix}-recovery-step" class="account-recovery" hidden aria-labelledby="${prefix}-recovery-title"><h3 id="${prefix}-recovery-title">Save your recovery code</h3><p>This code is shown once. Keep it somewhere private, separate from your progress backup. It can replace your password. Using it creates a new code.</p><label for="${prefix}-recovery-code">Recovery code</label><input id="${prefix}-recovery-code" readonly autocomplete="off" spellcheck="false"><p>If you lose both your password and this code, we cannot recover your account.</p><div class="account-actions"><button type="button" id="${prefix}-recovery-download">Download recovery code</button><button type="button" id="${prefix}-recovery-saved">I’ve saved my code</button></div></section>`;
+    },
+    mode(root, prefix, mode) {
+      const $ = id => root.querySelector(`#${prefix}-${id}`);
+      $('auth-form').dataset.mode = mode;
+      $('password').value = ''; $('confirm').value = ''; $('recovery').value = '';
+      $('password').autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+      $('confirm-step').hidden = mode === 'login'; $('confirm').disabled = mode === 'login';
+      $('recovery-input').hidden = mode !== 'recover'; $('recovery').disabled = mode !== 'recover'; $('recovery').required = mode === 'recover';
+      $('recovery-note').hidden = mode !== 'recover';
+      $('create').hidden = mode !== 'register'; $('new-account').hidden = mode === 'register';
+      $('login').textContent = mode === 'login' ? 'Sign in' : 'I already have an account';
+      $('recover').textContent = mode === 'recover' ? 'Reset password & sign in' : 'Recover account';
+      for (const id of ['password', 'confirm']) { $(id).type = 'password'; const button = root.querySelector(`[data-password="${prefix}-${id}"]`); button.textContent = 'Show'; button.setAttribute('aria-pressed', 'false'); button.setAttribute('aria-label', `Show ${root.querySelector(`label[for="${prefix}-${id}"]`)?.textContent.toLowerCase() || 'password'}`); }
+      $('handle').focus();
+    },
+    bind(root, prefix, submit, acknowledged = () => {}) {
+      const $ = id => root.querySelector(`#${prefix}-${id}`);
+      $('auth-form').onsubmit = event => { event.preventDefault(); submit($('auth-form').dataset.mode); };
+      for (const [id, mode] of [['login', 'login'], ['recover', 'recover'], ['new-account', 'register']]) $(id).onclick = () => {
+        if ($('auth-form').dataset.mode === mode && id !== 'new-account') $('auth-form').requestSubmit();
+        else this.mode(root, prefix, mode);
+      };
+      root.querySelectorAll('[data-password]').forEach(button => { button.onclick = () => {
+        const input = root.querySelector(`#${button.dataset.password}`), reveal = input.type === 'password';
+        input.type = reveal ? 'text' : 'password'; button.textContent = reveal ? 'Hide' : 'Show';
+        button.setAttribute('aria-pressed', String(reveal));
+        button.setAttribute('aria-label', `${reveal ? 'Hide' : 'Show'} ${root.querySelector(`label[for="${input.id}"]`)?.textContent.toLowerCase() || 'password'}`);
+      }; });
+      $('recovery-download').onclick = () => {
+        const url = URL.createObjectURL(new Blob([`Microgame Madness recovery code\nHandle: ${$('handle').value.trim()}\n${$('recovery-code').value}\nKeep this code private. It replaces your password once.\n`], { type: 'text/plain' }));
+        const link = document.createElement('a'); link.href = url; link.download = 'microgame-madness-recovery.txt'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      };
+      $('recovery-saved').onclick = () => { $('recovery-code').value = ''; $('recovery-step').hidden = true; acknowledged(); };
+    },
+    values(root, prefix, mode) {
+      const $ = id => root.querySelector(`#${prefix}-${id}`);
+      if (!$('auth-form').reportValidity()) return null;
+      if (new TextEncoder().encode($('password').value).length > 72) throw new Error('This password uses more than 72 bytes. Use fewer accented letters or emoji, or a shorter password.');
+      if (mode !== 'login' && $('password').value !== $('confirm').value) throw new Error('The passwords do not match.');
+      return { handle: $('handle').value.trim(), password: $('password').value, code: $('recovery').value.trim() };
+    },
+    clear(root) { root.querySelectorAll('input[type="password"], input[data-sensitive], [name="password"], [name="confirm"], [name="recovery-code"], [name="current-password"], [name="new-password"], [name="delete-password"]').forEach(input => { input.value = ''; if (input.hasAttribute('data-sensitive')) input.type = 'password'; }); root.querySelectorAll('[data-password]').forEach(button => { button.textContent = 'Show'; button.setAttribute('aria-pressed', 'false'); button.setAttribute('aria-label', `Show ${root.querySelector(`label[for="${button.dataset.password}"]`)?.textContent.toLowerCase() || 'password'}`); }); },
+    showRecovery(root, prefix, code) {
+      if (!code) return;
+      const field = root.querySelector(`#${prefix}-recovery-code`); field.value = code;
+      root.querySelector(`#${prefix}-recovery-step`).hidden = false; field.focus(); field.select();
+    },
+  };
   class App {
     constructor({ getProfile, applyProfile, isPlaying, config, onCode, onIdentityLoss }) {
       this.getProfile = getProfile;
@@ -55,6 +121,7 @@ const AccountApp = (() => {
         this.controller = new AccountSync.Controller({ config: this.config, store: this.store,
           session: this.session, rules: AccountRules });
         await this.controller.initialize(copy(this.getProfile()));
+        if (this.controller.state().importRequired) this.registrationHandle = this.session.snapshot().user?.handle || null;
         await this.controller.claimStream(await this.tabIdentity());
         this.controller.subscribe(state => {
           this.render();
@@ -227,10 +294,9 @@ const AccountApp = (() => {
         <div class="account-header"><h2 id="account-heading">Your arcade profile</h2><button type="button" id="account-close" aria-label="Close profile">×</button></div>
         <p id="account-status" role="status"></p><p id="account-message" role="status" aria-live="polite"></p>
         <section id="account-auth"><h3>Keep your progress</h3><p>Sign in to save across devices. Playing as a guest stays available.</p>
-          <label>Email <input id="account-email" type="email" autocomplete="email" maxlength="254"></label>
-          <div class="account-actions"><button type="button" id="account-create">Save my progress</button><button type="button" id="account-login">Sign in</button></div>
-          <div id="account-code-step" hidden><label>Email code <input id="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="12"></label><button type="button" id="account-verify">Confirm code</button></div>
+          ${AuthUI.form('account')}
         </section>
+        ${AuthUI.recovery('account')}
         <section id="account-import" hidden><h3>Bring your guest progress</h3><p id="account-import-summary"></p>
           <p>Achievements, Cash, and purchases in an old save belong to this shared browser profile. They cannot be split by player name.</p>
           <fieldset id="account-import-names"><legend>Score names to include</legend></fieldset>
@@ -251,7 +317,14 @@ const AccountApp = (() => {
           <label>Review a saved backup <input id="account-file" type="file" accept="application/json,.json"></label>
           <div id="account-user-actions" hidden><p>Signing out keeps unsynced work on this device for this account. Other signed-in players cannot use it.</p>
             <button type="button" id="account-signout">Sign out</button>
-            <details><summary>Delete account</summary><p>This removes your cloud history, progress, purchases, and public records. Sign in again first if your session is older than ten minutes. Backup copies expire under the service retention policy.</p>
+            <details><summary>Password & recovery</summary><p>Confirm your current password to change it or replace your recovery code. A password change signs out your other sessions.</p>
+              <input name="username" id="account-security-handle" autocomplete="username" hidden>
+              ${AuthUI.password('account', 'current-password', 'Current password', 'current-password')}
+              ${AuthUI.password('account', 'new-password', 'New password')}
+              ${AuthUI.password('account', 'new-confirm', 'Confirm new password')}
+              <div class="account-actions"><button type="button" id="account-change-password">Change password</button><button type="button" id="account-rotate-recovery">Replace recovery code</button></div></details>
+            <details><summary>Delete account</summary><p>This removes your cloud history, progress, purchases, and public records. Confirm with your current password. Backup copies expire under the service retention policy.</p>
+              ${AuthUI.password('account', 'delete-password', 'Password for deletion', 'current-password')}
               <label>Type DELETE to confirm <input id="account-delete-confirm" autocomplete="off"></label><button type="button" id="account-delete">Delete my account</button></details>
           </div>
         </section>`;
@@ -263,17 +336,21 @@ const AccountApp = (() => {
         if (this.isPlaying()) { $('account-summary').textContent = 'Finish or leave this round to open your profile.'; return; }
         dialog.showModal(); this.render(true); this.action(() => this.loadHistory());
       };
-      $('account-close').onclick = () => dialog.close();
-      dialog.addEventListener('close', () => $('account-open').focus());
-      $('account-create').onclick = () => this.action(() => this.requestCode(true));
-      $('account-login').onclick = () => this.action(() => this.requestCode(false));
-      $('account-verify').onclick = () => this.action(async () => {
-        await this.session.verifyCode(this.authEmail, $('account-code').value.trim(), { upgrade: this.upgrade });
-        const user = this.session.snapshot().user;
-        await this.controller.activate(user.id, { bindGuest: this.upgrade });
-        $('account-code').value = '';
-        $('account-code-step').hidden = true;
-        this.applyCurrent(); this.render(true); await this.loadHistory();
+      const canClose = () => { if (!$('account-recovery-step').hidden) { $('account-recovery-code').focus(); this.message('Save your recovery code and acknowledge it before closing.'); return false; } return true; };
+      $('account-close').onclick = () => { if (canClose()) dialog.close(); };
+      dialog.addEventListener('cancel', event => { if (!canClose()) event.preventDefault(); });
+      dialog.addEventListener('close', () => { AuthUI.clear(dialog); $('account-open').focus(); });
+      AuthUI.bind(dialog, 'account', mode => this.action(() => this.authenticate(mode)), () => this.render());
+      $('account-change-password').onclick = () => this.action(async () => {
+        for (const id of ['current-password', 'new-password', 'new-confirm']) if (!$(`account-${id}`).reportValidity()) return;
+        if ($('account-new-password').value !== $('account-new-confirm').value) throw new Error('The passwords do not match.');
+        try { const result = await this.session.changePassword($('account-current-password').value, $('account-new-password').value); this.recoveryOwner = this.session.snapshot().user?.id; AuthUI.showRecovery(dialog, 'account', result?.recoveryCode); this.message('Password changed. Your other sessions are signed out.'); }
+        finally { AuthUI.clear(dialog); }
+      });
+      $('account-rotate-recovery').onclick = () => this.action(async () => {
+        if (!$('account-current-password').reportValidity()) return;
+        try { const result = await this.session.rotateRecovery($('account-current-password').value); this.recoveryOwner = this.session.snapshot().user?.id; AuthUI.showRecovery(dialog, 'account', result.recoveryCode); }
+        finally { AuthUI.clear(dialog); }
       });
       $('account-save-settings').onclick = () => this.action(async () => {
         await this.setting({ player: $('account-name').value.trim() || 'Player', soundOn: $('account-sound').checked,
@@ -289,7 +366,9 @@ const AccountApp = (() => {
       });
       $('account-delete').onclick = () => this.action(async () => {
         if ($('account-delete-confirm').value !== 'DELETE') throw new Error('Type DELETE to confirm account deletion.');
-        await this.controller.deleteAccount(); $('account-delete-confirm').value = '';
+        if (!$('account-delete-password').reportValidity()) return;
+        try { await this.controller.deleteAccount($('account-delete-password').value); } finally { AuthUI.clear(dialog); }
+        $('account-delete-confirm').value = '';
         this.applyCurrent(); this.render(true); await this.loadHistory(); this.message('Your account was deleted. Guest play is available.');
       });
       $('account-export').onclick = () => this.action(async () => {
@@ -313,13 +392,13 @@ const AccountApp = (() => {
         const source = this.importSource || { profile: state.importProfile, baseline: true };
         const names = [...$('account-import-names').querySelectorAll('input:checked')].map(input => input.value);
         await this.controller.importProfile(source.profile, { names, baseline: source.baseline });
-        this.importSource = null; this.applyCurrent(); this.render(true); await this.loadHistory();
+        this.importSource = null; await this.defaultHandle(); this.applyCurrent(); this.render(true); await this.loadHistory();
         this.message('Progress import saved. The original local backup is retained.');
       });
       $('account-import-skip').onclick = () => this.action(async () => {
         this.importSource = null;
         if (this.controller.state().importRequired) await this.controller.activate(this.session.snapshot().user.id, { bindGuest: false });
-        this.applyCurrent(); this.render(true);
+        await this.defaultHandle(); this.applyCurrent(); this.render(true);
       });
       for (const id of ['account-history-game', 'account-history-difficulty', 'account-history-outcome'])
         $(id).onchange = () => this.action(async () => {
@@ -340,26 +419,45 @@ const AccountApp = (() => {
         $('account-history-game').append(option);
       }
     }
-    async requestCode(upgrade) {
+    async authenticate(mode) {
       if (!this.config?.url || !this.config?.key) throw new Error('Cloud accounts are not connected on this deployment. You can keep playing and export a local backup.');
-      if (!this.$('account-email').reportValidity() || !this.$('account-email').value.trim())
-        throw new Error('Enter your email address.');
-      this.upgrade = upgrade; this.authEmail = this.$('account-email').value.trim();
-      if (upgrade) await this.session.ensureAnonymous();
-      await this.session.requestCode(this.authEmail, { upgrade });
-      this.$('account-code-step').hidden = false; this.$('account-code').focus();
-      this.message('Check your email for a code. You can request another code if it expires.');
+      const values = AuthUI.values(this.nodes.panel, 'account', mode); if (!values) return;
+      let result;
+      try {
+        result = mode === 'register' ? await this.session.register(values.handle, values.password)
+          : mode === 'recover' ? await this.session.recover(values.handle, values.code, values.password)
+            : await this.session.login(values.handle, values.password);
+        const user = this.session.snapshot().user;
+        this.recoveryOwner = user.id;
+        if (mode === 'register') this.registrationHandle = values.handle.toLowerCase();
+        // Show the one-time secret even if subsequent progress activation needs a retry.
+        AuthUI.showRecovery(this.nodes.panel, 'account', result?.recoveryCode);
+        await this.controller.activate(user.id, { bindGuest: mode === 'register' });
+        await this.defaultHandle();
+        this.applyCurrent(); this.render(true); await this.loadHistory();
+      } finally { AuthUI.clear(this.nodes.panel); }
+    }
+    async defaultHandle(handle = this.registrationHandle) {
+      if (!handle || this.controller.state().importRequired) return;
+      const player = this.controller.state().profile?.player;
+      if (!player || player === 'Player') await this.setting({ player: handle });
+      this.registrationHandle = null;
     }
     render(force = false) {
       if (!this.controller) return;
       const state = this.controller.state(), profile = state.profile || {};
+      if (this.recoveryOwner && this.session?.snapshot().user?.id !== this.recoveryOwner) {
+        this.$('account-recovery-code').value = ''; this.$('account-recovery-step').hidden = true;
+        this.recoveryOwner = null; this.registrationHandle = null;
+      }
       const needsSignIn = state.status === 'sign_in_required' || this.session?.snapshot().requiresSignIn;
       if (this.displayOwner !== state.owner) {
         this.displayOwner = state.owner;
         this.importSource = null; this.importManifest = null; this.historyCursor = null;
         this.$('account-history').replaceChildren(); this.$('account-history-summary').textContent = '';
         this.$('account-history-more').hidden = true;
-        for (const id of ['account-email', 'account-code', 'account-file', 'account-delete-confirm']) this.$(id).value = '';
+        for (const id of ['account-handle', 'account-file', 'account-delete-confirm']) this.$(id).value = '';
+        AuthUI.clear(this.nodes.panel);
         this.message(''); force = true;
       }
       const labels = { saved: 'Saved', synced: 'Saved', syncing: 'Syncing…', offline: 'Offline · Saved on this device',
@@ -375,9 +473,13 @@ const AccountApp = (() => {
       this.$('account-status').textContent = status;
       this.$('account-auth').hidden = this.signedIn && !needsSignIn;
       this.$('account-user-actions').hidden = !this.signedIn;
+      for (const id of ['account-signout', 'account-delete', 'account-change-password', 'account-rotate-recovery'])
+        this.$(id).disabled = !this.$('account-recovery-step').hidden;
       this.$('account-sync').disabled = !this.signedIn || state.importRequired;
       const configured = !!(this.config?.url && this.config?.key);
-      this.$('account-create').disabled = !configured || this.accountBound; this.$('account-login').disabled = !configured;
+      this.$('account-create').disabled = !configured || this.accountBound; this.$('account-login').disabled = !configured; this.$('account-recover').disabled = !configured;
+      this.$('account-security-handle').value = this.session?.snapshot().user?.handle || '';
+      if (this.recoveryOwner) this.$('account-handle').value = this.session?.snapshot().user?.handle || this.$('account-handle').value;
       if (!configured) this.$('account-status').textContent += ' · Cloud accounts are not connected yet';
       if (force || !this.nodes.panel.open) {
         this.$('account-name').value = profile.player || 'Player';
@@ -430,6 +532,6 @@ const AccountApp = (() => {
       this.$('account-history-more').hidden = !this.historyCursor;
     }
   }
-  return { App, compactSnapshot };
+  return { App, compactSnapshot, AuthUI };
 })();
 if (typeof module !== 'undefined') module.exports = AccountApp;

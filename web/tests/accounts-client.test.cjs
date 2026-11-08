@@ -175,14 +175,20 @@ test('logout while refresh is in flight cannot restore the logged-out session', 
   assert.equal(saved.getItem(auth.storageKey), null);
 });
 
-test('existing-account email code does not auto-create accounts or discard current guest session', async t => {
+test('handle login uses the identity endpoint and caches only an allowlisted user projection', async t => {
   const requests = [], saved = storage();
-  const auth = new Client(config, { storage: saved, events: null, fetch: async (url, options) => { requests.push({ url, body: JSON.parse(options.body) }); return response({}); } });
-  t.after(() => auth.close());
-  await auth.requestCode(' player@example.com ');
-  assert.deepEqual(requests[0].body, { email: 'player@example.com', create_user: false });
-  await assert.rejects(auth.verifyCode('other@example.com', '123456'), { code: 'code_request_required' });
-  assert.equal(auth.snapshot().user, null);
+  const auth = new Client(config, { storage: saved, events: null, fetch: async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return response({ session: { access_token: 'access', refresh_token: 'refresh', expires_in: 3600,
+      user: { id: 'player', is_anonymous: false, handle: 'cubie', email: 'opaque@example.invalid',
+        user_metadata: { password: 'never-cache-me' } } } });
+  } }); t.after(() => auth.close());
+  const user = await auth.login(' Cubie ', 'test-password-123');
+  assert.equal(user.id, 'player');
+  assert.equal(requests[0].url, `${config.url}/functions/v1/identity`);
+  assert.deepEqual(requests[0].body, { action: 'login', handle: 'cubie', password: 'test-password-123' });
+  assert.deepEqual(user, { id: 'player', is_anonymous: false, handle: 'cubie' });
+  assert.doesNotMatch(saved.getItem(auth.storageKey), /email|password|example.invalid|never-cache/);
 });
 
 test('a late response cannot populate a newly active account', async t => {
@@ -323,21 +329,20 @@ test('an event occurrence time survives delayed enqueue and later snapshot rebas
   assert.equal(rebased.optimistic.runs['delayed-run'].startedAt, new Date(occurredAt).toISOString());
 });
 
-test('other-tab token rotations preserve owner generation and pending email verification', async t => {
+test('other-tab token rotations preserve owner generation and invalidate credential requests', async t => {
   const saved = storage(), auth = new Client(config, { storage: saved, events: null });
   t.after(() => auth.close());
   auth.save({ access_token: 'first', refresh_token: 'first-refresh', expires_in: 3600, user: { id: 'user' } });
-  auth.pendingEmail = { email: 'player@example.com', generation: auth.generation };
-  const pending = auth.pendingEmail, generation = auth.generation;
+  const assertCredential = auth.credentialFence(), generation = auth.generation;
   saved.setItem(auth.storageKey, JSON.stringify({ ...auth.session, access_token: 'rotated', refresh_token: 'rotated-refresh' }));
   auth.onStorage({ key: auth.storageKey });
   assert.equal(auth.generation, generation);
-  assert.equal(auth.pendingEmail, pending);
+  assert.throws(assertCredential, { code: 'stale_session' });
   assert.equal(await auth.token(), 'rotated');
   saved.setItem(auth.storageKey, JSON.stringify({ ...auth.session, user_id: 'other-user', user: { id: 'other-user' } }));
   auth.onStorage({ key: auth.storageKey });
   assert.equal(auth.generation, generation + 1);
-  assert.equal(auth.pendingEmail, null);
+  assert.throws(assertCredential, { code: 'stale_session' });
   saved.removeItem(auth.storageKey); auth.onStorage({ key: null });
   assert.equal(auth.generation, generation + 2);
   assert.equal(auth.snapshot().user, null);
@@ -417,4 +422,181 @@ test('an import paused during backup cannot enqueue under a newly active owner',
   assert.equal(sync.state().owner, 'user-two');
   assert.equal((await sync.store.get('user-two')).pending.length, 0);
   assert.equal((await sync.store.get('user-one')).backups.length, 1);
+});
+
+function tokenData(id, options = {}) {
+  return { access_token: `access-${id}`, refresh_token: `refresh-${id}`, expires_in: 3600,
+    user: { id, is_anonymous: false, handle: 'cubie', ...options } };
+}
+
+test('register upgrades the guest UUID and returns a recovery code without persisting it', async t => {
+  const saved = storage(), requests = [];
+  const auth = new Client(config, { storage: saved, events: null, fetch: async (url, options) => {
+    requests.push({ url, headers: options.headers, body: options.body && JSON.parse(options.body) });
+    if (url.endsWith('/signup')) return response(tokenData('guest', { is_anonymous: true }));
+    if (url.endsWith('/user')) return response({ id: 'guest', is_anonymous: true });
+    return response({ session: tokenData('guest'), recoveryCode: 'secret-recovery-code' });
+  } }); t.after(() => auth.close());
+  const result = await auth.register('CUBIE', 'test-password-123');
+  assert.equal(result.user.id, 'guest');
+  assert.equal(result.recoveryCode, 'secret-recovery-code');
+  assert.equal(requests[2].headers.Authorization, 'Bearer access-guest');
+  assert.deepEqual(requests[2].body, { action: 'register', handle: 'cubie', password: 'test-password-123' });
+  assert.doesNotMatch(saved.getItem(auth.storageKey), /secret-recovery-code|test-password/);
+});
+
+test('registration refuses a changed provider UUID while retaining its original guest', async t => {
+  const auth = new Client(config, { storage: storage(), events: null, fetch: async url =>
+    url.endsWith('/user') ? response({ id: 'guest', is_anonymous: true })
+      : response({ session: tokenData('wrong-owner'), recoveryCode: 'code' }) });
+  t.after(() => auth.close()); auth.save(tokenData('guest', { is_anonymous: true }));
+  await assert.rejects(auth.register('cubie', 'test-password-123'), { code: 'identity_changed' });
+  assert.equal(auth.snapshot().user.id, 'guest');
+});
+
+test('a late login cannot resurrect a signed-out session', async t => {
+  let release;
+  const auth = new Client(config, { storage: storage(), events: null, fetch: async () => new Promise(resolve => {
+    release = () => resolve(response({ session: tokenData('old') }));
+  }) }); t.after(() => auth.close());
+  const loggingIn = auth.login('cubie', 'test-password-123');
+  await auth.signOut(); release();
+  await assert.rejects(loggingIn, { code: 'stale_session' });
+  assert.equal(auth.snapshot().user, null);
+});
+
+test('concurrent logins accept only the latest request even when the old one finishes first', async t => {
+  const releases = [];
+  const auth = new Client(config, { storage: storage(), events: null, fetch: async () => new Promise(resolve => {
+    releases.push(id => resolve(response({ session: tokenData(id) })));
+  }) }); t.after(() => auth.close());
+  const old = auth.login('old', 'test-password-123'), latest = auth.login('new', 'test-password-456');
+  releases[0]('old'); await assert.rejects(old, { code: 'stale_session' });
+  assert.equal(auth.snapshot().user, null);
+  releases[1]('new'); await latest;
+  assert.equal(auth.snapshot().user.id, 'new');
+});
+
+test('password changes and recovery rotate credentials without storing entered secrets', async t => {
+  const saved = storage(), actions = [];
+  const auth = new Client(config, { storage: saved, events: null, fetch: async (_url, options) => {
+    actions.push(JSON.parse(options.body));
+    return response({ session: tokenData('player'), recoveryCode: 'replacement-code' });
+  } }); t.after(() => auth.close()); auth.save(tokenData('player'));
+  await auth.changePassword('old-password-123', 'new-password-123');
+  const rotated = await auth.rotateRecovery('new-password-123');
+  assert.equal(rotated.recoveryCode, 'replacement-code');
+  await auth.recover('cubie', 'saved-code', 'reset-password-123');
+  assert.deepEqual(actions.map(value => value.action), ['change_password', 'rotate_recovery', 'recover']);
+  assert.doesNotMatch(saved.getItem(auth.storageKey), /password|replacement-code|saved-code/);
+});
+
+test('legacy cached provider email and extra credential fields are removed on startup', t => {
+  const saved = storage(), key = `microgame-madness.leaderboard.v1:${config.url}.session`;
+  saved.setItem(key, JSON.stringify({ access_token: 'access', refresh_token: 'refresh', expires_at: 1000,
+    user_id: 'player', password: 'unexpected', user: { email: 'legacy@example.invalid', id: 'player', is_anonymous: false } }));
+  const auth = new Client(config, { storage: saved, events: null }); t.after(() => auth.close());
+  assert.doesNotMatch(saved.getItem(key), /email|password|example.invalid/);
+  assert.equal(auth.snapshot().user.id, 'player');
+});
+
+test('invalid credential formats fail locally and never send contact details', async t => {
+  let calls = 0;
+  const auth = new Client(config, { storage: storage(), events: null, fetch: async () => { calls++; } });
+  t.after(() => auth.close());
+  await assert.rejects(auth.login('player@example.com', 'test-password-123'), { code: 'invalid_handle' });
+  await assert.rejects(auth.register('cubie', 'short'), { code: 'invalid_password' });
+  await assert.rejects(auth.register('cubie', 'x'.repeat(129)), { code: 'invalid_password' });
+  assert.equal(calls, 0);
+});
+
+test('lost registration reply can retry with the same upgraded guest owner and durable intent', async t => {
+  const saved = storage(); let upgraded = false, lose = true;
+  const auth = new Client(config, { storage: saved, events: null, fetch: async url => {
+    if (url.endsWith('/user')) return response({ id: 'guest', is_anonymous: !upgraded });
+    upgraded = true;
+    if (lose) { lose = false; throw new Error('reply lost'); }
+    return response({ session: tokenData('guest'), recoveryCode: 'replacement-code' });
+  } }); t.after(() => auth.close()); auth.save(tokenData('guest', { is_anonymous: true }));
+  await assert.rejects(auth.register('cubie', 'test-password-123'), { code: 'network' });
+  assert.deepEqual(auth.pendingRegistration(), { owner: 'guest', handle: 'cubie' });
+  assert.doesNotMatch(saved.getItem(auth.registrationKey), /password|code/);
+  const result = await auth.register('cubie', 'test-password-123');
+  assert.equal(result.user.id, 'guest');
+  assert.equal(result.recoveryCode, 'replacement-code');
+});
+
+test('reload after provider conversion binds the original guest journal before cloud activation', async t => {
+  const auth = session('converted'), local = store(t);
+  let pending = { owner: 'converted', handle: 'cubie' };
+  auth.pendingRegistration = () => pending;
+  auth.completeRegistration = owner => { if (owner === pending?.owner) pending = null; };
+  await local.ensure('guest', { player: 'Before conversion', shop: { units: 92000, owned: [] } });
+  await local.append('guest', 'arcade', { event: 'secret', name: 'cube' });
+  const journal = (await local.get('guest')).pending;
+  const sync = controller(t, { session: auth, store: local });
+  await sync.initialize();
+  assert.equal(sync.state().owner, 'converted');
+  assert.equal(sync.state().importRequired, true);
+  assert.equal(sync.state().importProfile.shop.units, 92000);
+  assert.deepEqual((await local.get('converted')).pending, journal);
+  assert.equal(pending, null);
+});
+
+test('registration refuses unavailable intent storage before converting the guest', async t => {
+  let conversionCalls = 0;
+  const auth = new Client(config, { storage: null, events: null, fetch: async url => {
+    if (url.endsWith('/user')) return response({ id: 'guest', is_anonymous: true });
+    conversionCalls++; return response({});
+  } }); t.after(() => auth.close()); auth.save(tokenData('guest', { is_anonymous: true }));
+  await assert.rejects(auth.register('cubie', 'test-password-123'), { code: 'storage_unavailable' });
+  assert.equal(conversionCalls, 0);
+});
+
+test('password limit counts UTF-8 bytes so bcrypt never silently truncates', async t => {
+  const auth = new Client(config, { storage: storage(), events: null }); t.after(() => auth.close());
+  assert.equal(auth.password('x'.repeat(72)), 'x'.repeat(72));
+  assert.equal(auth.password('é'.repeat(36)), 'é'.repeat(36));
+  assert.throws(() => auth.password('é'.repeat(37)), { code: 'invalid_password' });
+});
+
+test('reload resumes a bound guest import review without canceling its original journal', async t => {
+  const local = store(t), auth = session('converted');
+  await local.ensure('guest', { player: 'Original guest', shop: { units: 81000, owned: [] } });
+  await local.append('guest', 'arcade', { event: 'secret', name: 'cube' });
+  await local.bind('guest', 'converted', { snapshot: { state: Rules.initial(), revision: 0 } });
+  const before = await local.get('converted');
+  assert.equal(before.importRequired, true);
+  const sync = controller(t, { session: auth, store: local });
+  await sync.initialize();
+  assert.equal(sync.state().owner, 'converted');
+  assert.equal(sync.state().importRequired, true);
+  assert.equal(sync.state().importProfile.shop.units, 81000);
+  assert.deepEqual((await local.get('converted')).pending, before.pending);
+});
+
+test('recorded registration retry reaches credential proof even after the guest token is revoked', async t => {
+  const saved = storage(), calls = [];
+  const auth = new Client(config, { storage: saved, events: null, fetch: async (url, options) => {
+    calls.push(url);
+    if (!url.endsWith('/functions/v1/identity')) return response({ message: 'Guest session revoked' }, 401);
+    assert.equal(options.headers.Authorization, 'Bearer revoked-guest-token');
+    return response({ session: tokenData('original-guest'), recoveryCode: 'fresh-recovery' });
+  } }); t.after(() => auth.close());
+  auth.save({ ...tokenData('original-guest', { is_anonymous: true }), access_token: 'revoked-guest-token', expires_in: 0 });
+  saved.setItem(auth.registrationKey, JSON.stringify({ owner: 'original-guest', handle: 'cubie' }));
+  const result = await auth.register('cubie', 'test-password-123');
+  assert.equal(result.user.id, 'original-guest');
+  assert.equal(result.recoveryCode, 'fresh-recovery');
+  assert.deepEqual(calls, [`${config.url}/functions/v1/identity`]);
+});
+
+test('recorded registration retry refuses credentials that authenticate a different owner', async t => {
+  const saved = storage();
+  const auth = new Client(config, { storage: saved, events: null, fetch: async () =>
+    response({ session: tokenData('someone-else'), recoveryCode: 'code' }) });
+  t.after(() => auth.close()); auth.save(tokenData('original-guest', { is_anonymous: true }));
+  saved.setItem(auth.registrationKey, JSON.stringify({ owner: 'original-guest', handle: 'cubie' }));
+  await assert.rejects(auth.register('cubie', 'test-password-123'), { code: 'identity_changed' });
+  assert.equal(auth.snapshot().user.id, 'original-guest');
 });
