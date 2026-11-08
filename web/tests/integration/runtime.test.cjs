@@ -40,7 +40,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
       .map(attack => ['wrath', attack]),
   ]) {
     let state = JSON.parse(
-      handle(JSON.stringify({ action: "start", mode, difficulty, now: 0 })),
+      handle(JSON.stringify({ action: "start", mode, difficulty, now: 0, ...(mode === "geomayhem" ? { campaign: { cleared: 9, unlocked_level: 10 } } : {}) })),
     );
     assert.equal(state.mode, mode);
     if (mode === "pumpkin") {

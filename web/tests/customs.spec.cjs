@@ -10,8 +10,8 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
   await expect(page.locator('#customs-room')).toBeVisible();
-  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(155);
-  await expect(page.locator('#customs-count')).toHaveText('1 / 155 Customs unlocked');
+  await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(173);
+  await expect(page.locator('#customs-count')).toHaveText('1 / 173 Customs unlocked');
   const pumpkin = page.locator('.custom-tile[data-custom="pumpkin"]');
   await expect(pumpkin).toContainText('Defeat the Pumpkin King in any mode.');
   await expect(pumpkin.locator('.custom-equip')).toBeDisabled();

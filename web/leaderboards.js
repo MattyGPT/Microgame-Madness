@@ -3,7 +3,7 @@
 const Leaderboards = (() => {
   const difficulties = Object.freeze({
     hangman: ['easy', 'medium', 'hard'], keyboard: ['progressive'],
-    dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible'],
+    dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible', 'chaos'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
     wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'],

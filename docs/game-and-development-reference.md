@@ -24,7 +24,36 @@ Six browser games, a secret unlockable boss, and a Python desktop/terminal colle
 - **Key Rush / Timed Keyboard Challenge:** type increasingly difficult sequences before time runs out.
 - **Turtle Dodge:** survive falling blocks across four difficulty levels.
 - **Boss Crush:** dodge and shoot through four boss difficulties.
-- **Geomayhem (browser rough draft):** play as Cubie in a geometric survivor roguelike with **10 selectable levels × 20 waves**. WASD or arrow keys move; Cubie's face follows movement. Aim with the mouse and click or hold the left button to fire. Touch players use the joystick and hold Fire to aim at the nearest enemy. R pauses; Escape returns to the picker. Pick one of **34 weapons**, gather green XP crystals, and choose upgrades while combat pauses. Level-ups offer new weapons as well as upgrades: equip up to **three weapons (including the starter)** per run. Handheld weapons fire together; **A Drone** (homing missiles) and **B Drone** (chain shots) orbit Cubie and attack automatically. The first two level-ups introduce the drones, then new-weapon choices sample the whole armory. Each slot upgrades independently; full loadouts receive upgrades and passive choices instead of duplicate or fourth weapons. Weapon pickups drop every eight defeats while slots remain; A and B drones are introduced first. Walk over a glowing pickup to equip it. Level-up costs are 50% higher than the original curve, rounded up: 12, 20, 27, 35 XP, then continuing upward. Clearing a wave collects all remaining XP crystals and can trigger earned level-ups; weapon pickups stay on the ground between waves. Enemy contact deals 15 damage, elite/boss contact deals 24, and enemy projectiles deal 12 (50% more than the initial damage values). Arenas are 930 × 705 world units, 50% wider and taller than the original 620 × 470. Each weapon caps at **five stars**, gaining an additional combat trait and new effect artwork at **three and five stars**. Elites arrive on waves 5, 10 and 15; wave 20 brings a boss. Clear every enemy to advance. All levels and weapons are open for testing; each run starts at one star. This draft uses shared enemy families with increasing difficulty and arena colors, rather than 10 bespoke campaigns. Records, permanent unlocks, Cubie Cash and achievements are not awarded by this mode yet.
+- **Geomayhem (roguelike campaign):** play as Cubie in a geometric survivor roguelike with **20 sequential arenas × 20 waves**. WASD or arrow keys move; Cubie's face follows movement. Aim with the mouse and click or hold the left button to fire. Touch players use the joystick and hold Fire to aim at the nearest enemy. R pauses; Escape returns to the picker. Pick one of **44 weapons**, gather green XP crystals, and choose upgrades while combat pauses. Level-ups offer new weapons as well as upgrades: equip up to **four weapons (including the starter)** per run. Handheld weapons fire together; **A Drone** (homing missiles) and **B Drone** (chain shots) orbit Cubie and attack automatically. Ten additional automatic item weapons—Ember Lantern, Frost Orb, Tesla Coil, Blade Bot, Gravity Cube, Prism Turret, Spore Pod, Repair Beetle, Storm Totem, and Solar Shield—are acquired through XP level-up choices. All 12 item weapons have independent five-star upgrades, with new traits, names, and artwork at stars three and five. Whenever a weapon slot is open, level-up drafts offer a random item companion and a random handheld weapon alongside an upgrade and passive/relic choice. Neither drone is guaranteed in the opening. Each slot upgrades independently; full loadouts receive upgrades and passive choices instead of duplicate or fifth weapons. Weapons and item companions do not drop on the ground; acquire them through XP level-up choices. Only XP crystals drop from defeated enemies. Level-up costs are 50% higher than the original curve, rounded up: 12, 20, 27, 35 XP, then continuing upward. Clearing a wave collects all remaining XP crystals and can trigger earned level-ups. Enemy contact deals 15 damage, elite/boss contact deals 24, and enemy projectiles deal 12 (50% more than the initial damage values). Arenas are 930 × 705 world units, 50% wider and taller than the original 620 × 470. Mobile play uses a closer camera that follows Cubie, with a minimap and corrected mouse aiming. Friendly effects fade near Cubie and render below enemies and high-contrast hostile shots. Queued level-ups show the number of remaining choices. Each weapon caps at **five stars**, gaining an additional combat trait and new effect artwork at **three and five stars**. Elites arrive on waves 5, 10 and 15; wave 20 brings a boss. Clear every enemy to advance. Only arena 1 and five starting weapons are initially unlocked. Clear an arena to unlock the next one and five more starters (all 44 by eight clears); all weapons remain discoverable during runs. Each expedition starts at one star and rolls a Swarming, Armored, or Frenzied enemy modifier. Every third XP rank can offer a relic, up to three per run: Glass Prism, Siphon Core, Winter Engine, Echo Chamber, Fleet Core, or Long Reach. Two rerolls per expedition change the current choices without spending XP. Defeat or leaving ends the run and resets weapons, stars, relics, and rerolls. Finished runs award two shards per wave cleared plus one per ten defeats; wins add 20 and first clears add another 40. The workshop spends shards on permanent health (+10/tier), damage (+5%/tier), or pickup range (+12/tier); each caps at three tiers costing 30, 120, and 240 shards, unlocked after clearing arenas 1, 4, and 8 respectively. Previously purchased tiers remain owned. Arena unlocks, best waves, shards, and workshop tiers persist in browser local storage, separately per account/guest profile; they do not cloud-sync. A storage failure is visibly reported and keeps progress in memory for the visit. Geomayhem does not award Cubie Cash or global achievements.
+
+Geomayhem's arenas have unique backgrounds and mechanics. Yellow marked zones warn before activating in red; their locations lock in, leaving time to escape. Runners and flankers telegraph straight charges; flankers intercept movement and ranged enemies lead their shots. Bosses gain an additional aimed danger mark below half health, while the Mayhem Engine has a third phase below one-quarter health. Boss freezes are brief and have a resistance cooldown.
+
+| Arena | Background | Arena hazard | Boss |
+| --- | --- | --- | --- |
+| Mint Circuit | PCB traces and nodes | Pulse rails | Circuit Warden |
+| Amber Foundry | Steel plates, vents, conveyors | Molten vents | Foundry Colossus |
+| Violet Array | Linked triangular arrays | Crossing array beams | Array Architect |
+| Glacier Grid | Fractured ice plates | Slowing frost fields | Glacier Monarch |
+| Rose Reactor | Flower reactors and pipes | Bloom pulses | Rose Heart |
+| Volt Vault | Capacitors and current channels | Predicted lightning strikes | Volt Conductor |
+| Cinder City | Charred blocks and streets | Burning streets | Cinder Juggernaut |
+| Lunar Labyrinth | Craters and staggered maze paths | Alternating lunar gates | Labyrinth Keeper |
+| Prism Rift | Faceted islands and split rifts | Rift collapses | Prism Doppelstar |
+| Mayhem Core | Radial machine and segmented rings | Core beams and overload rings | Mayhem Engine |
+| Coral Cascade | Coral branches, bubbles, rippling seabed | Tidal rings | Coral Leviathan |
+| Clockwork Keep | Interlocking cogs and clock face | Rotating clock-hand beams | Brass Timekeeper |
+| Emerald Canopy | Leaves and branching vines | Thorn thickets | Canopy Colossus |
+| Obsidian Forge | Black glass and copper seams | Zigzag fractures | Basalt Behemoth |
+| Aurora Observatory | Polar light and telescope lens | Slanted aurora curtains | Polar Astronomer |
+| Neon Speedway | Racing lanes and starting grid | Alternating turbo lanes | Neon Pursuer |
+| Sunken Archive | Book stacks and water stains | Sealing shelves | Drowned Librarian |
+| Mirage Palace | Palace diamonds and pillars | Mirage flares and rings | Mirage Sovereign |
+| Void Cathedral | Gothic pillars and stained glass | Void seals and crossed beams | Hollow Cantor |
+| Infinity Crown | Twin infinity loops and crown | Crownfall marks and final overload | Infinity Regent |
+
+Arenas 11–20 unlock sequentially after Mayhem Core, with twenty waves each and ten additional original looping tracks also available in the jukebox. Existing saves retain their clears, shards, workshop tiers, and best waves. Arena hazards never repeat faster than every 4.5 seconds; attack warnings remain visible before damage. Infinity Regent gains a third phase below 25% health.
+
+
 - **The Pumpkin King:** survive a transformation and seven attacks, including a timed counter move. Choose “Come On, Are You Really That Bad at the Game?” for 23 HP, Baby Mode for 15 HP, Coward Mode for 10 HP, or Impossible Phase 2 for 5 HP; each has separate high scores. Touching the King’s head, arms, or hands kills instantly in every mode, including during the awakening and damage immunity. The roar warns of mouth fire; fire and arm-lift smashes deal 1 HP per hit with normal damage immunity. Projectiles and rings deal their usual damage.
 
 - **The King’s Wrath (browser):** a separate yellow-crown minigame that loads any of the Pumpkin King’s seven attacks with 15 HP. Every attack begins with a three-second 3–2–1 countdown, including repeats. Haunted Quadrants adds its two-second positioning break afterward, for five seconds before the scares begin. Choose Color Memory, Bone Gauntlet, Rotating Rings, Magenta Fingers, Chaos, Royal Slams, or Haunted Quadrants (the spook attack). The chosen attack repeats with the same three-second countdown until you win or die. Choose **Random Order** to play all seven attacks once in a shuffled order, then reshuffle. Adjacent attacks never repeat, including between shuffles. Random Order keeps the same 15 HP, countdowns, and combat rules, with separate local and global scores. Combat, movement, healing, and score time pause during this countdown. Arrows move, F shoots, E counters, and D pauses; Escape returns to the attack picker. Local and global records are separate for each practice attack. Practice victories do not award full-fight Pumpkin King achievements.
@@ -240,9 +269,11 @@ Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is 
 | `singularity_core.py` | Secret boss teleport rules, 15 survival protocols, damage, and locked laser finisher |
 | `singularity_core_view.py` | Procedural Core machinery, containment grid, warnings, and laser artwork |
 | `singularity_practice.py` | Temporary picker wrapper that repeats any shared Core attack |
-| `geomayhem.py` | Cubie movement, manual combat, XP upgrades, 10-level/20-wave progression and enemy families |
-| `geomayhem_weapons.py` | 34 weapon definitions, eight handheld firing patterns, A/B drones and three-/five-star evolution traits |
-| `geomayhem_view.py` | Geometric arena, movement-facing Cubie and evolving weapon artwork |
+| `geomayhem.py` | Campaign start validation, combat, modifiers, relics, rerolls, workshop effects, XP and 20-arena/20-wave progression |
+| `web/geomayhem-progress.js` | Per-profile browser campaign saves, sequential arena/starter unlocks, idempotent shard rewards and permanent workshop purchases |
+| `geomayhem_weapons.py` | 44 weapon definitions, eight handheld firing patterns, 12 item companions and three-/five-star evolution traits |
+| `geomayhem_view.py` | Themed environments, warning zones, readable combat layers, movement-facing Cubie and weapon evolution art |
+| `geomayhem_arenas.py` | Ten background designs, distinct delayed arena/boss hazards and hazard collision geometry |
 | `pumpkin_king_view.py` | Pumpkin King procedural artwork shared by both renderers |
 | `arcade_effects.py` | Shared turtle pixel explosion and 1.6-second death timing |
 | `hangman.py`, `keyboard_challenge.py`, `turtle_dodge.py` | Desktop/terminal input and presentation |
@@ -376,3 +407,36 @@ Survive in a **single run** to earn these medals and Customs:
 | 180 | Beyond Impossible | Empyrorite | White Dwarf Cubie |
 
 Existing general Turtle Dodge milestones, near misses, and O-block death progress also work in Impossible. Merciless records do not grant Impossible rewards. Desktop users can select `dodge_impossible`; the existing `impossible` command-line argument continues to launch Boss Crush. Before enabling the new global leaderboard in production, apply `supabase/migrations/20261108000000_dodge_impossible.sql`.
+
+
+**Chaos Jackpot Cubie slots:** the three reels independently choose among seven, star, cherry, diamond, and bell, then stop one after another and hold the result. Visible previews also spin. Landing **777** while Chaos Jackpot Cubie is equipped and visible earns the one-time Rainbow achievement **Lucky Sevens!**. Hidden or offscreen reels pause and discard unfinished spins; changing equipment starts a fresh spin. Reduced motion swaps the symbols at their stopping points without scrolling. These cosmetic spins do not cost or award Cubie Cash.
+
+
+## Geomayhem achievements and Cubies
+
+Geomayhem has 28 achievements (four per tier) and 16 achievement-earned Customs (four bronze and two per remaining tier). Kills and cleared waves accumulate across expeditions. Repeated frames and final results do not count twice. Run-specific milestones use the best single expedition; abandoned runs keep progress already earned but never grant victories. Victory requires all 20 waves. The flawless final-arena reward checks cumulative damage, so healing cannot restore eligibility.
+
+| Tier | Cubie | Requirement |
+|---|---|---|
+| Bronze | Expedition Scout | Start an expedition |
+| Bronze | Polygon Rookie | Defeat 10 shapes total |
+| Bronze | Wave Guard | Clear your first wave |
+| Bronze | Corner Collector | Defeat 25 shapes total |
+| Silver | Circuit Runner | Clear 5 waves in one run |
+| Silver | Spark Apprentice | Evolve a weapon to 3 stars |
+| Gold | Arsenal | Carry four weapons |
+| Gold | Arena Victor | Win an expedition |
+| Crystal | Relic Keeper | Carry three relics |
+| Crystal | Nova Engineer | Evolve a weapon to 5 stars |
+| Diamond | Rift Warden | Clear arena 5 or higher |
+| Diamond | Prism Hunter | Defeat 500 shapes total |
+| Rainbow | Star Voyager | Clear arena 8 or higher |
+| Rainbow | Orbit Conductor | Carry three 5-star weapons |
+| Empyrorite | Mayhem Sovereign | Clear arena 10 |
+| Empyrorite | Zero Point Seraph | Clear arena 10 without taking damage |
+
+Other medals cover 100/250/2,000 total kills, rank 5, 50/200 total cleared waves, 150 kills in one run, 3/10/50 victories, 20,000 points in one run, and four simultaneous 5-star weapons.
+
+Artwork scales with tier: Bronze uses simple clothing and base Cubie motion; Silver adds shaded surfaces and subtle light pulses; Gold adds metallic equipment and ornaments; Crystal adds faceted gems, aura, sparks, and moving accessories; Diamond adds portals or wings and sweeping highlights; Rainbow adds multicolor orbits; Empyrorite adds elaborate crowns or crystal wings, layered halos, and luminous ornaments. Reduced-motion preferences stop the added animation.
+
+Achievement progress and unlocked Cubies persist through the standard profile/account system, with compact validated run evidence for syncing. The existing local Geomayhem campaign, shard economy, workshop, and arena unlocks remain separate. Geomayhem runs do not grant Cubie Cash or enter the arcade leaderboard. Detailed achievement counters begin with this update; older campaign saves did not record enough evidence to reconstruct past combat or flawless runs.

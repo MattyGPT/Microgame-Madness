@@ -32,7 +32,7 @@ test('every mode can be browsed without signing up or changing the existing prof
   } });
   for (const [mode, values] of Object.entries(difficulties)) for (const difficulty of values)
     assert.equal((await client.list(mode, difficulty))[0].player, 'World champion');
-  assert.equal(calls.length, 25);
+  assert.equal(calls.length, 26);
   assert.ok(calls.every(call => call.url.endsWith('/rpc/get_leaderboard')));
   assert.ok(calls.every(call => !call.options.headers.Authorization));
   assert.equal(store.getItem('microgame-madness.v1'), original);

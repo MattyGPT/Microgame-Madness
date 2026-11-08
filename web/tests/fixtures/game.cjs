@@ -21,7 +21,11 @@ async function routeLocalRuntime(target) {
 // and runtime; persistence tests can explicitly reload that same page.
 const test = base.extend({
   deterministicMusic: [false, { option: true }],
-  page: async ({ page, deterministicMusic }, use) => {
+  firstVisitSetup: [false, { option: true }],
+  page: async ({ page, deterministicMusic, firstVisitSetup }, use) => {
+    if (!firstVisitSetup) await page.addInitScript(() => {
+      try { localStorage.setItem('microgame-madness.welcome.v1', 'complete'); } catch {}
+    });
     await routeLocalRuntime(page);
     // Test built assets without contacting a production leaderboard.
     // Leaderboard specs can override this route with their own mock service.

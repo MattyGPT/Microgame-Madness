@@ -4,8 +4,12 @@ test.use({ deterministicMusic: true });
 test('each arena plays its own looping theme; pause, mute, exit and jukebox preserve playback controls', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const key = 'microgame-madness.geomayhem.v1:guest';
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ cleared: 20 }));
+  });
   await openGame(page);
-  for (let level = 1; level <= 10; level++) {
+  for (let level = 1; level <= 20; level++) {
     await page.locator('[data-game="geomayhem"]').click();
     await page.locator(`[data-difficulty="level_${level}"]`).click();
     expect(await page.evaluate(() => musicPlayer.track)).toBe(`geomayhem_level_${level}`);
@@ -19,11 +23,11 @@ test('each arena plays its own looping theme; pause, mute, exit and jukebox pres
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
   await page.locator('#sound').click();
-  expect(await page.evaluate(() => musicPlayer.track)).toBe('geomayhem_level_10');
+  expect(await page.evaluate(() => musicPlayer.track)).toBe('geomayhem_level_20');
   await page.locator('[data-game="hangman"]').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
   await page.locator('[data-game="jukebox"]').click();
-  for (let level = 1; level <= 10; level++) {
+  for (let level = 1; level <= 20; level++) {
     const card = page.locator(`[data-difficulty="geomayhem_level_${level}"]`);
     await expect(card).toBeVisible();
     await card.click();

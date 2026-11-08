@@ -66,14 +66,15 @@ def start_turtle_dodge():
     print("Hard: much faster yellow blocks that sway left and right")
     print("Merciless: faster red blocks, more spawns, smaller arena, deadly edges, NO PAUSE")
     print("Impossible (dodge_impossible): smaller white blocks, stronger sway, tighter arena, deadly edges, NO PAUSE")
+    print("Chaos: 8 HP, healing, wild block abilities and escalating spawns")
     print("Boss Crush: dodge bullet patterns and shoot the boss with F")
     print("Impossible Phase 2: THE PUMPKIN KING — transformation, seven attacks, E to counter")
     print("Coward Mode: THE PUMPKIN KING — 10 HP instead of 5")
     print("Baby Mode: THE PUMPKIN KING — 15 HP")
     print(f"{COME_ON_NAME} — 23 HP (enter come_on)")
-    difficulty = input("Choose easy / normal / hard / merciless / dodge_impossible / boss / phase2 / coward / baby / come_on: ").strip().lower()
+    difficulty = input("Choose easy / normal / hard / merciless / dodge_impossible / chaos / boss / phase2 / coward / baby / come_on: ").strip().lower()
     while difficulty not in (*DIFFICULTIES, "dodge_impossible", "boss", "boss crush", *PUMPKIN_DIFFICULTIES, "impossible phase 2", "coward mode", "baby mode", COME_ON_NAME.lower()):
-        difficulty = input("Please choose easy, normal, hard, merciless, dodge_impossible, boss, phase2, coward, baby, or come_on: ").strip().lower()
+        difficulty = input("Please choose easy, normal, hard, merciless, dodge_impossible, chaos, boss, phase2, coward, baby, or come_on: ").strip().lower()
     if difficulty == "impossible phase 2":
         difficulty = PHASE_TWO
     if difficulty == "coward mode":
@@ -360,17 +361,36 @@ class TurtleDodge:
         elif self.state == "dying" and now-self.death_started >= DEATH_DURATION:
             self.finish_round()
         self.player.goto(self.game.x, self.game.y)
+        self.blocks.clear()
         self.blocks.clearstamps()
         boss_mode = isinstance(self.game, BossCrush)
         if boss_mode:
             self.draw_boss()
         else:
             for block in self.game.blocks:
-                self.blocks.color(block_outline_color(block.color), block.color)
+                self.blocks.shapesize(block.size/20, outline=BLOCK_OUTLINE_WIDTH)
+                ghost = self.game.difficulty == "chaos" and block.kind == "ghost" and block.age % 3 >= 2
+                if ghost:
+                    self.blocks.color(block.color, "#111827")
+                else:
+                    self.blocks.color(block_outline_color(block.color), block.color)
                 for x, y in block.centers():
                     if self.game.bottom - block.cell_size / 2 <= y <= self.game.top + block.cell_size / 2:
                         self.blocks.goto(x, y)
                         self.blocks.stamp()
+                if self.game.difficulty == "chaos":
+                    from chaos_dodge import CATALOG
+                    radius = 130 if block.kind == "black_hole" else 120 if block.kind == "repulsor" else 65 if block.kind == "bomb" else 0
+                    if radius:
+                        self.blocks.goto(block.x, block.y-radius)
+                        self.blocks.setheading(0)
+                        self.blocks.pencolor(block.color)
+                        self.blocks.pendown()
+                        self.blocks.circle(radius)
+                        self.blocks.penup()
+                    self.blocks.goto(block.x, block.y-5)
+                    self.blocks.pencolor("#152033" if not ghost else block.color)
+                    self.blocks.write(CATALOG[block.kind]["symbol"], align="center", font=("Arial", 10, "bold"))
         self.death_particles.clearstamps()
         if self.state == "dying":
             for x, y, size in death_pixels(self.game.x, self.game.y, now-self.death_started):
@@ -379,7 +399,7 @@ class TurtleDodge:
                     self.death_particles.goto(x, y)
                     self.death_particles.stamp()
         hud = (self.game.score, self.best, int(self.game.elapsed), self.notice,
-               self.game.hp if boss_mode else None, self.game.lives if boss_mode else None,
+               self.game.hp if boss_mode else None, getattr(self.game, "lives", None),
                self.game.pattern_label if boss_mode else "")
         if hud != self.last_hud:
             self.last_hud = hud
@@ -394,6 +414,9 @@ class TurtleDodge:
                 if self.game.pattern_label:
                     self.hud.goto(0, -263)
                     self.hud.write(self.game.pattern_label, align="center", font=("Arial", 11, "bold"))
+            if isinstance(self.game, DodgeGame) and self.game.difficulty == "chaos":
+                self.hud.goto(0, 245)
+                self.hud.write(f"YOUR HP {self.game.lives}/8  |  {self.game.pattern_label}", align="center", font=("Arial", 10, "bold"))
             self.hud.goto(0, -285)
             controls = "ARROWS move   •   D pause/resume   •   ESC menu" if self.game.rules.can_pause else "NO PAUSE   •   EDGES KILL   •   ARROWS move   •   ESC menu"
             if boss_mode:

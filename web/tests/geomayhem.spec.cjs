@@ -8,6 +8,10 @@ test.beforeEach(async ({ page }) => {
       'handle = pyodide.globals.get("handle");',
       'window.geomayhemRuntime = pyodide; handle = pyodide.globals.get("handle");') });
   });
+  await page.addInitScript(() => {
+    const key = 'microgame-madness.geomayhem.v1:guest';
+    if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify({ cleared: 20 }));
+  });
   await openGame(page);
   await page.locator('[data-game="geomayhem"]').click();
 });
@@ -63,14 +67,14 @@ test('WASD and arrows move together, R pauses, and other games retain D pause', 
 test('Geomayhem armory, Cubie movement, manual mouse/touch fire and pause', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(10);
-  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(34);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(20);
+  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(44);
   await page.locator('#geomayhem-weapon').selectOption('comet');
   await expect(page.locator('#geomayhem-evolution-three')).toContainText('Comet Flare');
   await expect(page.locator('#geomayhem-evolution-five')).toContainText('Comet Apocalypse');
   await page.screenshot({ path: testInfo.outputPath('geomayhem-armory.png'), fullPage: true });
   await page.locator('[data-difficulty="level_1"]').click();
-  await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/10 · WAVE 1/20');
+  await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/20 · WAVE 1/20');
   await model(page, 'session.game.break_left = 100');
   await page.keyboard.down('ArrowLeft');
   await expect.poll(() => model(page, 'session.game.x')).toBeLessThan(-20);
@@ -133,8 +137,8 @@ test('XP choices freeze combat and evolve weapon art and gimmicks at three and f
   expect(await model(page, 'session.game.stars')).toBe(1);
 });
 
-test('level ten ends at wave twenty and a defeated Cubie can restart', async ({ page }) => {
-  await page.locator('[data-difficulty="level_10"]').click();
+test('level twenty ends at wave twenty and a defeated Cubie can restart', async ({ page }) => {
+  await page.locator('[data-difficulty="level_20"]').click();
   await model(page, 'session.game.wave = 20\nsession.game.cleared = 19\nsession.game.spawned = session.game.quota\nsession.game.enemies.clear()');
   await expect(page.locator('#overlay-title')).toHaveText('Mayhem mastered!');
   await expect(page.locator('#overlay-copy')).toContainText('All 20 waves');
@@ -145,7 +149,7 @@ test('level ten ends at wave twenty and a defeated Cubie can restart', async ({ 
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="level_1"]').click();
   await expect(page.locator('#player-health-value')).toHaveText('100 / 100');
-  await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/10 · WAVE 1/20');
+  await expect(page.locator('#geomayhem-wave')).toHaveText('LEVEL 1/20 · WAVE 1/20');
 });
 
 test('wave clears collect remaining XP, and the enlarged arena keeps mouse aim aligned', async ({ page }) => {
@@ -157,63 +161,187 @@ test('wave clears collect remaining XP, and the enlarged arena keeps mouse aim a
   await model(page, 'session.game.break_left = 100');
   await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
   await page.locator('[data-upgrade="weapon"]').click();
-  await model(page, 'session.game.x = session.game.y = 0');
+  await model(page, 'session.game.x, session.game.y = 300, 200');
+  await expect.poll(() => page.evaluate(() => snapshot.player.x)).toBe(300);
+  const camera = await page.evaluate(() => geomayhemCamera(snapshot));
   const box = await page.locator('#game-canvas').boundingBox();
-  await page.mouse.move(box.x + (340 + 400 * 2 / 3) * box.width / 680,
-    box.y + (280 - 300 * 2 / 3) * box.height / 560);
+  await page.mouse.move(box.x + (340 + 100 * camera.scale) * box.width / 680,
+    box.y + (280 - 100 * camera.scale) * box.height / 560);
   await page.mouse.down();
   await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
-  expect(await model(page, 'abs(session.game.aim[0] - 400) < 3 and abs(session.game.aim[1] - 300) < 3')).toBe(true);
+  expect(await model(page, `abs(session.game.aim[0] - ${camera.x+100}) < 3 and abs(session.game.aim[1] - ${camera.y+100}) < 3`)).toBe(true);
+  expect(28 * camera.scale * box.width / 680).toBeGreaterThanOrEqual(17.9);
   await page.mouse.up();
   expect(await model(page, 'session.game.right - session.game.left')).toBe(930);
 });
 
-test('combat drops equip A and B drones by walking over them', async ({ page }, testInfo) => {
+test('enemy defeats drop XP but item weapons require a level-up choice', async ({ page }) => {
   await page.locator('[data-difficulty="level_1"]').click();
-  await model(page, 'session.game.break_left = 100');
-  for (const [kills, id] of [[7, 'drone_a'], [15, 'drone_b']]) {
-    await model(page, `from geomayhem import Enemy\nsession.game.x, session.game.y = 200, 200\nsession.game.kills = ${kills}\nsession.game.enemies = [Enemy(500, 250, 200, 0, 0, 12, "chaser", 1)]`);
-    await expect.poll(() => model(page, 'len(session.game.weapon_pickups)')).toBe(1);
-    await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`weapon-pickup-${id}.png`) });
-    await page.keyboard.down('d');
-    await expect(page.locator(`#geomayhem-inventory [data-weapon="${id}"]`)).toBeVisible();
-    await page.keyboard.up('d');
-    await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
-  }
-  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
+  await model(page, 'from geomayhem import Enemy\nsession.game.break_left = 100\nsession.game.enemies = [Enemy(i, 250, 200, 0, 0, 12, "chaser", 1) for i in range(24)]');
+  await expect.poll(() => model(page, 'session.game.kills')).toBe(24);
+  expect(await model(page, 'len(session.game.gems)')).toBe(24);
+  await expect(page.locator('#geomayhem-build')).toHaveText('1/4 weapons');
+  await model(page, 'session.game.x, session.game.y = 250, 200');
+  await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+  await expect(page.locator('#geomayhem-build')).toHaveText('1/4 weapons');
+  const acquisition = page.locator('[data-upgrade^="acquire:"]').first();
+  const item = (await acquisition.getAttribute('data-upgrade')).split(':')[1];
+  await acquisition.click();
+  await expect(page.locator(`[data-weapon="${item}"]`)).toBeVisible();
+  await expect(page.locator('#geomayhem-build')).toHaveText('2/4 weapons');
 });
 
-test('level-ups equip three weapons including autonomous A and B drones with independent evolutions', async ({ page }, testInfo) => {
+test('new item companions appear in the armory and evolve independently through five stars', async ({ page }, testInfo) => {
+  for (const id of ['ember_lantern', 'frost_orb', 'tesla_coil', 'blade_bot', 'gravity_cube',
+    'prism_turret', 'spore_pod', 'repair_beetle', 'storm_totem', 'solar_shield']) {
+    await page.locator('#geomayhem-weapon').selectOption(id);
+    await expect(page.locator('#geomayhem-weapon-description')).toContainText('Auto companion');
+  }
+  await page.locator('#geomayhem-weapon').selectOption('needle');
+  await page.locator('[data-difficulty="level_1"]').click();
+  await model(page, 'session.game.break_left = 100\nsession.game.stars = 5\nsession.game._equip("prism_turret")');
+  await expect(page.locator('[data-weapon="prism_turret"]')).toContainText('Prism Turret');
+  for (let star = 2; star <= 5; star++) {
+    await model(page, 'session.game.xp = session.game.xp_needed');
+    await page.locator('[data-upgrade="upgrade:prism_turret"]').click();
+    if (star === 3) {
+      await expect(page.locator('[data-weapon="prism_turret"]')).toContainText('Prism Battery');
+      await page.locator('#arena').screenshot({ path: testInfo.outputPath('prism-battery.png') });
+    }
+  }
+  await expect(page.locator('[data-weapon="prism_turret"]')).toContainText('Rainbow Bastion');
+  await page.locator('#arena').screenshot({ path: testInfo.outputPath('rainbow-bastion.png') });
+  await model(page, 'from geomayhem import Enemy\nsession.game.enemies = [Enemy(500, 150, 0, 100000, 0, 12, "chaser", 100000)]');
+  await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
+  expect(await model(page, 'all(s.weapon == "prism_turret" for s in session.game.shots)')).toBe(true);
+  await model(page, 'session.game.xp = session.game.xp_needed');
+  await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+  await expect(page.locator('[data-upgrade="upgrade:prism_turret"]')).toHaveCount(0);
+});
+
+test('level-ups equip four weapons with varied automatic companions and independent evolutions', async ({ page }, testInfo) => {
   await page.locator('[data-difficulty="level_1"]').click();
   await model(page, 'session.game.break_left = 100');
-  for (const id of ['drone_a', 'drone_b']) {
+  const companions = [];
+  for (let i = 0; i < 2; i++) {
     await model(page, 'session.game.xp = session.game.xp_needed');
     await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
-    await page.locator(`[data-upgrade="acquire:${id}"]`).click();
+    const acquisition = page.locator('[data-upgrade^="acquire:"]').first();
+    const id = (await acquisition.getAttribute('data-upgrade')).split(':')[1];
+    companions.push(id);
+    await acquisition.click();
     await expect(page.locator(`#geomayhem-inventory [data-weapon="${id}"]`)).toBeVisible();
   }
-  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('3/4 weapons');
   expect(await model(page, 'session.game.stars')).toBe(1);
   await model(page, 'from geomayhem import Enemy\nsession.game.enemies = [Enemy(500, 150, 0, 100000, 0, 12, "chaser", 100000)]');
   await expect.poll(() => model(page, 'session.game.shots_fired')).toBeGreaterThan(0);
   expect(await model(page, 'all(shot.weapon != "needle" for shot in session.game.shots)')).toBe(true);
   await model(page, 'session.game.xp = session.game.xp_needed');
   await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
+  await page.locator('[data-upgrade^="acquire:"]').first().click();
+  await expect(page.locator('#geomayhem-build')).toHaveText('4/4 weapons');
+  await model(page, 'session.game.xp = session.game.xp_needed');
+  await expect(page.locator('#geomayhem-upgrade')).toBeVisible();
   await expect(page.locator('[data-upgrade^="acquire:"]')).toHaveCount(0);
   await page.locator('#geomayhem-upgrade-choices button').last().click();
-  await model(page, 'session.game.loadout = {key: (1 if key == "drone_a" else 5) for key in session.game.loadout}');
+  const item = companions[0];
+  await model(page, `session.game.loadout = {key: (1 if key == "${item}" else 5) for key in session.game.loadout}`);
   for (let star = 2; star <= 5; star++) {
     await model(page, 'session.game.xp = session.game.xp_needed');
-    await page.locator('[data-upgrade="upgrade:drone_a"]').click();
-    expect(await model(page, 'session.game.loadout["drone_a"]')).toBe(star);
-    expect(await model(page, 'session.game.loadout["drone_b"]')).toBe(5);
-    if (star === 3) await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Swarm');
+    await page.locator(`[data-upgrade="upgrade:${item}"]`).click();
+    expect(await model(page, `session.game.loadout["${item}"]`)).toBe(star);
+    expect(await model(page, `session.game.loadout["${companions[1]}"]`)).toBe(5);
+    const form = await model(page, `from geomayhem_weapons import ARMORY\nARMORY["${item}"].info(${star})["form"]`);
+    await expect(page.locator(`[data-weapon="${item}"]`)).toContainText(form);
   }
-  await expect(page.locator('[data-weapon="drone_a"]')).toContainText('A Drone Starfleet');
-  await expect(page.locator('#geomayhem-build')).toHaveText('3/3 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('4/4 weapons');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('#arena').screenshot({ path: testInfo.outputPath('three-weapon-drone-build.png') });
+  await page.locator('#arena').screenshot({ path: testInfo.outputPath('four-weapon-drone-build.png') });
   await page.locator('#exit').click();
   await page.locator('[data-difficulty="level_1"]').click();
-  await expect(page.locator('#geomayhem-build')).toHaveText('1/3 weapons');
+  await expect(page.locator('#geomayhem-build')).toHaveText('1/4 weapons');
+});
+
+test('the twenty themed arenas render distinct backgrounds, boss phases and queued upgrade counts', async ({ page }, testInfo) => {
+  const signatures = new Set();
+  for (let level = 1; level <= 20; level++) {
+    await page.locator(`[data-difficulty="level_${level}"]`).click();
+    await model(page, 'session.game.break_left = 100');
+    await page.locator('#pause').click();
+    signatures.add(await page.evaluate(() => document.querySelector('#game-canvas').toDataURL()));
+    const png = await page.locator('#game-canvas').evaluate(canvas => canvas.toDataURL().split(',')[1]);
+    require('node:fs').writeFileSync(testInfo.outputPath(`arena-${level}.png`), Buffer.from(png, 'base64'));
+    await page.locator('#exit').click();
+  }
+  expect(signatures.size).toBe(20);
+  await page.locator('[data-difficulty="level_20"]').click();
+  await model(page, 'session.game.break_left = 100\nsession.game.wave = 20\nsession.game._spawn()\nsession.game.enemies[0].hp *= .2\nsession.game.enemies[0].skill_in = 0');
+  await expect(page.locator('#geomayhem-boss-name')).toHaveText('Infinity Regent · Phase 3');
+  await expect.poll(() => model(page, 'len(session.game.zones)')).toBeGreaterThan(0);
+  await model(page, 'session.game.enemies.clear()\nsession.game.zones.clear()\nsession.game.xp = 12 + 20 + 27');
+  await expect(page.locator('#geomayhem-upgrade-status')).toContainText('3 upgrades remaining');
+  await page.locator('[data-upgrade="weapon"]').click();
+  await expect(page.locator('#geomayhem-upgrade-status')).toContainText('2 upgrades remaining');
+  await page.locator('[data-upgrade="weapon"]').click();
+  await expect(page.locator('#geomayhem-upgrade-status')).toContainText('1 upgrade remaining');
+  await page.locator('[data-upgrade="weapon"]').click();
+  await expect(page.locator('#geomayhem-upgrade')).toBeHidden();
+});
+
+
+test('compact rendering preserves all weapon evolutions and caches arena art', async ({ page }) => {
+  await page.locator('[data-difficulty="level_14"]').click();
+  await model(page, 'session.game.break_left = 100');
+  await page.locator('#pause').click();
+  const pairs = JSON.parse(await model(page, `
+import json
+from geomayhem import Geomayhem, Shot, Enemy
+from geomayhem_weapons import ARMORY
+from geomayhem_view import draw_geomayhem
+pairs=[]
+for wid in ARMORY:
+    for stars in (1,3,5):
+        g=Geomayhem(14,wid)
+        g.stars=stars
+        g.shots=[Shot(80,65,0,0,1,wid,stars,set(),angle=.37)]
+        pairs.append([draw_geomayhem(g,include_background=False),draw_geomayhem(g,compact=True,include_background=False)])
+g=Geomayhem(14)
+g.enemies=[Enemy(1,75,-65,40,0,24,'boss',100,burn=1)]
+g._effect('line',-80,60,8,'#ff8899',(90,-30),5)
+g._effect('ring',-60,-70,35,'#ff8899',stars=5)
+pairs.append([draw_geomayhem(g,include_background=False),draw_geomayhem(g,compact=True,include_background=False)])
+json.dumps(pairs)
+`));
+  const differences = await page.evaluate(pairs => {
+    const paint = commands => {
+      const canvas = document.createElement('canvas'); canvas.width=canvas.height=300;
+      const context=canvas.getContext('2d'); context.translate(150,150);
+      for (const command of commands) drawGeomayhemCommand(context,command);
+      return context.getImageData(0,0,300,300).data;
+    };
+    return pairs.map(([full,compact])=>{
+      const a=paint(full),b=paint(compact);let changed=0,painted=0;
+      for(let i=0;i<a.length;i+=4){
+        if(a[i+3] || b[i+3]) painted++;
+        if(Math.max(...[0,1,2,3].map(c=>Math.abs(a[i+c]-b[i+c])))>24)changed++;
+      }
+      return changed/painted;
+    });
+  }, pairs);
+  expect(Math.max(...differences)).toBeLessThan(.03);
+  const cache = await page.evaluate(() => {
+    const backdrop=geomayhemBackdrop;
+    for(let i=0;i<10;i++) draw(snapshot);
+    return {same:backdrop===geomayhemBackdrop,paths:geomayhemPaths.size};
+  });
+  expect(cache.same).toBe(true);
+  expect(cache.paths).toBeLessThan(30);
+  const pausedTicks = await page.evaluate(() => new Promise(resolve => {
+    const original=send;let ticks=0,frames=0;
+    send=(action,...args)=>{if(action==='tick')ticks++;return original(action,...args);};
+    const check=()=>{if(++frames<6)requestAnimationFrame(check);else{send=original;resolve(ticks);}};
+    requestAnimationFrame(check);
+  }));
+  expect(pausedTicks).toBe(0);
 });

@@ -3,8 +3,8 @@ const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const { compose, geomayhemTracks, jukeboxTracks } = require('../music.js');
 
-test('all ten arenas have distinct, audible, bounded original scores with quiet loop boundaries', () => {
-  assert.equal(geomayhemTracks.length, 10);
+test('all twenty arenas have distinct, audible, bounded original scores with quiet loop boundaries', () => {
+  assert.equal(geomayhemTracks.length, 20);
   const hashes = new Set();
   for (const track of geomayhemTracks) {
     assert.ok(jukeboxTracks.some(song => song.id === track.id && song.category === 'Geomayhem'));
@@ -24,5 +24,5 @@ test('all ten arenas have distinct, audible, bounded original scores with quiet 
     assert.ok(notes.every(note => note.start >= 0 && note.duration > 0));
     hashes.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(hashes.size, 10);
+  assert.equal(hashes.size, 20);
 });

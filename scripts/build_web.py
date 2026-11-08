@@ -5,16 +5,17 @@ import json
 import base64
 import os
 import shutil
+import sys
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "dist"
 PYTHON_SOURCES = (
-    "hangman_model.py", "keyboard_model.py", "dodge_model.py", "boss_crush.py",
+    "hangman_model.py", "keyboard_model.py", "dodge_model.py", "chaos_dodge.py", "boss_crush.py",
     "pumpkin_king.py", "pumpkin_king_view.py", "kings_wrath.py",
     "singularity_core.py", "singularity_core_view.py", "singularity_practice.py",
     "arcade_effects.py",
-    "geomayhem.py", "geomayhem_weapons.py", "geomayhem_view.py",
+    "geomayhem.py", "geomayhem_weapons.py", "geomayhem_view.py", "geomayhem_arenas.py",
 )
 
 
@@ -66,18 +67,27 @@ def build():
         else:
             child.unlink()
     html = (ROOT / "web" / "index.html").read_text()
-    for name in ("style.css", "app.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "favicon.svg"):
+    # Publish the same weighted block catalog before the browser engine loads.
+    sys.path.insert(0, str(ROOT))
+    try:
+        from chaos_dodge import catalog as chaos_catalog
+        bootstrap = json.dumps(chaos_catalog()).replace("<", "\\u003c")
+    finally:
+        sys.path.pop(0)
+    html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
+    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     shutil.copy2(ROOT / "shared" / "account-rules.js", OUTPUT / "account-rules.js")
-    account_names = ("store.js", "session.js", "sync.js", "app.js", "profile.css")
+    account_names = ("store.js", "session.js", "sync.js", "app.js", "welcome.js", "profile.css")
     (OUTPUT / "accounts").mkdir()
     for name in account_names:
         shutil.copy2(ROOT / "web" / "accounts" / name, OUTPUT / "accounts" / name)
     for name in ("account-rules.js", *(f"accounts/{name}" for name in account_names)):
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
+    shutil.copytree(ROOT / "web" / "accounts" / "tours", OUTPUT / "accounts" / "tours")
     (OUTPUT / "index.html").write_text(html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
     python_dir = OUTPUT / "python"

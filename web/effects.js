@@ -4,6 +4,7 @@
   const DEATH_DURATION = 1.6, FINALE_DURATION = 5.4;
   function buffer(context, kind) {
     const duration = kind === 'death' ? DEATH_DURATION : FINALE_DURATION;
+    const volume = kind === 'death' ? .85 : 1;
     const result = context.createBuffer(2, Math.round(duration * context.sampleRate), context.sampleRate);
     let seed = 0x51a7, low = 0, rumble = 0, held = 0, hold = 0, phase = 0;
     const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 2147483648 - 1; };
@@ -52,8 +53,8 @@
         }
         value *= Math.min(1, (duration - t) / .12);
       }
-      left[i] = Math.tanh(value + stereo);
-      right[i] = Math.tanh(value - stereo);
+      left[i] = Math.tanh(value + stereo) * volume;
+      right[i] = Math.tanh(value - stereo) * volume;
     }
     return result;
   }

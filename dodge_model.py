@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import math
 import random
+from chaos_dodge import ChaosRules
 
 CELL = 28
 BLOCK_SIZE = CELL * 0.94
@@ -57,6 +58,7 @@ class Difficulty:
 
 DIFFICULTIES = {
     "easy": Difficulty(),
+    "chaos": Difficulty(),
     "normal": Difficulty(speed_scale=1.3, speed_variation=(0.9, 1.2)),
     "hard": Difficulty(speed_scale=2.1, speed_variation=(0.9, 1.2),
                        color="#ffdf00", sway=18),
@@ -84,6 +86,21 @@ class Block:
     near_miss_awarded: bool = False
 
     cell_size: float = CELL
+    kind: str = "normal"
+    age: float = 0.0
+    bounced: bool = False
+    rise_left: float = 0.0
+    velocity_x: float = 0.0
+    screen_age: float = -1.0
+    warning_left: float = 0.0
+    teleports: int = 0
+    teleport_target: tuple | None = None
+    field_order: tuple = ()
+    field_cycle: int = -1
+    flame_stage: int = 0
+    flame_left: float = 0
+    flame_beeps: int = 0
+    bounce_count: int = 0
 
     @property
     def size(self):
@@ -126,7 +143,7 @@ def touches_block(x, y, block, margin=0):
     return False
 
 
-class DodgeGame:
+class DodgeGame(ChaosRules):
     def __init__(self, rng=None, difficulty="easy"):
         self.difficulty = difficulty
         self.rules = DIFFICULTIES[difficulty]
@@ -140,6 +157,7 @@ class DodgeGame:
         self.alive = True
         self.death_cause = None
         self.spawn_in = 0.7 * self.rules.spawn_scale
+        if difficulty == "chaos": self.setup_chaos()
 
     @property
     def score(self):
@@ -147,13 +165,19 @@ class DodgeGame:
 
     @property
     def speed(self):
+        if self.difficulty == "chaos":
+            return min(340, 100 + self.elapsed * 2.5) * .9
         return min(340, 100 + self.elapsed * 2.5) * self.rules.speed_scale
 
     @property
     def spawn_interval(self):
+        if self.difficulty == "chaos":
+            return max(.16, 1.6 * math.exp(-self.elapsed / 65))
         return max(0.35, 1.2 - self.elapsed * 0.012) * self.rules.spawn_scale
 
     def spawn(self):
+        if self.difficulty == "chaos":
+            return self.spawn_chaos()
         index = self.rng.randrange(len(SHAPES))
         cells = SHAPES[index]
         for _ in range(self.rng.randrange(4)):
@@ -173,6 +197,8 @@ class DodgeGame:
 
     def update(self, dt, keys):
         """Substeps keep fast pieces from jumping through the player."""
+        if self.difficulty == "chaos":
+            return self.update_chaos(dt, keys)
         while dt > 0 and self.alive:
             step = min(dt, 1 / 120)
             dt -= step

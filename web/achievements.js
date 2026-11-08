@@ -253,6 +253,57 @@ const Achievements = (() => {
     [180, "Beyond Impossible", "empyrorite"],
   ]) add(`dodge_impossible_${seconds}`, title, tier, "Turtle Dodge",
     `Survive ${seconds} seconds in one Impossible Turtle Dodge game.`, "impossibleBest", seconds);
+  add("chaos_start", "Welcome to the Whirl", "bronze", "Turtle Dodge · Chaos", "Start a Chaos game.", "chaosPlayed");
+  for (const [seconds, title, tier] of [
+    [15, "Confetti Forecast", "bronze"], [30, "A Little Wild", "silver"],
+    [60, "Chaos Conductor", "gold"], [120, "Weather the Weird", "crystal"],
+    [180, "Eye of the Carnival", "diamond"], [300, "Master of Mayhem", "empyrorite"],
+  ]) add(`chaos_survive_${seconds}`, title, tier, "Turtle Dodge · Chaos",
+    `Survive ${seconds} seconds in one Chaos game.`, "chaosBest", seconds);
+  for (const [seconds, title, tier] of [[30, "Untouched by Chaos", "gold"], [60, "Pristine Pandemonium", "rainbow"]])
+    add(`chaos_clean_${seconds}`, title, tier, "Turtle Dodge · Chaos",
+      `Survive ${seconds} seconds in one Chaos game without taking any damage.`, "chaosCleanBest", seconds);
+  for (const [target, title, tier] of [[10, "Thread the Tetris", "silver"], [25, "Between the Falling Stars", "diamond"]])
+    add(`chaos_near_${target}`, title, tier, "Turtle Dodge · Chaos",
+      `Make ${target} near misses in one Chaos game.`, "chaosNearBest", target);
+  for (const [target, title, tier] of [[4, "Back in the Green", "silver"], [12, "Patchwork Miracle", "crystal"]])
+    add(`chaos_heal_${target}`, title, tier, "Turtle Dodge · Chaos",
+      `Recover ${target} HP in one Chaos game, from regeneration or pickups.`, "chaosHealBest", target);
+  add("chaos_score_3000", "Three Thousand Reasons to Smile", "gold", "Turtle Dodge · Chaos",
+    "Score 3,000 points in one Chaos game.", "chaosScoreBest", 3000);
+  add("chaos_jackpot_777", "Lucky Sevens!", "rainbow", "Arcade", "Land three sevens while Chaos Jackpot Cubie is equipped and visible.", "jackpot777");
+  const geomayhemRewards = [
+    ['geo_start', 'Into the Geometry', 'bronze', 'Start a Geomayhem expedition.', 'play_geomayhem', 1],
+    ['geo_kills_10', 'Shape Shifter', 'bronze', 'Defeat 10 shapes in total.', 'geoKills', 10],
+    ['geo_wave_1', 'First Wave Down', 'bronze', 'Clear your first wave.', 'geoWavesBest', 1],
+    ['geo_kills_25', 'Corner Collector', 'bronze', 'Defeat 25 shapes in total.', 'geoKills', 25],
+    ['geo_waves_5', 'Finding a Rhythm', 'silver', 'Clear 5 waves in one expedition.', 'geoWavesBest', 5],
+    ['geo_stars_3', 'First Evolution', 'silver', 'Evolve a weapon to 3 stars.', 'geoStarsBest', 3],
+    ['geo_kills_100', 'A Hundred Angles', 'silver', 'Defeat 100 shapes in total.', 'geoKills', 100],
+    ['geo_rank_5', 'Crystal Student', 'silver', 'Reach rank 5 in one expedition.', 'geoRankBest', 5],
+    ['geo_loadout_4', 'Armed to the Corners', 'gold', 'Carry four weapons at once.', 'geoLoadoutBest', 4],
+    ['geo_win_1', 'Arena Victor', 'gold', 'Clear all 20 waves of any arena.', 'geoWins', 1],
+    ['geo_waves_50', 'Wave After Wave', 'gold', 'Clear 50 waves in total.', 'geoWaves', 50],
+    ['geo_kills_250', 'Shape Breaker', 'gold', 'Defeat 250 shapes in total.', 'geoKills', 250],
+    ['geo_relics_3', 'Relic Cabinet', 'crystal', 'Carry three relics in one expedition.', 'geoRelicsBest', 3],
+    ['geo_stars_5', 'Final Evolution', 'crystal', 'Evolve a weapon to 5 stars.', 'geoStarsBest', 5],
+    ['geo_wins_3', 'Return Expedition', 'crystal', 'Win three expeditions in total.', 'geoWins', 3],
+    ['geo_run_kills_150', 'Crowd Control', 'crystal', 'Defeat 150 shapes in one expedition.', 'geoRunKillsBest', 150],
+    ['geo_arena_5', 'Through the Rift', 'diamond', 'Clear all 20 waves of arena 5 or higher.', 'geoArenaBest', 5],
+    ['geo_kills_500', 'Prism Hunter', 'diamond', 'Defeat 500 shapes in total.', 'geoKills', 500],
+    ['geo_wins_10', 'Veteran of the Grid', 'diamond', 'Win ten expeditions in total.', 'geoWins', 10],
+    ['geo_waves_200', 'Unbroken Rhythm', 'diamond', 'Clear 200 waves in total.', 'geoWaves', 200],
+    ['geo_arena_8', 'Beyond the Starfield', 'rainbow', 'Clear all 20 waves of arena 8 or higher.', 'geoArenaBest', 8],
+    ['geo_evolved_3', 'Orbital Orchestra', 'rainbow', 'Carry three 5-star weapons at once.', 'geoEvolvedBest', 3],
+    ['geo_kills_2000', 'A Thousand Sides Twice', 'rainbow', 'Defeat 2,000 shapes in total.', 'geoKills', 2000],
+    ['geo_score_20000', 'Maximum Mayhem', 'rainbow', 'Score 20,000 points in one expedition.', 'geoScoreBest', 20000],
+    ['geo_arena_10', 'Sovereign of Mayhem', 'empyrorite', 'Clear all 20 waves of arena 10.', 'geoArenaBest', 10],
+    ['geo_flawless_10', 'Zero Point Perfection', 'empyrorite', 'Clear arena 10 without taking any damage. Healing does not erase damage.', 'geoFlawlessFinal', 1],
+    ['geo_evolved_4', 'Fourfold Ascension', 'empyrorite', 'Carry four 5-star weapons at once.', 'geoEvolvedBest', 4],
+    ['geo_wins_50', 'Everlasting Expedition', 'empyrorite', 'Win fifty expeditions in total.', 'geoWins', 50],
+  ];
+  for (const [id,title,tier,description,stat,target] of geomayhemRewards)
+    add(id,title,tier,'Geomayhem',description,stat,target);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -338,6 +389,12 @@ const Achievements = (() => {
         if (name === "gravitron") stats.name_gravitron = 1;
       });
     }
+    slotResult(symbols, custom, visible) {
+      if (custom !== 'chaos_jackpot' || visible !== true || !this.data.unlocked.chaos_score_3000
+          || !Array.isArray(symbols) || symbols.length !== 3 || !symbols.every(n => n === 0))
+        return { earned: [], changed: false };
+      return this.update(stats => { stats.jackpot777 = 1; });
+    }
     hearMusic(track, custom, audible) {
       if (audible && track === "christmas_99") return this.update(stats => { stats.christmasHeard = 1; });
       if (!audible || track !== "gaster_remix" || custom !== "gaster"
@@ -355,14 +412,45 @@ const Achievements = (() => {
         if (stats.bossSovereignRunActive) stats.bossSovereignStreak = 0;
         stats.bossRunActive = mode === "boss" ? 1 : 0;
         stats.bossSovereignRunActive = mode === "boss" && sovereignDifficulties.includes(difficulty) ? 1 : 0;
+        if (mode === "dodge" && difficulty === "chaos") stats.chaosPlayed = 1;
         stats[`play_${mode}`] = 1;
         stats.gamesPlayed = games.filter(game => stats[`play_${game}`]).length;
+      });
+    }
+    observeGeomayhem(s) {
+      const round = this.round;
+      const level = Number(round.difficulty.slice(6));
+      if (!Number.isInteger(level) || level < 1 || level > 10 || s.geo_level !== level)
+        return { earned: [], changed: false };
+      const kills = count(s.geo_kills), waves = Math.min(20, count(s.geo_waves));
+      const newKills = Math.max(0, kills - (round.geoKills || 0));
+      const newWaves = Math.max(0, waves - (round.geoWaves || 0));
+      const maxima = { geoWavesBest: waves, geoRunKillsBest: kills,
+        geoStarsBest: Math.min(5,count(s.geo_max_stars)), geoLoadoutBest: Math.min(4,count(s.geo_weapon_count)),
+        geoEvolvedBest: Math.min(4,count(s.geo_five_star_count)), geoRelicsBest: Math.min(3,count(s.geo_relic_count)),
+        geoRankBest: count(s.geo_rank), geoScoreBest: count(s.score) };
+      if (s.over !== true && !newKills && !newWaves && !Object.entries(maxima).some(([key,value])=>value>this.data.stats[key]))
+        return { earned: [], changed: false };
+      return this.update(stats => {
+        stats.geoKills += newKills; stats.geoWaves += newWaves;
+        round.geoKills = Math.max(round.geoKills || 0,kills);
+        round.geoWaves = Math.max(round.geoWaves || 0,waves);
+        for (const [key,value] of Object.entries(maxima)) stats[key] = Math.max(stats[key],value);
+        if (s.over === true) {
+          round.finished = true;
+          if (s.won === true && waves === 20) {
+            stats.geoWins++;
+            stats.geoArenaBest = Math.max(stats.geoArenaBest,level);
+            if (level === 10 && s.damage_taken === 0) stats.geoFlawlessFinal = 1;
+          }
+        }
       });
     }
     observe(s) {
       const round = this.round;
       if (!round || round.finished || s.mode !== round.mode || s.difficulty !== round.difficulty)
         return { earned: [], changed: false };
+      if (s.mode === 'geomayhem') return this.observeGeomayhem(s);
       const streakBroken = s.mode === "boss" && s.damage_taken > 0 && this.data.stats.bossCleanStreak > 0;
       const sovereignFight = s.mode === "boss" && sovereignDifficulties.includes(s.difficulty);
       const sovereignBroken = sovereignFight && s.damage_taken > 0 && this.data.stats.bossSovereignStreak > 0;
@@ -427,6 +515,14 @@ const Achievements = (() => {
         }
         if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
+          if (s.difficulty === "chaos") {
+            stats.chaosBest = Math.max(stats.chaosBest, count(s.elapsed));
+            stats.chaosNearBest = Math.max(stats.chaosNearBest, count(s.near_misses));
+            stats.chaosHealBest = Math.max(stats.chaosHealBest, count(s.healing_collected));
+            stats.chaosScoreBest = Math.max(stats.chaosScoreBest, count(s.score));
+            if (s.damage_taken === 0 && s.lives > 0)
+              stats.chaosCleanBest = Math.max(stats.chaosCleanBest, count(s.elapsed));
+          }
           if (s.over === true && s.won === false && Number.isFinite(s.elapsed)
               && s.elapsed >= 0 && s.elapsed < 5) stats.dodgeEarlyDeath = 1;
           stats.closeCalls = Math.max(stats.closeCalls, count(s.near_misses));

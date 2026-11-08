@@ -2,12 +2,18 @@
 
 const $ = (id) => document.getElementById(id);
 const modes = {
+  guide: {
+    title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
+    heading: "Know what is falling.", copy: "Meet the blocks in Turtle Dodge Chaos.",
+    accent: "#c7a6ff", controls: "Browse block pictures, abilities and spawn chances below.",
+    localOnly: true, temporary: true, difficulties: {},
+  },
   geomayhem: {
-    title: "Geomayhem", category: "11 / SURVIVOR · EARLY BUILD", art: "◇",
+    title: "Geomayhem", category: "11 / ROGUELIKE CAMPAIGN", art: "◇",
     heading: "Small Cubie. Maximum mayhem.",
-    copy: "Take Cubie through 10 arenas of 20 waves. Collect green XP for level-up choices, and walk over glowing weapon drops to equip them. Your three slots include your starting weapon. A and B drones attack automatically; other weapons fire together. Weapons evolve at three and five stars. Clearing a wave collects all remaining XP crystals. All levels are open; each run starts fresh.",
+    copy: "Clear 20 waves to unlock the next arena. Each run rolls a combat modifier: find weapons, collect relics, and build four weapons up to five stars. Defeat resets your run, but shards and arena unlocks stay. Spend shards in the workshop and unlock more starters as you progress. Yellow warnings turn into dangerous red zones; dodge sideways from charge lines. Clearing waves collects leftover XP. Campaign progress saves in this browser for your current profile. Earn 28 achievements and 16 tiered Cubies through combat, evolutions, relics, and arena victories.",
     accent: "#71f5d2", controls: "WASD / arrows move · Aim with mouse · Hold left click to fire · R pauses",
-    choiceLabel: "Choose a level · 20 waves each", localOnly: true, temporary: true, difficulties: {},
+    choiceLabel: "Your expedition · Clear arenas in order", localOnly: true, temporary: true, difficulties: {},
   },
   shop: {
     title: "Cubie Shop", category: "10 / CUBIE CASH", art: "C",
@@ -77,6 +83,7 @@ const modes = {
         "Deadly edges, a smaller arena, and no pausing.",
       ],
       impossible: ["Impossible", "An even smaller arena. Smaller white blocks fall faster and sway harder. White edges kill. No pausing."],
+      chaos: ["Chaos", "Easy-size arena. 8 HP, +1 HP every 8 seconds. Wild blocks and escalating spawns. See the Block Guide!"],
     },
   },
   boss: {
@@ -156,7 +163,6 @@ const modes = {
     localOnly: true,
     difficulties: {
       gravitron: ["Enter containment", "Harder than the King. Two arrows jump to a corner. The Core cannot be damaged until every attack ends."],
-      practice: ["Practice attacks (temporary)", "Repeat any of the 15 attacks or watch the final cutscene."],
     },
   },
   core_practice: {
@@ -175,23 +181,69 @@ const modes = {
   },
 };
 let geomayhemArmory = [];
+let geomayhemArenas = [];
 let geomayhemFiring = false;
 const geomayhemMovementKeys = new Map();
 let geomayhemAim = null;
+let geomayhemPointer = null;
+let geomayhemCanvasWidth = 680;
 let geomayhemOfferKey = "";
 let geomayhemLoadoutKey = "";
+const geomayhemStores = new Map();
+let geomayhemRun = null;
+let geomayhemResult = null;
+function geomayhemStore() {
+  const owner = accountApp?.controller?.state().owner || "guest";
+  if (!geomayhemStores.has(owner)) {
+    let storage;
+    try { storage = window.localStorage; } catch { /* Store reports memory-only mode. */ }
+    geomayhemStores.set(owner, new GeomayhemProgress.Store(owner, storage));
+  }
+  return geomayhemStores.get(owner);
+}
+function renderGeomayhemHub() {
+  const store = geomayhemStore(), progress = store.read();
+  $("geomayhem-campaign").textContent = `${progress.cleared}/${GeomayhemProgress.arenaCount} arenas cleared · ${progress.shards} shards · ${progress.runs} expeditions. `
+    + (store.available ? "Saved in this browser for this profile." : "Browser storage unavailable: progress lasts only for this visit.");
+  const selectedWeapon = $("geomayhem-weapon").value;
+  $("geomayhem-weapon").replaceChildren(...geomayhemArmory.map((weapon, index) => {
+    const required = GeomayhemProgress.starterRequirement(index);
+    const option = document.createElement("option");
+    option.value = weapon.id;
+    option.disabled = required > progress.cleared;
+    option.textContent = `${weapon.name} · ${option.disabled ? `Clear arena ${required} to start with this` : weapon.automatic ? "Auto companion" : weapon.kind}`;
+    return option;
+  }));
+  if (geomayhemArmory.some((w, i) => w.id === selectedWeapon && GeomayhemProgress.starterRequirement(i) <= progress.cleared))
+    $("geomayhem-weapon").value = selectedWeapon;
+  renderGeomayhemWeapon();
+  $("geomayhem-workshop").replaceChildren(...Object.entries(GeomayhemProgress.upgrades).map(([key, upgrade]) => {
+    const button = document.createElement("button"), tier = progress.workshop[key];
+    const cost = GeomayhemProgress.cost(progress, key);
+    const required = GeomayhemProgress.requiredClear(progress, key);
+    button.dataset.workshop = key;
+    button.textContent = `${upgrade.name} ${tier}/3 · ${tier === 3 ? "MAX" : `${cost} shards${progress.cleared < required ? ` · Clear arena ${required}` : ""}`} — ${upgrade.description}`;
+    button.disabled = tier === 3 || progress.shards < cost || progress.cleared < required;
+    button.onclick = () => { geomayhemStore().purchase(key); renderGeomayhemHub(); showScores(); };
+    return button;
+  }));
+  document.querySelectorAll("[data-difficulty]").forEach(button => {
+    const level = Number(button.dataset.difficulty.replace("level_", ""));
+    const locked = !GeomayhemProgress.unlocked(progress, level);
+    button.dataset.campaignLocked = String(locked);
+    button.disabled = locked || !ready;
+    button.querySelector("span").textContent = locked ? `Locked · Clear arena ${level - 1} first`
+      : level <= progress.cleared ? "CLEARED · Replay for shards and a different build"
+      : `NEXT ARENA · 20 waves · Best: ${progress.best[level]}/20 cleared`;
+    if (!locked) button.querySelector("span").textContent += ` · ${geomayhemArenas[level-1]?.hazard || ""}`;
+  });
+}
 function initializeGeomayhem(catalog) {
   geomayhemArmory = catalog.weapons;
+  geomayhemArenas = catalog.levels;
   modes.geomayhem.difficulties = Object.fromEntries(catalog.levels.map((level, i) => [
     level.id, [`${String(i + 1).padStart(2, "0")} · ${level.name}`, `20 waves · ${i === 0 ? "Start here" : "Threat " + (i + 1)} · Elite every 5 waves`],
   ]));
-  $("geomayhem-weapon").replaceChildren(...catalog.weapons.map(weapon => {
-    const option = document.createElement("option");
-    option.value = weapon.id;
-    option.textContent = `${weapon.name} · ${weapon.kind}`;
-    return option;
-  }));
-  renderGeomayhemWeapon();
   if (selected === "geomayhem") selectGame("geomayhem");
 }
 function renderGeomayhemWeapon() {
@@ -214,8 +266,21 @@ function renderGeomayhemWeapon() {
 }
 $("geomayhem-weapon").addEventListener("change", renderGeomayhemWeapon);
 function renderGeomayhem(s) {
-  $("geomayhem-wave").textContent = `LEVEL ${s.level}/10 · WAVE ${s.wave}/20`;
-  $("geomayhem-build").textContent = `${s.loadout.length}/${s.weapon_slots} weapons`;
+  setTextIfChanged("geomayhem-run-info", `${s.arena.hazard} · ${s.anomaly.name}. Relics: ${s.relics.map(r => r.name).join(", ") || "none yet"}`);
+  $("geomayhem-run-info").title = `${s.anomaly.description} Yellow warnings lock in before red zones activate. Dodge sideways when enemies wind up.`;
+  setTextIfChanged("geomayhem-upgrade-status", `LEVEL UP · ${s.pending_levelups} upgrade${s.pending_levelups === 1 ? "" : "s"} remaining · ACTION PAUSED`);
+  const bossChanged = $("geomayhem-boss").hidden === !!s.boss;
+  $("geomayhem-boss").hidden = !s.boss;
+  if (s.boss) {
+    setTextIfChanged("geomayhem-boss-name", `${s.boss.name} · Phase ${s.boss.phase}`);
+    $("geomayhem-boss-health").max = s.boss.max_hp;
+    $("geomayhem-boss-health").value = s.boss.hp;
+  }
+  if (bossChanged) fitArcade();
+  setTextIfChanged("geomayhem-reroll", `Reroll · ${s.rerolls} left`);
+  $("geomayhem-reroll").disabled = s.rerolls === 0;
+  setTextIfChanged("geomayhem-wave", `LEVEL ${s.level}/${s.total_levels} · WAVE ${s.wave}/20`);
+  setTextIfChanged("geomayhem-build", `${s.loadout.length}/${s.weapon_slots} weapons`);
   const loadoutKey = s.loadout.map(weapon => `${weapon.id}:${weapon.stars}`).join();
   if (loadoutKey !== geomayhemLoadoutKey) {
     geomayhemLoadoutKey = loadoutKey;
@@ -225,12 +290,12 @@ function renderGeomayhem(s) {
       slot.setAttribute("role", "listitem");
       slot.style.setProperty("--weapon-color", weapon.color);
       slot.textContent = `${weapon.form} ${"★".repeat(weapon.stars)}${"☆".repeat(5-weapon.stars)}`;
-      slot.title = weapon.kind === "drone" ? "Automatic companion" : "Hold left click or Fire to attack";
+      slot.title = weapon.automatic ? "Automatic companion" : "Hold left click or Fire to attack";
       return slot;
     }));
     fitArcade();
   }
-  $("geomayhem-rank").textContent = `Rank ${s.rank} · ${s.kills} KOs`;
+  setTextIfChanged("geomayhem-rank", `Rank ${s.rank} · ${s.kills} KOs`);
   $("geomayhem-xp").max = s.xp_needed;
   $("geomayhem-xp").value = Math.min(s.xp, s.xp_needed);
   $("geomayhem-upgrade").hidden = !s.offers.length || s.over;
@@ -260,15 +325,26 @@ function renderGeomayhem(s) {
     }
   }
 }
-function geomayhemScale(s) {
+$("geomayhem-reroll").onclick = () => {
+  if (!active || selected !== "geomayhem" || snapshot?.paused || !snapshot?.offers.length) return;
+  clearKeys();
+  snapshot = send("reroll");
+  render();
+};
+function geomayhemCamera(s) {
   const [left, right, bottom, top] = s.bounds;
-  return Math.min(620 / (right - left), 470 / (top - bottom));
+  const width = geomayhemCanvasWidth;
+  const scale = Math.max(Math.min(620 / (right-left), 470 / (top-bottom)), Math.min(1.6, 18*680/(28*width)));
+  const halfWidth = Math.min((right-left)/2, 310/scale), halfHeight = Math.min((top-bottom)/2, 235/scale);
+  return { scale, x: Math.max(left+halfWidth, Math.min(right-halfWidth, s.player.x)),
+    y: Math.max(bottom+halfHeight, Math.min(top-halfHeight, s.player.y)) };
 }
 function aimGeomayhem(event) {
+  geomayhemPointer = [event.clientX, event.clientY];
   const rect = $("game-canvas").getBoundingClientRect();
-  const scale = snapshot?.mode === "geomayhem" ? geomayhemScale(snapshot) : 1;
-  geomayhemAim = [((event.clientX - rect.left) * 680 / rect.width - 340) / scale,
-    (280 - (event.clientY - rect.top) * 560 / rect.height) / scale];
+  const camera = snapshot?.mode === "geomayhem" ? geomayhemCamera(snapshot) : {scale:1,x:0,y:0};
+  geomayhemAim = [((event.clientX - rect.left) * 680 / rect.width - 340) / camera.scale + camera.x,
+    (280 - (event.clientY - rect.top) * 560 / rect.height) / camera.scale + camera.y];
 }
 $("game-canvas").addEventListener("pointermove", event => {
   if (selected === "geomayhem" && event.pointerType === "mouse") aimGeomayhem(event);
@@ -290,6 +366,8 @@ $("game-canvas").addEventListener("lostpointercapture", () => { geomayhemFiring 
 
 // Each sleeve has its own palette; related songs share a visual motif.
 const songSleeves = {
+  cubie_hello: ["#c6f783", "#79d7b0", "cubie"],
+  chaos_carnival: ["#ffe78a", "#f5a5dc", "bubbles"],
   ...Object.fromEntries(ArcadeMusic.geomayhemTracks.map(track =>
     [track.id, [track.color, "#7284cf", "circuit"]])),
   starburst_255: ["#ffdc65", "#ff6295", "bolt"],
@@ -342,6 +420,7 @@ const songSleeves = {
   sunwheel_parade: ["#ffe18b", "#ec9675", "sunrise"],
 };
 const sleevePaths = {
+  cubie: "M18 8h28q10 0 10 10v28q0 10-10 10H18Q8 56 8 46V18Q8 8 18 8ZM22 24v8m20-8v8M23 41q9 9 18 0",
   pixels: "M12 12h12v12H12z M40 12h12v12H40z M26 26h12v12H26z M12 40h12v12H12z M40 40h12v12H40z",
   heart: "M32 51 10 29V17h9l13 10 13-10h9v12Z",
   star: "m32 7 7 17 18 2-14 12 4 18-15-10-15 10 4-18L7 26l18-2Z",
@@ -371,7 +450,7 @@ const sleevePaths = {
   flame: "M32 5c6 20 19 18 19 34a19 19 0 0 1-38 0c0-10 6-15 9-21l3 14c7-6 9-16 7-27Z M32 35c-12 11-8 20 0 20s12-9 0-20Z",
 };
 function styleSongCard(button, id) {
-  const [color, glow, motif] = songSleeves[id];
+  const [color, glow, motif] = songSleeves[id] || ["#9bd7f5", "#8795e8", "waves"];
   button.classList.add("song-card");
   button.style.setProperty("--song-color", color);
   button.style.setProperty("--song-glow", glow);
@@ -513,7 +592,7 @@ function unlockSingularity(navigate = true) {
   persist();
   document.querySelector('[data-game="singularity"]').hidden = false;
   $("game-count").textContent = "09";
-  $("game-total").textContent = "8 GAMES + JUKEBOX + CLOSET + SHOP / ENDLESS REMATCHES";
+  $("game-total").textContent = "8 GAMES + JUKEBOX + CLOSET + SHOP + GUIDE / ENDLESS REMATCHES";
   updateAchievements(achievementTracker.secret("gravitron"));
   if (navigate) {
     selectGame("singularity");
@@ -1008,10 +1087,18 @@ function rankings() {
   );
 }
 function showScores() {
+  if (selected === "geomayhem") {
+    const progress = geomayhemStore().read();
+    $("best").textContent = `${progress.cleared}/${GeomayhemProgress.arenaCount}`;
+    const row = document.createElement("li");
+    row.textContent = `${progress.shards} shards · ${progress.runs} expeditions. Clear arenas to unlock the next level and new starters. Run weapons and relics reset; workshop upgrades stay.`;
+    $("scores-list").replaceChildren(row);
+    return;
+  }
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "geomayhem" ? "Early build · 10 levels, 34 weapons, 3 slots per run. Find weapon drops or add weapons through XP level-ups. Runs start fresh; records and rewards are not saved yet." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1041,6 +1128,12 @@ function showScores() {
 }
 function saveRound() {
   if (roundSaved || !snapshot) return;
+  if (selected === "geomayhem") {
+    accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
+    roundSaved = true;
+    if (geomayhemRun) geomayhemResult = geomayhemRun.store.finish(geomayhemRun.id, snapshot);
+    return;
+  }
   accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
   roundSaved = true;
   if (snapshot.over && !snapshot.won && ["boss", "pumpkin", "wrath"].includes(selected)) playSound("boss_laugh");
@@ -1229,7 +1322,7 @@ function clearKeys() {
 function setLocked(value) {
   $("player").disabled = value;
   document.querySelectorAll("[data-difficulty]").forEach((button) => {
-    button.disabled = value || (!ready && selected !== "jukebox");
+    button.disabled = value || button.dataset.campaignLocked === "true" || (!ready && selected !== "jukebox");
   });
 }
 function fitArcade() {
@@ -1246,6 +1339,7 @@ function fitArcade() {
   $("arena").style.setProperty("--player-health-height", `${$("player-health").offsetHeight}px`);
   const height = Math.max(1, viewportHeight - chromeHeight);
   const width = Math.min($("arena").clientWidth - 2, height * 680 / 560);
+  geomayhemCanvasWidth = width;
   $("game-canvas").style.width = `${width}px`;
   $("game-canvas").style.height = `${width * 560 / 680}px`;
 }
@@ -1253,10 +1347,53 @@ function showGameArea() {
   fitArcade();
   document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
 }
+let chaosGuideBlocks = [], chaosGuidePictures = new Map(), chaosGuideIcon = null, chaosGuideLastChange = 0;
+function animateChaosGuide(now, initial = false) {
+  if (!chaosGuideIcon || !chaosGuideBlocks.length || document.hidden) return;
+  if (!initial && (trailReducedMotion.matches || saved.preferences?.reducedMotion || now-chaosGuideLastChange < 500)) return;
+  const block = ChaosArt.pickBlock(chaosGuideBlocks);
+  const thumbnail = ChaosArt.tabPreview(block);
+  chaosGuideIcon.src = thumbnail.src;
+  chaosGuideIcon.dataset.color = thumbnail.color;
+  chaosGuideIcon.dataset.shape = thumbnail.shape;
+  chaosGuideIcon.dataset.block = block.id;
+  chaosGuideLastChange = now;
+}
+function initializeChaosGuide(blocks) {
+  chaosGuideBlocks = blocks;
+  chaosGuidePictures = new Map(blocks.map(block => [block.id,
+    ChaosArt.preview(block.id, block.preview_color || block.color, block.preview_cells, block.preview_size)]));
+  chaosGuideIcon = document.createElement("img");
+  chaosGuideIcon.className = "guide-tab-preview";
+  chaosGuideIcon.alt = "";
+  document.querySelector('[data-game="guide"] .card-art').replaceChildren(chaosGuideIcon);
+  animateChaosGuide(performance.now(), true);
+  $("block-guide-grid").replaceChildren(...blocks.map(block => {
+    const card = document.createElement("article");
+    card.className = "block-guide-card";
+    card.style.setProperty("--block-color", block.color);
+    card.dataset.block = block.id;
+    const icon = document.createElement("img");
+    icon.className = "block-guide-icon";
+    icon.src = chaosGuidePictures.get(block.id);
+    icon.alt = `${block.name} appearance`;
+    icon.width = 180; icon.height = 110;
+    const title = document.createElement("h4");
+    title.textContent = block.name;
+    const rarity = document.createElement("p");
+    rarity.className = "block-rarity";
+    rarity.textContent = `${block.rarity} · ${block.chance}% of spawns`;
+    const detail = document.createElement("p");
+    detail.textContent = block.description;
+    card.append(icon, title, rarity, detail);
+    return card;
+  }));
+}
 function selectGame(mode) {
   coreAftermath = false;
   if (loadFailed && !["customs", "shop"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
+  if (active && selected === "geomayhem") saveRound();
   accountApp?.finish(snapshot, active && selected === "keyboard" ? "exit" : "interrupted");
   updateAchievements(achievementTracker.abandon());
   resetDamageFeedback();
@@ -1271,12 +1408,14 @@ function selectGame(mode) {
   $("jukebox-controls").hidden = mode !== "jukebox";
   $("customs-room").hidden = mode !== "customs";
   $("shop-room").hidden = mode !== "shop";
+  $("block-guide-room").hidden = mode !== "guide";
   $("geomayhem-loadout").hidden = mode !== "geomayhem";
   $("geomayhem-hud").hidden = true;
   $("geomayhem-upgrade").hidden = true;
   geomayhemOfferKey = "";
   geomayhemLoadoutKey = "";
   geomayhemAim = null;
+  geomayhemPointer = null;
   $("arena").classList.remove("arcade");
   $("player-health").hidden = true;
   const config = modes[mode];
@@ -1294,7 +1433,7 @@ function selectGame(mode) {
   $("welcome-title").textContent = config.heading;
   $("welcome-copy").textContent = config.copy;
   $("difficulty-title").textContent = config.choiceLabel || "Choose a difficulty to play";
-  $("game-instruction").textContent = config.controls;
+  setTextIfChanged("game-instruction", config.controls);
   $("difficulty-choices").replaceChildren(
     ...Object.entries(config.difficulties).map(([value, [label, description]]) => {
       const button = document.createElement("button");
@@ -1319,11 +1458,11 @@ function selectGame(mode) {
     "exit",
     "touch-controls",
   ].forEach((id) => ($(id).hidden = true));
-  $("welcome").hidden = ["customs", "shop"].includes(mode);
+  $("welcome").hidden = ["customs", "shop", "guide"].includes(mode);
   if (mode === "shop") renderShop();
   if (mode === "customs") renderCustoms();
-  $("metric").textContent = "—";
-  $("score").textContent = "0";
+  setTextIfChanged("metric", "—");
+  setTextIfChanged("score", "0");
   $("metric-label").textContent =
     mode === "hangman"
       ? "Guesses left"
@@ -1333,6 +1472,7 @@ function selectGame(mode) {
           ? "Survived"
           : "Your HP";
   setLocked(false);
+  if (mode === "geomayhem") renderGeomayhemHub();
   showScores();
   if (!config.localOnly) {
     $("leaderboard-game").value = mode;
@@ -1353,10 +1493,15 @@ function startGame(difficulty) {
   }
   if (!ready || active || !Object.hasOwn(modes[selected].difficulties, difficulty))
     return;
-  if (selected === "singularity" && difficulty === "practice") {
-    selectGame("core_practice");
-    showGameArea();
-    return;
+  let campaign;
+  if (selected === "geomayhem") {
+    const store = geomayhemStore(), progress = store.read();
+    const index = geomayhemArmory.findIndex(w => w.id === $("geomayhem-weapon").value);
+    if (!GeomayhemProgress.unlocked(progress, Number(difficulty.split("_")[1]))
+        || index < 0 || GeomayhemProgress.starterRequirement(index) > progress.cleared) return;
+    campaign = { cleared: progress.cleared, unlocked_level: Math.min(GeomayhemProgress.arenaCount, progress.cleared + 1), workshop: progress.workshop };
+    geomayhemRun = { id: crypto.randomUUID(), store };
+    geomayhemResult = null;
   }
   resetDamageFeedback();
   turtleTrailField.reset();
@@ -1379,13 +1524,13 @@ function startGame(difficulty) {
     snapshot = send("start", {
       mode: selected,
       difficulty: selectedDifficulty,
-      ...(selected === "geomayhem" ? { weapon: $("geomayhem-weapon").value } : {}),
+      ...(selected === "geomayhem" ? { weapon: $("geomayhem-weapon").value, campaign } : {}),
     });
   } catch (error) {
     fail(error);
     return;
   }
-  if (!modes[selected].temporary || selected === "core_practice") {
+  if (!modes[selected].temporary || ["core_practice", "geomayhem"].includes(selected)) {
     accountApp?.startRun(selected, selectedDifficulty);
     updateAchievements(achievementTracker.start(selected, selectedDifficulty));
   }
@@ -1426,6 +1571,7 @@ function showOverlay(title, copy, button, kicker) {
   $("overlay").hidden = false;
 }
 function resetDamageFeedback() {
+  updateChaosEffects(null);
   previousBossHealth = null;
   damageFlashAnimation?.cancel();
   damageFlashAnimation = null;
@@ -1433,7 +1579,7 @@ function resetDamageFeedback() {
   healingFlashAnimation = null;
 }
 function updateDamageFeedback(s) {
-  if (!["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) return;
+  if (!(selected === "dodge" && s.difficulty === "chaos") && !["boss", "pumpkin", "wrath", "singularity", "core_practice"].includes(selected)) return;
   if (previousBossHealth && s.healing_collected > previousBossHealth.healing) {
     healingFlashAnimation?.cancel();
     healingFlashAnimation = $("healing-flash").animate(
@@ -1451,15 +1597,65 @@ function updateDamageFeedback(s) {
   }
   previousBossHealth = { lives: s.lives, damage: s.damage_taken, healing: s.healing_collected };
 }
+// Small persistent pixel-style badges; only active effects occupy a slot.
+const chaosStatusDefinitions = [
+  ['vertigo_left', 'Reversed', '#e4a2f1', 'M0 3l3-3v2h7v2H3v2ZM12 9l-3-3v2H2v2h7v2Z'],
+  ['shield', 'Shielded', '#91baff', 'M2 1h8v6H9v2H8v1H7v1H5v-1H4V9H3V7H2Z'],
+  ['haste_left', 'Speed', '#fff080', 'M6 0h4L7 5h3l-6 7 1-5H2Z'],
+  ['frost_left', 'Slowness', '#a8eaff', 'M5 0h2v4h1V3h2v2H8v2h2v2H8V8H7v4H5V8H4v1H2V7h2V5H2V3h2v1h1Z'],
+  ['burn_ticks', 'Burning', '#ffab60', 'M6 0h2v4h2v2h1v4H9v2H3v-2H1V6h2V4h2v3h1Z'],
+  ['poison_ticks', 'Poison', '#b4ed70', 'M4 0h4v2H7v3h2v2h2v4H1V7h2V5h2V2H4Z'],
+  ['invulnerable', 'Protection', '#e2eeff', 'M3 0h6v1h2v2h1v6h-1v2H9v1H3v-1H1V9H0V3h1V1h2ZM4 3v6h4V3Z'],
+  ['curse_left', 'Fast fall', '#dd9cff', 'M2 1h3v5h2V1h3v6H8v2H7v2H5V9H4V7H2Z'],
+  ['slowfall_left', 'Slow fall', '#e8c7ff', 'M1 1h10v2H9v2H7v2h2v2h2v2H1V9h2V7h2V5H3V3H1Z'],
+  ['stasis_left', 'Stasis', '#86e0ff', 'M2 1h3v10H2ZM7 1h3v10H7Z'],
+  ['repellent_left', 'Field immunity', '#b6b5ff', 'M2 1h8v6H9v2H7v2H5V9H3V7H2ZM0 4h2v3H0ZM10 4h2v3h-2Z'],
+];
+function updateChaosStatusBadges(s) {
+  const root = $('chaos-status-badges');
+  const show = s?.mode === 'dodge' && s.difficulty === 'chaos' && !s.over;
+  const activeEffects = show ? chaosStatusDefinitions.filter(([key]) => s[key] > 0) : [];
+  const wanted = new Set(activeEffects.map(([key]) => key));
+  for (const badge of [...root.children]) if (!wanted.has(badge.dataset.effect)) badge.remove();
+  for (const [key, label, color, path] of activeEffects) {
+    let badge = root.querySelector(`[data-effect="${key}"]`);
+    if (!badge) {
+      badge = document.createElement('li');
+      badge.dataset.effect = key;
+      badge.style.setProperty('--effect-color', color);
+      badge.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="${path}"/></svg><span>${label}</span><small></small>`;
+      root.append(badge);
+    }
+    const seconds = key === 'burn_ticks' ? s.burn_in + (s.burn_ticks-1)*2
+      : key === 'poison_ticks' ? s.poison_in + (s.poison_ticks-1)*3 : s[key];
+    const detail = key === 'shield' ? '' : `${Math.ceil(seconds)}s`;
+    if (badge.lastElementChild.textContent !== detail) badge.lastElementChild.textContent = detail;
+  }
+  root.classList.toggle("many-effects", activeEffects.length > 6);
+  root.hidden = activeEffects.length === 0;
+  document.body.classList.toggle("chaos-status-active", activeEffects.length > 0);
+}
+function updateChaosEffects(s) {
+  updateChaosStatusBadges(s);
+  const visible = s?.mode === "dodge" && s.difficulty === "chaos" && !s.over && !s.paused && !document.hidden;
+  const haste = visible && s.haste_left > 0, frost = visible && s.frost_left > 0;
+  $("chaos-electric").hidden = !haste;
+  $("chaos-frost").hidden = !frost;
+  $("arena").classList.toggle("chaos-haste", !!haste);
+  $("arena").classList.toggle("chaos-frozen", !!frost);
+  const reduced = trailReducedMotion.matches || !!saved.preferences?.reducedMotion;
+  document.body.classList.toggle("chaos-motion-off", reduced);
+}
 function render() {
   const s = snapshot;
+  updateChaosEffects(s);
   updateDamageFeedback(s);
-  if (!s.dying && (!modes[selected].temporary || selected === "core_practice")) {
+  if (!s.dying && (!modes[selected].temporary || ["core_practice", "geomayhem"].includes(selected))) {
     const progress = achievementTracker.observe(s);
     accountApp?.observe(s, progress.changed, achievementTracker.observedAt);
     updateAchievements(progress);
   }
-  const hasHealth = ["boss", "pumpkin", "wrath", "singularity", "core_practice", "geomayhem"].includes(selected);
+  const hasHealth = (selected === "dodge" && s.difficulty === "chaos") || ["boss", "pumpkin", "wrath", "singularity", "core_practice", "geomayhem"].includes(selected);
   $("player-health").hidden = !hasHealth || s.arena_shattered;
   if (hasHealth) {
     const health = `${s.lives} / ${s.max_lives}`;
@@ -1468,16 +1664,16 @@ function render() {
     $("player-health-fill").style.width = `${100 * s.lives / s.max_lives}%`;
     $("player-health").dataset.low = String(s.lives <= s.max_lives / 3);
   }
-  $("score").textContent = s.score;
+  setTextIfChanged("score", s.score);
   $("pause").hidden = !s.can_pause || s.over;
-  $("pause").textContent = `${s.paused ? "Resume" : "Pause"} · ${selected === "geomayhem" ? "R" : "D"}`;
+  setTextIfChanged("pause", `${s.paused ? "Resume" : "Pause"} · ${selected === "geomayhem" ? "R" : "D"}`);
   if (selected === "geomayhem") renderGeomayhem(s);
   if (selected === "hangman") {
     $("hangman-picture").textContent = s.picture;
     $("word").textContent = s.word;
     $("guess-feedback").textContent =
       s.message || `${s.remaining} wrong guesses left.`;
-    $("metric").textContent = s.remaining;
+    setTextIfChanged("metric", s.remaining);
     document
       .querySelectorAll("#alphabet button")
       .forEach(
@@ -1498,7 +1694,7 @@ function render() {
     );
     $("typing-feedback").textContent =
       `${s.mistakes} mistakes · ${s.score} rounds completed`;
-    $("metric").textContent = `${s.remaining.toFixed(1)}s`;
+    setTextIfChanged("metric", `${s.remaining.toFixed(1)}s`);
     $("timer-bar").style.width =
       `${Math.max(0, Math.min(100, (s.remaining / Math.max(4, 8 - (s.level - 1) * 0.25)) * 100))}%`;
   } else {
@@ -1509,7 +1705,7 @@ function render() {
     } else $("touch-fire").disabled = false;
     $("metric").textContent =
       selected === "dodge" ? `${s.elapsed}s` : `${s.lives} / ${s.max_lives}`;
-    $("game-instruction").textContent = s.label || modes[selected].controls;
+    setTextIfChanged("game-instruction", s.label || modes[selected].controls);
     for (const event of s.sounds) playSound(event);
   }
   if (s.dying) {
@@ -1544,13 +1740,17 @@ function render() {
       copy = `Score: ${s.score}. All 15 protocols survived. ${s.lives} / 10 HP remaining. The annihilation laser finished the Core.`;
     }
     if (selected === "geomayhem") {
-      title = s.won ? "Mayhem mastered!" : "Cubie will be back.";
-      copy = s.won ? `${s.level_name} cleared! All 20 waves survived with ${s.loadout.length} weapons. Try another level or build.` : s.death_message;
+      title = s.won ? (s.level === s.total_levels ? "Mayhem mastered!" : "Arena conquered!") : "Cubie will be back.";
+      copy = s.won ? `${s.level_name} cleared! All 20 waves survived with ${s.loadout.length} weapons. ` : `${s.death_message} `;
+      copy += `+${geomayhemResult?.reward || 0} shards. `;
+      if (geomayhemResult?.firstClear) copy += s.level < s.total_levels ? `Arena ${s.level + 1} unlocked. ` : `All ${s.total_levels} arenas conquered! `;
+      copy += "Visit the workshop, then start a fresh expedition.";
+      if (!geomayhemRun?.store.available) copy += " Storage is unavailable; progress lasts only for this visit.";
     }
     showOverlay(
       title,
       copy,
-      "Play again ↗",
+      selected === "geomayhem" ? "Return to expedition hub ↗" : "Play again ↗",
       s.won ? "ROUND COMPLETE" : "GOOD GAME",
     );
   } else if (s.paused)
@@ -1565,14 +1765,129 @@ function render() {
 }
 const turtleTrailField = new TurtleTrails.Field();
 const trailReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+// Keep repeated geometry in the browser; Python sends positions and rotations.
+const geomayhemPaths = new Map();
+let geomayhemBackdrop = null;
+function geomayhemPath(sides, star) {
+  const key = `${sides}:${star}`;
+  if (!geomayhemPaths.has(key)) {
+    const path = new Path2D(), count = star ? sides * 2 : sides;
+    for (let i = 0; i < count; i++) {
+      const a = i * Math.PI * 2 / count, r = star && i % 2 ? .52 : 1;
+      if (i) path.lineTo(Math.cos(a)*r, -Math.sin(a)*r);
+      else path.moveTo(Math.cos(a)*r, -Math.sin(a)*r);
+    }
+    path.closePath();
+    geomayhemPaths.set(key, path);
+  }
+  return geomayhemPaths.get(key);
+}
+function paintGeomayhemPolygon(context, x, y, radius, sides, fill, outline, angle=0, star=false, width=2) {
+  if (radius <= 0) return;
+  context.save();
+  context.translate(x,y); context.rotate(-angle); context.scale(radius,radius);
+  const path = geomayhemPath(sides,star);
+  if (fill) { context.fillStyle=fill; context.fill(path); }
+  if (outline) { context.strokeStyle=outline; context.lineWidth=width/radius; context.stroke(path); }
+  context.restore();
+}
+function drawGeomayhemCommand(context, command) {
+  const c = command.coords;
+  context.globalAlpha = command.opacity ?? 1;
+  context.setLineDash(command.dash || []);
+  if (command.kind === "geomayhem_polygon") {
+    paintGeomayhemPolygon(context,c[0],c[1],command.radius,command.sides,command.fill,command.outline,
+      command.angle,command.star,command.width);
+    return;
+  }
+  if (command.kind === "geomayhem_enemy") {
+    const {radius,sides,fill:color,angle,star,burn,health}=command;
+    paintGeomayhemPolygon(context,c[0],c[1],radius,sides,color,"#fff0dc",angle,star);
+    if (burn) {
+      context.beginPath();context.arc(c[0],c[1],radius+3,0,Math.PI*2);
+      context.strokeStyle="#ff8a42";context.lineWidth=2;context.stroke();
+    }
+    context.fillStyle="#152033";
+    context.fillRect(c[0]-5.5,c[1]-4,3,4);context.fillRect(c[0]+2.5,c[1]-4,3,4);
+    if (health !== null) {
+      context.fillStyle="#44283d";context.fillRect(c[0]-radius,c[1]-radius-7.5,radius*2,3);
+      context.fillStyle=color;context.fillRect(c[0]-radius,c[1]-radius-7.5,radius*2*health,3);
+    }
+    return;
+  }
+  if (command.kind === "geomayhem_effect") {
+    const {radius,stars,fill:color,life,end}=command;
+    if (command.effect === "line") {
+      context.beginPath();context.moveTo(c[0],c[1]);context.lineTo(end[0],-end[1]);
+      context.strokeStyle=color;context.lineWidth=radius;context.stroke();
+      if (stars >= 3) {context.strokeStyle="#ffffff";context.lineWidth=2;context.stroke();}
+      if (stars >= 5) for (const t of [.15,.4,.7])
+        paintGeomayhemPolygon(context,c[0]+(end[0]-c[0])*t,c[1]+(-end[1]-c[1])*t,14,4,"",color,0,true);
+    } else {
+      const r=radius*(1.3-life);
+      context.beginPath();context.arc(c[0],c[1],r,0,Math.PI*2);
+      context.strokeStyle=color;context.lineWidth=2;context.stroke();
+      if (stars >= 3) paintGeomayhemPolygon(context,c[0],c[1],r*.8,6,"","#ffffff");
+      if (stars >= 5) paintGeomayhemPolygon(context,c[0],c[1],r*1.1,10,"",color,0,true);
+    }
+    return;
+  }
+  if (command.kind === "geomayhem_weapon") {
+    const {stars,angle,size,fill:color,weapon_kind:kind} = command;
+    const sides = {bolt:3,fan:4,ring:8,beam:4,orbit:6,mine:5,boomerang:3,nova:10,drone:6}[kind];
+    if (stars >= 5) {
+      paintGeomayhemPolygon(context,c[0],c[1],size+8,8,"",color,angle,true);
+      context.beginPath(); context.arc(c[0],c[1],size+3,0,Math.PI*2);
+      context.strokeStyle="#ffffff";context.lineWidth=1;context.stroke();
+    } else if (stars >= 3) paintGeomayhemPolygon(context,c[0],c[1],size+4,6,"",color,-angle);
+    paintGeomayhemPolygon(context,c[0],c[1],size,sides,color,stars>=3?"#efffff":"#183042",angle,["ring","orbit","nova"].includes(kind));
+    if (stars >= 3) paintGeomayhemPolygon(context,c[0],c[1],size*.42,4,"#ffffff","",angle);
+    return;
+  }
+  context.beginPath();
+  context.fillStyle=command.fill || "transparent";
+  context.strokeStyle=command.outline || "transparent";
+  context.lineWidth=command.width || 1;
+  if (command.kind === "rectangle") context.rect(c[0],c[1],c[2]-c[0],c[3]-c[1]);
+  else if (command.kind === "polygon") {
+    context.moveTo(c[0],c[1]);
+    for (let i=2;i<c.length;i+=2) context.lineTo(c[i],c[i+1]);
+    context.closePath();
+  } else if (command.kind === "oval") context.ellipse((c[0]+c[2])/2,(c[1]+c[3])/2,Math.abs(c[2]-c[0])/2,Math.abs(c[3]-c[1])/2,0,0,Math.PI*2);
+  else if (command.kind === "text") {
+    context.font=`bold ${command.font?.[1] || 18}px Arial`;
+    context.textAlign="center";context.textBaseline="middle";
+    context.fillText(command.text,c[0],c[1]);return;
+  }
+  if (command.fill) context.fill();
+  if (command.outline) context.stroke();
+}
+function cacheGeomayhemBackdrop(s) {
+  if (!s.background) return;
+  const [left,right,bottom,top] = s.bounds;
+  const canvas = document.createElement("canvas");
+  // One arena at a time, at twice world resolution for the mobile camera.
+  canvas.width=(right-left)*2;canvas.height=(top-bottom)*2;
+  const context=canvas.getContext("2d");
+  context.scale(2,2);context.translate(-left,top);
+  for (const command of s.background) drawGeomayhemCommand(context,command);
+  geomayhemBackdrop=canvas;
+}
+function setTextIfChanged(id, value) {
+  const node=$(id), text=String(value);
+  if (node.textContent !== text) node.textContent=text;
+}
 const ctx = $("game-canvas").getContext("2d");
 function draw(s) {
+  if (s.mode === "geomayhem") cacheGeomayhemBackdrop(s);
   ctx.clearRect(0, 0, 680, 560);
   ctx.save();
   ctx.translate(340, 280);
   if (s.mode === "geomayhem") {
-    const scale = geomayhemScale(s);
-    ctx.scale(scale, scale);
+    const camera = geomayhemCamera(s);
+    ctx.beginPath(); ctx.rect(-310,-235,620,470); ctx.clip();
+    ctx.scale(camera.scale, camera.scale);
+    ctx.translate(-camera.x, camera.y);
   }
   const [left, right, bottom, top] = s.bounds;
   ctx.fillStyle = "#111827";
@@ -1581,6 +1896,8 @@ function draw(s) {
   ctx.beginPath();
   ctx.rect(left, -top, right - left, top - bottom);
   ctx.clip();
+  if (s.mode === "geomayhem" && geomayhemBackdrop)
+    ctx.drawImage(geomayhemBackdrop,left,-top,right-left,top-bottom);
   for (const command of s.commands) {
     if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || saved.preferences?.reducedMotion))
       turtleTrailField.draw(ctx, TurtleTrails.selected(saved.turtleTrail, saved.shop.owned));
@@ -1596,7 +1913,35 @@ function draw(s) {
       ctx.restore();
       continue;
     }
+    if (command.kind === 'fire_ray') {
+      ctx.save();
+      ctx.lineCap = 'butt';
+      ctx.setLineDash(command.warning ? [8, 7] : []);
+      ctx.strokeStyle = command.warning ? '#ffcf75' : '#ff632f';
+      ctx.lineWidth = command.warning ? 4 : 24;
+      ctx.shadowColor = '#ff752f'; ctx.shadowBlur = command.warning ? 0 : 12;
+      ctx.beginPath();ctx.moveTo(c[0],c[1]);ctx.lineTo(c[2],c[3]);ctx.stroke();
+      if (!command.warning) {
+        ctx.strokeStyle = '#fff2a1';ctx.lineWidth = 8;ctx.shadowBlur = 0;ctx.stroke();
+      }
+      ctx.restore();continue;
+    }
+    if (command.chaos_kind) {
+      ChaosArt.tile(ctx, command.chaos_kind, c[0], c[1], c[2]-c[0], command.fill || command.outline, command.ghost);
+      continue;
+    }
+    if (command.kind === "block_icon") {
+      ChaosArt.draw(ctx, command.block, c[0], c[1], command.size, command.ghost, command.color,
+        trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : command.age);
+      continue;
+    }
+    if (s.mode === "geomayhem") {
+      drawGeomayhemCommand(ctx,command);
+      continue;
+    }
     ctx.beginPath();
+    ctx.globalAlpha = command.opacity ?? 1;
+    ctx.setLineDash(command.dash || []);
     ctx.fillStyle = command.fill || "transparent";
     ctx.strokeStyle = command.outline || "transparent";
     ctx.lineWidth = command.width || 1;
@@ -1627,6 +1972,8 @@ function draw(s) {
     if (command.outline) ctx.stroke();
   }
   ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
   ctx.strokeStyle =
     selected === "dodge" && s.difficulty === "impossible" ? "#ffffff"
       : selected === "dodge" && s.difficulty === "merciless"
@@ -1645,6 +1992,18 @@ function draw(s) {
     ctx.fillText(`BOSS ${s.hp} / ${s.max_hp}`, 0, -270);
   }
   ctx.restore();
+  if (s.mode === "geomayhem" && geomayhemCamera(s).scale > .75) {
+    ctx.save();
+    const map = { x: 545, y: 52, w: 100, h: 76 };
+    const project = (x,y) => [map.x+(x-left)/(right-left)*map.w, map.y+(top-y)/(top-bottom)*map.h];
+    ctx.fillStyle = "#08141ddd"; ctx.fillRect(map.x,map.y,map.w,map.h);
+    ctx.strokeStyle = "#99b7b0"; ctx.strokeRect(map.x,map.y,map.w,map.h);
+    ctx.fillStyle = "#ff647c";
+    for (const threat of s.threats) { const [x,y] = project(threat.x,threat.y); ctx.fillRect(x-1,y-1,2,2); }
+    const [x,y] = project(s.player.x,s.player.y);
+    ctx.fillStyle = "#c5ff9b"; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
 }
 function guess(letter) {
   if (!active || selected !== "hangman") return;
@@ -1695,8 +2054,13 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
-  if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman") {
+  jackpotMachine.tick(now);
+  animateChaosGuide(now);
+  if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman"
+      && !(selected === "geomayhem" && (snapshot?.paused || snapshot?.offers.length))) {
     try {
+      if (selected === "geomayhem" && geomayhemPointer)
+        aimGeomayhem({clientX:geomayhemPointer[0],clientY:geomayhemPointer[1]});
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
         keys: [...new Set([...keys, ...joystickKeys, ...geomayhemMovementKeys.values(), ...(selected === "geomayhem" && geomayhemFiring ? ["f"] : [])])],
@@ -2072,19 +2436,21 @@ function syncMusic() {
       soundOn && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
   }
   if (!musicPlayer) return;
+  const welcoming = !!document.querySelector("#welcome-dialog")?.open;
   const state = {
-    theme: coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+    theme: welcoming ? "jukebox:cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "geomayhem" ? `geomayhem_level_${snapshot.level}`
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
-      : active && selected === "dodge" ? `dodge_${selectedDifficulty === "impossible" ? "merciless" : selectedDifficulty}`
+      : active && selected === "dodge" && selectedDifficulty === "chaos" ? "chaos_carnival"
+      : active && selected === "dodge" ? `dodge_${["impossible", "chaos"].includes(selectedDifficulty) ? "merciless" : selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
-      && (coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
+      && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
-  if (pendingRockSong) {
+  if (pendingRockSong && !welcoming) {
     musicPlayer.playOnce(pendingRockSong, state);
     pendingRockSong = null;
   } else musicPlayer.setState(state);
@@ -2159,6 +2525,8 @@ function playSound(event) {
   const ding = event === "achievement";
   const scare = event === "scare";
   const core = {
+    chaos_fire_warning: [880, 880, .1, .065],
+    chaos_fire_burst: [140, 45, .35, .1],
     core_teleport: [950, 180, .09, .035],
     core_protocol: [440, 80, .28, .065],
     core_hit: [120, 35, .24, .12],
@@ -2183,7 +2551,7 @@ function playSound(event) {
       gain.gain.exponentialRampToValueAtTime(.001, t + .28);
     }
   } else if (core) {
-    oscillator.type = ["core_teleport", "core_exposed", "core_heal"].includes(event) ? "sine" : "sawtooth";
+    oscillator.type = ["core_teleport", "core_exposed", "core_heal", "chaos_fire_warning"].includes(event) ? "sine" : "sawtooth";
     oscillator.frequency.setValueAtTime(core[0], now);
     oscillator.frequency.exponentialRampToValueAtTime(core[1], now + duration * .9);
     gain.gain.setValueAtTime(.001, now);
@@ -2292,6 +2660,7 @@ async function initialize() {
     );
     handle = pyodide.globals.get("handle");
     initializeGeomayhem(send("geomayhem_options"));
+
     const practice = send("core_practice_options");
     modes.core_practice.difficulties = Object.fromEntries(practice.attacks.map(attack => [
       attack.id, [`${String(attack.number).padStart(2, "0")} · ${attack.name}`, attack.hint],
@@ -2337,6 +2706,7 @@ function applyAccountProfile(profile) {
     renderAchievements(); applyCubieCustom(); showScores();
     if (selected === "shop") renderShop();
     if (selected === "customs") renderCustoms();
+    if (selected === "geomayhem") renderGeomayhemHub();
     persist();
   } finally { applyingAccountProfile = false; }
 }
@@ -2344,6 +2714,8 @@ accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAc
   isPlaying: () => active, config: leaderboardReady.then(client => ({ url: client.url, key: client.key })),
   onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
+const arcadeWelcome = new ArcadeWelcome.Guide(accountApp);
+window.addEventListener('arcade-welcome-change', syncMusic);
 accountApp.ready.then(async () => {
   const client = await leaderboardReady;
   if (accountApp.session) client.accountSession = accountApp.session;
@@ -2354,6 +2726,7 @@ accountApp.ready.then(async () => {
 for (const [method, makeEvent] of Object.entries({
   visit: () => ["visit", {}],
   secret: name => ["secret", { name }],
+  slotResult: (symbols, custom, visible) => ["slots", { symbols, visible }],
   hearMusic: (track, custom, audible) => ["music", { track, audible }],
   completeGaster: () => ["gaster", {}],
   spendTime: seconds => { const end = Date.now(); return ["time", { start: end - Math.min(seconds, 60) * 1000, end }]; },
@@ -2405,6 +2778,11 @@ if (pendingGaster) {
 if (!storageAvailable)
   $("storage-note").textContent =
     "Storage is unavailable. Scores and achievements last for this visit only.";
+const jackpotMachine = new JackpotSlots.Controller({
+  equipped: () => saved.cubieCustom,
+  reducedMotion: () => trailReducedMotion.matches || !!saved.preferences?.reducedMotion,
+  onResult: symbols => updateAchievements(achievementTracker.slotResult(symbols, saved.cubieCustom, true)),
+});
 requestAnimationFrame(frame);
 const gameLayout = new ResizeObserver(() => fitArcade());
 for (const selector of [".game-heading", ".game-footer", "#touch-controls", "#player-health"])
@@ -2423,4 +2801,6 @@ function resizeGameArea() {
 }
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);
+guidePreviewBootstrap.stop();
+initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
 initialize();

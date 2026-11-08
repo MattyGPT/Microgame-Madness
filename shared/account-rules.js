@@ -11,6 +11,7 @@ const AccountRules = (() => {
   const catalog = [...customs.catalog, ...trails.catalog];
   const modes = Object.fromEntries(Object.entries(shop.rates).map(([mode, rate]) => [mode, Object.keys(rate.modes)]));
   modes.core_practice = achievements.attackRewards.filter(a => a.family === 'core').map(a => a.key);
+  modes.geomayhem = Array.from({length:10}, (_,i) => `level_${i+1}`);
   const clone = value => JSON.parse(JSON.stringify(value));
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
     && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
@@ -19,10 +20,10 @@ const AccountRules = (() => {
     && value !== 'prototype' && !Object.hasOwn(Object.prototype, value);
   const streakKeys = ['bossCleanStreak', 'bossSovereignStreak', 'bossRunActive', 'bossSovereignRunActive'];
   const numericSnapshot = ['score', 'mistakes', 'remaining', 'damage_taken', 'attacks_completed', 'counter_hits',
-    'shots_fired', 'fight_elapsed', 'healing_collected', 'near_misses', 'elapsed', 'lives', 'max_lives', 'hp', 'max_hp'];
+    'shots_fired', 'fight_elapsed', 'healing_collected', 'near_misses', 'elapsed', 'lives', 'max_lives', 'hp', 'max_hp', 'geo_level', 'geo_kills', 'geo_waves', 'geo_rank', 'geo_weapon_count', 'geo_max_stars', 'geo_five_star_count', 'geo_relic_count'];
   const booleanSnapshot = ['over', 'won', 'shielded'];
   const cumulative = ['damage_taken', 'attacks_completed', 'counter_hits', 'shots_fired', 'fight_elapsed',
-    'healing_collected', 'near_misses', 'elapsed', 'mistakes'];
+    'healing_collected', 'near_misses', 'elapsed', 'mistakes', 'geo_kills', 'geo_waves', 'geo_rank'];
   const secretNames = new Set(['dingdong','cube','cubie','boo','starlight','rocknroy','pixel','1up','codexisthebest','high score','gravitron']);
   const settingsKeys = new Set(['player','cubieCustom','turtleTrail','soundOn','reducedMotion','leaderboard','publicProfile']);
 
@@ -38,7 +39,7 @@ const AccountRules = (() => {
     return { schema: 1, player: 'Player', scores: {}, achievements: new achievements.Tracker().data,
       shop: { units: 0, owned: [] }, cubieCustom: 'classic', turtleTrail: null,
       unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false, testerTon618: false,
-      preferences: { soundOn: true, reducedMotion: false }, privacy: { leaderboard: false, publicProfile: false },
+      preferences: { soundOn: true, reducedMotion: false }, privacy: { leaderboard: true, publicProfile: true },
       preferenceRevisions: {}, streams: {}, runs: {}, timeIntervals: [], baselineClosed: false };
   }
   function validMode(mode, difficulty) { return Object.hasOwn(modes, mode) && modes[mode].includes(difficulty); }
@@ -60,6 +61,9 @@ const AccountRules = (() => {
     clean.turtleTrail = trails.selected(value.turtleTrail, clean.shop.owned)?.id || null;
     if (object(value.preferences)) for (const key of ['soundOn', 'reducedMotion'])
       if (typeof value.preferences[key] === 'boolean') clean.preferences[key] = value.preferences[key];
+    // Preserve an explicit choice in legacy local saves when adopting defaults.
+    if (object(value.privacy)) for (const key of ['leaderboard', 'publicProfile'])
+      if (typeof value.privacy[key] === 'boolean') clean.privacy[key] = value.privacy[key];
     if (object(value.scores)) for (const [key, entries] of Object.entries(value.scores)) {
       const [mode, difficulty] = key.split(':');
       if (key !== `${mode}:${difficulty}` || !validMode(mode, difficulty) || mode === 'core_practice' || !Array.isArray(entries)) continue;
@@ -118,6 +122,15 @@ const AccountRules = (() => {
       requireValue(Array.isArray(raw.attack_survivals) && raw.attack_survivals.length === length
         && raw.attack_survivals.every(n => integer(n)), 'Invalid attack survival counts.');
       clean.attack_survivals = raw.attack_survivals.slice();
+    }
+    if (run.mode === 'geomayhem') {
+      for (const [key,max] of Object.entries({geo_level:10,geo_kills:1000000,geo_waves:20,geo_rank:10000,
+        geo_weapon_count:4,geo_max_stars:5,geo_five_star_count:4,geo_relic_count:3}))
+        if (clean[key] !== undefined) requireValue(integer(clean[key],max), `Invalid ${key}.`);
+      if (clean.geo_level !== undefined) requireValue(run.difficulty === `level_${clean.geo_level}`, 'Arena does not match the run.');
+      if (clean.won === true) requireValue(clean.geo_waves === 20, 'An arena victory requires 20 cleared waves.');
+      if (clean.geo_five_star_count !== undefined && clean.geo_weapon_count !== undefined)
+        requireValue(clean.geo_five_star_count <= clean.geo_weapon_count, 'Too many evolved weapons.');
     }
     if (clean.score !== undefined) requireValue(scoreValid(run.mode, run.difficulty, clean.score), 'Invalid game score.');
     for (const key of cumulative) if (clean[key] !== undefined && run.snapshot?.[key] !== undefined)
@@ -234,13 +247,13 @@ const AccountRules = (() => {
       if (final) {
         const completed = ['win','loss'].includes(payload.outcome);
         if (!completed) tracker.abandon();
-        const eligible = run.mode !== 'core_practice' && (completed || (run.mode === 'keyboard' && payload.outcome === 'exit'));
+        const eligible = !['core_practice','geomayhem'].includes(run.mode) && (completed || (run.mode === 'keyboard' && payload.outcome === 'exit'));
         const score = observation.score || 0;
         if (eligible) {
           shop.reward(state.shop, run.mode, run.difficulty, score);
           addBest(state, run.mode, run.difficulty, run.player, score);
         }
-        if (completed && run.mode !== 'core_practice') state.minigamesCompleted = Math.min(20, state.minigamesCompleted+1);
+        if (completed && !['core_practice','geomayhem'].includes(run.mode)) state.minigamesCompleted = Math.min(20, state.minigamesCompleted+1);
         const finishedAt = new Date(Math.max(Date.parse(run.startedAt), Date.parse(occurredAt))).toISOString();
         Object.assign(run, { finished: true, outcome: payload.outcome, score, finishedAt,
           timeAdjusted: run.timeAdjusted || clockAdjusted || Date.parse(occurredAt) < Date.parse(run.startedAt),
@@ -264,6 +277,11 @@ const AccountRules = (() => {
       } else if (payload.event === 'music') {
         requireValue(typeof payload.track === 'string' && payload.track.length <= 128 && typeof payload.audible === 'boolean', 'Invalid music event.');
         tracker.hearMusic(payload.track, state.cubieCustom, payload.audible);
+      } else if (payload.event === 'slots') {
+        requireValue(Array.isArray(payload.symbols) && payload.symbols.length === 3
+          && payload.symbols.every(n => Number.isInteger(n) && n >= 0 && n < 5)
+          && typeof payload.visible === 'boolean', 'Invalid slot result.');
+        tracker.slotResult(payload.symbols, state.cubieCustom, payload.visible);
       } else if (payload.event === 'gaster') tracker.completeGaster();
       else if (payload.event === 'time') {
         requireValue(Number.isSafeInteger(payload.end) && payload.end <= Date.parse(now)+300000, 'Time interval is ahead of the current clock.');

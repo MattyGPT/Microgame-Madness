@@ -145,8 +145,10 @@ test('privacy, current names, moderation, season receipt time and deletion gover
   await call('account_set_season',['closed','Closed season',new Date(Date.now()-172800000).toISOString(),new Date(Date.now()-86400000).toISOString(),'1']);
   await apply(first,op('start','run.start',{mode:'hangman',difficulty:'easy'},'r1'));
   await apply(first,op('finish','run.finish',{snapshot:{over:true,won:true,score:9,mistakes:1},outcome:'win'},'r1'));
+  assert.equal((await ranking()).length,1); // New profiles share by default.
+  await apply(first,op('private','settings',{changes:{leaderboard:false,publicProfile:false},baseRevisions:{}}));
   assert.equal((await ranking()).length,0);
-  await apply(first,op('share','settings',{changes:{leaderboard:true,publicProfile:true,player:'Arcade name'},baseRevisions:{}}));
+  await apply(first,op('share','settings',{changes:{leaderboard:true,publicProfile:true,player:'Arcade name'},baseRevisions:{leaderboard:1,publicProfile:1}}));
   const before=await ranking(first); assert.equal(before.length,1); assert.equal(before[0].is_you,true); assert.equal(before[0].player,'Arcade name');
   assert.deepEqual(Object.keys(before[0]).sort(),['rank','player','score','is_you','public_id','cubie'].sort());
   assert.notEqual(before[0].public_id,first);
@@ -165,7 +167,7 @@ test('privacy, current names, moderation, season receipt time and deletion gover
   await role('anon'); assert.equal((await db.query("select * from public.get_leaderboard('hangman','easy')")).rows.length,0);
   await role('service_role'); await call('account_moderate',[first,false,'restored']);
   assert.equal((await ranking()).length,1);
-  await apply(first,op('hide','settings',{changes:{leaderboard:false},baseRevisions:{leaderboard:1}}));
+  await apply(first,op('hide','settings',{changes:{leaderboard:false},baseRevisions:{leaderboard:2}}));
   assert.equal((await ranking()).length,0);
   await role('service_role'); await call('account_delete',[first]); await call('account_delete',[first]);
   await assert.rejects(read(first),/account_deleted/);

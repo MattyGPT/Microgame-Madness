@@ -78,12 +78,50 @@ const CubieCustoms = (() => {
     ['absolute_zero', 'Absolute Zero Cubie', 120, '#c3f0f4', 'Ice-cold focus. A warm little heart.'],
     ['white_dwarf', 'White Dwarf Cubie', 180, '#f7f1da', 'A tiny star that outlasted the impossible.'],
   ];
+  const geomayhemCustoms = [
+    ['geo_scout','Expedition Scout Cubie','geo_start','#a7c8a0','A little backpack. A big first step.'],
+    ['geo_polygon','Polygon Rookie Cubie','geo_kills_10','#d3aa82','Ten shapes down. Still learning the angles.'],
+    ['geo_waveguard','Wave Guard Cubie','geo_wave_1','#91b9bd','One wave cleared. One tiny shield held high.'],
+    ['geo_collector','Corner Collector Cubie','geo_kills_25','#d7b889','Every little corner deserves a place in the pouch.'],
+    ['geo_circuit','Circuit Runner Cubie','geo_waves_5','#8bbcd7','Found a rhythm in the grid.'],
+    ['geo_spark','Spark Apprentice Cubie','geo_stars_3','#b2a4e4','One small evolution. One very bright idea.'],
+    ['geo_arsenal','Arsenal Cubie','geo_loadout_4','#7293ac','Four tools. One extremely prepared friend.'],
+    ['geo_victor','Arena Victor Cubie','geo_win_1','#ddb76f','Twenty waves and a well-earned little crown.'],
+    ['geo_relic','Relic Keeper Cubie','geo_relics_3','#ac94d7','Three tiny treasures with very big stories.'],
+    ['geo_nova','Nova Engineer Cubie','geo_stars_5','#74bdd0','Five stars of carefully assembled brilliance.'],
+    ['geo_rift','Rift Warden Cubie','geo_arena_5','#8574b7','Keeps the rift open for friends.'],
+    ['geo_hunter','Prism Hunter Cubie','geo_kills_500','#789fac','Sees every angle. Misses no opportunity to wave.'],
+    ['geo_voyager','Star Voyager Cubie','geo_arena_8','#8d9be0','Eight arenas behind. A universe ahead.'],
+    ['geo_conductor','Orbit Conductor Cubie','geo_evolved_3','#b18bdd','Three evolved stars, perfectly in tune.'],
+    ['geo_sovereign','Mayhem Sovereign Cubie','geo_arena_10','#e0bf7d','Ten arenas bow to one little smile.'],
+    ['geo_seraph','Zero Point Seraph Cubie','geo_flawless_10','#c2e9ef','Untouched by the final storm. Radiant with kindness.'],
+  ];
   add("classic", "Classic Cubie", "welcome", "#c6f783", "");
   add("party", "Party Cubie", "website_10_hours", "#7555b5",
     '<path d="M35 31 60-14 85 31Z" fill="#ed8dce"/>', square,
     { faceColor: "#fff5cf", flavor: "Ten hours together. Every moment deserves confetti." });
   for (const [key,name,seconds,color,flavor] of impossibleCubies)
     add(key, name, `dodge_impossible_${seconds}`, color, `<circle cx="60" cy="68" r="36" fill="${color}"/>`, square, { flavor });
+  const chaosCubies = [
+    ['chaos_rookie', 'Chaos Rookie Cubie', 'chaos_start', '#73d8da', 'A bright beginning in a very strange sky.', '<path d="M22 35h76v11H22Z" fill="#2b687d"/><path d="m51 31 9-14 9 14Z" fill="#fff09e"/>'],
+    ['chaos_confetti', 'Confetti Cubie', 'chaos_survive_15', '#f4a7cc', 'Every falling block is an excuse for a party.', '<path d="M37 30 60 4 83 30Z" fill="#8a74d8"/><path d="m40 19 10 3m6-12 5 5m9 3 6 5" stroke="#fff1a0" stroke-width="4"/><path d="M25 95h10m13 7 6-7m26 0 8 7" stroke="#ffe999" stroke-width="4"/>'],
+    ['chaos_wild', 'Wild Card Cubie', 'chaos_survive_30', '#a4db81', 'Never met a color it did not like.', '<path d="M20 28h27v17H20Zm27 0h26v17H47Zm26 0h27v17H73Z" fill="#8ad8ef"/><path d="M20 96h27v12H20Z" fill="#ff918b"/><path d="M47 96h26v12H47Z" fill="#ffe786"/><path d="M73 96h27v12H73Z" fill="#b99bf3"/>'],
+    ['chaos_conductor', 'Carnival Conductor Cubie', 'chaos_survive_60', '#bda1eb', 'Keeps the beat while everything falls apart.', '<path d="M28 31V6h64v25M17 31h86" fill="#333451" stroke="#ffe79b" stroke-width="4"/><path d="m39 91 21 8 21-8v17l-21-8-21 8Z" fill="#ff8eaa"/>'],
+    ['chaos_stormcoat', 'Stormcoat Cubie', 'chaos_survive_120', '#f1ca72', 'Forecast: blocks, with a chance of more blocks.', '<path d="M22 45Q20 5 60 5t38 40l-14-9H36Z" fill="#eaac48" stroke="#fff0ab" stroke-width="3"/><path d="M26 95h68v13H26Z" fill="#b78035"/><circle cx="60" cy="99" r="3" fill="#ffeec0"/>'],
+    ['chaos_orbit', 'Carnival Orbit Cubie', 'chaos_survive_180', '#9b9de7', 'The center of attention, and occasionally gravity.', '<ellipse class="chaos-cubie-orbit" cx="60" cy="24" rx="47" ry="12" fill="none" stroke="#fff0aa" stroke-width="4"/><circle cx="101" cy="18" r="6" fill="#f8a8d6"/><path d="m27 99 5-7 5 7m43 0 5-7 5 7" stroke="#d5e9ff" fill="none"/>'],
+    ['chaos_monarch', 'Mayhem Monarch Cubie', 'chaos_survive_300', '#dfb6f2', 'Five minutes of chaos. A crown well earned.', '<path d="m27 31-5-25 20 13L60 0l18 19L98 6l-5 25Z" fill="#ffe287" stroke="#fff5c9" stroke-width="2"/><path d="m60 8 7 10-7 10-7-10Z" fill="#b291ef"/><path d="M23 95q37 18 74 0v13H23Z" fill="#7861a7"/>'],
+    ['chaos_glass', 'Glasswing Cubie', 'chaos_clean_30', '#b3e3ef', 'Not a scratch on that sparkling composure.', '<path d="M22 38h76M26 43v48M34 99h50" stroke="#f5ffff" stroke-width="3" fill="none"/><path d="m83 24 5-12 5 12-5 12Z" fill="#ffffff"/>'],
+    ['chaos_pristine', 'Pristine Prism Cubie', 'chaos_clean_60', '#ead5ff', 'A whole minute of perfectly unruffled sparkle.', '<path d="m60 1 18 16-18 16-18-16Z" fill="#9ff1e8" stroke="#fff" stroke-width="2"/><path d="M23 96h74" stroke="#ffb8d9" stroke-width="5"/><path d="M28 103h64" stroke="#fff1a5" stroke-width="4"/>'],
+    ['chaos_weaver', 'Needlethread Cubie', 'chaos_near_10', '#efba8d', 'Squeezes a little smile through every gap.', '<path d="M20 34h80v9H20Z" fill="#576e91"/><path d="M29 100q10-14 20 0t20 0 20 0" stroke="#fff0bb" stroke-width="3" fill="none"/><path d="m90 27 15-20" stroke="#d8f6ff" stroke-width="3"/>'],
+    ['chaos_stardancer', 'Starstep Cubie', 'chaos_near_25', '#87cddf', 'A close call is just another dance step.', '<path d="m60 0 5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1Z" fill="#ffe88c"/><path d="M23 99h28m18 0h28" stroke="#b699ed" stroke-width="7"/>'],
+    ['chaos_medic', 'Field Medic Cubie', 'chaos_heal_4', '#9be4c7', 'Always packs a little extra kindness.', '<path d="M27 28V12h66v16Z" fill="#f3fff1"/><path d="M56 14h8v10h-8Zm-4 3h16v4H52Z" fill="#428de0"/><path d="M26 95h68v13H26Z" fill="#4a9f9b"/>'],
+    ['chaos_patchwork', 'Miracle Patch Cubie', 'chaos_heal_12', '#dcb4b1', 'Carefully stitched together, ready for anything.', '<path d="M23 30h23v14H23Z" fill="#b2e8d5"/><path d="M74 95h24v13H74Z" fill="#d9caef"/><path d="M28 36h13m-9-4v8m5-8v8M78 101h16m-12-4v8m7-8v8" stroke="#617879" stroke-width="2"/>'],
+    ['chaos_jackpot', 'Chaos Jackpot Cubie', 'chaos_score_3000', '#f6d38a', 'Three thousand tiny reasons to keep smiling.', '<path d="M25 28V10h70v18Z" fill="#bf8e4c"/><circle cx="60" cy="18" r="8" fill="#fff0a0"/><path d="M57 18h6m-3-4v8" stroke="#a07135" stroke-width="2"/><path d="M25 96h70v12H25Z" fill="#976abe"/>'],
+  ];
+  for (const [id, name, achievement, color, flavor, detail] of chaosCubies)
+    add(id, name, achievement, color, detail, square, { flavor });
+  for (const [id,name,achievement,color,flavor] of geomayhemCustoms)
+    add(id,name,achievement,color,`<path d="M24 34h72" stroke="${color}"/>`,square,{flavor});
   add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
     '<path d="M21 34h78v12H21Z" fill="#173f66"/><path d="M25 43h70v47H25Z" fill="#78c7e0" stroke="#e7b85c" stroke-width="2"/>' +
     '<path d="M22 94h76v13H22Z" fill="#ce4758"/><path d="M14 107h92l10 13H4Z" fill="#324c69" stroke="#a5bed2" stroke-width="2"/>' +
@@ -626,7 +664,271 @@ const CubieCustoms = (() => {
       .toString(16).padStart(2, '0')).join('');
   }
   let artId = 0;
+  // Vector symbols stay crisp at mascot size and never depend on emoji fonts.
+  const wildCardSymbols = [
+    ['heart', 'M12 21 3 12C-2 4 7 0 12 7c5-7 14-3 9 5Z'],
+    ['diamond', 'M12 2 21 12 12 22 3 12Z'],
+    ['club', 'M10 16C1 21 0 10 7 10 1 0 23 0 17 10c7 0 6 11-3 6l3 6H7Z'],
+    ['spade', 'M12 2C9 7 2 9 2 14c0 6 7 7 10 2 3 5 10 4 10-2 0-5-7-7-10-12Zm0 14-4 6h8Z'],
+    ['star', 'm12 2 3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1Z'],
+    ['moon', 'M18 3A10 10 0 1 0 21 19 10 10 0 0 1 18 3Z'],
+    ['sun', 'M16 12a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2'],
+    ['lightning', 'M13 1 4 14h7l-1 9L21 9h-8Z'],
+    ['snowflake', 'M12 1v22M2 6l20 12M2 18 22 6M8 3l4 3 4-3M8 21l4-3 4 3M2 10l4-2-1-4M19 20l-1-4 4-2M2 14l4 2-1 4M19 4l-1 4 4 2'],
+    ['flame', 'M12 1C14 8 4 7 5 16c1 8 15 8 15-1 0-4-3-6-3-6l-3 4C16 7 14 4 12 1Z'],
+    ['drop', 'M12 2C9 8 4 12 4 16a8 7 0 0 0 16 0c0-4-5-8-8-14ZM8 16q0 3 3 3'],
+    ['leaf', 'M3 21C-1 5 8 1 22 2 22 16 18 24 3 21ZM3 21 18 6M8 16v-5m5 0h5'],
+    ['flower', 'M12 9C4-4-4 12 9 12-4 20 12 28 12 15c8 13 16-3 3-3C28 4 12-4 12 9ZM15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z'],
+    ['clover', 'M12 12C-5 14 2-3 12 7 9-7 29 1 17 12c14-3 6 17-5 5C1 29-7 9 12 12Zm0 5 5 6'],
+    ['crown', 'M3 19 1 5l7 6 4-9 4 9 7-6-2 14ZM4 22h16'],
+    ['key', 'M11 7a5 5 0 1 0-10 0 5 5 0 0 0 10 0Zm-1 4 11 11m-6-6 3-3m0 6 3-3'],
+    ['lock', 'M6 10V7a6 6 0 0 1 12 0v3M3 10h18v12H3Zm9 4v4'],
+    ['eye', 'M1 12q11-16 22 0-11 16-22 0Zm15 0a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z'],
+    ['spiral', 'M12 12q5-5 7 1c2 9-14 12-16 0C0 0 20-5 23 10'],
+    ['infinity', 'M12 12C-3-5-3 29 12 12S27 29 12 12Z'],
+    ['music', 'M9 18V5l12-3v13M9 9l12-3M9 18c-1-5-9-2-7 2 1 3 7 1 7-2Zm12-3c-1-5-9-2-7 2 1 3 7 1 7-2Z'],
+    ['bell', 'M3 18h18l-3-4V8A6 6 0 0 0 6 8v6ZM9 21q3 3 6 0M12 2V0'],
+    ['hourglass', 'M5 2h14M5 22h14M6 2v5l6 5-6 5v5m12-20v5l-6 5 6 5v5M8 20l4-4 4 4Z'],
+    ['clock', 'M22 12a10 10 0 1 0-20 0 10 10 0 0 0 20 0ZM12 5v7l5 3'],
+    ['compass', 'M22 12a10 10 0 1 0-20 0 10 10 0 0 0 20 0ZM16 6l-2 8-6 4 2-8Z'],
+    ['anchor', 'M15 4a3 3 0 1 0-6 0 3 3 0 0 0 6 0ZM12 7v15M7 10h10M2 14q0 8 10 8t10-8M1 17l1-3 3 1m14 0 3-1 1 3'],
+    ['rocket', 'M8 17C6 9 10 3 20 2c1 10-5 14-13 14Zm-1-8L2 10v7l5-1m9 1-1 5H8l1-5M5 19l-3 3M16 8a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z'],
+    ['planet', 'M19 12a7 7 0 1 0-14 0 7 7 0 0 0 14 0ZM5 7C-8 17 0 25 19 13 32 3 20-1 5 7Z'],
+    ['comet', 'M11 16a5 5 0 1 0-10 0 5 5 0 0 0 10 0ZM7 8 17 1M13 11l10-9M14 16l9-6'],
+    ['mountain', 'M1 22 9 3l5 11 3-6 6 14ZM6 10l3 3 3-3'],
+    ['wave', 'M1 19h22M1 15c8 4 5-13 15-12 6 0 8 8 2 10 1-6-5-4-4 0 1 5 5 4 9 2'],
+    ['cloud', 'M5 19a5 5 0 0 1 0-10 7 7 0 0 1 14-1 6 6 0 0 1 0 11Z'],
+    ['rainbow', 'M1 21V13a11 11 0 0 1 22 0v8h-4v-8a7 7 0 0 0-14 0v8Zm8 0v-8a3 3 0 0 1 6 0v8'],
+    ['umbrella', 'M1 11a11 10 0 0 1 22 0q-3-3-6 0-5-3-10 0-3-3-6 0ZM12 2v17q0 5-5 2'],
+    ['butterfly', 'M12 12C0-9-5 20 8 13-5 26 15 27 12 12Zm0 0C24-9 29 20 16 13c13 13-7 14-4-1Zm0-2-3-6m3 6 3-6'],
+    ['fish', 'M1 12q9-15 16-4l6-5v18l-6-5Q10 27 1 12ZM7 10h1M12 7l-3-5m3 15-3 5'],
+    ['paw', 'M5 22c-9-3 4-20 7-10 3-10 16 7 7 10ZM5 7a2 3 0 1 0-4 0 2 3 0 0 0 4 0Zm7-3a2 3 0 1 0-4 0 2 3 0 0 0 4 0Zm7 0a2 3 0 1 0-4 0 2 3 0 0 0 4 0Zm4 3a2 3 0 1 0-4 0 2 3 0 0 0 4 0Z'],
+    ['feather', 'M3 23 17 5M5 18C-2 4 15-6 21 3c7 11-10 20-16 15Zm4-6h7m-4-5v7'],
+    ['mushroom', 'M2 13a10 11 0 0 1 20 0ZM9 13v9h6v-9M7 8h1m8-2h1m-5 4h1'],
+    ['tree', 'M12 1 5 9h4l-7 9h8v5h4v-5h8l-7-9h4Z'],
+    ['apple', 'M12 7C-7-2 1 29 12 21c11 8 19-23 0-14Zm0 0V2m0 3q2-6 8-3-2 5-8 3Z'],
+    ['cherry', 'M10 17a4 4 0 1 0-8 0 4 4 0 0 0 8 0Zm12 1a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM6 13l6-11 6 12M12 2q8-2 10 4-7 2-10-4Z'],
+    ['cupcake', 'M4 13h16l-3 10H7ZM3 13c-4-5 1-8 4-7 0-7 10-7 10 0 4-1 8 3 4 7ZM9 16l1 5m5-5-1 5'],
+    ['candy', 'M7 7h10v10H7ZM7 9 1 5v14l6-4m10-6 6-4v14l-6-4M9 7l6 10'],
+    ['gift', 'M3 10h18v12H3ZM1 6h22v4H1Zm11 0v16M12 6C-4 7 6-6 12 6c6-12 16 1 0 0Z'],
+    ['bow', 'M10 10C-6-5-3 26 10 14Zm4 0c16-15 13 16 0 4ZM10 10h4v4h-4Zm0 4-4 9m8-9 4 9'],
+    ['sword', 'M3 21 17 7l4-5 1 6-5 4L3 21ZM5 13l6 6M1 19l4 4'],
+    ['shield', 'M12 1 22 5v7q0 7-10 11C2 19 2 16 2 12V5ZM12 5v14M6 9h12'],
+    ['dice', 'M3 2h18v20H3ZM7 7h1m8 0h1m-5 5h1m-6 5h1m8 0h1'],
+    ['puzzle', 'M2 2h7c-4 9 10 9 6 0h7v7c-9-4-9 10 0 6v7h-7c4-9-10-9-6 0H2v-7c9 4 9-10 0-6Z'],
+  ];
+  function nextWildCardSymbol(previous, random = Math.random) {
+    // Choose uniformly from the other 49 cards: every visible flip is new.
+    const pick = Math.floor(random() * (wildCardSymbols.length - 1));
+    return pick >= previous ? pick + 1 : pick;
+  }
+  function wildCardFace(index) {
+    const [name, path] = wildCardSymbols[index];
+    const colors = ['#b14d7d', '#527b9b', '#8a5fa8', '#45857c', '#ab7438'];
+    return `<g class="chaos-wild-symbol" data-symbol-index="${index}" data-symbol="${name}" transform="translate(95 14) scale(.5)"><path d="${path}" fill="none" stroke="${colors[index%colors.length]}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  }
+  if (typeof document !== 'undefined') {
+    document.addEventListener('animationiteration', event => {
+      if (event.animationName !== 'chaos-wild-card-turn' || !event.target.matches?.('.chaos-wild-card')) return;
+      const card = event.target;
+      // If a busy browser delivers an event late, skip this turn rather than
+      // ever replacing a symbol on a visible face. No independent timer drift.
+      if (Number(getComputedStyle(card).opacity) > .001) return;
+      const face = card.querySelector('.chaos-wild-symbol');
+      if (face) face.outerHTML = wildCardFace(nextWildCardSymbol(Number(face.dataset.symbolIndex)));
+    });
+  }
+
+  function jackpotReels(ref) {
+    const icons = [
+      '<path d="M-4-5h8v2L-1 6h-3L1-2h-5Z" fill="#a6426b"/>',
+      '<path d="m0-6 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1Z" fill="#de9d25"/>',
+      '<path d="M-3 1Q-2-6 4-5Q0-2 3 2" fill="none" stroke="#53896b" stroke-width="1.2"/><circle cx="-3" cy="3" r="2.8" fill="#d95875"/><circle cx="3" cy="4" r="2.8" fill="#b9456a"/>',
+      '<path d="M0-6 5 0 0 6-5 0Z" fill="#719fd2"/><path d="M0-6V6L5 0Z" fill="#b1e5ed"/>',
+      '<path d="M-5 4h10L3 1v-3q-3-6-6 0v3Z" fill="#d9a146"/><circle cy="5" r="1.5" fill="#926638"/><path d="M-1-3v5" stroke="#ffe6a0" stroke-width="1"/>',
+    ];
+    return [0,1,2].map(i => `<g transform="translate(${36+i*17} 8)"><defs><clipPath id="${ref('reel-'+i)}"><rect width="14" height="16" rx="1"/></clipPath></defs><g clip-path="url(#${ref('reel-'+i)})"><g data-jackpot-reel="${i}" transform="translate(0 ${-(i+1)*16})">` +
+      Array.from({length:10},(_,n)=>`<g data-slot-symbol="${['seven','star','cherry','diamond','bell'][n%5]}" transform="translate(7 ${8+n*16})">${icons[n%5]}</g>`).join('') + '</g></g></g>').join('');
+  }
+  function chaosCubieArt(item, uid) {
+    const ref = name => `chaos-${name}-${uid}`;
+    const paint = name => `url(#${ref(name)})`;
+    const monarch = item.id === 'chaos_monarch';
+    const colors = ['#8ef2e3', '#ffd675', '#f49ed8', '#a3b5ff'];
+    const gem = (x, y, color, size = 5) => `<g transform="translate(${x} ${y})"><path d="M0-${size} ${size*.65} 0 0 ${size}-${size*.65} 0Z" fill="${color}" stroke="#fff5d9" stroke-width=".7"/><path d="M0-${size}V${size}L${size*.65} 0Z" fill="#fff" opacity=".42"/></g>`;
+    const star = (x, y, delay = 0) => `<g transform="translate(${x} ${y})"><path class="chaos-jewel-glint" style="animation-delay:${delay}s" d="M0-4 1-1 4 0 1 1 0 4-1 1-4 0-1-1Z" fill="#fff9df"/></g>`;
+    const particles = (kind = 'confetti') => Array.from({length: 8}, (_, i) => {
+      const x = i%2 ? 105+(i%3)*4 : 5+(i%3)*4, y = 24+Math.floor(i/2)*24;
+      return `<g transform="translate(${x} ${y})"><g class="chaos-${kind}" style="animation-delay:${-i*.48}s">${kind === 'rain' ? '<path d="M0 0l-2 8" stroke="#c3f3ff" stroke-width="1.6" stroke-linecap="round"/>' : `<rect x="-2" y="-3" width="4" height="6" rx="1" fill="${colors[i%4]}"/>`}</g></g>`;
+    }).join('');
+    const defs = `<defs><clipPath id="${ref('body')}">${item.body}</clipPath>
+      <linearGradient id="${ref('shell')}" x2=".85" y2="1"><stop stop-color="${monarch ? '#f0c9ff' : '#f3fff9'}"/><stop offset=".32" stop-color="${monarch ? '#8154b2' : item.color}"/><stop offset="1" stop-color="${monarch ? '#302252' : sideColor(item.color)}"/></linearGradient>
+      <linearGradient id="${ref('gold')}" x2=".75" y2="1"><stop stop-color="#fff8d1"/><stop offset=".22" stop-color="#ffe28b"/><stop offset=".48" stop-color="#bb7a38"/><stop offset=".68" stop-color="#fff0aa"/><stop offset="1" stop-color="#b77a3c"/></linearGradient>
+      <linearGradient id="${ref('glass')}" x2="1" y2="1"><stop stop-color="#f7ffff" stop-opacity=".85"/><stop offset=".45" stop-color="#83dcf1" stop-opacity=".2"/><stop offset="1" stop-color="#e8b8ff" stop-opacity=".7"/></linearGradient>
+      <linearGradient id="${ref('rainbow')}" x2="1" y2=".7"><stop stop-color="#82e8e1"/><stop offset=".3" stop-color="#a7a6ff"/><stop offset=".6" stop-color="#f3a2ce"/><stop offset="1" stop-color="#ffe79e"/></linearGradient>
+      <linearGradient id="${ref('velvet')}" x2="1" y2=".6"><stop stop-color="#261f48"/><stop offset=".3" stop-color="#9862b9"/><stop offset=".55" stop-color="#452451"/><stop offset=".8" stop-color="#ae679d"/><stop offset="1" stop-color="#281c42"/></linearGradient>
+      <radialGradient id="${ref('aura')}"><stop stop-color="#b89afa" stop-opacity=".05"/><stop offset=".72" stop-color="#9e70df" stop-opacity=".12"/><stop offset=".9" stop-color="#83e8da" stop-opacity=".25"/><stop offset="1" stop-color="#83e8da" stop-opacity="0"/></radialGradient></defs>`;
+    const shell = `<g clip-path="${paint('body')}"><rect x="20" y="28" width="80" height="80" fill="${paint('shell')}"/>
+      <path d="M20 28 35 40 28 70 20 108 42 96 60 108 80 96 100 108 92 70 100 28 85 40 60 28 35 40Z" fill="${monarch ? '#dcb8ff' : '#fff'}" opacity="${monarch ? '.26' : '.16'}"/>
+      <path d="M25 49V40q0-7 8-7h47M95 86v11q0 6-7 6H47" fill="none" stroke="#f8f2ff" stroke-width="1.1" opacity=".7"/>
+      <g class="chaos-material-sheen"><path d="M-45 15h13l70 100H20Z" fill="#fff" opacity=".18"/></g></g>`;
+    let back = '', detail = item.detail;
+    if (monarch) {
+      back = `<circle class="chaos-monarch-aura" cx="60" cy="65" r="62" fill="${paint('aura')}"/>
+        <g class="chaos-monarch-halo" fill="none" stroke="${paint('gold')}"><circle cx="60" cy="65" r="56" stroke-width="1.2"/><circle cx="60" cy="65" r="51" stroke-width=".65" stroke-dasharray="18 5 2 5"/>${Array.from({length:12},(_,i)=>`<path transform="rotate(${i*30} 60 65)" d="M60 7v7m-2-4h4" stroke-width="1.1"/>`).join('')}</g>
+        <g class="chaos-monarch-cape"><path d="M30 37Q9 39 10 72L0 117q17-6 28 3l32-8 32 8q11-9 28-3L110 72q1-33-20-35Z" fill="${paint('velvet')}" stroke="${paint('gold')}" stroke-width="1.6"/>
+        <path d="M28 47q-6 30-15 61m21-58-6 61m64-64q6 30 15 61M86 50l6 61" fill="none" stroke="#e3a5db" stroke-opacity=".36" stroke-width="2"/><path d="M2 116q17-7 27 2l31-8 31 8q10-9 27-2" fill="none" stroke="#ffe9af" stroke-width="2"/></g>
+        <g class="chaos-monarch-scepter"><path d="M111 51v58" stroke="#523055" stroke-width="5"/><path d="M110 51v58" stroke="${paint('gold')}" stroke-width="3"/><path d="m103 41 8 15 8-15" fill="none" stroke="${paint('gold')}" stroke-width="2"/><circle class="chaos-monarch-aura" cx="111" cy="38" r="10" fill="#ba9bf3" opacity=".3"/>${gem(111,38,'#9df7e8',9)}</g>
+        ${[[7,46],[112,76],[10,96],[105,14]].map(([x,y],i)=>`<g transform="translate(${x} ${y})"><g class="chaos-orbit-jewel" style="animation-delay:${-i*.8}s">${gem(0,0,colors[i],5)}</g></g>`).join('')}`;
+      detail = `<path d="M22 35 35 31 29 55 22 58m76-23-13-4 6 24 7 3M22 93l17-7 21 13 21-13 17 7v15H22Z" fill="${paint('gold')}" stroke="#fff0b4" stroke-width=".8"/>
+        <path d="m28 98 11-5 21 13 21-13 11 5M25 39l6-2-4 12m68-10-6-2 4 12" fill="none" stroke="#825337" stroke-width="1"/>
+        ${gem(60,98,'#8ff2d7',6)}${gem(29,36,'#b890f2',4)}${gem(91,36,'#b890f2',4)}
+        <g class="chaos-monarch-crown"><path d="m23 28-5-29 20 17L46 4l14-17L74 4l8 12L102-1l-5 29Z" fill="${paint('gold')}" stroke="#fff2bf" stroke-width="1.4"/>
+        <path d="m26 21-3-15 14 15 9-10 14-17 14 17 9 10L97 6l-3 15Z" fill="#5e336e"/><path d="M24 22h72v10H24Z" fill="${paint('gold')}" stroke="#f9de91"/>
+        <path d="M29 26h62M32 29h56" stroke="#8f5e39" stroke-width=".8"/>
+        ${gem(60,9,'#8ff5dc',11)}${gem(37,23,'#eb9eda',4)}${gem(83,23,'#9bb9ff',4)}
+        <path d="M60-2V20M53 9h14" stroke="#eaffef" stroke-width=".6" opacity=".6"/>
+        ${[18,46,60,74,102].map((x,i)=>`<circle cx="${x}" cy="${[-1,4,-13,4,-1][i]}" r="2.3" fill="#fff2b0"/>`).join('')}
+        ${star(60,0,-.6)}${star(25,24,-2.1)}${star(94,24,-1.2)}</g>
+        ${star(29,93,-1)}${star(94,43,-2.5)}`;
+      return {back: defs+back, detail: shell+detail, faceColor:'#fff1d0', sideColor:'#4a285e', shadowColor:'#201a37', sideOffset:9, shadowOffset:18,
+        eyeHighlights:'<rect x="38" y="51" width="4" height="7" rx="1" fill="#fff"/><rect x="96" y="51" width="4" height="7" rx="1" fill="#fff"/>'};
+    }
+    switch (item.id) {
+      case 'chaos_rookie':
+        detail = `<path d="M21 35h78v12H21Z" fill="#285d79"/><path d="M24 38h72" stroke="#a3ffff" stroke-width="1.4"/><path d="m52 31 8-17 8 17Z" fill="${paint('gold')}"/>${gem(60,25,'#fff5bd',4)}<path class="chaos-signal" d="m14 48-4-4m96 4 4-4M12 56H7m101 0h5" stroke="#bcfff0" stroke-width="2"/>`;
+        break;
+      case 'chaos_confetti':
+        back = particles();
+        detail = `<g class="chaos-hat-tilt"><path d="M36 30 60-1 84 30Z" fill="${paint('rainbow')}" stroke="#fff2ce"/><path d="m44 20 26 1m-19-11 12 1" stroke="#7759a7" stroke-width="4"/><circle cx="60" cy="0" r="4" fill="#fff1a2"/><path d="M35 30q25 8 50 0" fill="none" stroke="#ffeab0" stroke-width="4"/></g><path d="m27 98 8-3 8 6 8-6 8 6 8-6 8 6 8-6 9 3" fill="none" stroke="${paint('rainbow')}" stroke-width="5"/>`;
+        break;
+      case 'chaos_wild':
+        detail = `<g clip-path="${paint('body')}">${colors.map((c,i)=>`<path d="M${20+i*20} 28h20v16l-10 7-10-7ZM${20+i*20} 95l10-7 10 7v13h-20Z" fill="${c}"/>`).join('')}<path d="M20 43h80M20 96h80" stroke="#f9ffe2" stroke-width="1"/></g><g class="chaos-wild-card"><rect x="93" y="9" width="16" height="23" rx="3" fill="#fff7d9" stroke="#ad6fa6"/>${wildCardFace(Math.floor(Math.random()*wildCardSymbols.length))}</g>`;
+        break;
+      case 'chaos_conductor':
+        detail = `<g class="chaos-hat-tilt"><path d="M29 29 26 0q34-9 68 0l-3 29Z" fill="${paint('velvet')}" stroke="${paint('gold')}" stroke-width="1.5"/><path d="M28 18h64v9H28Z" fill="${paint('rainbow')}"/><ellipse cx="60" cy="30" rx="46" ry="5" fill="${paint('gold')}"/>${gem(60,22,'#f3aadf',5)}</g><path d="m38 90 22 8 22-8v17l-22-8-22 8Z" fill="${paint('rainbow')}" stroke="#fff0bf"/>${gem(60,98,'#ffe8a5',4)}`;
+        back = `<g class="chaos-baton"><path d="m105 65 9-33" stroke="#e9e7ff" stroke-width="2.5"/><circle cx="114" cy="32" r="3" fill="#ffec9b"/>${star(114,29,-.4)}</g>`;
+        break;
+      case 'chaos_stormcoat':
+        back = particles('rain');
+        detail = `<path d="M20 46Q16 1 60 1t40 45L84 34H36Z" fill="${paint('gold')}" stroke="#ffeebc" stroke-width="2"/><path d="M29 31Q30 9 60 9t31 22M39 28q21-6 42 0" fill="none" stroke="#fff4c4" stroke-width="2"/><path d="M22 91 43 85l17 13 17-13 21 6v17H22Z" fill="#bd7d3d" stroke="#ffe3a2"/><path d="M60 97v11" stroke="#ffe6b0" stroke-width="2"/><circle cx="60" cy="101" r="2.5" fill="#fff2be"/>`;
+        break;
+      case 'chaos_orbit':
+        back = `<g class="chaos-orbit-halo" fill="none" stroke="${paint('rainbow')}" stroke-width="1.5"><circle cx="60" cy="68" r="54" stroke-dasharray="45 6 4 6"/><circle cx="60" cy="68" r="49" opacity=".4"/></g>`;
+        detail = `<g class="chaos-orbit-crown"><ellipse cx="60" cy="17" rx="43" ry="12" fill="none" stroke="${paint('gold')}" stroke-width="2"/>${gem(20,15,'#a2eee7',5)}${gem(99,20,'#ef9bd1',6)}${gem(60,5,'#ffe2a1',4)}</g><path d="m23 97 18-7 19 12 19-12 18 7" fill="none" stroke="${paint('rainbow')}" stroke-width="5"/>`;
+        break;
+      case 'chaos_glass':
+        back = [-1,1].map(side=>`<g transform="translate(${side<0?120:0} 0) scale(${side} 1)"><g class="chaos-glass-wing"><path d="M24 83Q-8 68 3 22L22 42 30 62Z" fill="${paint('glass')}" stroke="#e8ffff"/><path d="M4 27 22 70 5 55m1-19 18 17" fill="none" stroke="#e5fdff" stroke-opacity=".65"/></g></g>`).join('');
+        detail = `<g clip-path="${paint('body')}"><path d="M20 28 49 28 20 73M100 64 69 108h31Z" fill="#f4ffff" opacity=".28"/></g><rect x="23" y="31" width="74" height="74" rx="12" fill="none" stroke="#eeffff" stroke-width="1.5"/>${gem(88,21,'#c5f5ff',8)}${star(26,37,-.8)}${star(91,96,-2)}`;
+        break;
+      case 'chaos_pristine':
+        back = `<g class="chaos-prism-rays" fill="none" stroke="${paint('rainbow')}" stroke-width="2"><path d="M12 36 3 28m105 8 9-8M9 71H1m110 0h8M12 103l-8 9m104-9 8 9"/></g>`;
+        detail = `<g clip-path="${paint('body')}"><path d="M20 28 40 42 20 78 42 96 60 108 82 96 100 78 80 42 100 28 60 38Z" fill="${paint('rainbow')}" opacity=".5"/><path d="m20 28 20 14 20-4 20 4 20-14M20 108l22-12 18 12 22-12 18 12" fill="none" stroke="#fff" stroke-width="1.2"/></g><g class="chaos-orbit-jewel">${gem(60,12,'#a6f9ee',15)}</g><path d="M24 99h72" stroke="${paint('rainbow')}" stroke-width="4"/>${star(30,39,-.5)}${star(91,94,-1.6)}`;
+        break;
+      case 'chaos_weaver':
+        detail = `<path d="M21 34h78v10H21Z" fill="#455a80"/><path d="M25 37h70" stroke="#b5dafa" stroke-width="1" stroke-dasharray="3 3"/><path class="chaos-thread" d="M26 100q8-12 16 0t16 0 16 0 16 0" fill="none" stroke="#fff0ba" stroke-width="2.5" stroke-dasharray="5 2"/><g class="chaos-needle"><path d="m91 29 15-23" stroke="#647b98" stroke-width="3.5"/><path d="m90 29 15-23" stroke="#eaffff" stroke-width="1.7"/><path d="M104 8q14-6 9 11t-9 6" fill="none" stroke="#ffe7a7" stroke-width="1"/></g>`;
+        break;
+      case 'chaos_stardancer':
+        back = `<g class="chaos-orbit-halo" fill="none" stroke="${paint('rainbow')}" stroke-dasharray="1 8" stroke-width="2"><ellipse cx="60" cy="80" rx="55" ry="34"/></g>${star(8,60,-1)}${star(108,40,-2)}`;
+        detail = `<g class="chaos-dancer-star" style="transform-origin:60px 16px"><path d="m60-3 6 12 14 2-10 10 3 14-13-7-13 7 3-14-10-10 14-2Z" fill="${paint('gold')}" stroke="#fff3b9"/>${gem(60,16,'#c8b5ff',5)}</g><path d="M23 96h29v12H23Zm45 0h29v12H68Z" fill="${paint('velvet')}"/><path d="M25 99h24m22 0h24" stroke="${paint('gold')}" stroke-width="2"/>`;
+        break;
+      case 'chaos_medic':
+        detail = `<path d="M27 29V10q33-9 66 0v19Z" fill="#f2fff6" stroke="#7fcab6"/><path d="M29 26h62" stroke="#b5e9d5" stroke-width="3"/><g class="chaos-healing-pulse"><path d="M56 11h8v6h6v8h-6v6h-8v-6h-6v-8h6Z" fill="#428de0"/></g><path d="M23 94h74v14H23Z" fill="#439f97"/><path d="M28 99h19m26 0h19" stroke="#c6fff0" stroke-width="1.5"/><circle cx="60" cy="100" r="4" fill="#e8fff3"/>`;
+        back = `<g class="chaos-healing-mote" fill="none" stroke="#b5ffdc" stroke-width="2"><path d="M8 48h10m-5-5v10M105 88h10m-5-5v10"/></g>`;
+        break;
+      case 'chaos_patchwork':
+        detail = `<g clip-path="${paint('body')}"><path d="M20 28h29v17H20Z" fill="#a7e6d2"/><path d="M73 91h27v17H73Z" fill="#c7b5ef"/><path d="M20 28h29v17H20M73 108V91h27" fill="none" stroke="#5d6d81" stroke-width="1.7" stroke-dasharray="2 2"/><path class="chaos-thread" d="M25 101q17-10 33 0" fill="none" stroke="#fff0c0" stroke-width="2" stroke-dasharray="4 2"/></g><g class="chaos-healing-pulse"><path d="M60 28C44 16 52 7 60 15c8-8 16 1 0 13Z" fill="#ec9aab" stroke="#ffe2c4"/></g>${star(35,36,-1)}${star(85,97,-2)}`;
+        break;
+      case 'chaos_jackpot':
+        back = [12,108].map((x,i)=>`<g transform="translate(${x} ${40+i*42})"><g class="chaos-card-flip"><circle r="8" fill="${paint('gold')}" stroke="#fff2af"/><circle r="5" fill="none" stroke="#aa713d"/><path d="M0-3v6m-2-4h4" stroke="#fff2af"/></g></g>`).join('');
+        detail = `<path d="M24 28V7q36-10 72 0v21Z" fill="${paint('velvet')}" stroke="${paint('gold')}" stroke-width="2"/><rect x="36" y="7" width="48" height="18" rx="4" fill="#fff5d6" stroke="#d59f54"/><path d="M51 8v16m17-16v16" stroke="#d5aa6e"/>${jackpotReels(ref)}<path d="M24 95h72v13H24Z" fill="${paint('gold')}"/><path d="M28 101h64" stroke="#fff6cd" stroke-width="1"/>${star(27,12,-1)}${star(91,98,-2)}`;
+        break;
+    }
+    return {back:defs+back, detail:shell+detail, sideColor:sideColor(item.color), shadowColor:'#27313e', sideOffset:10, shadowOffset:20};
+  }
+
+  function geomayhemCubieArt(item, uid) {
+    const rank = ['bronze','silver','gold','crystal','diamond','rainbow','empyrorite'].indexOf(item.tier);
+    const id = name => `geo-${name}-${uid}`, paint = name => `url(#${id(name)})`;
+    const star = (x,y,r) => `<path d="M${x} ${y-r} ${x+r*.3} ${y-r*.3} ${x+r} ${y} ${x+r*.3} ${y+r*.3} ${x} ${y+r} ${x-r*.3} ${y+r*.3} ${x-r} ${y} ${x-r*.3} ${y-r*.3}Z" fill="${paint('gem')}" stroke="#f5ffff" stroke-width=".7"/>`;
+    const gem = (x,y,r=6) => `<path d="m${x} ${y-r} ${r*.7} ${r} ${-r*.7} ${r} ${-r*.7} ${-r}Z" fill="${paint('gem')}" stroke="#ecfcff" stroke-width=".8"/><path d="M${x} ${y-r}v${r*2}l${r*.7} ${-r}Z" fill="#fff" opacity=".3"/>`;
+    const metal = rank >= 2 ? paint('metal') : '#e7e2c6';
+    const defs = `<defs><clipPath id="${id('body')}">${item.body}</clipPath><linearGradient id="${id('shell')}" x2=".8" y2="1"><stop stop-color="#edf7fa"/><stop offset=".3" stop-color="${item.color}"/><stop offset=".7" stop-color="${item.color}"/><stop offset="1" stop-color="${sideColor(item.color)}"/></linearGradient><linearGradient id="${id('metal')}" x2=".7" y2="1"><stop stop-color="#fff5cc"/><stop offset=".25" stop-color="#e7cc8e"/><stop offset=".5" stop-color="#827052"/><stop offset=".7" stop-color="#fff0b6"/><stop offset="1" stop-color="#b49460"/></linearGradient><linearGradient id="${id('gem')}" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".3" stop-color="#a7f7e4"/><stop offset=".6" stop-color="#99bcf6"/><stop offset="1" stop-color="#ae77cf"/></linearGradient><radialGradient id="${id('aura')}"><stop stop-color="${item.color}" stop-opacity=".4"/><stop offset="1" stop-color="${item.color}" stop-opacity="0"/></radialGradient><linearGradient id="${id('rainbow')}" x2="1" y2="1">${['#ff8dbc','#ffe68d','#92f0be','#85d9ff','#c0a1ff'].map((c,i)=>`<stop offset="${i/4}" stop-color="${c}"/>`).join('')}</linearGradient><linearGradient id="${id('shine')}"><stop stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+    let back = '', detail = '';
+    switch(item.id) {
+      case 'geo_scout':
+        back = '<rect x="11" y="48" width="20" height="49" rx="6" fill="#697e60"/><path d="M14 61h11v18H14Z" fill="#c8bb89"/>';
+        detail = '<path d="M22 92h76v16H22Z" fill="#6a805d"/><path d="M29 91V39m62 52V39" stroke="#d7c6a1" stroke-width="5"/><path d="M25 35q35-19 70 0v8H25Z" fill="#6b825d"/><path d="M27 43h66" stroke="#e1d4ad" stroke-width="3"/><rect x="42" y="98" width="12" height="7" rx="1" fill="#e6d4a1"/>';
+        break;
+      case 'geo_polygon':
+        detail = '<path d="M22 32h76v10H22Z" fill="#795d69"/><path d="M23 95h74v13H23Z" fill="#887488"/><path d="M28 97h18v8H28Z" fill="#d9cfb6"/><path d="m81 95 8 5-8 5-8-5Z" fill="#e3c78e"/><path d="M28 35h17" stroke="#eadbc0" stroke-width="2"/>';
+        break;
+      case 'geo_waveguard':
+        back = '<path d="M10 62 27 57l17 5v19q-3 15-17 23Q13 96 10 81Z" fill="#786954" stroke="#d9c19a" stroke-width="2"/><path d="M17 73q5-7 10 0t10 0M17 82q5-7 10 0t10 0" fill="none" stroke="#add9dd" stroke-width="2"/>';
+        detail = '<path d="M25 35q0-22 35-22t35 22v8H25Z" fill="#698b91"/><path d="M31 33h58M60 16v17" stroke="#d6c6a7" stroke-width="3"/><path d="M24 94h72v14H24Z" fill="#587a81"/><path d="M30 98h60" stroke="#d6c6a7" stroke-width="3"/><rect x="54" y="95" width="12" height="10" rx="2" fill="#b18b59"/>';
+        break;
+      case 'geo_collector':
+        back = '<path d="M89 70h22v32H89Z" fill="#826246" stroke="#c59e70" stroke-width="2"/><path d="m94 72-3-14 13 4-2 10" fill="#abc8ba"/><path d="m102 73 4-18 9 10-5 10" fill="#c3b1d8"/>';
+        detail = '<path d="M23 33q37-15 74 0v9H23Z" fill="#8e6b48"/><path d="M18 41h84" stroke="#d2ac76" stroke-width="5" stroke-linecap="round"/><path d="M26 90h68v18H26Z" fill="#9b7851"/><path d="M32 92h19v12H32Zm37 0h19v12H69Z" fill="#d4b27e" stroke="#775d43"/><path d="m36 98 5-4 5 4-5 4Z" fill="#a8c4ad"/><path d="m74 101 4-7 5 7Z" fill="#b4a0c8"/>';
+        break;
+      case 'geo_circuit':
+        detail = '<path d="M24 42V34h18m54 8v-8H78M26 89v10h15m53-10v10H79" fill="none" stroke="#d8faff" stroke-width="2"/><path d="M23 96h74v12H23Z" fill="#3c627a"/><g class="geo-signal" fill="#b0ffe5"><circle cx="29" cy="36" r="2"/><circle cx="91" cy="36" r="2"/><path d="M43 101h34v2H43Z"/></g>';
+        back = '<path d="M17 49h6v34h-6m86-34h-6v34h6" fill="#4d7692"/>';
+        break;
+      case 'geo_spark':
+        back = '<path d="M24 35 14 25V11M96 35l10-10V11" fill="none" stroke="#615d8e" stroke-width="3"/><g class="geo-signal" fill="#e6edff"><circle cx="14" cy="10" r="4"/><circle cx="106" cy="10" r="4"/></g>';
+        detail = '<path d="M23 92 40 97 60 91 80 97 97 92v16H23Z" fill="#66688c"/><path d="m55 95 8-3-4 6h5l-10 8 3-6h-4Z" fill="#f5e9a7"/><path d="M30 34h60" stroke="#e8e1ff" stroke-width="2"/>';
+        break;
+      case 'geo_arsenal':
+        back = [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':''}"><g class="geo-hover"><path d="M14 35h13v57H14Z" fill="#3a526d" stroke="${metal}" stroke-width="1.3"/><path d="M16 21h9v28h-9Z" fill="#7d9cb2"/><path d="M-2 68h14v31H-2Z" fill="#4c6580" stroke="${metal}"/><path d="M1 57h8v19H1Z" fill="#bdd6e5"/><path d="M17 26h7M1 61h8" stroke="#c6fff0" stroke-width="2"/></g></g>`).join('');
+        detail = `<path d="M21 92h78v16H21Z" fill="#344b62"/><path d="M28 96h64v8H28Z" fill="${metal}"/><path d="M33 97v6m12-6v6m30-6v6m12-6v6" stroke="#657386"/>${gem(60,100,5)}`;
+        break;
+      case 'geo_victor':
+        back = [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':''}"><path d="M22 99Q-7 62 23 30" fill="none" stroke="${metal}" stroke-width="2"/>${[40,55,70,85].map((y,i)=>`<ellipse cx="${12+i%2*3}" cy="${y}" rx="4" ry="8" transform="rotate(-30 12 ${y})" fill="${metal}"/>`).join('')}</g>`).join('');
+        detail = `<path d="m30 30-3-14 17 8 16-17 16 17 17-8-3 14-14 7H44Z" fill="${metal}" stroke="#fff2c3"/><path d="M24 95h72v13H24Z" fill="#886487"/><path d="m60 94 6 7-6 7-6-7Z" fill="${metal}"/>`;
+        break;
+      case 'geo_relic':
+        back = [[11,48],[109,48],[60,10]].map(([x,y],i)=>`<g transform="translate(${x} ${y})"><g class="geo-hover" style="animation-delay:${-i}s"><path d="M-8-8H8V8H-8Z" fill="#574269" stroke="${metal}"/>${gem(0,0,6)}</g></g>`).join('');
+        detail = `<path d="M22 91 40 99 60 94 80 99 98 91v17H22Z" fill="#57426c"/><path d="m26 97 14 7 20-6 20 6 14-7" fill="none" stroke="${metal}" stroke-width="2"/><path d="M25 34h70" stroke="${metal}" stroke-width="2"/>${star(60,101,5)}`;
+        break;
+      case 'geo_nova':
+        back = [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':''}"><path d="M10 44h17v49H10Z" fill="#3f6178" stroke="${metal}"/><path class="geo-plume" d="M12 94h13l-3 21-4-7-4 9Z" fill="#abf9ec"/><path d="M14 52h9v28h-9Z" fill="${paint('gem')}"/></g>`).join('');
+        detail = `<path d="M23 32h74v14H23Z" fill="#355e77" stroke="#c6f9ff"/><path d="M29 35h62v7H29Z" fill="${paint('gem')}"/><path d="M23 94h74v14H23Z" fill="#3d6175"/>${[36,48,60,72,84].map(x=>star(x,101,3)).join('')}`;
+        break;
+      case 'geo_rift':
+        back = `<g class="geo-orbit"><path d="M60 0 116 34v68l-56 34-56-34V34Z" fill="none" stroke="${paint('gem')}" stroke-width="5"/><path d="M60 7 110 38v60l-50 31-50-31V38Z" fill="none" stroke="#dfd8ff" stroke-width="1" stroke-dasharray="3 9"/></g><path d="M22 42 6 116l24-7 30 15 30-15 24 7-16-74Z" fill="#353551" stroke="${metal}"/>`;
+        detail = `<path d="M22 32 42 22l18 10 18-10 20 10-7 10H29Z" fill="#464363" stroke="${metal}"/>${gem(60,29,7)}<path d="M23 93 60 102 97 93v15H23Z" fill="#454360" stroke="${metal}"/>`;
+        break;
+      case 'geo_hunter':
+        back = [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':''}"><g class="geo-wing"><path d="M26 48 1 16l5 33-16-8 11 34-10 4 32 24Z" fill="${paint('gem')}" stroke="#e5ffff"/><path d="m3 29 17 48M0 57l17 25" stroke="#698baa" stroke-width="1.3"/></g></g>`).join('');
+        detail = `<path d="M23 36 39 29l21 10 21-10 16 7-6 8H29Z" fill="#345467" stroke="${metal}"/><path d="M22 93 40 103 60 95 80 103 98 93v15H22Z" fill="#365467" stroke="${metal}"/>${gem(60,101,6)}`;
+        break;
+      case 'geo_voyager':
+        back = `<g class="geo-orbit"><ellipse cx="60" cy="68" rx="68" ry="49" fill="none" stroke="${paint('rainbow')}" stroke-width="2.3"/>${star(-8,68,6)}${star(128,68,6)}</g><g transform="rotate(60 60 68)"><g class="geo-orbit-reverse"><ellipse cx="60" cy="68" rx="67" ry="48" fill="none" stroke="#bfe9ff" stroke-width="1"/>${gem(60,20,5)}</g></g>`;
+        detail = `<path d="M23 34 36 23h48l13 11-10 9H33Z" fill="#4d4b81" stroke="${paint('rainbow')}" stroke-width="2"/>${star(60,31,7)}<path d="M22 92 60 103 98 92v16H22Z" fill="#414576"/><path d="m25 97 35 10 35-10" fill="none" stroke="${paint('rainbow')}" stroke-width="3"/>`;
+        break;
+      case 'geo_conductor':
+        back = `<g class="geo-orbit">${[0,1,2].map(i=>`<g transform="rotate(${i*120} 60 68)"><path d="M60 8v18" stroke="${paint('rainbow')}" stroke-width="2"/><path d="m60-3 9 11-9 11-9-11Z" fill="#4e4879" stroke="${metal}"/>${star(60,8,6)}</g>`).join('')}<circle cx="60" cy="68" r="61" fill="none" stroke="${paint('rainbow')}" stroke-width="1.5" stroke-dasharray="10 5"/></g><path d="M23 35 8 111l21-6 31 13 31-13 21 6-15-76Z" fill="#493e71" stroke="${paint('rainbow')}"/>`;
+        detail = `<path d="M29 30 35 10l25 10 25-10 6 20Z" fill="#514373" stroke="${metal}"/><path d="M24 95h72v13H24Z" fill="#493c6a"/>${[45,60,75].map(x=>star(x,101,5)).join('')}`;
+        break;
+      case 'geo_sovereign':
+        back = `<g class="geo-orbit">${Array.from({length:12},(_,i)=>`<g transform="rotate(${i*30} 60 68)"><path d="m60-10 5 19-5 8-5-8Z" fill="${metal}" stroke="#fff0b9"/>${gem(60,10,4)}</g>`).join('')}<circle cx="60" cy="68" r="59" fill="none" stroke="${metal}" stroke-width="2"/></g><g class="geo-wing"><path d="M23 37Q1 62-3 121l26-10 15 10 22-9 22 9 15-10 26 10q-4-59-26-84Z" fill="#34314d" stroke="${metal}" stroke-width="2"/><path d="M17 56 7 108l15-6m81-46 10 52-15-6" fill="none" stroke="#a9c8dc" stroke-width="1"/></g>`;
+        detail = `<g class="geo-hover"><path d="m26 31-4-25 20 15 8-28 10 21L70-7l8 28L98 6l-4 25-18 8H44Z" fill="${metal}" stroke="#fff6d5" stroke-width="1.3"/><path d="m32 28-2-10 14 10 8-19 8 17 8-17 8 19 14-10-2 10-14 6H46Z" fill="#635074"/>${star(60,24,10)}</g><path d="M21 91 40 101 60 94 80 101 99 91v17H21Z" fill="#48415c" stroke="${metal}" stroke-width="2"/><path d="m26 98 14 8 20-7 20 7 14-8" fill="none" stroke="#f6e5bc"/>${gem(60,101,6)}`;
+        break;
+      case 'geo_seraph':
+        back = `<g class="geo-orbit-reverse"><circle cx="60" cy="68" r="64" fill="none" stroke="${paint('gem')}" stroke-width="2"/><circle cx="60" cy="68" r="69" fill="none" stroke="#d7f6ff" stroke-dasharray="2 8"/>${[0,1,2,3].map(i=>`<g transform="rotate(${i*90} 60 68)">${star(60,-1,7)}</g>`).join('')}</g>` + [0,1].map(side=>`<g transform="${side?'translate(120 0) scale(-1 1)':''}"><g class="geo-wing"><path d="M28 45Q6 26-10-4l5 47-13-11 10 43-14-7 15 35 18-7 16 15 6-27Z" fill="${paint('gem')}" stroke="#f0ffff" stroke-width="1.3"/>${[0,1,2,3].map(i=>`<path d="M${-5-i*2} ${20+i*20}Q${3+i*3} ${55+i*7} 24 ${70+i*8}" fill="none" stroke="#fff" stroke-width="1.1" opacity=".8"/>`).join('')}</g></g>`).join('');
+        detail = `<g class="geo-hover"><ellipse cx="60" cy="12" rx="29" ry="8" fill="none" stroke="${metal}" stroke-width="3"/><ellipse cx="60" cy="12" rx="25" ry="5" fill="none" stroke="#e9ffff" stroke-width=".8"/>${star(60,26,11)}</g><path d="M21 93 40 103 60 95 80 103 99 93v15H21Z" fill="#58778b" stroke="#e5ffff" stroke-width="1.5"/>${gem(60,102,6)}<path d="M25 42v44m70-44v44" stroke="${metal}" stroke-width="2"/>`;
+        break;
+    }
+    if (rank >= 3) back = `<ellipse class="geo-aura" cx="60" cy="68" rx="${62+rank*2}" ry="${66+rank*2}" fill="${paint('aura')}"/>` + back;
+    const sparkles = rank >= 3 ? Array.from({length:rank},(_,i)=>`<g transform="translate(${i%2?108:12} ${27+i*15})"><g class="geo-sparkle" style="animation-delay:${-i*.6}s">${star(0,0,rank>=5?3:2)}</g></g>`).join('') : '';
+    const polish = rank >= 4 ? `<g clip-path="${paint('body')}"><g transform="rotate(-25 60 68)"><rect class="geo-shine" x="-35" y="10" width="22" height="120" fill="${paint('shine')}"/></g></g>` : '';
+    const shell = rank ? `<g fill="${paint('shell')}">${item.body}</g>` : '';
+    return {back:defs+back, detail:`<g data-geomayhem-tier="${item.tier}">${shell}<path d="M26 47v-8q0-5 6-5h43" fill="none" stroke="#fff" stroke-width="${rank>=3?1.5:1}" opacity=".6"/>${polish}${detail}${sparkles}</g>`, sideOffset:rank>=3?9:11, shadowOffset:rank>=3?15:20, sideColor:sideColor(item.color),shadowColor:'#27323e'};
+  }
   function animatedArt(item, uid) {
+    if (item.id.startsWith("geo_")) return geomayhemCubieArt(item, uid);
+    if (item.id.startsWith("chaos_")) return chaosCubieArt(item, uid);
     const id = name => `${name}-${uid}`;
     const url = name => `url(#${id(name)})`;
     const clip = `<clipPath id="${id('body')}">${item.body}</clipPath>`;
@@ -1543,7 +1845,7 @@ const CubieCustoms = (() => {
       (item.id === 'shop_koi' ? '</g>' : '') +
       '</g></svg>';
   }
-  return { catalog, tierLabels, unlocked, selected, svg, testerCodeActive, redeemTesterCode };
+  return { catalog, tierLabels, unlocked, selected, svg, testerCodeActive, redeemTesterCode, wildCardSymbols, nextWildCardSymbol };
 })();
 if (typeof module !== "undefined") module.exports = CubieCustoms;
 

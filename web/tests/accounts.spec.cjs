@@ -53,8 +53,8 @@ test('guest profile remains usable when cloud accounts are disconnected', async 
   await expect(page.locator('#account-create')).toBeDisabled();
   await expect(page.locator('#account-login')).toBeDisabled();
   await expect(page.locator('#account-sync')).toBeDisabled();
-  await expect(page.locator('#account-ranking')).not.toBeChecked();
-  await expect(page.locator('#account-public')).not.toBeChecked();
+  await expect(page.locator('#account-ranking')).toBeChecked();
+  await expect(page.locator('#account-public')).toBeChecked();
   await expect(page.locator('#account-export')).toBeEnabled();
   await expect(page.locator('#account-history')).toContainText('Your next game starts your history');
   expect(await page.locator('#account-dialog').evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth)).toBe(true);

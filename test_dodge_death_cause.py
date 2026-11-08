@@ -4,7 +4,8 @@ from web.bridge import BrowserGame
 
 class DodgeDeathCauseTests(unittest.TestCase):
     def test_square_identity_survives_difficulty_colors_and_repeated_ticks(self):
-        for difficulty in DIFFICULTIES:
+        # Classic Tetris collisions are fatal; Chaos has separate multi-life rules.
+        for difficulty in ("easy", "normal", "hard", "merciless"):
             with self.subTest(difficulty=difficulty):
                 g=DodgeGame(difficulty=difficulty)
                 g.blocks=[Block(g.x,g.y,SHAPES[1],g.rules.color or COLORS[1])]

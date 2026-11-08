@@ -7,7 +7,7 @@ const AccountApp = (() => {
   const snapshotKeys = ['mode', 'difficulty', 'over', 'won', 'shielded', 'score', 'mistakes',
     'remaining', 'damage_taken', 'attacks_completed', 'counter_hits', 'shots_fired', 'fight_elapsed',
     'healing_collected', 'near_misses', 'elapsed', 'lives', 'max_lives', 'hp', 'max_hp',
-    'death_cause', 'attack_survivals'];
+    'death_cause', 'attack_survivals', 'geo_level', 'geo_kills', 'geo_waves', 'geo_rank', 'geo_weapon_count', 'geo_max_stars', 'geo_five_star_count', 'geo_relic_count'];
   function compactSnapshot(snapshot) {
     return Object.fromEntries(snapshotKeys.filter(key => snapshot[key] !== undefined && snapshot[key] !== null)
       .map(key => [key, copy(snapshot[key])]));

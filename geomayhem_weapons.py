@@ -32,19 +32,24 @@ class Weapon:
     fifth: str
     evolved: str
     ultimate: str
+    companion: bool = False
+
+    @property
+    def automatic(self):
+        return self.companion or self.kind == "drone"
 
     def traits(self, stars):
         return {self.trait} | ({self.third} if stars >= 3 else set()) | ({self.fifth} if stars >= 5 else set())
 
     def info(self, stars=1):
-        return {"id": self.id, "name": self.name, "kind": self.kind, "color": self.color,
+        return {"id": self.id, "name": self.name, "kind": self.kind, "color": self.color, "automatic": self.automatic,
                 "stars": stars, "form": self.ultimate if stars == 5 else self.evolved if stars >= 3 else self.name,
-                "description": f"{self.kind.title()} · {TRAITS[self.trait]}",
+                "description": f"{'Auto companion · ' if self.automatic else ''}{self.kind.title()} · {TRAITS[self.trait]}",
                 "third": f"{self.evolved}: {TRAITS[self.third]}. Faceted art.",
                 "fifth": f"{self.ultimate}: {TRAITS[self.fifth]}. Crowned nova art."}
 
 
-# Four builds per handheld pattern, plus two autonomous drone companions.
+# Four builds per handheld pattern, plus twelve autonomous item companions.
 WEAPONS = tuple(Weapon(*row) for row in (
     ("needle", "Prism Needle", "bolt", "#71f5d2", 5, .34, 1, "pierce", "split", "homing", "Prism Fork", "Prism Constellation"),
     ("comet", "Comet Wand", "bolt", "#ffae72", 7, .65, 1, "burn", "blast", "return", "Comet Flare", "Comet Apocalypse"),
@@ -80,5 +85,16 @@ WEAPONS = tuple(Weapon(*row) for row in (
     ("sun", "Sun Dial", "nova", "#ffbd68", 8, 2.0, 1, "burn", "blast", "chain", "Sun Corona", "Sun Genesis"),
     ("drone_a", "A Drone", "drone", "#7eeaff", 5, .8, 1, "homing", "split", "blast", "A Drone Swarm", "A Drone Starfleet"),
     ("drone_b", "B Drone", "drone", "#ffa5d9", 4, 1.1, 2, "chain", "freeze", "lifesteal", "B Drone Frostwing", "B Drone Lifeline"),
+    ("ember_lantern", "Ember Lantern", "nova", "#ff914d", 6, 1.7, 1, "burn", "split", "lifesteal", "Shard Lantern", "Soulfire Beacon", True),
+    ("frost_orb", "Frost Orb", "bolt", "#99efff", 4, .65, 2, "freeze", "chain", "ricochet", "Aurora Orb", "Blizzard Globe", True),
+    ("tesla_coil", "Tesla Coil", "beam", "#e4c1ff", 5, 1.15, 1, "chain", "pull", "blast", "Tesla Magnet", "Thunder Spire", True),
+    ("blade_bot", "Blade Bot", "boomerang", "#d5ff83", 5, 1.2, 1, "pierce", "ricochet", "freeze", "Bankshot Bot", "Glacier Reaper", True),
+    ("gravity_cube", "Gravity Cube", "mine", "#a99aff", 7, 1.8, 1, "pull", "slow", "split", "Gravity Anchor", "Fractal Collapse", True),
+    ("prism_turret", "Prism Turret", "fan", "#86ffd6", 3, 1.0, 3, "ricochet", "split", "homing", "Prism Battery", "Rainbow Bastion", True),
+    ("spore_pod", "Spore Pod", "mine", "#efa1d5", 6, 1.5, 2, "burn", "slow", "lifesteal", "Tangle Pod", "Lifebloom Garden", True),
+    ("repair_beetle", "Repair Beetle", "bolt", "#ffbdad", 4, .9, 1, "lifesteal", "pierce", "blast", "Siphon Beetle", "Lifeforge Scarab", True),
+    ("storm_totem", "Storm Totem", "ring", "#eafa7c", 3, 1.6, 8, "slow", "chain", "split", "Tempest Totem", "Shatterstorm Idol", True),
+    ("solar_shield", "Solar Shield", "orbit", "#ffce72", 4, 1.9, 3, "burn", "pull", "blast", "Solar Vortex", "Supernova Aegis", True),
 ))
 ARMORY = {weapon.id: weapon for weapon in WEAPONS}
+ITEM_WEAPONS = tuple(weapon.id for weapon in WEAPONS if weapon.automatic)

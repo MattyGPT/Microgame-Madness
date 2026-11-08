@@ -43,6 +43,16 @@ const ArcadeMusic = (() => {
         [79, 0, 77, 74, 71, 74, 79, 0], [76, 74, 72, 0, 67, 71, 72, 0],
       ],
     },
+    cubie_hello: song("Hello, New Friend!", 116, "C Am F G C Em F G Am Dm G C F C G C", [
+      "E5 - G5 A5 G5 E5 D5 C5", "C5 E5 A5 - G5 E5 C5 -",
+      "F5 - A5 C6 A5 G5 F5 E5", "D5 G5 B5 A5 G5 - D5 -",
+      "E5 G5 C6 - B5 A5 G5 E5", "G5 B5 E6 D6 B5 G5 E5 -",
+      "A5 G5 F5 A5 C6 - A5 F5", "G5 A5 B5 D6 C6 B5 G5 -",
+      "A5 C6 E6 - D6 C6 A5 G5", "F5 A5 D6 C6 A5 F5 D5 -",
+      "G5 B5 D6 - B5 A5 G5 D5", "E5 G5 C6 B5 G5 E5 C5 -",
+      "F5 A5 C6 - A5 G5 F5 E5", "E5 G5 C6 - G5 E5 D5 C5",
+      "D5 G5 B5 D6 C6 B5 A5 G5", "E5 G5 C6 - G5 E5 C5 -",
+    ], {groove:"skip", lead:"triangle", swing:.06, gate:.8}),
     starburst_255: song("Starburst Circuit", 255, "Bm G D A Bm Em G F# Bm D G A Em G F# Bm", [
       "B5 F#5 D5 F#5 A5 B5 D6 F#6",
       "G5 B5 D6 B5 A5 G5 F#5 E5",
@@ -516,6 +526,16 @@ const ArcadeMusic = (() => {
     { title: "Critical Geometry", bpm: 174, root: 38, color: "#ffffff", groove: "breaks",
       harmony: [0, 8, 5, 7], minor: true, bell: 1.7,
       hook: [12,0,13,12,19,18,15,12], reply: [24,22,19,18,19,15,13,12] },
+    {"title": "Undertow Overture", "bpm": 128, "root": 43, "color": "#7ee4e1", "groove": "breaks", "harmony": [0, 5, 8, 3], "minor": true, "bell": 2.7, "hook": [12, 19, 0, 22, 19, 15, 17, 0], "reply": [24, 19, 22, 17, 15, 12, 10, 14]},
+    {"title": "Tick Tock Takedown", "bpm": 136, "root": 46, "color": "#f3ce83", "groove": "stomp", "harmony": [0, 7, 3, 8], "minor": true, "bell": 1.9, "hook": [12, 0, 19, 0, 15, 14, 12, 19], "reply": [24, 0, 22, 19, 18, 15, 14, 12]},
+    {"title": "Verdant Voltage", "bpm": 140, "root": 48, "color": "#94e68d", "groove": "dance", "harmony": [0, 5, 7, 9], "minor": false, "bell": 1.2, "hook": [12, 16, 0, 19, 21, 24, 19, 16], "reply": [28, 24, 21, 0, 19, 16, 14, 12]},
+    {"title": "Black Glass Beat", "bpm": 152, "root": 37, "color": "#ec9166", "groove": "stomp", "harmony": [0, 8, 7, 5], "minor": true, "bell": 1.6, "hook": [12, 13, 0, 19, 18, 0, 15, 12], "reply": [24, 19, 18, 15, 13, 12, 0, 7]},
+    {"title": "Polar Parallax", "bpm": 130, "root": 51, "color": "#9ef2dc", "groove": "breaks", "harmony": [0, 3, 8, 10], "minor": true, "bell": 3.2, "hook": [24, 19, 0, 27, 22, 0, 19, 17], "reply": [31, 27, 24, 22, 0, 19, 15, 12]},
+    {"title": "Chromatic Overdrive", "bpm": 168, "root": 42, "color": "#fc91da", "groove": "dance", "harmony": [0, 10, 8, 7], "minor": true, "bell": 1.4, "hook": [12, 19, 12, 22, 19, 24, 22, 19], "reply": [27, 24, 22, 19, 18, 19, 15, 12]},
+    {"title": "Pages Below", "bpm": 122, "root": 45, "color": "#93c5ee", "groove": "breaks", "harmony": [0, 5, 3, 7], "minor": true, "bell": 2.9, "hook": [12, 0, 15, 22, 0, 19, 17, 14], "reply": [24, 22, 17, 0, 19, 15, 14, 10]},
+    {"title": "Gilded Illusion", "bpm": 146, "root": 41, "color": "#e8cc9b", "groove": "dance", "harmony": [0, 8, 7, 0], "minor": true, "bell": 2.3, "hook": [12, 13, 16, 19, 0, 20, 19, 16], "reply": [24, 25, 24, 20, 19, 16, 13, 12]},
+    {"title": "Hymn of the Hollow", "bpm": 144, "root": 36, "color": "#c0a7f5", "groove": "stomp", "harmony": [0, 3, 8, 5], "minor": true, "bell": 2.6, "hook": [12, 0, 19, 15, 0, 22, 18, 12], "reply": [24, 27, 22, 19, 18, 15, 12, 0]},
+    {"title": "Crowned in Infinity", "bpm": 178, "root": 43, "color": "#ffe5a6", "groove": "breaks", "harmony": [0, 8, 3, 7], "minor": true, "bell": 2.1, "hook": [12, 19, 24, 22, 19, 15, 18, 19], "reply": [31, 27, 24, 22, 19, 18, 15, 12]},
   ].map((track, i) => Object.freeze({ ...track, id: `geomayhem_level_${i + 1}`, level: i + 1 }));
 
   function composeGeomayhem(track, sampleRate, notes) {
@@ -587,7 +607,7 @@ const ArcadeMusic = (() => {
       * Math.min(1, i / (sampleRate * .008), (out.length - 1 - i) / (sampleRate * .015));
     return out;
   }
-  const loopThemes = ["core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
+  const loopThemes = ["chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
@@ -641,6 +661,10 @@ const ArcadeMusic = (() => {
   // Original chamber-pop dances. Additive/decaying instrument voices instead
   // of pulse waves; no borrowed recordings or transcribed reference melodies.
   const chamberTracks = [
+    { id: "chaos_carnival", title: "Chaos Carnival", bpm: 148, bars: 48, root: 48, playful: true,
+      chords: [[0,4,7,9],[5,9,12,14],[2,6,9,12],[7,11,14,17]],
+      motifs: [[12,19,16,19,24,23,24,19],[17,21,24,21,19,17,16,14],
+        [14,18,21,26,25,26,21,18],[19,14,11,14,17,16,14,12]] },
     { id: "dragon_dance", title: "Dragon Dance", bpm: 128, bars: 80, root: 50,
       chords: [[0,4,7,11],[9,12,16,19],[5,9,12,16],[7,11,14,17]],
       motifs: [[12,16,19,16,14,12,9,11],[12,14,16,21,19,16,14,11],
@@ -660,7 +684,7 @@ const ArcadeMusic = (() => {
   ];
   function composeChamber(song, sampleRate, notes) {
     const beat = 60 / song.bpm, end = song.bars * 4 * beat;
-    const out = new Float32Array(Math.ceil((end + 2) * sampleRate));
+    const out = new Float32Array(Math.ceil((end + (song.playful ? 0 : 2)) * sampleRate));
     const cache = new Map();
     function instrument(pitch, start, length, gain, kind) {
       const frequency = 440 * 2 ** ((pitch - 69) / 12);
@@ -701,25 +725,26 @@ const ArcadeMusic = (() => {
     }
     for (let bar = 0; bar < song.bars; bar++) {
       const start = bar * 4 * beat, section = Math.floor(bar / 8);
-      const intro = bar < 4, bridge = section === 4 || section === 5;
-      const reprise = section >= 7, closing = bar >= song.bars - 4;
+      const intro = bar < (song.playful ? 2 : 4), bridge = song.playful ? section === 2 : section === 4 || section === 5;
+      const reprise = section >= (song.playful ? 4 : 7), closing = !song.playful && bar >= song.bars - 4;
       const chord = song.chords[Math.floor(bar / 2) % 4];
       const motif = song.motifs[(Math.floor(bar / 2) + (bridge ? 2 : 0)) % 4];
       for (let k = 0; k < 8; k++) {
-        const human = k % 2 ? .012 : 0;
+        const human = k % 2 ? (song.playful ? beat * .14 : .012) : 0;
         instrument(song.root + chord[k % 4] + 12, start + k * beat / 2 + human,
           beat * 1.2, .085 * (k % 2 ? .8 : 1), 'pluck');
         if (!intro && !closing && (!bridge || k % 2 === 0)) {
           const pitch = song.root + motif[k] + (bar % 4 === 3 && k === 7 ? -2 : 0);
-          instrument(pitch, start + k * beat / 2, beat * (bridge ? .88 : .46), .19, 'flute');
+          instrument(pitch, start + k * beat / 2 + human, beat * (bridge ? .88 : song.playful ? .32 : .46), .19, 'flute');
+          if (song.playful && k % 2 === 1) instrument(pitch + 12, start + k * beat / 2 + human, beat * .25, .07, 'pluck');
           if (reprise && k % 2 === 0) instrument(pitch - 12, start + k * beat / 2,
             beat * .65, .055, 'piano');
         }
       }
-      for (const k of [0, 1.5, 2.5]) for (const note of chord)
-        instrument(song.root + note + (bridge ? 12 : 0), start + k * beat, beat * 1.3, .055, 'piano');
-      for (const k of [0, 2]) instrument(song.root + chord[0] - 12,
-        start + k * beat, beat * 1.8, .24, 'bass');
+      for (const k of (song.playful ? [1, 3] : [0, 1.5, 2.5])) for (const note of chord)
+        instrument(song.root + note + (bridge ? 12 : 0), start + k * beat, beat * (song.playful ? .45 : 1.3), .055, 'piano');
+      for (const k of [0, 2]) instrument(song.root + chord[0] - 12 + (song.playful && k === 2 ? 7 : 0),
+        start + k * beat, beat * (song.playful ? .7 : 1.8), .24, 'bass');
       if (!intro && !bridge && !closing) {
         for (const k of [0, 2]) drum(start + k * beat, true, .22);
         for (let k = 0; k < 8; k++) drum(start + (k / 2 + .02) * beat, false, k % 2 ? .045 : .025);
@@ -732,7 +757,7 @@ const ArcadeMusic = (() => {
     for (let i = out.length - 1; i >= delay; i--) out[i] += out[i - delay] * .13;
     let peak = 0;
     for (let i = 0; i < out.length; i++) {
-      out[i] *= Math.max(0, Math.min(1, i / (sampleRate * .025), (out.length - 1 - i) / (sampleRate * 1.5)));
+      out[i] *= Math.max(0, Math.min(1, i / (sampleRate * .025), (out.length - 1 - i) / (sampleRate * (song.playful ? .025 : 1.5))));
       peak = Math.max(peak, Math.abs(out[i]));
     }
     const scale = .82 / Math.max(.82, peak);
@@ -746,7 +771,7 @@ const ArcadeMusic = (() => {
     ...bossTracks.map(track => ({ ...track, category: "Boss Crush" })),
     ...geomayhemTracks.map(track => ({ ...track, category: "Geomayhem" })),
     ...rockTracks.map(track => ({ ...track, category: "Rock" })),
-    ...chamberTracks.map(track => ({ ...track, category: "Instrumental dance" })),
+    ...chamberTracks.map(track => ({ ...track, category: track.playful ? "Turtle Dodge" : "Instrumental dance" })),
   ].map(({ id, title, bpm, category }) => Object.freeze({ id, title, bpm, category })));
   function composeRock(track, sampleRate, notes) {
     const beat = 60 / track.bpm, duration = 32 * 4 * beat + (track.loop ? 0 : 1.2);

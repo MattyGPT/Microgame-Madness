@@ -26,3 +26,56 @@
 .arcade-code-control button { font: inherit; font-size: .75rem; }
 html.account-reduced-motion *, html.account-reduced-motion *::before, html.account-reduced-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 @media(max-width: 600px) { .account-dialog { width: calc(100vw - 1rem); padding: 1rem; max-height: calc(100dvh - 1rem); } .account-history-filters > label { flex: 1; min-width: 110px; } }
+
+#account-open { display: block; width: 100%; min-height: 62px; padding: 16px 20px; border: 4px solid #7ce6a2; border-radius: 14px; background: linear-gradient(135deg, #234a37, #162c24); color: #ecffe9; font: 700 1.05rem 'Space Grotesk', sans-serif; box-shadow: 0 4px 0 #0d2118, inset 0 1px 0 #b9f9c533; cursor: pointer; }
+#account-open:hover { border-color: #bbffb0; background: #2b563d; }
+#account-open:focus-visible { outline: 3px solid #edffd6; outline-offset: 4px; }
+.welcome-dialog { width: min(740px, calc(100vw - 2rem)); border: 2px solid #7ce6a2; padding: 26px; background: radial-gradient(ellipse at 0 0, #294a36 0, transparent 55%), #151e21; }
+.welcome-top { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+#welcome-progress { color: #acdab8; font-size: .65rem; font-weight: 700; letter-spacing: .1em; }
+#welcome-close { border: 0; background: transparent; padding: 6px; color: #c9d9cf; white-space: nowrap; }
+.welcome-host { display: flex; gap: 22px; align-items: center; margin: 24px 0 18px; }
+#welcome-cubie { flex: 0 0 104px; width: 104px; height: 110px; display: grid; place-items: center; }
+#welcome-cubie .cubie-custom-art { width: 65px; height: 65px; }
+.welcome-speech { position: relative; flex: 1; min-width: 0; background: #243a30; border: 1px solid #729e7b; border-radius: 16px; padding: 16px 18px; }
+.welcome-speech::before { content: ''; position: absolute; left: -8px; top: 42%; width: 14px; height: 14px; transform: rotate(45deg); background: #243a30; border-left: 1px solid #729e7b; border-bottom: 1px solid #729e7b; }
+.welcome-speaker { display: block; color: #b7f298; font-size: .65rem; letter-spacing: .16em; font-weight: 800; margin-bottom: 8px; }
+#welcome-dialog-title { font-size: clamp(1.3rem, 4vw, 1.9rem); line-height: 1.15; margin: 0; outline: none; }
+#welcome-line { color: #dce8dc; margin: 8px 0 0; }
+.welcome-steps { list-style: none; padding: 0; margin: 18px 0 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.welcome-steps li { border-top: 3px solid #394c44; padding-top: 6px; font-size: .72rem; color: #9cad9f; }
+.welcome-steps li[data-current] { border-color: #b7f298; color: #edffdf; font-weight: 700; }
+.welcome-dialog .welcome-primary { background: #b9ed91; border: 2px solid #d1ffac; color: #162c20; font-weight: 800; }
+.welcome-dialog .welcome-primary:hover { background: #d1ffa5; }
+.welcome-dialog .welcome-note { color: #b5c5c1; font-size: .78rem; }
+.welcome-auth-actions, .welcome-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.welcome-footer { margin-top: 22px; padding-top: 16px; border-top: 1px solid #3d5246; }
+#welcome-next { margin-left: auto; }
+.welcome-dialog .welcome-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; margin: 8px 0; background: #1c2b29; border: 1px solid #3d5249; border-radius: 10px; }
+.welcome-option input { margin-top: 3px; accent-color: #9cde85; }
+.welcome-option strong { display: block; color: #e4f4e3; }
+.welcome-option small { display: block; color: #b5c7c0; line-height: 1.5; margin-top: 4px; }
+.welcome-video-frame { aspect-ratio: 4/3; border: 1px solid #526955; border-radius: 12px; overflow: hidden; background: #101923; }
+#welcome-video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.welcome-game-dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.welcome-game-dots button { font-size: .72rem; padding: 5px 10px; min-height: 36px; }
+.welcome-game-dots button[aria-pressed="true"] { border-color: #b9ed91; color: #d8ffc0; background: #2b4433; }
+#welcome-message { color: #ffe3a0; white-space: pre-wrap; }
+#welcome-message:empty { display: none; }
+#welcome-account-success { padding: 15px; color: #c8fcae; background: #233d2e; border-radius: 10px; }
+#account-welcome { margin-top: 20px; border-color: #80c693; }
+@media (max-width: 600px) {
+  .welcome-dialog { width: calc(100vw - 1rem); padding: 16px; }
+  .welcome-host { gap: 10px; margin-top: 18px; }
+  #welcome-cubie { flex-basis: 65px; width: 65px; }
+  #welcome-cubie .cubie-custom-art { width: 46px; height: 46px; }
+  .welcome-speech { padding: 13px; }
+  .welcome-steps { gap: 5px; }
+  .welcome-steps li { font-size: .63rem; }
+  .welcome-footer button { flex: 1; }
+  #welcome-next { flex-basis: 100%; }
+  .welcome-auth-actions > button { width: 100%; }
+}
+
+.welcome-footer { position: sticky; bottom: -26px; z-index: 2; padding-bottom: 16px; background: #151e21; box-shadow: 0 -12px 18px #151e21; }
+@media (max-width: 600px) { .welcome-footer { bottom: -16px; } }

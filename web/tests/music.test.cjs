@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 26);
+  assert.equal(arcadeTracks.length, 27);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 26);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 27);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('twenty-six distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 26);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 26);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 26);
+test('twenty-seven distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 27);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 27);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 27);
   assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
   assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
@@ -160,7 +160,7 @@ test('twenty-six distinct arcade songs and the boss score have safe levels and q
     assert.ok(Math.abs(samples.length / 22050 - bars * 4 * 60 / track.bpm) < 1 / 22050);
     fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(fingerprints.size, 27);
+  assert.equal(fingerprints.size, tracks.length + 1);
   assert.throws(() => compose('missing'), /Unknown music/);
 });
 

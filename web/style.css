@@ -2679,3 +2679,187 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .dwarf-aura, .dwarf-corona, .dwarf-orbit, .dwarf-satellite, .dwarf-crown,
   .dwarf-heart, .dwarf-twinkle, .dwarf-surface, .dwarf-shine { animation:none; }
 }
+
+/* Chaos field guide: symbols supplement color so hazards remain identifiable. */
+#block-guide-room { padding: clamp(16px, 4vw, 32px); text-align: left; width: 100%; box-sizing: border-box; }
+#block-guide-room h3 { font-size: clamp(24px, 4vw, 38px); margin: 8px 0; }
+.chaos-rules { background: #192339; border: 1px solid #48516a; border-radius: 12px; padding: 18px; margin: 20px 0; line-height: 1.6; }
+#block-guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.block-guide-card { border: 1px solid #465069; border-top: 3px solid var(--block-color); border-radius: 10px; padding: 18px; background: #141e31; }
+.block-guide-card h4 { margin: 12px 0 6px; font-size: 17px; }
+.block-guide-card p { line-height: 1.5; font-size: 14px; margin: 8px 0; }
+.block-guide-icon { display: block; width: 180px; max-width: 100%; height: 110px; object-fit: contain; margin: 0 auto; background: #101827; border-radius: 8px; }
+.block-guide-card .block-rarity { color: var(--block-color); font-size: 12px; }
+
+/* Geomayhem's menu card: a tiny animated survivor scene. */
+.geomayhem-card .card-art { overflow: hidden; }
+.geomayhem-card .card-art svg { display: block; width: 100%; height: 100%; }
+.geomayhem-card .geo-cubie { transform-origin: 90px 53px; animation: geo-cubie-hover 2.8s ease-in-out infinite; }
+.geomayhem-card .geo-rings { transform-origin: 90px 52px; animation: geo-radar-turn 18s linear infinite; }
+.geomayhem-card .geo-enemy { transform-box: fill-box; transform-origin: center; animation: geo-enemy-drift 3.6s ease-in-out infinite; }
+.geomayhem-card .geo-pentagon { animation-duration: 4.2s; animation-delay: -1.8s; }
+.geomayhem-card .geo-star { transform-box: fill-box; transform-origin: center; animation: geo-star-spin 8s linear infinite; }
+.geomayhem-card .geo-shot { animation: geo-shot-flight 1.4s ease-out infinite; }
+.geomayhem-card .geo-shot-second { animation-delay: -.7s; }
+@keyframes geo-cubie-hover { 0%, 100% { transform: translateY(2px) rotate(-3deg); } 50% { transform: translateY(-3px) rotate(3deg); } }
+@keyframes geo-radar-turn { to { transform: rotate(360deg); } }
+@keyframes geo-enemy-drift { 0%, 100% { transform: translate(0, 0) rotate(-7deg); } 50% { transform: translate(5px, -5px) rotate(9deg); } }
+@keyframes geo-star-spin { to { transform: rotate(360deg); } }
+@keyframes geo-shot-flight { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 75%, 100% { transform: translate(37px, -12px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .geomayhem-card .card-art svg * { animation: none; }
+  .geomayhem-card .geo-shot { opacity: 0; }
+}
+
+.guide-tab-preview { width: 150px; height: 94px; object-fit: contain; display: block; }
+
+/* Status feedback: light screen tints, slow particles, and tiny arena movement. */
+.chaos-screen-effect { position: fixed; inset: 0; z-index: 25; pointer-events: none; overflow: hidden; }
+#chaos-electric { background: rgb(255 222 70 / 8%); box-shadow: inset 0 0 90px rgb(255 216 54 / 28%); }
+#chaos-electric svg { width: 100%; height: 100%; fill: none; stroke: #fff19d; stroke-width: 3; opacity: .65; stroke-dasharray: 70 35; animation: chaos-current 1.6s linear infinite; }
+#chaos-frost { background: rgb(120 206 255 / 9%); box-shadow: inset 0 0 100px rgb(158 224 255 / 38%); }
+#chaos-frost span { position: absolute; left: var(--snow-x); top: -5%; color: #e6f8ff; font-size: 24px; opacity: .7; animation: chaos-snow 10s linear infinite; animation-delay: var(--snow-delay); }
+.arena.chaos-haste { animation: chaos-jiggle .42s ease-in-out infinite; }
+.arena.chaos-frozen { animation: chaos-shiver .22s ease-in-out infinite; }
+@keyframes chaos-current { to { stroke-dashoffset: -210; } }
+@keyframes chaos-snow { from { transform: translate(-8px,-5vh) rotate(0); } to { transform: translate(12px,110vh) rotate(100deg); } }
+@keyframes chaos-jiggle { 0%,100% { translate: 0 0; } 25% { translate: 1px -.5px; } 75% { translate: -1px .5px; } }
+@keyframes chaos-shiver { 0%,100% { translate: -.65px 0; } 50% { translate: .65px 0; } }
+.chaos-motion-off .arena.chaos-haste, .chaos-motion-off .arena.chaos-frozen,
+.chaos-motion-off .chaos-screen-effect *, .chaos-motion-off .chaos-screen-effect { animation: none !important; }
+.chaos-motion-off #chaos-frost span { top: 14%; }
+.chaos-motion-off #chaos-frost span:nth-child(3n) { top: 73%; }
+.chaos-motion-off #chaos-frost span:nth-child(3n+1) { top: 42%; }
+@media (prefers-reduced-motion: reduce) {
+  .arena.chaos-haste, .arena.chaos-frozen, .chaos-screen-effect * { animation: none !important; }
+  #chaos-frost span { top: 18%; }
+  #chaos-frost span:nth-child(2n) { top: 72%; }
+}
+
+/* Chaos achievement Customs: polished materials and individual motion. */
+.chaos-material-sheen { animation: chaos-cubie-sheen 6s ease-in-out infinite; }
+.chaos-jewel-glint { transform-origin: 0 0; animation: chaos-jewel-twinkle 3.2s ease-in-out infinite; }
+.chaos-confetti { animation: chaos-cubie-confetti 3.8s ease-in-out infinite; }
+.chaos-rain { animation: chaos-cubie-rain 2.1s linear infinite; }
+.chaos-hat-tilt { transform-origin: 60px 30px; animation: chaos-cubie-hat 4s ease-in-out infinite; }
+.chaos-card-flip { transform-box: fill-box; transform-origin: center; animation: chaos-card-turn 5s ease-in-out infinite; }
+.chaos-baton { transform-origin: 105px 65px; animation: chaos-baton-conduct 2.4s ease-in-out infinite; }
+.chaos-orbit-halo, .chaos-monarch-halo { transform-origin: 60px 68px; animation: chaos-regalia-orbit 24s linear infinite; }
+.chaos-monarch-halo { transform-origin: 60px 65px; animation-duration: 36s; }
+.chaos-orbit-crown { transform-origin: 60px 17px; animation: chaos-cubie-hat 5s ease-in-out infinite; }
+.chaos-orbit-jewel { animation: chaos-jewel-hover 3.4s ease-in-out infinite; }
+.chaos-glass-wing { transform-origin: 25px 65px; animation: chaos-glass-flutter 3s ease-in-out infinite; }
+.chaos-prism-rays, .chaos-signal { animation: chaos-jewel-light 3s ease-in-out infinite; }
+.chaos-thread { animation: chaos-stitch-flow 3s linear infinite; }
+.chaos-needle { transform-origin: 93px 25px; animation: chaos-cubie-hat 2.8s ease-in-out infinite; }
+.chaos-dancer-star { animation: chaos-star-dance 5s ease-in-out infinite; }
+.chaos-healing-pulse { transform-box: fill-box; transform-origin: center; animation: chaos-heartbeat 2.8s ease-in-out infinite; }
+.chaos-healing-mote { animation: chaos-jewel-hover 3s ease-in-out infinite; }
+.chaos-monarch-aura { animation: chaos-jewel-light 4.6s ease-in-out infinite; }
+.chaos-monarch-cape { transform-origin: 60px 38px; animation: chaos-royal-cape 4.8s ease-in-out infinite; }
+.chaos-monarch-crown { transform-origin: 60px 28px; animation: chaos-crown-poise 5.5s ease-in-out infinite; }
+.chaos-monarch-scepter { transform-origin: 111px 103px; animation: chaos-crown-poise 5s ease-in-out infinite reverse; }
+@keyframes chaos-cubie-sheen { 0%, 15% { transform: translateX(0); } 70%, 100% { transform: translateX(160px); } }
+@keyframes chaos-jewel-twinkle { 0%, 100% { opacity: .35; transform: scale(.55) rotate(-10deg); } 50% { opacity: 1; transform: scale(1.15) rotate(15deg); } }
+@keyframes chaos-cubie-confetti { 0%, 100% { transform: translateY(-4px) rotate(-18deg); opacity: .45; } 50% { transform: translateY(5px) rotate(24deg); opacity: .95; } }
+@keyframes chaos-cubie-rain { 0% { transform: translate(3px, -10px); opacity: 0; } 25% { opacity: .8; } 100% { transform: translate(-3px, 14px); opacity: 0; } }
+@keyframes chaos-cubie-hat { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes chaos-card-turn { 0%, 25%, 100% { transform: scaleX(1) rotate(-8deg); } 55% { transform: scaleX(.22) rotate(8deg); } 80% { transform: scaleX(1) rotate(4deg); } }
+@keyframes chaos-baton-conduct { 0%, 100% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 65% { transform: rotate(-2deg); } }
+@keyframes chaos-regalia-orbit { to { transform: rotate(360deg); } }
+@keyframes chaos-jewel-hover { 0%, 100% { transform: translateY(2px); } 50% { transform: translateY(-4px); } }
+@keyframes chaos-glass-flutter { 0%, 100% { transform: rotate(-3deg) scaleX(.94); } 50% { transform: rotate(4deg) scaleX(1.06); } }
+@keyframes chaos-jewel-light { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+@keyframes chaos-stitch-flow { to { stroke-dashoffset: -28; } }
+@keyframes chaos-star-dance { 0%, 100% { transform: rotate(-9deg) translateY(0); } 50% { transform: rotate(9deg) translateY(-3px); } }
+@keyframes chaos-heartbeat { 0%, 35%, 65%, 100% { transform: scale(1); } 45%, 55% { transform: scale(1.09); } }
+@keyframes chaos-royal-cape { 0%, 100% { transform: skewX(-1.5deg) scaleX(.98); } 50% { transform: skewX(1.5deg) scaleX(1.02); } }
+@keyframes chaos-crown-poise { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .cubie-custom-art[data-custom^="chaos_"] * { animation: none !important; }
+  .cubie-custom-art[data-custom^="chaos_"] .chaos-material-sheen { transform: translateX(65px); }
+}
+
+/* Swap Wild Card's symbol only during the completely hidden edge-on hold. */
+.chaos-wild-card { transform-box: fill-box; transform-origin: center; animation: chaos-wild-card-turn 5s ease-in-out infinite; }
+@keyframes chaos-wild-card-turn {
+  0%, 6% { transform: rotate(-8deg) scaleX(0); opacity: 0; }
+  7% { transform: rotate(-8deg) scaleX(0); opacity: 1; }
+  25%, 73% { transform: rotate(-8deg) scaleX(1); opacity: 1; }
+  93% { transform: rotate(-8deg) scaleX(0); opacity: 1; }
+  94%, 100% { transform: rotate(-8deg) scaleX(0); opacity: 0; }
+}
+html.account-reduced-motion .chaos-wild-card { animation: none !important; transform: rotate(-8deg); opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .chaos-wild-card { animation: none !important; transform: rotate(-8deg); opacity: 1; }
+}
+
+.jackpot-winner .chaos-card-flip { filter:drop-shadow(0 0 3px #ffe68a); }
+/* Geomayhem expedition hub. */
+#geomayhem-campaign { color: #c4ffe9; margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+#geomayhem-workshop { display: grid; gap: 8px; margin-bottom: 20px; }
+#geomayhem-workshop button { text-align: left; padding: 12px; border: 1px solid #52756c; border-radius: 8px; color: #eafff7; background: #19362c; font-size: 12px; }
+#geomayhem-workshop button:disabled { opacity: .55; cursor: default; }
+.difficulty-choice[data-campaign-locked="true"] { opacity: .45; }
+#geomayhem-run-info { margin: 6px 0 0; color: #b9dfd4; font-size: 10px; line-height: 1.35; }
+#geomayhem-reroll { margin-top: 12px; flex-shrink: 0; }
+
+/* Chunky pixel HUD inspired by classic voxel-game status panels. */
+#chaos-status-badges {
+  position: absolute; top: 48px; right: 8px;
+  z-index: 30; margin: 0; padding: 3px; list-style: none; display: grid; gap: 5px;
+  width: 154px; pointer-events: none;
+}
+#chaos-status-badges[hidden] { display: none; }
+#chaos-status-badges li {
+  display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 6px;
+  min-height: 30px; padding: 4px 6px; color: #f4f4ef; background: #292c29;
+  border: 2px solid #111510; border-radius: 0;
+  box-shadow: inset 2px 2px #70766b, inset -2px -2px #151915, 2px 2px #0009;
+  font: bold 11px/1.15 ui-monospace, monospace; text-shadow: 1px 1px #000;
+}
+#chaos-status-badges svg { width: 20px; height: 20px; fill: var(--effect-color); shape-rendering: crispEdges; }
+#chaos-status-badges small { color: #c2c8ba; font: inherit; font-size: 10px; }
+@media (max-width: 600px) {
+  #chaos-status-badges { width: 139px; gap: 3px; }
+  #chaos-status-badges li { min-height: 26px; padding: 3px 5px; font-size: 10px; gap: 4px; }
+}
+
+@media (max-height: 500px) {
+  #chaos-status-badges { width: 290px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.chaos-status-active .achievement-toasts { top: auto; bottom: 12px; left: auto; right: 12px; }
+
+/* Geomayhem: subtle silver motion grows into layered endgame effects. */
+.geo-signal { animation:geo-signal 3s ease-in-out infinite alternate; }
+@keyframes geo-signal { to { opacity:.5; } }
+.geo-hover { animation:geo-hover 3.8s ease-in-out infinite alternate; }
+@keyframes geo-hover { to { transform:translateY(-2.5px); } }
+.geo-plume { transform-origin:18px 94px; animation:geo-plume 1.4s ease-in-out infinite alternate; }
+@keyframes geo-plume { to { transform:scaleY(.7); opacity:.6; } }
+.geo-wing { transform-origin:60px 68px; animation:geo-wing 4s ease-in-out infinite alternate; }
+@keyframes geo-wing { to { transform:scaleX(.95) scaleY(1.025); } }
+.geo-orbit, .geo-orbit-reverse { transform-origin:60px 68px; animation:geo-orbit 32s linear infinite; }
+.geo-orbit-reverse { animation-duration:43s; animation-direction:reverse; }
+@keyframes geo-orbit { to { transform:rotate(360deg); } }
+.geo-aura { animation:geo-aura 4s ease-in-out infinite alternate; }
+@keyframes geo-aura { from { opacity:.5; } to { opacity:1; } }
+.geo-sparkle { animation:geo-sparkle 2.8s ease-in-out infinite alternate; }
+@keyframes geo-sparkle { from { opacity:.3; } to { opacity:1; filter:drop-shadow(0 0 1.5px #c6f9ff); } }
+.geo-shine { animation:geo-shine 7s ease-in-out infinite; }
+@keyframes geo-shine { 0%,15% { transform:translateX(0); } 65%,100% { transform:translateX(175px); } }
+@media (prefers-reduced-motion:reduce) { .geo-signal,.geo-hover,.geo-plume,.geo-wing,.geo-orbit,.geo-orbit-reverse,.geo-aura,.geo-sparkle,.geo-shine { animation:none; } }
+
+.chaos-status-active .now-playing {
+  left: max(8px, env(safe-area-inset-left)); right: auto; max-width: calc(100vw - 180px);
+}
+@media (max-height: 500px) {
+  .chaos-status-active .now-playing { max-width: calc(100vw - 320px); }
+}
+
+#chaos-status-badges.many-effects { width: min(290px, calc(100% - 16px)); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#geomayhem-boss { margin-top: 7px; color: #ffafb9; font-size: 11px; gap: 8px; }
+#geomayhem-boss[hidden] { display: none; }
+#geomayhem-boss-health { width: 45%; height: 8px; accent-color: #ff526a; }
+#geomayhem-upgrade-status { line-height: 1.4; }

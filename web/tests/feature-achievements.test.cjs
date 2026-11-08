@@ -9,15 +9,15 @@ const wrath = (difficulty, extra) => ({ mode: 'wrath', difficulty, over: false, 
   attacks_completed: 0, counter_hits: 0, damage_taken: 0, lives: 15, max_lives: 15, ...extra });
 
 test('catalog includes Determination, the named Rainbow wins, and the expanded Empyrorite rewards', () => {
-  assert.equal(catalog.length, 219);
-  assert.equal(new Set(catalog.map(item => item.id)).size, 219);
-  assert.equal(catalog.slice(74).length, 145);
+  assert.equal(catalog.length, 262);
+  assert.equal(new Set(catalog.map(item => item.id)).size, 262);
+  assert.equal(catalog.slice(74).length, 188);
   const victory = catalog.find(item => item.id === 'core_win');
   assert.equal(victory.title, 'My Fingers Hurt');
   assert.equal(victory.tier, 'rainbow');
   assert.equal(points.empyrorite, 7290);
   assert.equal(points.empyrorite, points.rainbow * 3);
-  assert.equal(catalog.filter(item => item.tier === 'empyrorite').length, 13);
+  assert.equal(catalog.filter(item => item.tier === 'empyrorite').length, 18);
   assert.equal(catalog.find(item => item.id === 'wrath_perfect_shuffle').tier, 'rainbow');
 });
 

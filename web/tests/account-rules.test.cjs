@@ -30,7 +30,7 @@ test('rules share actual catalog and keep reducer inputs immutable', () => {
   assert.equal(next.state.achievements.unlocked.welcome, new Date(now).toISOString());
   assert.equal(next.result.profilePoints, 10);
   assert.equal(Rules.catalog.length, Customs.catalog.length + Trails.catalog.length);
-  assert.equal(next.state.privacy.leaderboard, false);
+  assert.equal(next.state.privacy.leaderboard, true);
 });
 
 test('completed Hangman uses original achievements and reward rates exactly once', () => {
@@ -147,7 +147,7 @@ test('preferences conflict per field, validate ownership, and reject privilege c
   assert.throws(() => apply(state, 'settings', { changes: { player: 'Other' }, baseRevisions: { player: 0 } }), { code: 'conflict' });
   state = apply(state, 'settings', { changes: { leaderboard: true }, baseRevisions: { leaderboard: 0 } }).state;
   assert.equal(state.privacy.leaderboard, true);
-  assert.equal(state.privacy.publicProfile, false);
+  assert.equal(state.privacy.publicProfile, true);
   assert.throws(() => apply(state, 'settings', { changes: { turtleTrail: Trails.catalog[0].id } }), { code: 'not_owned' });
   assert.throws(() => apply(state, 'settings', { changes: { administrator: true } }), { code: 'invalid' });
   assert.throws(() => apply(state, 'settings', { changes: { player: '\n' }, baseRevisions: { player: 1 } }), { code: 'invalid' });
@@ -167,7 +167,7 @@ test('baseline imports are one-time, preserve selected names, and never create r
   assert.deepEqual(result.state.scores['hangman:easy'], [{ player: 'Alice', score: 8 }]);
   assert.deepEqual(result.state.shop.owned, [Trails.catalog[0].id]);
   assert.equal(result.state.achievements.unlocked.fake, undefined);
-  assert.equal(result.state.privacy.leaderboard, false);
+  assert.equal(result.state.privacy.leaderboard, true);
   assert.throws(() => apply(result.state, 'import', { profile: legacy, baseline: true }), { code: 'conflict' });
   assert.throws(() => apply(start(Rules.initial()), 'import', { profile: legacy, baseline: true }), { code: 'conflict' });
 });
@@ -273,4 +273,45 @@ test('replaying a pending award at later receipt times preserves earned dates', 
     for (const earnedAt of Object.values(first.state.achievements.unlocked))
       assert.equal(earnedAt, new Date(occurredAt).toISOString());
   }
+});
+
+test('Chaos Turtle Dodge saves under its own difficulty and earns its configured reward', () => {
+  const state = start(Rules.initial(), 'dodge', 'chaos');
+  const result = apply(state, 'run.finish', {outcome: 'loss', snapshot: {
+    mode: 'dodge', difficulty: 'chaos', over: true, won: false, score: 120,
+    elapsed: 12, lives: 0, max_lives: 8, damage_taken: 8,
+  }}, 'round-one');
+  assert.equal(result.state.scores['dodge:chaos'][0].score, 120);
+  assert.equal(result.state.scores['dodge:easy'], undefined);
+  const wallet = {units: 0, owned: []};
+  Shop.reward(wallet, 'dodge', 'chaos', 120);
+  assert.equal(result.result.cashUnits, wallet.units);
+});
+
+test('account checkpoints award Chaos Cubies and keep the unlocks on repeat sync', () => {
+  let state = start(Rules.initial(), 'dodge', 'chaos');
+  const snapshot = {over:false,won:false,elapsed:60,lives:8,max_lives:8,damage_taken:0,score:600,healing_collected:0,near_misses:10};
+  state = apply(state, 'run.checkpoint', {snapshot}, 'round-one').state;
+  assert.ok(state.achievements.unlocked.chaos_clean_60);
+  const stamp = state.achievements.unlocked.chaos_clean_60;
+  state = apply(state, 'run.checkpoint', {snapshot}, 'round-one').state;
+  assert.equal(state.achievements.unlocked.chaos_clean_60, stamp);
+  assert.equal(Customs.selected('chaos_pristine',state.achievements.unlocked).id,'chaos_pristine');
+});
+
+test('slot results sync only for an owned equipped Jackpot Cubie and visible 777', () => {
+  let state = Rules.initial();
+  state.achievements.unlocked.chaos_score_3000 = new Date(now).toISOString();
+  const payload = { event: 'slots', symbols: [0,0,0], visible: true };
+  state = apply(state, 'arcade', payload).state;
+  assert.ok(!state.achievements.unlocked.chaos_jackpot_777);
+  state.cubieCustom = 'chaos_jackpot';
+  state = apply(state, 'arcade', { ...payload, visible: false }).state;
+  assert.ok(!state.achievements.unlocked.chaos_jackpot_777);
+  state = apply(state, 'arcade', payload).state;
+  assert.ok(state.achievements.unlocked.chaos_jackpot_777);
+  const stamp = state.achievements.unlocked.chaos_jackpot_777;
+  state = apply(state, 'arcade', payload).state;
+  assert.equal(state.achievements.unlocked.chaos_jackpot_777, stamp);
+  assert.throws(() => apply(state, 'arcade', {...payload,symbols:[5,0,0]}), {code:'invalid'});
 });

@@ -147,10 +147,10 @@ class DifficultyTests(unittest.TestCase):
         self.assertTrue(game.rules.can_pause)
         self.assertFalse(game.rules.deadly_edges)
         self.assertEqual(dodge_score_file("easy"), DODGE_SCORE_FILE)
-        self.assertEqual(len({dodge_score_file(mode) for mode in DIFFICULTIES}), 5)
+        self.assertEqual(len({dodge_score_file(mode) for mode in DIFFICULTIES}), 6)
 
     def test_speed_increases_and_merciless_spawns_more_often(self):
-        games = [DodgeGame(difficulty=mode) for mode in DIFFICULTIES]
+        games = [DodgeGame(difficulty=mode) for mode in DIFFICULTIES if mode != "chaos"]
         for elapsed in (0, 30, 200):
             for game in games:
                 game.elapsed = elapsed
@@ -159,7 +159,7 @@ class DifficultyTests(unittest.TestCase):
             self.assertLess(games[-1].spawn_interval, games[-2].spawn_interval)
 
     def test_piece_colors_variation_and_sway(self):
-        for mode in DIFFICULTIES:
+        for mode in (key for key in DIFFICULTIES if key != "chaos"):
             game = DodgeGame(random.Random(42), difficulty=mode)
             for _ in range(20):
                 game.spawn()

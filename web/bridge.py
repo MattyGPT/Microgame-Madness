@@ -2,6 +2,8 @@
 
 import json
 import random
+from chaos_dodge import FIELD_RADII, FIELD_LABELS, field_mode, block_is_solid, FIRE_PATTERNS
+from chaos_dodge import CATALOG as CHAOS_BLOCKS, catalog as chaos_catalog
 
 from hangman_model import DIFFICULTY, HangmanGame, hangman_picture
 from keyboard_model import KeyboardRound, make_round
@@ -14,7 +16,7 @@ from singularity_practice import PRACTICE_ATTACKS, SingularityCutscene, Singular
 from singularity_core_view import draw_core
 from pumpkin_king_view import KingView
 from arcade_effects import DEATH_DURATION, death_pixels
-from geomayhem import Geomayhem, catalog as geomayhem_catalog
+from geomayhem import Geomayhem, LEVELS as GEOMAYHEM_LEVELS, catalog as geomayhem_catalog
 
 
 class DrawCanvas:
@@ -68,8 +70,9 @@ class BrowserGame:
         self.now = 0
         self.message = ""
 
-    def start(self, mode, difficulty, now, weapon="needle"):
+    def start(self, mode, difficulty, now, weapon="needle", campaign=None):
         self.mode, self.difficulty = mode, difficulty
+        self.geomayhem_background_pending = True
         self.paused = False
         self.completed = 0
         self.message = ""
@@ -79,9 +82,9 @@ class BrowserGame:
         self.death_sound_pending = False
         self.view = KingView(self.canvas, audio=False)
         if mode == "geomayhem":
-            if difficulty not in {f"level_{i}" for i in range(1, 11)}:
+            if difficulty not in {f"level_{i}" for i in range(1, len(GEOMAYHEM_LEVELS) + 1)}:
                 raise ValueError("Unknown Geomayhem level")
-            self.game = Geomayhem(int(difficulty.split("_")[1]), weapon)
+            self.game = Geomayhem(int(difficulty.split("_")[1]), weapon, campaign=campaign or {})
         elif mode == "hangman":
             rules = DIFFICULTY[difficulty]
             self.game = HangmanGame(random.choice(rules["words"]), rules["max_attempts"])
@@ -113,6 +116,8 @@ class BrowserGame:
         action = request["action"]
         now = float(request.get("now", self.now))
         self.now = now
+        if action == "chaos_options":
+            return chaos_catalog()
         if action == "geomayhem_options":
             return geomayhem_catalog()
         if action == "core_practice_options":
@@ -120,12 +125,14 @@ class BrowserGame:
                                  "name": ATTACKS[index].name, "hint": ATTACKS[index].hint}
                                 for key, index in PRACTICE_ATTACKS.items()]}
         if action == "start":
-            self.start(request["mode"], request.get("difficulty", "easy"), now, request.get("weapon", "needle"))
+            self.start(request["mode"], request.get("difficulty", "easy"), now, request.get("weapon", "needle"), request.get("campaign"))
         elif self.game is None:
             raise ValueError("Start a game first")
         elif self.mode == "geomayhem":
             if action == "upgrade" and not self.paused:
                 self.game.choose(request.get("choice"))
+            elif action == "reroll" and not self.paused:
+                self.game.reroll()
             elif action == "pause" and self.game.alive and not self.game.won and not self.game.offers:
                 self.paused = not self.paused
             elif action == "tick" and not self.paused:
@@ -164,7 +171,9 @@ class BrowserGame:
     def snapshot(self):
         game = self.game
         if self.mode == "geomayhem":
-            return game.snapshot(self.paused)
+            result = game.snapshot(self.paused, compact=True, include_background=self.geomayhem_background_pending)
+            self.geomayhem_background_pending = False
+            return result
         result = {"mode": self.mode, "difficulty": self.difficulty, "paused": self.paused,
                   "message": self.message, "sounds": [], "commands": []}
         if self.mode == "hangman":
@@ -245,10 +254,51 @@ class BrowserGame:
                     rect(pickup.x, pickup.y, 4, 12, "#ffffff")
                     rect(pickup.x, pickup.y, 12, 4, "#ffffff")
             else:
+                if game.difficulty == "chaos":
+                    result["sounds"].extend(game.chaos_sound_events)
+                    game.chaos_sound_events.clear()
+                    result.update(regen_in=game.regen_in, shield=game.shield,
+                                  invulnerable=game.invulnerable, burn_in=game.burn_in, poison_in=game.poison_in,
+                                  burn_ticks=game.burn_ticks, poison_ticks=game.poison_ticks,
+                                  haste_left=game.haste_left, frost_left=game.frost_left,
+                                  curse_left=game.curse_left, slowfall_left=game.slowfall_left, stasis_left=game.stasis_left, repellent_left=game.repellent_left, vertigo_left=game.vertigo_left)
                 for block in game.blocks:
+                    if game.difficulty == "chaos" and block.kind in FIRE_PATTERNS and block.flame_stage in (1, 2):
+                        warning = block.flame_stage == 1
+                        for ax, ay, bx, by in game.fire_rays(block):
+                            commands.append({"kind": "fire_ray", "role": "fire_warning" if warning else "fire_beam",
+                                             "coords": [ax, -ay, bx, -by], "warning": warning})
+                        if warning:
+                            commands.append({"kind": "text", "role": "fire_countdown", "coords": [block.x, -block.y-34],
+                                             "text": f"! FIRE {block.flame_left:.1f}s", "fill": "#ffeb90", "font": ["Arial", 15, "bold"]})
+                    if game.difficulty == "chaos" and block.warning_left > 0:
+                        tx, ty = block.teleport_target
+                        commands.append({"kind": "text", "role": "teleport_warning", "coords": [block.x, -block.y-block.size/2-13],
+                                         "text": "!!!", "fill": "#fff29e", "font": ["Arial", 19, "bold"]})
+                        commands.append({"kind": "oval", "role": "teleport_target", "coords": [tx-24, -ty-24, tx+24, -ty+24],
+                                         "fill": "", "outline": "#ff5479" if block.kind == "elite_glitch" else "#8be7ce", "width": 2})
+                        commands.append({"kind": "text", "coords": [tx, -ty-32], "text": f"! {block.warning_left:.1f}s",
+                                         "fill": "#fff29e", "font": ["Arial", 13, "bold"]})
+                    if game.difficulty == "chaos":
+                        radius = FIELD_RADII.get(block.kind, 65 if block.kind == "bomb" else 0)
+                        if radius:
+                            commands.append({"kind": "oval", "coords": [block.x-radius, -block.y-radius, block.x+radius, -block.y+radius],
+                                             "fill": "", "outline": block.color,
+                                             "width": 4 if block.kind == "bomb" and block.age >= 1.4 else 1})
+                    if game.difficulty == "chaos" and block.kind == "chaos_nexus":
+                        commands.append({"kind": "text", "role": "field_mode", "coords": [block.x, -block.y-block.size/2-14],
+                                         "text": FIELD_LABELS[field_mode(block)], "fill": block.color, "font": ["Arial", 12, "bold"]})
                     outline = block_outline_color(block.color)
                     for x, y in block.centers():
-                        rect(x, y, block.size, block.size, block.color, outline, BLOCK_OUTLINE_WIDTH)
+                        ghost = game.difficulty == "chaos" and not block_is_solid(block)
+                        rect(x, y, block.size, block.size, "" if ghost else block.color, block.color if ghost else outline, BLOCK_OUTLINE_WIDTH)
+                        if game.difficulty == "chaos":
+                            commands[-1].update(chaos_kind=block.kind, ghost=ghost)
+                    if game.difficulty == "chaos":
+                        info = CHAOS_BLOCKS[block.kind]
+                        commands.append({"kind": "block_icon", "coords": [block.x, -block.y],
+                                         "block": block.kind, "size": block.size*.82,
+                                         "ghost": ghost, "color": block.color, "age": block.age})
             if self.death_age is not None:
                 for x, y, size in death_pixels(game.x, game.y, self.death_age):
                     rect(x, y, size, size, "#ffffff")

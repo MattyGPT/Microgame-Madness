@@ -30,7 +30,10 @@ async function unlock(page) {
 async function choosePractice(page) {
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();
-  await page.locator('[data-difficulty="practice"]').click();
+  await expect(page.locator('[data-difficulty="practice"]')).toHaveCount(0);
+  await expect(page.locator('[data-difficulty="gravitron"]')).toBeVisible();
+  // Practice remains an internal test harness; it has no player-facing tab.
+  await page.evaluate(() => { selectGame('core_practice'); showGameArea(); });
   await expect(page.locator('#game-title')).toHaveText('Singularity Core Practice');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
 }
