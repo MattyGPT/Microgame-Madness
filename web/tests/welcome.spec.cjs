@@ -53,21 +53,33 @@ test('first visit introduces Cubie, saves guest preferences, then shows seven pl
   expect(errors).toEqual([]);
 });
 
-test('email creation validates codes, keeps progress, and continues to preferences before the tour', async ({page}) => {
+test('handle creation checks confirmation, keeps progress, and saves a recovery code before preferences', async ({page}) => {
   const service=await accountService(page);
   await welcome(page);await page.locator('#welcome-next').click();
-  await page.locator('#welcome-email').fill('new-player@example.test');
+  await expect(page.locator('#welcome-account input[type="email"]')).toHaveCount(0);
+  await page.locator('#welcome-handle').fill('new_player');
+  await page.locator('#welcome-password').fill('x'.repeat(73));
+  await page.locator('#welcome-confirm').fill('x'.repeat(73));
   await page.locator('#welcome-create').click();
-  await expect(page.locator('#welcome-code-form')).toBeVisible();
-  await page.locator('#welcome-code').fill('000000');
-  await page.locator('#welcome-code-form button[type="submit"]').click();
-  await expect(page.locator('#welcome-message')).toContainText('invalid or expired');
-  await page.locator('#welcome-code').fill('123456');
-  await page.locator('#welcome-code-form button[type="submit"]').click();
+  await expect(page.locator('#welcome-message')).toContainText('more than 72 bytes');
+  await expect(page.locator('#welcome-password')).toHaveValue('x'.repeat(73));
+  await page.locator('#welcome-password').fill('Unique game password 42!');
+  await page.locator('#welcome-confirm').fill('Different password 42!');
+  await page.locator('#welcome-create').click();
+  await expect(page.locator('#welcome-message')).toContainText('passwords do not match');
+  await page.locator('#welcome-confirm').fill('Unique game password 42!');
+  await page.locator('[data-password="welcome-password"]').click();
+  await expect(page.locator('#welcome-password')).toHaveAttribute('type','text');
+  await page.locator('#welcome-create').click();
   await expect(page.locator('#welcome-account-success')).toBeVisible();
+  await expect(page.locator('#welcome-recovery-step')).toBeVisible();
+  await expect(page.locator('#welcome-recovery-code')).not.toHaveValue('');
+  await expect(page.locator('#welcome-password')).toHaveValue('');
+  await expect(page.locator('#welcome-next')).toBeDisabled();
   await expect(page.locator('#welcome-tour')).toBeHidden();
   expect(await page.evaluate(()=>accountApp.signedIn)).toBe(true);
-  expect(service.email).toBe('new-player@example.test');
+  await page.locator('#welcome-recovery-saved').click();
+  await expect(page.locator('#welcome-recovery-code')).toHaveValue('');
   await page.locator('#welcome-next').click();
   await expect(page.locator('#welcome-preferences')).toBeVisible();
   await expect(page.locator('#welcome-sharing')).toBeChecked();

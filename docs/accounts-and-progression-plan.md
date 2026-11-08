@@ -1,7 +1,7 @@
 # Accounts and progression implementation plan
 
-Status: Implementation under code review; hosted rollout gates pending
-Date: November 7, 2026  
+Status: Handle/password implementation and hosted backend deployed; public rollout pending review
+Date: November 8, 2026
 Design: [Optional accounts and progression](accounts-and-progression-design.md)
 
 See [implementation status](accounts-implementation-status.md) for delivered scope, decisions, and remaining launch gates. The packages below retain the original review and acceptance checklist.
@@ -10,17 +10,31 @@ Build optional accounts and dependable saves first, then expand personal history
 
 This plan uses the design's recommended defaults as planning assumptions. It does not mark unresolved decisions approved. Design IDs `D01`–`D18` and acceptance IDs `A01`–`A30` refer to the specification. Gate G0 resolves the foundation decisions before implementation work depends on them. Future challenge and social features remain design work, not silently added first-release scope.
 
+## November 8 authentication revision
+
+The user has replaced email codes with handles and passwords and does not want real email addresses, phone numbers or real names collected. The auth client, welcome wizard and profile dialog now use handles and passwords. The packages below describe the implemented work; see the evidence and remaining operating gates in the implementation status. Existing save ownership, reducers, transactions, outbox, history and leaderboards should be reused.
+
+| Package | Change | Required evidence |
+| --- | --- | --- |
+| H0 — provider proof and contract | Choose a maintained username/password provider or validate a Supabase handle adapter using opaque synthetic provider identifiers. Specify session claims, password policy, recovery-code contract, handle normalization, abuse limits and provider log retention. Real-address fallback and outbound auth mail are prohibited. | Test-project proof of registration, anonymous conversion, login, refresh, password reset, revocation and deletion; no contact details requested or transmitted |
+| H1 — identity backend | Add unique canonical handles mapped to stable owner IDs, transactional reservation/conversion, rate-limited credential endpoints, one-use recovery verifiers, password reauthentication and session revocation. Keep password hashing with the selected auth implementation. | Concurrent duplicate handles, interrupted registration, generic login failures, recovery replay, deletion and authorization tests |
+| H2 — session adapter | Replace `requestCode`/`verifyCode` with register/login/change-password/recover operations; retain async-generation fences, owner isolation, logout and refresh behavior. Remove collected-email fields from cached session projections. | Another-device login, stale responses, tab races, offline queues and existing guest/account ownership tests |
+| H3 — both account UIs | Replace email and code forms in `web/accounts/app.js` and `web/accounts/welcome.js`. Add handle/password fields, accessible password visibility controls, password-manager support and a recovery-code save step. Keep guest play optional and complete. | Desktop/mobile/keyboard flows; no email prompts, email autocomplete, email resend controls, or misleading recovery promises |
+| H4 — integration and release | Update Auth fixtures, browser tests, privacy copy, the runbook and status report. Exercise actual hosted auth and separate Postgres connections. Inspect configured email providers/hooks and request logging for bypasses or unwanted collection. | Guest progress retained, cloud sync on another device, recovery and deletion verified, no credentials in exports/logs, no real-address signup path, release evidence recorded |
+
+H0 freezes the contract before dependent code changes. H1 and H2 can use separate ownership boundaries after H0; H3 follows the session contract; H4 integrates the complete flow. The previous P04/P07 email acceptance criteria are superseded. The detailed historical work packages remain useful for the save/backend foundation. Recovery codes are the recommended no-contact recovery mechanism and their UX remains reviewable.
+
 ## Deliverables and planning assumptions
 
 | Release | Deliverable | Boundary |
 | --- | --- | --- |
-| R1 | Optional email accounts, cloud progression/settings, transactional wallet, guest migration, minimal recent history, export/delete, existing casual rankings with participation controls | No seasons, friend system, replay verification, or new Singularity leaderboard |
+| R1 | Optional handle/password accounts, cloud progression/settings, transactional wallet, guest migration, minimal recent history, export/delete, existing casual rankings with participation controls | No seasons, friend system, replay verification, or new Singularity leaderboard |
 | R2 | Filtered history, personal statistics, pagination/nearby rank, opt-in profiles, seasons, richer moderation tools | No cross-game score aggregation or implied anti-cheat guarantee |
 | R3 | Separate reviewed designs for daily challenges, friends, showcases, or replay validation | No implementation assignment until each design is approved |
 
 Apply these assumptions consistently across work packages:
 
-- **D01–D03 and D12:** email codes first; optional guest/account ranking publication; editable nonunique names and opaque public identifiers; private history and profiles by default.
+- **D01–D03 and D12:** handle/password with no contact-detail collection; optional guest/account ranking publication; unique login handles, editable display nicknames and opaque public identifiers; private history and profiles by default.
 - **D04–D05:** one initial legacy baseline, closed after onboarding; later legacy imports can add permitted personal bests/unlocks but cannot add balances, cumulative counters, or streaks. Imported entitlements have casual provenance and confer no privileged role.
 - **D06:** account purchases require a connection and acknowledged balance. Guests retain local purchases; account earnings can queue offline.
 - **D07:** unfinished streaks stay within a tab's ordered stream and survive reloads. Earned achievements sync. Tabs have distinct streams, including when Duplicate Tab copies sessionStorage; streams never concatenate.
@@ -175,7 +189,7 @@ G2 uses a new-format guest with no legacy baseline to keep the first path narrow
 
 - Implement guest, anonymous-authenticated, permanent-account, refresh-required, and signed-out states, with generation checks for late async responses.
 - Adopt the old leaderboard session only through a supported, validated path. Preserve its user ID and pending queue; failed refresh must not silently create a replacement.
-- Implement email-code initiation/verification and same-identity anonymous upgrade, distinguishing existing-email conflicts from creating a new account.
+- Implement handle/password registration/login, recovery, and same-identity anonymous upgrade or reviewed ownership transfer. Distinguish handle reservation conflicts from signing into an existing account. Follow the auth revision packages below.
 - Coordinate new-account binding with the store and backend so local-only guest operations acquire their authenticated owner once through the explicit mapping. Preserve their original lineage; do not relabel operations at transmission time or discard them at sign-in.
 - Expose one auth authority to sync and leaderboards. Explicit guest leaderboard opt-in can create an anonymous identity; merely browsing rankings does not.
 - Cover resend/expiry/error behavior and cancellation without losing the guest save. SDK event callbacks must not create reentrant sign-in/refresh loops.
@@ -208,7 +222,7 @@ G2 uses a new-format guest with no legacy baseline to keep the first path narrow
 
 **Owner:** UI worker. **Dependencies:** P01 interfaces; P02/P04/P05 for integrated completion. **Owns:** `web/accounts/profile-ui.*`, dedicated CSS, isolated UI tests; coordinator edits main HTML/styles.
 
-- Add profile entry point, guest/save-progress/sign-in flows, email-code UI, save states, current appearance, basic recent results, and privacy/participation settings.
+- Add profile entry point, guest/save-progress/sign-in flows, handle/password and recovery UI, save states, current appearance, basic recent results, and privacy/participation settings.
 - Show confirmed versus pending Cash distinctly. Surface preference conflicts and local storage limitations with specific recovery actions.
 - Design imports and export/delete entry points around P08/P10 interfaces; keep unavailable functionality hidden or explicitly disabled until integrated.
 - Support keyboard focus restoration, status announcements without repeated chatter, mobile width, reduced motion, and mode-specific pause/defer behavior.
@@ -314,7 +328,7 @@ Do not expand the rollout until this path works. If hosted credentials are unava
 
 **Owner:** coordinator/operator. **Dependencies:** G3 for R1 or G4 for R2; D13/D17 resolved. **Owns:** deployment/runbook and environment changes within the eventual authorized rollout scope.
 
-- Rehearse additive migrations on an isolated environment with representative legacy rows, including backup restoration. Verify hosted email confirmation, expiry/resend, session adoption, account conversion, reauthentication, and revocation.
+- Rehearse additive migrations on an isolated environment with representative legacy rows, including backup restoration. Verify hosted registration, login, recovery-code expiry/replay policy, session adoption, account conversion, reauthentication, and revocation.
 - Test the actual packaged site under the repository subpath with allowed auth redirect URLs. Confirm that static-site deployment and backend deployment are separate controlled steps.
 - Deploy compatible backend support first, then disabled frontend flags, then enable for test accounts and a limited cohort. Observe pending queue age, rejection/import rates, purchase conflicts, and auth errors against agreed thresholds.
 - Define rollback actions per flag. Keep accepted wallet/import transactions and new-format records; disable unsafe mutations without reverting to an old whole-save writer. Test a mixed-client period explicitly.
@@ -361,7 +375,7 @@ npm run test:browser
 
 The implementation adds explicit commands for shared-rule parity, backend handler tests, real-Postgres transaction tests, and hosted integration; they do not exist yet. The coordinator owns these additions to `package.json`, lockfiles, and CI. Keep hosted credentials out of untrusted pull-request jobs, and make a skipped hosted suite visible rather than reporting it as passed.
 
-PGlite remains useful for migration and policy tests, but its existing auth fixture is deliberately minimal. It cannot alone prove provider linking, email delivery, session refresh/revocation, or multi-connection locking behavior. Extend fixture claims carefully and test all migrations in filename order as the current database suite does.
+PGlite remains useful for migration and policy tests, but its existing auth fixture is deliberately minimal. It cannot alone prove provider linking, credential/recovery behavior, session refresh/revocation, or multi-connection locking behavior. Extend fixture claims carefully and test all migrations in filename order as the current database suite does.
 
 For every gate, record the exact revision, applied migration set, contracts/version configuration, checks run, outcomes, unresolved defects, and owner of the next action. A worker's completion message is evidence for review, not release authorization.
 

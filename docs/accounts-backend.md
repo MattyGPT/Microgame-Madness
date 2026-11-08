@@ -1,20 +1,45 @@
 # Accounts backend operation
 
-The browser remains static. Supabase Auth provides email-code sessions, the `accounts` Edge Function validates and reduces operations with the same JavaScript catalogs as the browser, and Postgres commits state, history, wallet entries, and receipts atomically. Public ranking RPCs expose only a display name, score, placement, and opted-in public identifier. These are casual client-reported results, not replay-verified scores.
+Implemented November 8, 2026. Optional accounts now use handles and passwords without asking for real email addresses, phone numbers or names. Supabase Auth hashes passwords behind the trusted `identity` adapter; its internal identifiers use the reserved `.invalid` domain. Guest play remains available.
 
-The repository's backend connection settings are empty by default. Applying this code does not create or configure a Supabase project, send email, apply a production migration, or deploy a function.
+The browser stays static. The `accounts` Edge Function validates sessions and reduces operations using the browser's shared catalogs; Postgres commits state, history, wallet entries and receipts atomically. Public rankings are casual client-reported results, not replay-verified scores. See the [authentication contract](accounts-auth-contract.md) and [implementation evidence](accounts-implementation-status.md).
 
-## Setup
+## Selected deployment and setup
 
-1. Use a separate test project first. Apply all SQL files in `supabase/migrations/` in filename order, including `20261107000000_accounts.sql`. The migration is additive and preserves legacy scores.
-2. Enable anonymous sign-in and email sign-in. Configure email templates to display the code; anonymous conversion uses the email-change confirmation flow, while subsequent sign-in uses the email OTP flow. Configure production SMTP and Auth rate limits before public rollout. Test both flows using the deployed browser origin.
-3. From the repository root, deploy with `supabase functions deploy accounts --project-ref YOUR_TEST_PROJECT_REF`. This deploys `supabase/functions/accounts/`. Its imports reference the canonical repository `web/` catalogs and `shared/account-rules.js`; deploy from the repository with those files present. The function has no external SDK dependency. `supabase/config.toml` disables the legacy gateway JWT check because the handler authenticates every non-OPTIONS request through the project's `/auth/v1/user` endpoint before processing it.
-4. The function environment needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Supabase supplies these to hosted functions. Never put the service-role key in a browser config, build artifact, export, log, or Git commit.
-5. Set `ACCOUNTS_ALLOWED_ORIGINS` to a comma-separated list of exact origins, for example `https://mattygpt.github.io,http://localhost:8770`. Origins have no repository path or trailing slash. If omitted, CORS allows all origins, but every private operation still requires a valid user session. Configure production origins explicitly.
-6. Populate the browser's public connection configuration according to the application setup. Connect it only after the account migration and function are ready; empty connection settings leave cloud sign-in disabled. Verify the repository subpath and auth redirect settings where applicable.
-7. Run the hosted checks below before wider rollout. GitHub Pages deployment alone does not deploy the function or database.
+Only project `vikuhlqongfqwqhiwwxv` is authorized for these scripts. Seven migrations through `20261110000000_handle_accounts.sql` and both functions are deployed there. The tracked `leaderboard-config.json` remains empty; no GitHub Pages account activation is included. The local preview may use public connection values in ignored `dist/`.
 
-Provider setup references: [anonymous conversion](https://supabase.com/docs/guides/auth/auth-anonymous), [email codes](https://supabase.com/docs/guides/auth/auth-email-passwordless), and [function authentication](https://supabase.com/docs/guides/functions/auth).
+The owner-readable ignored `.env.supabase` supplies `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ACCESS_TOKEN`. Never print these values, add them to Git, include administrative keys in browser assets, or run credentialed checks in untrusted pull-request jobs.
+
+From the repository root:
+
+```sh
+npm run accounts:inspect
+npm run accounts:migrate
+node --env-file=.env.supabase scripts/hosted_accounts_admin.mjs configure
+npm run accounts:deploy -- identity
+npm run accounts:deploy -- accounts
+npm run test:accounts:hosted
+node --env-file=.env.supabase scripts/verify_hosted_accounts_browser.mjs
+node --env-file=.env.supabase scripts/verify_hosted_identity.mjs
+node --env-file=.env.supabase scripts/verify_hosted_pause.mjs
+```
+
+The helper validates the exact project URL and scopes every management path. Migration application is transactional, recorded with a SHA-256 checksum in the private `accounts_deploy.migrations` ledger, and skips matching applied files. It refuses changed applied migrations. Function deployment uploads an explicit source allowlist, including shared rules and the identity helper; environment files never enter the bundle. Both functions disable the legacy gateway JWT check and perform their own Auth/session verification.
+
+`configure` enables anonymous and password-capable email provider primitives, disables phone/OAuth entry points and phone/TOTP MFA, sets a minimum 12-character provider password, disables email notifications and enables two rejecting hooks:
+
+- `pg-functions://postgres/public/identity_before_user_created` rejects direct contact signup.
+- `pg-functions://postgres/public/identity_send_email` rejects every outbound email attempt.
+
+The deferred `auth.users` credential trigger additionally blocks contact fields and direct password/provider-identifier changes without a fresh server-only mutation ticket. It validates final transaction metadata because Auth updates password/email and metadata in separate statements. No SMTP setup is needed or permitted for this flow. The adapter enforces a 72-byte UTF-8 password ceiling to avoid bcrypt truncation.
+
+The allowlisted origins are `https://mattygpt.github.io`, `http://localhost:8777`, `http://127.0.0.1:8777`, and the hosted-browser test origin `http://127.0.0.1:8768`. Origins exclude repository paths. Browser automation verifies `/Microgame-Madness/` without publishing account configuration to Pages.
+
+Official provider references: [Auth hooks](https://supabase.com/docs/guides/auth/auth-hooks), [email hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook), and [Management API function deployment](https://supabase.com/docs/reference/api/v1-deploy-a-function).
+
+## Provider proof history
+
+The preserved `scripts/probe_supabase_auth.mjs` established anonymous conversion, password login, refresh, password replacement and deletion before deployment. It used disposable synthetic identifiers and printed stage descriptions only. The deployed credential guard intentionally rejects its old unrestricted administrative conversion path; use the current hosted verification scripts above. Its four local tests remain useful for cleanup/redaction behavior. The initial empty project had anonymous sign-in disabled; the user enabled it and later supplied management access. No other project was contacted by implementation deployment.
 
 ## Private protocol
 
@@ -26,7 +51,7 @@ Send JSON by POST to `/functions/v1/accounts`, using the publishable key as `api
 | `operations` | `operations`: 1–50 versioned semantic operations | Per-operation receipts plus latest state/revision/public ID |
 | `history` | Optional `limit` (1–100), opaque numeric `cursor`, `mode`, `difficulty`, `outcome` | `runs`, `next_cursor` |
 | `export` | None | Versioned state, all stored runs, and wallet records; no credentials |
-| `delete` | `confirmation: "DELETE"`; sign in again within ten minutes | `deleted: true` after private cleanup and Auth removal |
+| `delete` | `confirmation: "DELETE"`, `password`; current-password verification | `deleted: true` after private cleanup and Auth removal |
 
 Operations use `{id,kind,streamId,runId?,version:1,payload,occurredAt?}`. Occurrence timestamps describe private history and achievement dates; server receipt time alone determines seasons. Finite timestamps before 2000 or more than five minutes ahead of the server are normalized to receipt time and marked `timeAdjusted`, so a skewed device clock does not discard otherwise valid earnings. Missing timestamps use receipt time. The reducer also accepts the documented snake-case aliases. Terminal receipt states are `applied`, `duplicate`, or `rejected`; rejections contain `{code,message}`. Operations can declare up to 32 `dependsOn` operation IDs. A missing or rejected dependency returns nonterminal `blocked`; the dependent work remains pending while unrelated work can continue. Valid-envelope semantic rejections are durably remembered. Retry the same immutable operation after transient failures. HTTP 426 with code `unsupported_version` retains the queue until the client/server version mismatch is resolved. A previously used ID with a different payload returns `operation_conflict`.
 
@@ -38,7 +63,7 @@ All account tables live in an unexposed `accounts_private` schema, with row-leve
 
 The gateway uses the shared reducer and validated caller, then a database commit compares the exact profile revision. The same transaction records the result, final run, wallet delta, import receipt, best score, and applicable seasonal score. A separate unique `(owner, run_id)` history key protects finalization independently of operation IDs. Profile locks serialize commits; stale revisions must be recomputed.
 
-Accepted and terminally rejected operations are limited to 600 new receipts per account per minute. Requests are limited to 1 MiB, including streamed requests without Content-Length; individual operations are also limited by the reducer. Protect anonymous signup and email sending with Auth's separate rate limits. Database RPCs cannot authenticate an operator merely from a client-supplied tester flag.
+Accepted and terminally rejected operations are limited to 600 new receipts per account per minute. Requests are limited to 1 MiB, including streamed requests without Content-Length; individual operations are also limited by the reducer. Protect anonymous signup and refresh with Auth's separate rate limits; email sending is rejected by the hook. Credential attempts have durable action/network/handle-or-owner counters, retaining only salted hashes for at most two days of activity. Database RPCs cannot authenticate an operator merely from a client-supplied tester flag.
 
 The original `get_leaderboard` response shape remains compatible. Its visibility filter now honors opt-out, suppression, and deletion. Once an account profile exists, its results must use the trusted operation path; the legacy submit RPC rejects writes from that identity. Legacy guest identities without a profile retain the earlier casual-score behavior.
 
@@ -87,13 +112,8 @@ If rollback is needed, disable the affected writes and keep the new schema and r
 
 ## Validation and release evidence
 
-Local checks implemented here:
+Local checks cover all migrations in PGlite, identity/account handlers, durable browser/session state, and desktop/mobile account flows. `deno check supabase/functions/accounts/index.ts supabase/functions/identity/index.ts` verifies both entry points.
 
-```sh
-node --test web/tests/accounts-database.test.cjs web/tests/accounts-handler.test.cjs
-deno check supabase/functions/accounts/index.ts
-```
+The hosted scripts use disposable generated identities and cleanup on failure. They verify guest ownership, actual cloud sync/history/settings, public rankings, committed-response loss/retry, overlapping Postgres connections, concurrent spending, refresh/revocation, one-use recovery, password changes and deletion. Browser checks use real Auth/Edge requests at a repository subpath. No hosted credential screenshots, traces, or response payloads are recorded.
 
-Database tests exercise the actual migrations with browser/service roles, immutable receipts, stale purchase revisions, independent run finalization, history pagination, import restrictions, public visibility, seasons, moderation, and deletion. Handler tests cover token validation, owner forgery, bounded bodies, CAS retry, canonical operation digests, rejection receipts, CORS, and interrupted deletion. The database tests use PGlite; they do not claim to test simultaneous networked Postgres connections. On the development machine, PostgreSQL client tools were available but no server binaries were installed, and access to the Docker daemon was denied; real multi-connection tests remain pending rather than reported as passed.
-
-Before production, use a real test project and two browser contexts to verify email delivery/expiry/resend, anonymous-to-permanent linking, login on another device, refresh/revocation, simultaneous spending, response loss/retry, import recovery, deletion reauthentication, and the deployed repository subpath. Confirm service RPC grants in the hosted environment and verify no private/service keys appear in `dist/`. Test backup restore and assign an operating owner. Local mock/Auth tests are not a substitute for this release gate.
+Operational release limits remain explicit: no provider backup was listed at inspection, PITR was disabled, no restore rehearsal was performed, and platform request-log retention/moderation ownership still require review before public activation. PostgreSQL Auth audit logging is disabled; this does not erase infrastructure logs. Existing run/wallet storage remains unbounded until deletion. An uncertain recovery can consume its code before password mutation completes; see the authentication contract for the fail-closed limitation. Public Pages account activation and merging are separate review steps.

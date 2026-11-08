@@ -2,3 +2,6 @@
 # Disabling the legacy gateway JWT check supports current publishable keys.
 [functions.accounts]
 verify_jwt = false
+
+[functions.identity]
+verify_jwt = false

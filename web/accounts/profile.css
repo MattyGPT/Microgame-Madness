@@ -79,3 +79,10 @@ html.account-reduced-motion *, html.account-reduced-motion *::before, html.accou
 
 .welcome-footer { position: sticky; bottom: -26px; z-index: 2; padding-bottom: 16px; background: #151e21; box-shadow: 0 -12px 18px #151e21; }
 @media (max-width: 600px) { .welcome-footer { bottom: -16px; } }
+
+.account-password { display: flex; align-items: stretch; gap: .5rem; margin: .4rem 0 .8rem; }
+.account-password input { min-width: 0; flex: 1; margin-top: 0 !important; }
+.account-password button { flex: 0 0 auto; }
+.account-recovery { border: 2px solid #b9ed91 !important; border-radius: 10px; padding: 1rem; background: #20372b; }
+.account-recovery input { font-family: monospace !important; font-size: .9rem !important; overflow-wrap: anywhere; }
+.account-recovery p { color: #e1f2df; }
