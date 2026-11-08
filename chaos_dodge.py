@@ -7,6 +7,21 @@ BLOCK_TYPES = (
     ('wild_seven', 'Wild Seven block', '#63d9ed', '7', 0, 'Rare', '7 contact damage. Spawns 0.8% of the time. Same random colors, shapes, sizes, speeds and sway as Wild, identified by its 7 symbol. Shields and hit protection still work.'),
     ('gravity_well', 'Gravity Well block', '#b79aff', 'GW', 2.5, 'Rare', 'Pulls both you and nearby blocks inward within a large 300-unit ring. 1 contact damage. Repellent protects you from the pull.'),
     ('force_wave', 'Force Wave block', '#80e4db', 'FW', 2.5, 'Rare', 'Pushes both you and nearby blocks outward within a large 300-unit ring. 1 contact damage. Repellent protects you from the push.'),
+    ('steaming', 'Steaming block', '#c7b6a6', 'SM', 4, 'Rare', '1 contact damage. Its small 60-unit steam radius poisons you: 1 damage every 3 seconds, lasting 9 seconds after you leave.'),
+    ('electric', 'Electric block', '#ffe85b', 'EL', 4, 'Rare', '1 contact damage. Its small 60-unit radius grants Haste: 45% faster movement, lasting 4 seconds after you leave.'),
+    ('stinky', 'Stinky block', '#a6c65c', 'SK!', 4, 'Rare', '1 contact damage. Its small 60-unit stink radius poisons you: 1 damage every 3 seconds, lasting 9 seconds after you leave.'),
+    ('chilly', 'Chilly block', '#a5e8ff', 'CH', 4, 'Rare', '1 contact damage. Its small 60-unit radius applies Frost: half movement speed, lasting 2.5 seconds after you leave.'),
+    ('ricochet_shield', 'Ricochet Shield', '#80f3d4', 'RS', 2, 'Rare', 'A harmless pickup: grants one shield and instantly reflects Blaster pellets within 140 units away from you. Reflected pellets turn mint green and cannot hurt you.'),
+    ('blaster', 'Blaster block', '#d0a375', 'BL', 0, 'Uncommon', '5% of spawns. Falls at 75% of Normal base speed. Fires 0.5-damage pellets every 0.3–0.9 seconds. Starts with one of eight cannon directions; each extra cannon has a 40% chance, up to eight. 30% rotate slowly, equally likely clockwise or counterclockwise. Body contact deals 1 damage.'),
+    ('fan', 'Fan block', '#9ebacb', 'FN', 4, 'Rare', 'One square with three extra-long spinning blades (3x their original length). Spins 10% slower: one rotation every 2.67 seconds. Body or blade contact deals 1 damage; the fan persists.'),
+    ('leafy', 'Leafy block', '#7ecb76', 'LF', 5, 'Uncommon', 'Wild-shaped, harmless and pass-through. Slows your movement by 50% only while overlapping it.'),
+    ('turbo', 'Turbo block', '#ffd46b', 'TB', 5, 'Uncommon', 'Wild-shaped, harmless and pass-through. Speeds your movement up by 50% only while overlapping it.'),
+    ('elite_leafy', 'Elite Leafy block', '#4eab79', 'ELF', 2, 'Rare', 'Wild-shaped, harmless and pass-through. Slows you and other blocks by 50% only while overlapping it. Its inside color changes every 0.1 seconds.'),
+    ('elite_turbo', 'Elite Turbo block', '#f0a95c', 'ETB', 2, 'Rare', 'Wild-shaped, harmless and pass-through. Speeds you and other blocks up by 50% only while overlapping it. Its inside color changes every 0.1 seconds.'),
+    ('spike', 'Spike', '#b8bcc9', 'SP', 5, 'Uncommon', 'Solid like Pusher, at the same speed. Its top spike deals 1 damage; sides and underside push harmlessly. Being pushed against a wall deals 1 damage.'),
+    ('thunder', 'Thunder Block', '#343b4c', 'TH!', 4, 'Rare', 'Pass through its body harmlessly without breaking it. Every 1 second, yellow exclamation marks warn for 0.25 seconds, then lightning flashes below for 0.25 seconds. The strike is one block wide and twice as tall: 2 damage and 1 second of Haste.'),
+    ('mystery', 'Mystery block', '#a6a6ad', '?', 5, 'Uncommon', 'A gray question-mark block. Reveals a random block when you come within 120 units. Can become any other block, including newly added types, but never another Mystery block.'),
+    ('pusher', 'Pusher block', '#e6b45e', 'PU', 5, 'Uncommon', 'Solid: pushes you without contact damage. Deals 3 damage when it pushes you against a wall. Falls 20% slower than Wild base speed. Shields and hit protection block crush damage.'),
     ('weak', 'Weak block', '#c1cbd3', '·', 15, 'Common', 'Harmless: crumbles on contact. Practice slipping through.'),
     ('fire', 'Fire block', '#ff8a42', 'F', 8, 'Uncommon', '1 damage, then burns for 1 damage after 2 and 4 seconds.'),
     ('poison', 'Poison block', '#b2e85b', 'P', 7, 'Uncommon', '1 damage, then poison deals 1 damage every 3 seconds for 9 seconds.'),
@@ -79,21 +94,113 @@ BLOCK_TYPES = (
     ('vertigo', 'Vertigo block', '#e4a2f1', 'VT', 3, 'Rare', '1 damage and reverses your movement controls for 3 seconds. A shield prevents both. Mender and Sanctuary clear the reversal.'),
     ('comet', 'Comet block', '#81b6ff', '*', 6, 'Uncommon', 'Accelerates as it falls, up to the Chaos speed limit. 1 damage.'),
 )
-# Keep Wild Seven at exactly 0.8% as the rest of the catalogue grows.
-_wild_seven_weight = sum(row[4] for row in BLOCK_TYPES if row[0] != 'wild_seven') * .008 / .992
-BLOCK_TYPES = tuple(row[:4] + (_wild_seven_weight,) + row[5:] if row[0] == 'wild_seven' else row for row in BLOCK_TYPES)
+# Additional blocks share explicit behavior tables with their guide metadata.
+EXPANSION_TYPES = (
+    ('bandage', 'Bandage', '#f4d8bc', 'BD', 2, 'Rare', 'Harmless pickup: Restores 1 HP. A small, fast-falling pickup.'),
+    ('medkit', 'Medkit', '#f09fa9', 'MK', 2, 'Rare', 'Harmless pickup: Restores 2 HP and clears Frost.'),
+    ('detox', 'Detox', '#b0e99b', 'DX', 2, 'Rare', 'Harmless pickup: Clears poison and restores 0.5 HP.'),
+    ('coolant', 'Coolant', '#91dcea', 'CO', 2, 'Rare', 'Harmless pickup: Extinguishes burning and slows falling blocks by 40% for 2 seconds.'),
+    ('compass', 'Compass', '#e5ce9a', 'CP', 2, 'Rare', 'Harmless pickup: Clears reversed controls and grants 2 seconds of field immunity.'),
+    ('battery', 'Battery', '#d8ed7e', 'BT', 2, 'Rare', 'Harmless pickup: Grants a shield and 3 seconds of Haste.'),
+    ('snowglobe', 'Snowglobe', '#a9ceff', 'SG', 2, 'Rare', 'Harmless pickup: Stops vertical block movement for 0.75 seconds and slows falling blocks for 3 seconds.'),
+    ('sweeper', 'Sweeper', '#81e5c9', 'SW', 2, 'Rare', 'Harmless pickup: Clears all pellets within 180 units and restores 1 HP.'),
+    ('oasis', 'Oasis', '#8ce2b0', 'OA', 2, 'Rare', 'Harmless pickup: Restores 1 HP and delays the next spawn until at least 2 seconds away.'),
+    ('clean_slate', 'Clean Slate', '#dbe9f4', 'CL', 2, 'Rare', 'Harmless pickup: Clears burning, poison, Frost, Curse and reversed controls; grants 0.75 seconds of contact protection.'),
+    ('cinder', 'Cinder', '#e98b68', 'CI', 2, 'Rare', '.5 contact damage, then burns for 1 damage after 2, 4 and 6 seconds.'),
+    ('spore', 'Spore', '#b6c979', 'SO', 2, 'Rare', '.5 contact damage, then poison deals 1 damage every 3 seconds for 12 seconds.'),
+    ('sleet', 'Sleet', '#9bbdeb', 'SL', 2, 'Rare', '1 damage, 3 seconds of Frost, and 2 seconds of Curse, making falling blocks 40% faster.'),
+    ('dizzy', 'Dizzy', '#cfa4e9', 'DZ', 2, 'Rare', '.5 damage and reversed controls for 5 seconds.'),
+    ('leech', 'Leech', '#ae7d9d', 'LE', 2, 'Rare', '2 damage and delays the next natural heal to 16 seconds away.'),
+    ('overload', 'Overload', '#efca73', 'OV', 2, 'Rare', '1 damage, 2 seconds of Haste, and 3 seconds of Curse.'),
+    ('nullifier', 'Nullifier', '#a0a2bd', 'NU', 2, 'Rare', 'Removes your shield, Haste, Hourglass and Stasis, then deals 1 damage. Hit protection still blocks the damage.'),
+    ('glass', 'Glass', '#b4e5ed', 'GL', 1.5, 'Rare', 'A small, slow but dangerous crystal: 4 damage on contact.'),
+    ('dart', 'Dart', '#e5b17e', 'DA', 2, 'Rare', 'A tiny straight-falling dart at 2.8x Chaos base speed. .5 damage.'),
+    ('anvil', 'Anvil', '#9b9da8', 'AN', 2, 'Rare', 'A large weight: 0.4x base falling speed for 1.2 seconds, then 2.4x. 2 damage.'),
+    ('lantern', 'Lantern', '#edcf86', 'LA', 2, 'Rare', 'A slow glowing lantern at 0.3x base falling speed, swaying gently. 1 damage.'),
+    ('sawtooth', 'Sawtooth', '#d9a195', 'SAW', 2, 'Rare', 'Reverses horizontal direction every 0.25 seconds at 180 units per second. 1 damage.'),
+    ('waltz', 'Waltz', '#bc9be6', 'WA', 2, 'Rare', 'Sweeps 95 units sideways with a slow one-radian-per-second sway, falling at 0.7x base speed. 1 damage.'),
+    ('boomerang', 'Boomerang', '#dfb88a', 'BM', 2, 'Rare', 'After 1 second, rises for 1.2 seconds once before falling again. 1 damage.'),
+    ('blink', 'Blink', '#a8b7e8', 'BK', 2, 'Rare', 'Solid for 0.4 seconds, then harmless for 0.8 seconds. Repeats. 1 damage when solid.'),
+    ('hopper', 'Hopper', '#a4d98b', 'HP', 2, 'Rare', 'Bounces upward twice at the floor before falling out. 1 damage.'),
+    ('crossbow', 'Crossbow', '#d5ad83', 'CB', 2, 'Rare', 'Four fixed cardinal cannons fire .5-damage pellets every 1.2 seconds. 1 body contact damage.'),
+    ('diagonal', 'Diagonal Turret', '#c1a2d4', 'DT', 2, 'Rare', 'Four diagonal cannons fire .5-damage pellets every 1.5 seconds. 1 body contact damage.'),
+    ('spinner', 'Spinner', '#d5a2b8', 'SPN', 2, 'Rare', 'One cannon rotates once every 4 seconds, firing a .5-damage pellet every 0.5 seconds. 1 body contact damage.'),
+    ('scatter', 'Scatter Cannon', '#e8ba7d', 'SC', 2, 'Rare', 'Three cannons spread 45 degrees apart, choosing a new direction for each .5-damage volley every 0.9 seconds. 1 body contact damage.'),
+)
+BLOCK_TYPES += EXPANSION_TYPES
+PICKUP_EFFECTS = {
+    'bandage': {'heal': 1},
+    'medkit': {'heal': 2, 'clear': ('frost_left',)},
+    'detox': {'heal': 0.5, 'clear': ('poison_ticks', 'poison_in')},
+    'coolant': {'clear': ('burn_ticks', 'burn_in'), 'timers': {'slowfall_left': 2}},
+    'compass': {'clear': ('vertigo_left',), 'timers': {'repellent_left': 2}},
+    'battery': {'shield': True, 'timers': {'haste_left': 3}},
+    'snowglobe': {'timers': {'stasis_left': 0.75, 'slowfall_left': 3}},
+    'sweeper': {'heal': 1, 'clear_pellets': 180},
+    'oasis': {'heal': 1, 'delay': 2},
+    'clean_slate': {'clear': ('burn_ticks', 'burn_in', 'poison_ticks', 'poison_in', 'frost_left', 'curse_left', 'vertigo_left'), 'timers': {'invulnerable': 0.75}},
+}
+CONTACT_EFFECTS = {
+    'cinder': {'damage': 0.5, 'burn': 3},
+    'spore': {'damage': 0.5, 'poison': 4},
+    'sleet': {'damage': 1, 'timers': {'frost_left': 3, 'curse_left': 2}},
+    'dizzy': {'damage': 0.5, 'timers': {'vertigo_left': 5}},
+    'leech': {'damage': 2, 'regen': 16},
+    'overload': {'damage': 1, 'timers': {'haste_left': 2, 'curse_left': 3}},
+    'nullifier': {'damage': 1, 'strip': True},
+    'glass': {'damage': 4},
+}
+MOTION_BLOCKS = {
+    'dart': {'size': 18, 'speed': 2.8, 'sway': 0, 'damage': 0.5},
+    'anvil': {'size': 52, 'speed': 0.4, 'sway': 0, 'damage': 2},
+    'lantern': {'size': 30, 'speed': 0.3, 'sway': 18, 'damage': 1},
+    'sawtooth': {'size': 28, 'speed': 1, 'sway': 0, 'damage': 1},
+    'waltz': {'size': 32, 'speed': 0.7, 'sway': 95, 'damage': 1},
+    'boomerang': {'size': 28, 'speed': 1, 'sway': 25, 'damage': 1},
+    'blink': {'size': 30, 'speed': 0.8, 'sway': 0, 'damage': 1},
+    'hopper': {'size': 28, 'speed': 1.2, 'sway': 0, 'damage': 1},
+}
+TURRET_BLOCKS = {
+    'crossbow': {'angles': (0, 2, 4, 6), 'interval': 1.2, 'spin': 0},
+    'diagonal': {'angles': (1, 3, 5, 7), 'interval': 1.5, 'spin': 0},
+    'spinner': {'angles': (0,), 'interval': 0.5, 'spin': 1.5707963267948966},
+    'scatter': {'angles': (7, 0, 1), 'interval': 0.9, 'spin': 0},
+}
+
+# Preserve fixed spawn shares as the catalog grows.
+_fixed_chances = {'wild_seven': .008, 'blaster': .05}
+_total_weight = sum(row[4] for row in BLOCK_TYPES if row[0] not in _fixed_chances) / (1-sum(_fixed_chances.values()))
+BLOCK_TYPES = tuple(row[:4] + (_total_weight*_fixed_chances[row[0]],) + row[5:]
+                    if row[0] in _fixed_chances else row for row in BLOCK_TYPES)
 CATALOG = {row[0]: dict(zip(('id', 'name', 'color', 'symbol', 'weight', 'rarity', 'description'), row)) for row in BLOCK_TYPES}
-SAFE_BLOCKS = frozenset(('sanctuary', 'weak', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'curse', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby'))
+SAFE_BLOCKS = frozenset(('ricochet_shield', 'sanctuary', 'weak', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'curse', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby'))
+SAFE_BLOCKS = SAFE_BLOCKS | frozenset(PICKUP_EFFECTS)
 FIRE_PATTERNS = {'fire_x': ((1, 1), (-1, 1), (1, -1), (-1, -1)),
                  'fire_plus': ((1, 0), (-1, 0), (0, 1), (0, -1))}
 FIRE_PATTERNS['fire_star'] = FIRE_PATTERNS['fire_x'] + FIRE_PATTERNS['fire_plus']
+
+PASS_THROUGH_SPEEDS = {'leafy': .5, 'turbo': 1.5, 'elite_leafy': .5, 'elite_turbo': 1.5}
+
+AURA_EFFECTS = {'steaming': 'poison', 'electric': 'haste', 'stinky': 'poison', 'chilly': 'frost'}
+AURA_RADIUS = 60
+
+PUSH_PULL_STRENGTH = 1.5
 
 FIELD_MODES = ('pull_player', 'push_player', 'pull_blocks', 'push_blocks')
 FIELD_LABELS = dict(zip(FIELD_MODES, ('PULL YOU', 'PUSH YOU', 'PULL BLOCKS', 'PUSH BLOCKS')))
 FIELD_RADII = {'vortex': 200, 'gravity_well': 300, 'force_wave': 300, 'black_hole': 130, 'repulsor': 120, 'block_attractor': 220, 'block_repulsor': 220, 'chaos_nexus': 480}
 
 
+def elite_fill_color(block):
+    if block.kind not in ('elite_leafy', 'elite_turbo'):
+        return block.color
+    colors = ('#61c9b5', '#779ed5', '#b58bc9', '#cf9894', '#c6b76d', '#8cbb79')
+    return colors[int((block.age+1e-9)*10) % len(colors)]
+
+
 def block_is_solid(block):
+    if block.kind == 'thunder' or block.kind in PASS_THROUGH_SPEEDS: return False
+    if block.kind == 'blink': return (block.age+1e-9) % 1.2 < .4
     if block.kind == 'ghost': return block.age % 3 < 2
     if block.kind == 'phase': return block.age % 3 < 1
     return True
@@ -128,7 +235,11 @@ def catalog():
         game.spawn_chaos(kind)
         block = game.blocks[0]
         result.append(dict(item, chance=round(item['weight'] / total * 100, 1),
-                           preview_cells=block.cells, preview_size=block.cell_size, preview_color=block.color))
+                           preview_cells=block.cells, preview_size=block.cell_size, preview_color=block.color,
+                           preview_speed=game.chaos_fall_speed(block), preview_cannons=block.cannons,
+                           preview_rotation_speed=block.rotation_speed,
+                           preview_shot_interval=TURRET_BLOCKS.get(kind, {}).get('interval'),
+                           helpful=kind in SAFE_BLOCKS and kind not in ('weak', 'curse')))
     return result
 
 
@@ -143,6 +254,7 @@ class ChaosRules:
         self.curse_left = self.slowfall_left = self.stasis_left = 0.0
         self.repellent_left = self.vertigo_left = 0.0
         self.chaos_sound_events = []
+        self.pellets = []
         self.shield = False
         self.spawn_in = 1.6
 
@@ -164,13 +276,16 @@ class ChaosRules:
         return f"Chaos · Heal +1 in {math.ceil(self.regen_in)}s · " + (' / '.join(effects) or 'Collect hearts, shields and antidotes; lightning hurts')
 
     def spawn_chaos(self, kind=None):
-        from dodge_model import Block, CELL, SHAPES, COLORS
         if len(self.blocks) >= 80:
             return
         kind = kind or self.rng.choices(list(CATALOG), weights=[v['weight'] for v in CATALOG.values()])[0]
+        self.blocks.append(self.make_chaos_block(kind))
+
+    def make_chaos_block(self, kind):
+        from dodge_model import Block, CELL, SHAPES, COLORS
         info = CATALOG[kind]
         cells = tuple((i, 0) for i in range(6)) if kind == 'long' else self.rng.choice(SHAPES + NEW_SHAPES)
-        if kind in ('vortex', 'pinball', 'sanctuary', 'vertigo', 'fire_x', 'fire_plus', 'fire_star', 'gravity_well', 'force_wave', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby', 'rocket', 'parachute', 'corkscrew', 'boulder', 'mender', 'stasis', 'venom_fang', 'block_attractor', 'block_repulsor', 'chaos_nexus', 'black_hole', 'repulsor', 'heal', 'shield', 'haste', 'bomb', 'doom', 'antidote', 'sonic', 'snail', 'hourglass', 'bubble', 'heartburst', 'shatter', 'curse', 'glitch', 'elite_glitch'):
+        if kind in PICKUP_EFFECTS or kind in CONTACT_EFFECTS or kind in MOTION_BLOCKS or kind in TURRET_BLOCKS or kind in AURA_EFFECTS or kind in ('ricochet_shield', 'blaster', 'fan', 'spike', 'thunder', 'mystery', 'pusher', 'vortex', 'pinball', 'sanctuary', 'vertigo', 'fire_x', 'fire_plus', 'fire_star', 'gravity_well', 'force_wave', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby', 'rocket', 'parachute', 'corkscrew', 'boulder', 'mender', 'stasis', 'venom_fang', 'block_attractor', 'block_repulsor', 'chaos_nexus', 'black_hole', 'repulsor', 'heal', 'shield', 'haste', 'bomb', 'doom', 'antidote', 'sonic', 'snail', 'hourglass', 'bubble', 'heartburst', 'shatter', 'curse', 'glitch', 'elite_glitch'):
             cells = ((0, 0),)
         for _ in range(self.rng.randrange(4)):
             cells = tuple((-y, x) for x, y in cells)
@@ -183,6 +298,14 @@ class ChaosRules:
         if kind in ('sonic', 'snail'): speed = 1
         if kind in ('glitch', 'elite_glitch'): speed = .8
         if kind in FIRE_PATTERNS: cell, speed = 32, 1
+        if kind in AURA_EFFECTS: cell, speed = 32, 1
+        if kind == 'mystery': cell, speed = 32, 1
+        if kind in ('pusher', 'spike'): cell, speed = 38, .8
+        if kind in ('ricochet_shield', 'thunder', 'fan', 'blaster') or kind in PASS_THROUGH_SPEEDS: cell, speed = 32, 1
+        if kind in PICKUP_EFFECTS or kind in CONTACT_EFFECTS or kind in TURRET_BLOCKS: cell, speed = 28, .9
+        if kind == 'bandage': cell, speed = 22, 1.4
+        if kind == 'glass': cell, speed = 20, .6
+        if kind in MOTION_BLOCKS: cell, speed = MOTION_BLOCKS[kind]['size'], MOTION_BLOCKS[kind]['speed']
         if kind == 'chaos_nexus': cell = 38
         if kind == 'drill': cell, speed = 18, 3.4
         if kind == 'ribbon': cell, speed = 20, .8
@@ -215,7 +338,42 @@ class ChaosRules:
         if kind in FIRE_PATTERNS:
             block.x = (self.left+self.right)/2
             block.sway_amplitude = 0
-        self.blocks.append(block)
+        if kind in ('mystery', 'thunder'): block.sway_amplitude = 0
+        if kind == 'blaster':
+            directions = list(range(8))
+            self.rng.shuffle(directions)
+            count = 1
+            while count < 8 and self.rng.random() < .4:
+                count += 1
+            block.cannons = tuple(direction*math.pi/4 for direction in directions[:count])
+            block.rotation_speed = self.rng.choice((-1, 1))*math.tau/12 if self.rng.random() < .3 else 0
+            block.shot_in = self.rng.uniform(.3, .9)
+            block.sway_amplitude = 0
+        if kind in MOTION_BLOCKS: block.sway_amplitude = MOTION_BLOCKS[kind]['sway']
+        if kind == 'sawtooth': block.velocity_x = self.rng.choice((-180, 180))
+        if kind in TURRET_BLOCKS:
+            config = TURRET_BLOCKS[kind]
+            block.cannons = tuple(a*math.pi/4 for a in config['angles'])
+            block.shot_in = config['interval']
+            block.rotation_speed = config['spin']
+            block.sway_amplitude = 0
+        return block
+
+    def reveal_mystery(self, block):
+        if block.kind != 'mystery' or math.hypot(self.x-block.x, self.y-block.y) > 120:
+            return False
+        # Derive candidates at reveal time: new catalog entries need no extra list.
+        kind = self.rng.choice(tuple(kind for kind in CATALOG if kind != 'mystery'))
+        revealed = self.make_chaos_block(kind)
+        width = max(x for x, y in revealed.cells)*revealed.cell_size
+        height = max(y for x, y in revealed.cells)*revealed.cell_size
+        revealed.x = max(self.left+revealed.cell_size/2,
+                         min(self.right-revealed.cell_size/2-width, block.x-width/2))
+        revealed.y = block.y-height/2
+        # Keep the existing object and block count, but start the revealed type's
+        # timers fresh so bombs, splitters and teleports retain their warnings.
+        block.__dict__.update(revealed.__dict__)
+        return True
 
     def chaos_damage(self, amount, cause, contact=True):
         if not self.alive or (contact and self.invulnerable > 0):
@@ -239,6 +397,43 @@ class ChaosRules:
 
     def chaos_contact(self, block):
         kind = block.kind
+        if kind in PICKUP_EFFECTS:
+            effect = PICKUP_EFFECTS[kind]
+            self.chaos_heal(effect.get('heal', 0))
+            for attribute in effect.get('clear', ()): setattr(self, attribute, 0)
+            for attribute, duration in effect.get('timers', {}).items():
+                setattr(self, attribute, max(getattr(self, attribute), duration))
+            if effect.get('shield'): self.shield = True
+            if effect.get('delay'): self.spawn_in = max(self.spawn_in, effect['delay'])
+            if effect.get('clear_pellets'):
+                self.pellets = [p for p in self.pellets if math.hypot(p.x-self.x,p.y-self.y) > effect['clear_pellets']]
+            return
+        if kind in CONTACT_EFFECTS:
+            effect = CONTACT_EFFECTS[kind]
+            if effect.get('strip'):
+                self.shield = False
+                self.haste_left = self.slowfall_left = self.stasis_left = 0
+            if self.chaos_damage(effect['damage'], kind):
+                for attribute, duration in effect.get('timers', {}).items():
+                    setattr(self, attribute, max(getattr(self, attribute), duration))
+                if effect.get('burn'): self.burn_ticks, self.burn_in = effect['burn'], 2
+                if effect.get('poison'): self.poison_ticks, self.poison_in = effect['poison'], 3
+                if effect.get('regen'): self.regen_in = effect['regen']
+            return
+        if kind in MOTION_BLOCKS:
+            self.chaos_damage(MOTION_BLOCKS[kind]['damage'], kind)
+            return
+        if kind == 'ricochet_shield':
+            self.shield = True
+            for pellet in self.pellets:
+                dx, dy = pellet.x-self.x, pellet.y-self.y
+                distance = math.hypot(dx, dy)
+                if distance > 140: continue
+                if distance < 1e-9: dx, dy, distance = 0, 1, 1
+                speed = math.hypot(pellet.velocity_x, pellet.velocity_y) or 240
+                pellet.velocity_x, pellet.velocity_y = dx/distance*speed, dy/distance*speed
+                pellet.color, pellet.kind = '#80f3d4', 'reflected_pellet'
+            return
         if kind == 'sanctuary':
             self.chaos_heal(2)
             self.shield = True
@@ -278,7 +473,7 @@ class ChaosRules:
             self.shield = False
             self.chaos_damage(1, 'shatter')
             return
-        if kind == 'weak': return
+        if kind in PASS_THROUGH_SPEEDS or kind in ('weak', 'pusher', 'spike', 'thunder'): return
         if kind == 'heal': self.chaos_heal(2); return
         if kind == 'shield': self.shield = True; return
         if kind == 'haste':
@@ -303,10 +498,35 @@ class ChaosRules:
             if kind == 'thorn': self.regen_in = 8
             if kind == 'frost': self.frost_left = 2.5
 
+    def push_player(self, block, movement):
+        """Separate solid contact; only a block moving into a wall can crush."""
+        from dodge_model import PLAYER_LEFT, PLAYER_RIGHT, PLAYER_BOTTOM, PLAYER_TOP
+        half = block.size / 2
+        # Push out through the nearest face, including a tiny gap so resting
+        # contact does not repeatedly register as penetration.
+        offsets = ((block.x-half-self.x-PLAYER_RIGHT-.001, 0),
+                   (block.x+half-self.x-PLAYER_LEFT+.001, 0),
+                   (0, block.y-half-self.y-PLAYER_TOP-.001),
+                   (0, block.y+half-self.y-PLAYER_BOTTOM+.001))
+        dx, dy = min(offsets, key=lambda offset: abs(offset[0])+abs(offset[1]))
+        if block.kind == 'spike' and dy > 0:
+            self.chaos_damage(1, 'spike')
+        dx, dy = dx*PUSH_PULL_STRENGTH, dy*PUSH_PULL_STRENGTH
+        target_x, target_y = self.x+dx, self.y+dy
+        self.x = max(self.left-PLAYER_LEFT, min(self.right-PLAYER_RIGHT, target_x))
+        self.y = max(self.bottom-PLAYER_BOTTOM, min(self.top-PLAYER_TOP, target_y))
+        blocked = abs(self.x-target_x) > .002 or abs(self.y-target_y) > .002
+        if blocked and dx*movement[0]+dy*movement[1] > 1e-9:
+            self.chaos_damage(1 if block.kind == 'spike' else 3, block.kind)
+
     def chaos_fall_speed(self, block):
         if self.stasis_left: return 0
         easy_base = min(340, 100 + self.elapsed * 2.5)
-        if block.kind == 'sonic':
+        if block.kind == 'anvil':
+            base = min(640, self.speed*(.4 if block.age < 1.2 else 2.4))
+        elif block.kind == 'blaster':
+            base = easy_base * 1.3 * .75
+        elif block.kind == 'sonic':
             base = easy_base * 3.3 * 1.5
         elif block.kind == 'parachute':
             base = min(640, easy_base*2) if block.age < .6 else easy_base/4
@@ -322,13 +542,94 @@ class ChaosRules:
             base = easy_base / 3
         else:
             base = min(640, self.speed * block.speed_multiplier)
-        return base * (.6 if self.slowfall_left else 1) * (1.4 if self.curse_left else 1)
+        return base * (.6 if self.slowfall_left else 1) * (1.4 if self.curse_left else 1) * self.overlap_speed(block)
 
     def prepare_field(self, block):
         cycle = int((block.age + 1e-9) // 4)
         if block.kind == 'chaos_nexus' and block.field_cycle != cycle:
             block.field_order = tuple(self.rng.sample(FIELD_MODES, len(FIELD_MODES)))
             block.field_cycle = cycle
+
+    def overlap_speed(self, target):
+        from dodge_model import touches_block
+        factors = set()
+        for source in self.blocks:
+            if source is target or source.kind not in PASS_THROUGH_SPEEDS:
+                continue
+            if target is self:
+                overlapping = touches_block(self.x, self.y, source)
+            elif source.kind.startswith('elite_'):
+                half = (source.size+target.size)/2
+                overlapping = any(abs(x-sx) <= half and abs(y-sy) <= half
+                                  for x, y in target.centers() for sx, sy in source.centers())
+            else:
+                continue
+            if overlapping: factors.add(PASS_THROUGH_SPEEDS[source.kind])
+        return math.prod(factors)
+
+    def cannon_angles(self, block):
+        return tuple(angle+block.age*block.rotation_speed for angle in block.cannons)
+
+    def update_blaster(self, block, step):
+        if block.kind != 'blaster' and block.kind not in TURRET_BLOCKS: return
+        from dodge_model import Block
+        block.shot_in -= step
+        if block.shot_in > 1e-9: return
+        block.shot_in += TURRET_BLOCKS[block.kind]['interval'] if block.kind in TURRET_BLOCKS else self.rng.uniform(.3, .9)
+        if block.kind == 'scatter':
+            angle = self.rng.randrange(8)*math.pi/4
+            block.cannons = (angle-math.pi/4, angle, angle+math.pi/4)
+        for angle in self.cannon_angles(block):
+            dx, dy = math.cos(angle), math.sin(angle)
+            self.pellets.append(Block(block.x+dx*block.size*.8, block.y+dy*block.size*.8,
+                                      ((0, 0),), '#ffe394', cell_size=7, kind='blaster_pellet',
+                                      velocity_x=dx*240, velocity_y=dy*240))
+
+    def update_pellets(self, step):
+        from dodge_model import touches_block
+        remaining = []
+        for pellet in self.pellets:
+            scale = self.overlap_speed(pellet)
+            pellet.x += pellet.velocity_x*step*scale
+            pellet.y += pellet.velocity_y*step*scale
+            if pellet.kind != 'reflected_pellet' and touches_block(self.x, self.y, pellet):
+                self.chaos_damage(.5, 'blaster_pellet')
+            elif self.left-10 <= pellet.x <= self.right+10 and self.bottom-10 <= pellet.y <= self.top+10:
+                remaining.append(pellet)
+        self.pellets = remaining
+
+    def thunder_phase(self, block):
+        if block.kind != 'thunder' or block.age+1e-9 < 1:
+            return 'idle'
+        phase = (block.age+1e-9) % 1
+        return 'warning' if phase < .25 else 'strike' if phase < .5 else 'idle'
+
+    def thunder_bounds(self, block):
+        half = block.size/2
+        return (block.x-half, block.x+half, block.y-half-2*block.size, block.y-half)
+
+    def update_thunder(self, block):
+        if self.thunder_phase(block) != 'strike':
+            return
+        from dodge_model import PLAYER_POLYGON, polygon_touches_rectangle
+        left, right, bottom, top = self.thunder_bounds(block)
+        if polygon_touches_rectangle(PLAYER_POLYGON, left-self.x, right-self.x,
+                                     bottom-self.y, top-self.y):
+            self.chaos_damage(2, 'thunder')
+            self.haste_left = max(self.haste_left, 1)
+
+    def apply_chaos_aura(self, block):
+        effect = AURA_EFFECTS.get(block.kind)
+        if not effect or math.hypot(self.x-block.x, self.y-block.y) > AURA_RADIUS:
+            return
+        if effect == 'poison':
+            # Refresh duration without postponing the next damage tick.
+            if not self.poison_ticks: self.poison_in = 3
+            self.poison_ticks = max(self.poison_ticks, 3)
+        elif effect == 'haste':
+            self.haste_left = max(self.haste_left, 4)
+        elif effect == 'frost':
+            self.frost_left = max(self.frost_left, 2.5)
 
     def chaos_fields(self, step):
         """Accumulate forces before moving anything, so list order cannot affect them."""
@@ -350,7 +651,7 @@ class ChaosRules:
                 distance = math.hypot(vx, vy)
                 if not 1 < distance < radius:
                     continue
-                force = (100 if target is self else 140) * (1-distance/radius)
+                force = (100 if target is self else 140) * PUSH_PULL_STRENGTH * (1-distance/radius)
                 if mode.startswith('push'):
                     force *= -1
                 if mode == 'orbit_all':
@@ -480,10 +781,11 @@ class ChaosRules:
             dy = int('Up' in keys)-int('Down' in keys)
             if self.vertigo_left: dx, dy = -dx, -dy
             length = math.hypot(dx, dy) or 1
-            speed = 260 * (.5 if self.frost_left else 1) * (1.45 if self.haste_left else 1)
+            speed = 260 * (.5 if self.frost_left else 1) * (1.45 if self.haste_left else 1) * self.overlap_speed(self)
             self.x += dx / length * speed * step
             self.y += dy / length * speed * step
             for block in self.blocks:
+                self.reveal_mystery(block)
                 block.age += step
             block_forces = self.chaos_fields(step)
             self.x = max(self.left-PLAYER_LEFT, min(self.right-PLAYER_RIGHT, self.x))
@@ -494,14 +796,18 @@ class ChaosRules:
                 self.spawn_in += self.spawn_interval
             remaining, children = [], []
             for block in self.blocks:
+                old_x, old_y = block.x, block.y
+                movement_step = step*self.overlap_speed(block)
+                if block.kind == 'boomerang' and not block.bounced and block.age >= 1:
+                    block.bounced, block.rise_left = True, 1.2
                 if block.kind == 'rewind' and not block.bounced and block.age >= 1.2:
                     block.bounced, block.rise_left = True, .8
                 if block.kind == 'comet': block.speed_multiplier = min(4.45, block.speed_multiplier+step*.8)
                 held = self.update_fire_pattern(block, step) or self.update_teleport(block, step)
                 if not held:
                     fx, fy = block_forces.get(id(block), (0, 0))
-                    block.x += fx * step
-                    block.y += fy * step
+                    block.x += fx * movement_step
+                    block.y += fy * movement_step
                     if block.kind == 'corkscrew':
                         vertical = -.6 if int((block.age+1e-9)*2) % 2 else 1.6
                         block.y -= self.chaos_fall_speed(block) * vertical * step
@@ -510,17 +816,24 @@ class ChaosRules:
                         block.rise_left = max(0, block.rise_left-(0 if self.stasis_left else step))
                     else: block.y -= self.chaos_fall_speed(block) * step
                     direction = (-1 if int((block.age+1e-9)*2) % 2 else 1) if block.kind == 'zigzag' else 1
-                    block.x += block.velocity_x * direction * step
+                    if block.kind == 'sawtooth': direction = -1 if int((block.age+1e-9)*4)%2 else 1
+                    block.x += block.velocity_x * direction * movement_step
                     frequency = 6 if block.kind in ('ribbon', 'corkscrew') else 2
-                    phase = block.sway_phase + step * frequency
+                    if block.kind == 'waltz': frequency = 1
+                    phase = block.sway_phase + movement_step * frequency
                     block.x += block.sway_amplitude * (math.sin(phase)-math.sin(block.sway_phase))
                     block.sway_phase = phase
-                    if block.kind == 'skater': block.x += max(-100, min(100, (block.x-self.x)*2))*step
-                    if block.kind == 'seeker': block.x += max(-65, min(65, (self.x-block.x)*2))*step
+                    if block.kind == 'skater': block.x += max(-100, min(100, (block.x-self.x)*2))*movement_step
+                    if block.kind == 'seeker': block.x += max(-65, min(65, (self.x-block.x)*2))*movement_step
                     width = max(x for x, y in block.cells)*block.cell_size
                     if block.kind in ("ricochet", "pinball") and (block.x <= self.left+block.cell_size/2 or block.x >= self.right-block.cell_size/2-width):
                         block.velocity_x *= -1
                     block.x = max(self.left+block.cell_size/2, min(self.right-block.cell_size/2-width, block.x))
+                self.reveal_mystery(block)
+                self.update_blaster(block, step)
+                self.apply_chaos_aura(block)
+                self.update_thunder(block)
+                if not self.alive: return
                 if block.kind in FIRE_PATTERNS:
                     if not held: self.update_fire_pattern(block, 0)
                     if block.flame_stage == 3: continue
@@ -541,9 +854,14 @@ class ChaosRules:
                 if blast and math.hypot(self.x-block.x, self.y-block.y) <= 65:
                     touching = True
                 if touching:
+                    if block.kind in ('pusher', 'spike'):
+                        self.push_player(block, (block.x-old_x, block.y-old_y))
+                        if not self.alive: return
+                        remaining.append(block)
+                        continue
                     self.chaos_contact(block)
                     if not self.alive: return
-                    if block.kind in FIRE_PATTERNS or block.kind in ('glitch', 'elite_glitch'):
+                    if block.kind in FIRE_PATTERNS or block.kind in TURRET_BLOCKS or block.kind in ('glitch', 'elite_glitch', 'fan', 'blaster'):
                         remaining.append(block)
                     continue  # Glitch blocks persist through their three warned teleports.
                 if block.kind == 'bomb' and block.age >= 2.35: continue
@@ -552,12 +870,18 @@ class ChaosRules:
                     elif block.near_player:
                         self.near_misses += 1
                         block.near_miss_awarded = True
-                can_bounce = (block.kind == 'spring' and not block.bounced) or (block.kind == 'pinball' and block.bounce_count < 3)
+                can_bounce = (block.kind == 'spring' and not block.bounced) or (block.kind == 'pinball' and block.bounce_count < 3) or (block.kind == 'hopper' and block.bounce_count < 2)
                 if can_bounce and block.y-block.size/2 <= self.bottom:
                     block.bounce_count += 1
                     block.bounced, block.rise_left = True, .65
                     block.y = self.bottom+block.size/2
-                if max(y for x, y in block.centers())+block.size/2 < self.bottom:
+                if block.kind == 'fan':
+                    from dodge_model import fan_blades
+                    highest = max(y for blade in fan_blades(block) for x, y in blade)
+                else:
+                    highest = max(y for x, y in block.centers())+block.size/2
+                if highest < self.bottom:
                     self.dodged += 1
                 else: remaining.append(block)
             self.blocks = (remaining+children)[:80]
+            self.update_pellets(step)

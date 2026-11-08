@@ -8,10 +8,11 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
   });
   await openGame(page);
   await page.locator('[data-game="guide"]').click();
-  await expect(page.locator('.block-guide-card')).toHaveCount(75);
+  const guideCount = await page.evaluate(()=>JSON.parse(document.getElementById('chaos-bootstrap').textContent).length);
+  await expect(page.locator('.block-guide-card')).toHaveCount(guideCount);
   await expect(page.locator('#block-guide-room')).toBeVisible();
-  await expect(page.locator('.block-guide-icon')).toHaveCount(75);
-  expect(await page.locator('.block-guide-icon').evaluateAll(images=>images.every(img=>img.complete && img.naturalWidth>0))).toBe(true);
+  await expect(page.locator('.block-guide-icon')).toHaveCount(guideCount);
+  expect(await page.locator('.block-guide-icon').evaluateAll(canvases=>canvases.every(canvas=>canvas.tagName==='CANVAS' && canvas.width>0))).toBe(true);
   await expect(page.locator('.block-guide-card[data-block="doom"]')).toContainText('Very rare');
   await expect(page.locator('#game-total')).toContainText('+ GUIDE');
   await page.locator('#block-guide-heading').scrollIntoViewIfNeeded();
@@ -272,4 +273,24 @@ test('fire pattern blocks visibly warn, beep, pause and fire all three patterns'
     expect(fired.commands.filter(c=>c.role==='fire_beam')).toHaveLength(count);
     await page.screenshot({path:testInfo.outputPath(kind+'-firing.png')});
   }
+});
+
+
+test('guide cards animate effects and freeze for reduced motion', async ({page}) => {
+  const errors=[]; page.on('pageerror', error=>errors.push(error.message));
+  await openGame(page);
+  await page.locator('[data-game="guide"]').click();
+  for (const kind of ['elite_turbo', 'elite_leafy', 'glitch', 'fan', 'thunder', 'blaster']) {
+    const canvas = page.locator(`.block-guide-card[data-block="${kind}"] canvas`);
+    await canvas.scrollIntoViewIfNeeded();
+    const before = await canvas.evaluate(c=>c.toDataURL());
+    await expect.poll(()=>canvas.evaluate(c=>c.toDataURL())).not.toBe(before);
+  }
+  await page.emulateMedia({reducedMotion:'reduce'});
+  const canvas = page.locator('.block-guide-card[data-block="blaster"] canvas');
+  await page.waitForTimeout(100);
+  const frozen = await canvas.evaluate(c=>c.toDataURL());
+  await page.waitForTimeout(200);
+  expect(await canvas.evaluate(c=>c.toDataURL())).toBe(frozen);
+  expect(errors).toEqual([]);
 });

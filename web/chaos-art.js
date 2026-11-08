@@ -1,7 +1,57 @@
 "use strict";
 // The same vector illustrations appear on falling tiles and guide previews.
 const ChaosArt = (() => {
+  const bodyPaths = {
+    spike: 'M16 1 31 31H1Z',
+    thunder: 'M7 28C-2 28-2 14 6 13C3 3 16-2 21 7C29 3 34 13 29 18C36 25 28 31 23 28Z',
+  };
   const paths = {
+    bandage: 'M5 13 13 5l14 14-8 8ZM12 12l8 8M9 16l7-7M16 23l7-7',
+    medkit: 'M4 10h24v18H4ZM11 10V5h10v5M16 14v10M11 19h10',
+    detox: 'M11 3h10M13 3v9L5 26q11 6 22 0l-8-14V3M10 23l4 3 8-9',
+    coolant: 'M8 4h16v24H8ZM11 9h10M16 12v12M12 15l8 6M12 21l8-6',
+    compass: 'M29 16a13 13 0 1 1-26 0 13 13 0 0 1 26 0M22 8l-4 12-8 4 4-12ZM16 2v4M16 26v4',
+    battery: 'M6 7h20v23H6ZM12 2h8v5M17 10l-7 10h7l-1 7 8-11h-8Z',
+    snowglobe: 'M24 25a13 13 0 1 0-16 0M7 25h18v5H7ZM16 5v15M10 9l12 8M10 17l12-8',
+    sweeper: 'M21 3 11 17M8 14l10 6-5 10-11-6ZM6 27l6-9M10 29l6-9M24 16h6M22 22h5',
+    oasis: 'M3 26q13-8 26 0M16 24V10M16 12Q5 0 3 12M16 12Q27 0 29 12M16 12Q10 4 8 5',
+    clean_slate: 'M7 3h18v26H7ZM10 19l5 5 10-13M3 6h5M5 4v5M24 2l4 4',
+    cinder: 'M17 2q-2 10 6 13 10 13-7 15Q0 29 7 17l4-7 1 10q8-5 5-18ZM6 4l2 3M27 9l-2 3',
+    spore: 'M3 17Q2 2 16 3q14 0 13 14ZM12 17v12h8V17M8 10h1M18 7h1M24 12h1',
+    sleet: 'M4 10q-3-9 7-7 7-5 12 3 9 0 5 8H5ZM8 18l-3 7M17 18l-3 7M26 18l-3 7',
+    dizzy: 'M25 10q-4-11-14-6Q0 9 8 20q8 10 17 0 7-10-4-12-9-1-9 6t8 2M3 29l5-5M25 27l4 3',
+    leech: 'M7 4q18-4 18 9-1 10-12 16-10 1-7-8 13-3 12-10-3-5-11-1ZM8 6l3 5M14 4l1 5',
+    overload: 'M18 3 7 17h9l-2 12 12-17h-9ZM3 3l4 4M25 25l5 5M2 23l5-3M25 6l5-3',
+    nullifier: 'M28 16a12 12 0 1 1-24 0 12 12 0 0 1 24 0M7 7l18 18M10 16h12',
+    glass: 'M16 2 28 12 23 28H9L4 12ZM4 12h24M16 2l-5 10 5 16 5-16Z',
+    dart: 'M16 30 7 9l9 4 9-4ZM16 13V2M10 2l6 5 6-5',
+    anvil: 'M2 7h28l-5 9h-7v8l9 4H5l9-4v-8H8ZM8 7V3h16v4',
+    lantern: 'M9 8h14l4 19H5ZM12 8V3h8v5M8 28h16M16 12v10M12 17h8',
+    sawtooth: 'M5 3l22 7L5 17l22 7-22 5M4 5V2h5M23 26l5-2-2-5',
+    waltz: 'M3 20Q8 0 16 16t13-4M3 27Q8 7 16 23t13-4',
+    boomerang: 'M4 4 27 14 18 29l-5-13ZM4 4l9 12M27 14l-14 2',
+    blink: 'M2 16q14-21 28 0-14 21-28 0ZM21 16a5 5 0 1 1-10 0 5 5 0 0 1 10 0M5 4l3 4M27 4l-3 4',
+    hopper: 'M5 27h22M6 22Q4 2 14 7t12-1M7 21l-2 5 6-1M16 13q8 7 10-7M22 7l4-3 3 4',
+    crossbow: 'M16 2v28M2 16h28M11 7l5-5 5 5M25 11l5 5-5 5M11 25l5 5 5-5M7 11l-5 5 5 5',
+    diagonal: 'M3 3l26 26M3 29 29 3M3 9V3h6M23 3h6v6M3 23v6h6M23 29h6v-6',
+    spinner: 'M24 7a12 12 0 1 0 3 15M24 2v7h-7M16 10v12M10 16h12',
+    scatter: 'M16 28V4M16 21 3 8M16 21 29 8M11 9l5-5 5 5M3 14V8h6M23 8h6v6',
+
+    ricochet_shield: 'M16 3 27 7v10q-1 8-11 12Q6 25 5 17V7ZM10 18l6-7 6 7M16 11v12M2 3l4 2M30 3l-4 2',
+    blaster: 'M7 10h18v16H7ZM12 5h8v9h-8ZM12 20h8',
+    fan: 'M21 16a5 5 0 1 1-10 0 5 5 0 0 1 10 0',
+    leafy: 'M5 27Q0 4 27 4q3 23-22 23ZM5 27 24 7M12 20V10M17 15h9',
+    turbo: 'M4 5l11 11L4 27M17 5l11 11-11 11',
+    elite_leafy: 'M5 27Q0 4 27 4q3 23-22 23ZM5 27 24 7M12 20V10M17 15h9M3 3l5 2-3 5M29 29l-5-2 3-5',
+    elite_turbo: 'M4 7l9 9-9 9M16 7l9 9-9 9M6 2h20M6 30h20',
+    spike: 'M3 12 7 2l5 10 4-10 4 10 5-10 4 10ZM4 15v13h24V15',
+    thunder: 'M18 2 7 18h9l-2 12 12-18h-9Z',
+    steaming: 'M4 24h24M8 28h16M8 19c-8-6 8-6 0-13M16 19c-8-6 8-6 0-16M24 19c-8-6 8-6 0-13',
+    electric: 'M18 2 7 18h9l-2 12 12-18h-9ZM3 8l3 3M26 24l3 3',
+    stinky: 'M6 27q-5-7 3-9 0-8 8-5 9-3 9 6 6 8-4 8ZM10 9Q5 6 10 2M22 9q-5-3 0-7',
+    chilly: 'M16 3v26M5 9l22 14M5 23 27 9M12 5l4 4 4-4M12 27l4-4 4 4M5 14l5-2-1-5M23 25l-1-5 5-2',
+    mystery: 'M9 10a7 7 0 0 1 14 0c0 5-7 5-7 10M16 25v2',
+    pusher: 'M4 4h24v7H4ZM16 11v13M10 18l6 6 6-6M4 28h24',
     vortex: 'M27 16A11 11 0 1 1 16 5q10 0 10 9t-10 9q-8 0-8-7t8-7q6 0 6 6t-6 6q-4 0-4-4t4-4M12 4l4 1-2 4',
     pinball: 'M4 4v24M28 4v24M6 24 23 7M18 7h5v5M22 23a5 5 0 1 1-10 0 5 5 0 0 1 10 0',
     iceburst: 'M16 3v26M5 9l22 14M5 23 27 9M12 5l4 4 4-4M12 27l4-4 4 4M2 3l4 2M30 3l-4 2M2 29l4-2M30 29l-4-2',
@@ -86,8 +136,11 @@ const ChaosArt = (() => {
     antidote: 'M10 4h12v6H10z M11 10l-3 5v12h16V15l-3-5 M16 16v7 M12.5 19.5h7',
     thorn: 'M13 28V8a3 3 0 0 1 6 0v20 M13 20H8q-3 0-3-3v-7 M19 16h5q3 0 3-3V7 M10 28h12 M10 11h3 M19 22h3 M2 13h3 M24 9h3',
   };
-  const helpfulKinds = new Set(['sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
+  const helpfulKinds = new Set(['bandage','medkit','detox','coolant','compass','battery','snowglobe','sweeper','oasis','clean_slate','ricochet_shield', 'sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
   function outlineColor(kind, ghost = false) {
+    if (kind === 'thunder') return '#ff4055';
+    if (['leafy','elite_leafy'].includes(kind)) return '#ffe45c';
+    if (['turbo','elite_turbo'].includes(kind)) return '#57ff75';
     if (ghost || kind === 'weak') return '#b8b8b8';
     return helpfulKinds.has(kind) ? '#57ff75' : '#ff4055';
   }
@@ -105,7 +158,7 @@ const ChaosArt = (() => {
     ctx.scale(2, 2);
     const columns = Math.max(...cells.map(cell => cell[0])) + 1;
     const rows = Math.max(...cells.map(cell => cell[1])) + 1;
-    const scale = Math.min(1.3, 156 / (columns * cellSize), 86 / (rows * cellSize));
+    const scale = Math.min(1.3, 156 / (columns * cellSize), 86 / (rows * cellSize), kind === 'fan' ? .34 : 1.3);
     const step = cellSize * scale, size = step * .94;
     const left = (180 - (columns - 1) * step) / 2;
     const bottom = (110 + (rows - 1) * step) / 2;
@@ -117,17 +170,126 @@ const ChaosArt = (() => {
     draw(ctx, kind, left, bottom, size*.82, false, color, .6);
     return canvas.toDataURL('image/png');
   }
-  // Texture the existing tile rectangle; cosmetics never change collision bounds.
-  function tile(ctx, kind, x, y, size, color, ghost) {
+  function previewState(block, age, blocks = []) {
+    let kind = block.id, color = block.preview_color || block.color;
+    let cells = block.preview_cells || [[0,0]], cellSize = block.preview_size || 28;
+    const time = Math.max(0, age), cycle = time % 6;
+    if (kind === 'mystery' && cycle >= 2 && blocks.length > 1) {
+      const choices = blocks.filter(b => b.id !== 'mystery');
+      const revealed = choices[Math.floor(time/6) % choices.length];
+      kind = revealed.id; color = revealed.preview_color || revealed.color;
+      cells = revealed.preview_cells; cellSize = revealed.preview_size;
+    }
+    const ghost = kind === 'blink' ? time%1.2 >= .4 : kind === 'ghost' ? time%3 >= 2 : kind === 'phase' ? time%3 >= 1 :
+      ['thunder','leafy','turbo','elite_leafy','elite_turbo'].includes(kind);
+    const palette = ['#61c9b5','#779ed5','#b58bc9','#cf9894','#c6b76d','#8cbb79'];
+    const fill = ['elite_leafy','elite_turbo'].includes(kind) ? palette[Math.floor((time+1e-9)*10)%palette.length] : color;
+    let x = Math.sin(time*2)*5, y = ((time * (block.preview_speed || 100)/100)%2-1)*10;
+    let warning = false, target = null, strike = false;
+    if (['glitch','elite_glitch'].includes(kind)) {
+      const duration = kind === 'glitch' ? 1.2 : 1;
+      const tick = time%(1+duration*3+1);
+      const positions = [[-30,-12],[28,12],[-20,15],[24,-14]];
+      const jumps = Math.min(3, Math.max(0, Math.floor((tick-1)/duration)));
+      [x,y] = positions[jumps];
+      warning = tick >= 1 && tick < 1+duration*3;
+      if (warning) target = positions[jumps+1];
+    } else if (kind === 'thunder') {
+      x = 0; y = -18;
+      warning = time >= 1 && time%1 < .25;
+      strike = time >= 1 && time%1 >= .25 && time%1 < .5;
+    } else if (['fire_x','fire_plus','fire_star'].includes(kind)) {
+      x = y = 0;
+      warning = cycle >= 1 && cycle < 2.5;
+      strike = cycle >= 2.5 && cycle < 3.15;
+    } else if (['ricochet','pinball','zigzag','sawtooth','hopper'].includes(kind)) {
+      x = (2/Math.PI)*Math.asin(Math.sin(time*(kind==='sawtooth'?6:3)))*30;
+      if (kind === 'pinball' || kind === 'hopper') y = 15-Math.abs(Math.sin(time*3))*30;
+    } else if (['pendulum','feather','ribbon','corkscrew','waltz'].includes(kind)) {
+      x = Math.sin(time*(kind === 'ribbon' || kind === 'corkscrew' ? 6 : kind === 'waltz' ? 1 : 2))*23;
+      if (kind === 'corkscrew') y = Math.cos(time*3)*12;
+    } else if (['spring','rewind','boomerang'].includes(kind)) {
+      y = Math.sin(time*3)*18;
+    } else if (kind === 'anvil') {
+      y = ((cycle<1.2?cycle*.2:.24+(cycle-1.2)*1.2)%1)*40-20;
+    } else if (kind === 'rocket') {
+      y = ((cycle < 1 ? cycle*.15 : (cycle-1)*2)%1)*40-20;
+    } else if (kind === 'parachute') {
+      y = ((cycle < .6 ? cycle*1.5 : .9+(cycle-.6)*.15)%1)*40-20;
+    } else if (kind === 'surge' || kind === 'comet') {
+      y = ((kind === 'comet' ? cycle*cycle*.2 : time*.7-Math.sin(time*Math.PI)*.2)%1)*36-18;
+    }
+    return {kind,color,cells,cellSize,ghost,fill,x,y,warning,target,strike,time,cycle};
+  }
+  function drawPreview(ctx, block, age = 0, blocks = []) {
+    const s = previewState(block, age, blocks);
+    const {kind,color,cells,cellSize,ghost,fill,time,cycle} = s;
+    ctx.save(); ctx.clearRect(0,0,180,110);
+    ctx.beginPath(); ctx.rect(0,0,180,110); ctx.clip();
+    const columns = Math.max(...cells.map(c=>c[0]))+1, rows = Math.max(...cells.map(c=>c[1]))+1;
+    const scale = Math.min(1, 102/(columns*cellSize), 60/(rows*cellSize), kind==='fan' ? .34 : 1);
+    const unit = cellSize*scale, size=unit*.94;
+    const cx=90+s.x, cy=53+s.y, left=cx-(columns-1)*unit/2, bottom=cy+(rows-1)*unit/2;
+    const fields = ['black_hole','repulsor','block_attractor','block_repulsor','gravity_well','force_wave','vortex','chaos_nexus'];
+    if (fields.includes(kind) || ['steaming','electric','stinky','chilly'].includes(kind)) {
+      const radius = fields.includes(kind) ? 43 : 30;
+      ctx.strokeStyle=color+'88'; ctx.lineWidth=1; ctx.beginPath();ctx.arc(cx,cy,radius,0,Math.PI*2);ctx.stroke();
+      const push = ['repulsor','block_repulsor','force_wave'].includes(kind) || kind==='chaos_nexus' && Math.floor(time)%2;
+      for(let i=0;i<6;i++) {
+        const angle=i*Math.PI/3+(kind==='vortex'?time:0), progress=(time*.7+i/6)%1;
+        const r=8+(push?progress:1-progress)*(radius-8);
+        ctx.fillStyle=color;ctx.beginPath();ctx.arc(cx+Math.cos(angle)*r,cy+Math.sin(angle)*r,1.8,0,Math.PI*2);ctx.fill();
+      }
+      if(kind==='chaos_nexus') {ctx.fillStyle=color;ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText(['PULL YOU','PUSH YOU','PULL BLOCKS','PUSH BLOCKS'][Math.floor(time)%4],90,105);}
+    }
+    if (s.target) {
+      ctx.strokeStyle='#fff29e';ctx.setLineDash([3,3]);ctx.strokeRect(90+s.target[0]-size/2,53+s.target[1]-size/2,size,size);ctx.setLineDash([]);
+    }
+    if (s.warning) {
+      ctx.fillStyle='#ffe65b';ctx.font='bold 15px sans-serif';ctx.textAlign='center';ctx.fillText('!!!',cx,kind==='thunder'?cy+size:cy-size/2-6);
+    }
+    if (kind.startsWith('fire_') && (s.warning || s.strike)) {
+      const dirs=kind==='fire_x'?[[1,1],[1,-1]]:kind==='fire_plus'?[[1,0],[0,1]]:[[1,1],[1,-1],[1,0],[0,1]];
+      ctx.strokeStyle=s.strike?'#ffb347':'#ffcf75';ctx.lineWidth=s.strike?8:1;ctx.setLineDash(s.strike?[]:[3,4]);
+      for(const [dx,dy] of dirs){ctx.beginPath();ctx.moveTo(cx-dx*90,cy-dy*90);ctx.lineTo(cx+dx*90,cy+dy*90);ctx.stroke();}ctx.setLineDash([]);
+    }
+    if(kind==='thunder' && s.strike){ctx.fillStyle='#ffe600';ctx.fillRect(cx-size/2,cy+size/2,size,size*2);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx+4,cy+size/2);ctx.lineTo(cx-5,cy+size*1.5);ctx.lineTo(cx+5,cy+size*1.3);ctx.lineTo(cx-3,cy+size*2.4);ctx.stroke();}
+    if(kind==='bomb'){ctx.strokeStyle=cycle>=2&&cycle<2.35?'#fff3a0':'#ffbd5d88';ctx.lineWidth=cycle>=2&&cycle<2.35?8:1;ctx.beginPath();ctx.arc(cx,cy,36+Math.sin(time*8)*2,0,Math.PI*2);ctx.stroke();}
+    const split = ['splitter','iceburst','firecracker'].includes(kind) && cycle>=1.4 && cycle<3;
+    if(split){for(let i=-1;i<=1;i++){const shard=kind==='iceburst'?'frost':kind==='firecracker'?'fire':'normal';const sx=cx+i*(10+(cycle-1.4)*24),sy=cy+(cycle-1.4)*12;tile(ctx,shard,sx-6,sy-6,12,color,false);draw(ctx,shard,sx,sy,10,false,color,time);}}
+    else {
+      for(const [x,y] of cells) tile(ctx,kind,left+x*unit-size/2,bottom-y*unit-size/2,size,color,ghost,fill);
+      const cannons=(block.preview_cannons?.length?block.preview_cannons:[Math.PI/2]).map(a=>a+time*(block.preview_rotation_speed||0)+(kind==='scatter'?Math.floor(time/.9)*Math.PI/4:0));
+      const [iconX, iconY] = cells[0];
+      draw(ctx,kind,left+iconX*unit,bottom-iconY*unit,size*.82,ghost,color,time,cannons);
+      if(['blaster','crossbow','diagonal','spinner','scatter'].includes(kind)) for(const a of cannons){const distance=size*.8+(time%(block.preview_shot_interval||.6))*85;ctx.fillStyle='#ffe394';ctx.beginPath();ctx.arc(left+Math.cos(a)*distance,bottom-Math.sin(a)*distance,2.5,0,Math.PI*2);ctx.fill();}
+    }
+    if(helpfulKinds.has(kind)){ctx.strokeStyle=color+'88';ctx.lineWidth=1;const r=18+(time%1)*22;ctx.globalAlpha=1-time%1;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();}
+    ctx.restore();
+  }
+  // Shared body silhouettes are used by gameplay and guide previews.
+  function tile(ctx, kind, x, y, size, color, ghost, fillColor = color) {
     ctx.save();
     ctx.translate(x, y);
+    if (kind === 'spike' || kind === 'thunder') {
+      ctx.scale(size/32, size/32);
+      const shape = new Path2D(bodyPaths[kind]);
+      const body = ctx.createLinearGradient(0, 0, 0, 32);
+      body.addColorStop(0, kind === 'thunder' ? '#596174' : '#e1e4ed');
+      body.addColorStop(1, kind === 'thunder' ? '#242938' : '#727c94');
+      ctx.fillStyle = body; ctx.fill(shape);
+      ctx.strokeStyle = outlineColor(kind);
+      ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 7;
+      ctx.lineWidth = 2; ctx.stroke(shape);
+      ctx.restore(); return;
+    }
     const gradient = ctx.createLinearGradient(0, 0, kind === 'elite_glitch' ? size : size*.3, kind === 'elite_glitch' ? 0 : size);
     if (kind === 'elite_glitch') {
       gradient.addColorStop(0, '#ff466d'); gradient.addColorStop(.49, '#bc214d');
       gradient.addColorStop(.51, '#3276e9'); gradient.addColorStop(1, '#71c2ff');
-    } else { gradient.addColorStop(0, color); gradient.addColorStop(1, '#18243b'); }
+    } else { gradient.addColorStop(0, fillColor); gradient.addColorStop(1, '#18243b'); }
     ctx.fillStyle = gradient;
-    ctx.globalAlpha = ghost ? .12 : 1;
+    ctx.globalAlpha = ['elite_leafy', 'elite_turbo'].includes(kind) ? .8 : ghost ? .12 : 1;
     ctx.fillRect(0, 0, size, size);
     ctx.globalAlpha = ghost ? .55 : 1;
     ctx.strokeStyle = color; ctx.lineWidth = 1.4;
@@ -165,7 +327,37 @@ const ChaosArt = (() => {
     ctx.strokeRect(inset, inset, size-ctx.lineWidth, size-ctx.lineWidth);
     ctx.restore();
   }
-  function draw(ctx, kind, x, y, size, ghost = false, color = '#152033', age = 0) {
+  function draw(ctx, kind, x, y, size, ghost = false, color = '#152033', age = 0, cannons = null) {
+    if (kind === 'fan' || ['blaster','crossbow','diagonal','spinner','scatter'].includes(kind)) {
+      const full = size/.82;
+      ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = color; ctx.strokeStyle = outlineColor(kind); ctx.lineWidth = 2;
+      const angles = kind === 'fan' ? [0, 1, 2].map(i => -(age*2*Math.PI*.9/2.4+i*2*Math.PI/3)) : (cannons || [Math.PI/2]).map(a => -a);
+      for (const angle of angles) {
+        ctx.save(); ctx.rotate(angle); ctx.beginPath();
+        if (kind === 'fan') {
+          ctx.moveTo(full*.2, full*.12); ctx.lineTo(full*3.2, full*.3); ctx.lineTo(full*3.2, -full*.3);
+        } else {
+          ctx.rect(full*.2, -full*.13, full*.6, full*.26);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      ctx.restore();
+    }
+    if (kind === 'spike' || kind === 'thunder') {
+      ctx.save();
+      // Fit the symbol inside the triangle's broad base or the cloud's center.
+      const iconSize = size * (kind === 'spike' ? .5 : .62);
+      const iconY = y + size * (kind === 'spike' ? .23 : .04);
+      ctx.translate(x-iconSize/2, iconY-iconSize/2);
+      ctx.scale(iconSize/32, iconSize/32);
+      const symbol = new Path2D(paths[kind]);
+      ctx.lineJoin = ctx.lineCap = 'round';
+      ctx.strokeStyle = '#10182b'; ctx.lineWidth = 5; ctx.stroke(symbol);
+      ctx.strokeStyle = kind === 'thunder' ? '#ffe65b' : '#fff5dc';
+      ctx.lineWidth = 2.5; ctx.stroke(symbol);
+      ctx.restore(); return;
+    }
     if (!cache.has(kind)) cache.set(kind, new Path2D(paths[kind] || paths.normal));
     ctx.save();
     ctx.translate(x-size/2, y-size/2);
@@ -173,7 +365,7 @@ const ChaosArt = (() => {
     ctx.lineCap = ctx.lineJoin = 'round';
     const t = age || 0;
     // Sparse, deterministic particles are attached to their source block.
-    if (['fire','poison','frost','comet','heal','antidote','haste'].includes(kind)) {
+    if (['fire','poison','frost','comet','heal','antidote','haste','cinder','spore','sleet','lantern'].includes(kind)) {
       for (let i=0;i<3;i++) {
         const progress = (t*.7+i/3)%1;
         const px = 5+i*11 + Math.sin(t*2+i)*2;
@@ -212,6 +404,11 @@ const ChaosArt = (() => {
     ctx.restore();
   }
   function tabPreview(block, random = Math.random) {
+    if (block.id === 'spike' || block.id === 'thunder') {
+      const color = block.id === 'thunder' ? '#343b4c' : block.color;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 110"><path transform="translate(58 23) scale(2)" d="${bodyPaths[block.id]}" fill="${color}" stroke="${outlineColor(block.id)}" stroke-width="2"/><path transform="${block.id === 'spike' ? 'translate(77 54) scale(.82)' : 'translate(74 42) scale(1)'}" d="${paths[block.id]}" fill="none" stroke="${block.id === 'thunder' ? '#ffe65b' : '#fff5dc'}" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
+      return {src:'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg), color, shape:block.id};
+    }
     // Simple randomized silhouettes with the same identifying icon as gameplay.
     const shapes = [ [[0,0],[1,0],[2,0],[3,0]], [[0,0],[1,0],[0,1],[1,1]],
       [[0,0],[1,0],[2,0],[1,1]], [[0,0],[1,0],[1,1],[2,1]],
@@ -248,6 +445,6 @@ const ChaosArt = (() => {
     }
     return blocks.at(-1);
   }
-  return { paths, preview, draw, tile, pickBlock, tabPreview, outlineColor, outerOutlineColor };
+  return { paths, preview, previewState, drawPreview, draw, tile, pickBlock, tabPreview, outlineColor, outerOutlineColor };
 })();
 if (typeof module !== 'undefined') module.exports = ChaosArt;

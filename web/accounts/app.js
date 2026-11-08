@@ -332,14 +332,19 @@ const AccountApp = (() => {
       this.nodes = { panel: dialog, message: dialog.querySelector('#account-message') };
       const $ = id => document.getElementById(id);
       this.$ = $;
-      $('account-open').onclick = () => {
+      let profileOpener = $('account-open');
+      const openProfile = (opener, login = false) => {
         if (this.isPlaying()) { $('account-summary').textContent = 'Finish or leave this round to open your profile.'; return; }
+        profileOpener = opener;
         dialog.showModal(); this.render(true); this.action(() => this.loadHistory());
+        if (login && !$('account-auth').hidden) AuthUI.mode(dialog, 'account', 'login');
       };
+      $('account-open').onclick = () => openProfile($('account-open'));
+      $('login-open').onclick = () => openProfile($('login-open'), true);
       const canClose = () => { if (!$('account-recovery-step').hidden) { $('account-recovery-code').focus(); this.message('Save your recovery code and acknowledge it before closing.'); return false; } return true; };
       $('account-close').onclick = () => { if (canClose()) dialog.close(); };
       dialog.addEventListener('cancel', event => { if (!canClose()) event.preventDefault(); });
-      dialog.addEventListener('close', () => { AuthUI.clear(dialog); $('account-open').focus(); });
+      dialog.addEventListener('close', () => { AuthUI.clear(dialog); profileOpener.focus(); });
       AuthUI.bind(dialog, 'account', mode => this.action(() => this.authenticate(mode)), () => this.render());
       $('account-change-password').onclick = () => this.action(async () => {
         for (const id of ['current-password', 'new-password', 'new-confirm']) if (!$(`account-${id}`).reportValidity()) return;

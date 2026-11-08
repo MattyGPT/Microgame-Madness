@@ -18,7 +18,7 @@ test("home fits the viewport and Hangman scores survive reload", async ({
   });
   await page.locator("#player").fill("Browser Tester");
   await expect(page.locator("#hangman-game")).toBeHidden();
-  await expect(page.locator("#difficulty-choices button")).toHaveCount(3);
+  await expect(page.locator("#difficulty-choices button")).toHaveCount(4);
   await page.locator('[data-difficulty="easy"]').click();
   await page.getByRole("button", { name: "Guess Z", exact: true }).click();
   await expect(
@@ -267,4 +267,24 @@ test('mobile joystick supports diagonals, a second finger, and safe release in e
     await expect.poll(() => page.evaluate(() => [...joystickKeys])).toEqual([]);
     await page.locator('#exit').click();
   }
+});
+
+
+test('random Hangman reveals its source difficulty after the round', async ({ page }) => {
+  await openGame(page);
+  await page.locator('[data-difficulty="random"]').click();
+  await expect(page.locator('#hangman-game')).toBeVisible();
+  const level = await page.evaluate(() => snapshot.difficulty);
+  expect(['easy', 'medium', 'hard']).toContain(level);
+  await expect(page.locator('#metric')).toHaveText(String({easy:10, medium:7, hard:5}[level]));
+  await expect(page.locator('#overlay')).toBeHidden();
+  for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    if (await page.locator('#overlay').isVisible()) break;
+    await page.getByRole('button', {name: `Guess ${letter}`, exact:true}).click();
+  }
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect(page.locator('#overlay')).toContainText(`Difficulty: ${level[0].toUpperCase() + level.slice(1)}.`);
+  expect(await page.evaluate(() => selectedDifficulty)).toBe(level);
+  await page.locator('#overlay-action').click();
+  await expect(page.locator('[data-difficulty="random"]')).toBeVisible();
 });

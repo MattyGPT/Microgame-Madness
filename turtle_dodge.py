@@ -373,14 +373,63 @@ class TurtleDodge:
                 if ghost:
                     self.blocks.color(block.color, "#111827")
                 else:
-                    self.blocks.color(block_outline_color(block.color), block.color)
+                    from chaos_dodge import elite_fill_color
+                    self.blocks.color(block_outline_color(block.color), elite_fill_color(block))
                 for x, y in block.centers():
                     if self.game.bottom - block.cell_size / 2 <= y <= self.game.top + block.cell_size / 2:
                         self.blocks.goto(x, y)
-                        self.blocks.stamp()
+                        if self.game.difficulty == 'chaos' and block.kind in ('spike', 'thunder'):
+                            points = ((0, .5), (-.5, -.5), (.5, -.5)) if block.kind == 'spike' else (
+                                (-.3, -.38), (-.48, -.25), (-.5, 0), (-.32, .12),
+                                (-.35, .32), (-.16, .48), (.08, .46), (.2, .28),
+                                (.39, .3), (.5, .12), (.4, -.06), (.5, -.25),
+                                (.3, -.4), (.1, -.36))
+                            self.blocks.goto(x+points[0][0]*block.size, y+points[0][1]*block.size)
+                            self.blocks.pencolor('#ff4055')
+                            self.blocks.pendown()
+                            self.blocks.begin_fill()
+                            for px, py in (*points[1:], points[0]):
+                                self.blocks.goto(x+px*block.size, y+py*block.size)
+                            self.blocks.end_fill()
+                            self.blocks.penup()
+                        else:
+                            self.blocks.stamp()
                 if self.game.difficulty == "chaos":
-                    from chaos_dodge import CATALOG
-                    radius = 130 if block.kind == "black_hole" else 120 if block.kind == "repulsor" else 65 if block.kind == "bomb" else 0
+                    from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, CATALOG
+                    if block.kind == 'fan':
+                        from dodge_model import fan_blades
+                        for blade in fan_blades(block):
+                            self.blocks.color('#ff4055', block.color)
+                            self.blocks.goto(*blade[0])
+                            self.blocks.pendown(); self.blocks.begin_fill()
+                            for point in (*blade[1:], blade[0]): self.blocks.goto(*point)
+                            self.blocks.end_fill(); self.blocks.penup()
+                    if block.cannons:
+                        self.blocks.pencolor('#ff4055')
+                        self.blocks.pensize(7)
+                        for angle in self.game.cannon_angles(block):
+                            self.blocks.goto(block.x, block.y)
+                            self.blocks.pendown()
+                            self.blocks.goto(block.x+math.cos(angle)*block.size*.8, block.y+math.sin(angle)*block.size*.8)
+                            self.blocks.penup()
+                        self.blocks.pensize(BLOCK_OUTLINE_WIDTH)
+                    if block.kind == 'thunder':
+                        phase = self.game.thunder_phase(block)
+                        left, right, bottom, top = self.game.thunder_bounds(block)
+                        if phase == 'warning':
+                            self.blocks.goto(block.x, (bottom+top)/2)
+                            self.blocks.pencolor('#ffe600')
+                            self.blocks.write('!!!', align='center', font=('Arial', 22, 'bold'))
+                        elif phase == 'strike':
+                            self.blocks.color('#fff7ad', '#ffe600')
+                            self.blocks.goto(left, top)
+                            self.blocks.pendown()
+                            self.blocks.begin_fill()
+                            for point in ((right, top), (right, bottom), (left, bottom), (left, top)):
+                                self.blocks.goto(*point)
+                            self.blocks.end_fill()
+                            self.blocks.penup()
+                    radius = AURA_RADIUS if block.kind in AURA_EFFECTS else 130 if block.kind == "black_hole" else 120 if block.kind == "repulsor" else 65 if block.kind == "bomb" else 0
                     if radius:
                         self.blocks.goto(block.x, block.y-radius)
                         self.blocks.setheading(0)
@@ -390,7 +439,13 @@ class TurtleDodge:
                         self.blocks.penup()
                     self.blocks.goto(block.x, block.y-5)
                     self.blocks.pencolor("#152033" if not ghost else block.color)
+                    if block.kind == 'spike': self.blocks.goto(block.x, block.y-block.size*.3)
+                    if block.kind == 'thunder': self.blocks.pencolor('#ffe65b')
                     self.blocks.write(CATALOG[block.kind]["symbol"], align="center", font=("Arial", 10, "bold"))
+            if self.game.difficulty == 'chaos':
+                for pellet in self.game.pellets:
+                    self.blocks.goto(pellet.x, pellet.y)
+                    self.blocks.dot(pellet.size, pellet.color)
         self.death_particles.clearstamps()
         if self.state == "dying":
             for x, y, size in death_pixels(self.game.x, self.game.y, now-self.death_started):

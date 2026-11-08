@@ -101,6 +101,10 @@ class Block:
     flame_left: float = 0
     flame_beeps: int = 0
     bounce_count: int = 0
+    velocity_y: float = 0
+    cannons: tuple = ()
+    rotation_speed: float = 0
+    shot_in: float = 0
 
     @property
     def size(self):
@@ -131,8 +135,48 @@ def polygon_touches_rectangle(polygon, left, right, bottom, top):
     return bool(polygon)
 
 
+def polygon_touches_triangle(polygon, triangle):
+    for a, b in zip(triangle, triangle[1:] + triangle[:1]):
+        if not polygon:
+            return False
+        def distance(point):
+            return (b[0]-a[0])*(point[1]-a[1])-(b[1]-a[1])*(point[0]-a[0])
+        clipped = []
+        previous = polygon[-1]
+        before = distance(previous)
+        for current in polygon:
+            after = distance(current)
+            if (before >= 0) != (after >= 0):
+                fraction = before/(before-after)
+                clipped.append(tuple(previous[i]+fraction*(current[i]-previous[i]) for i in (0, 1)))
+            if after >= 0:
+                clipped.append(current)
+            previous, before = current, after
+        polygon = clipped
+    return bool(polygon)
+
+
+def fan_blades(block):
+    blades = []
+    for index in range(3):
+        angle = block.age*math.tau*.9/2.4 + index*math.tau/3
+        points = ((block.size*.2, -block.size*.12), (block.size*3.2, -block.size*.3),
+                  (block.size*3.2, block.size*.3))
+        blades.append(tuple((block.x+px*math.cos(angle)-py*math.sin(angle),
+                             block.y+px*math.sin(angle)+py*math.cos(angle)) for px, py in points))
+    return blades
+
+
 def touches_block(x, y, block, margin=0):
     half = block.size / 2 + margin
+    if block.kind == 'fan':
+        for blade in fan_blades(block):
+            if polygon_touches_triangle(PLAYER_POLYGON, tuple((bx-x, by-y) for bx, by in blade)):
+                return True
+    if block.kind == 'spike':
+        cx, cy = block.x-x, block.y-y
+        return polygon_touches_triangle(PLAYER_POLYGON,
+                                        ((cx-half, cy-half), (cx+half, cy-half), (cx, cy+half)))
     for bx, by in block.centers():
         left, right = bx - x - half, bx - x + half
         bottom, top = by - y - half, by - y + half

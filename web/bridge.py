@@ -2,8 +2,8 @@
 
 import json
 import random
-from chaos_dodge import FIELD_RADII, FIELD_LABELS, field_mode, block_is_solid, FIRE_PATTERNS
-from chaos_dodge import CATALOG as CHAOS_BLOCKS, catalog as chaos_catalog
+from chaos_dodge import elite_fill_color, FIELD_RADII, FIELD_LABELS, field_mode, block_is_solid, FIRE_PATTERNS
+from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, CATALOG as CHAOS_BLOCKS, catalog as chaos_catalog
 
 from hangman_model import DIFFICULTY, HangmanGame, hangman_picture
 from keyboard_model import KeyboardRound, make_round
@@ -86,8 +86,17 @@ class BrowserGame:
                 raise ValueError("Unknown Geomayhem level")
             self.game = Geomayhem(int(difficulty.split("_")[1]), weapon, campaign=campaign or {})
         elif mode == "hangman":
-            rules = DIFFICULTY[difficulty]
-            self.game = HangmanGame(random.choice(rules["words"]), rules["max_attempts"])
+            self.random_hangman = difficulty == "random"
+            if self.random_hangman:
+                self.difficulty, word = random.choice([
+                    (level, word) for level, rules in DIFFICULTY.items()
+                    for word in rules["words"]
+                ])
+                rules = DIFFICULTY[self.difficulty]
+                self.game = HangmanGame(word, rules["max_attempts"])
+            else:
+                rules = DIFFICULTY[difficulty]
+                self.game = HangmanGame(random.choice(rules["words"]), rules["max_attempts"])
         elif mode == "keyboard":
             self.new_round(now)
         elif mode == "dodge":
@@ -178,6 +187,7 @@ class BrowserGame:
                   "message": self.message, "sounds": [], "commands": []}
         if self.mode == "hangman":
             result.update(over=game.over, won=game.won, score=game.score,
+                          random_mode=self.random_hangman,
                           word=" ".join(c if c in game.guessed or game.over else "_" for c in game.word),
                           guessed=sorted(game.guessed), mistakes=game.mistakes,
                           remaining=game.max_attempts-game.mistakes,
@@ -263,6 +273,19 @@ class BrowserGame:
                                   haste_left=game.haste_left, frost_left=game.frost_left,
                                   curse_left=game.curse_left, slowfall_left=game.slowfall_left, stasis_left=game.stasis_left, repellent_left=game.repellent_left, vertigo_left=game.vertigo_left)
                 for block in game.blocks:
+                    if game.difficulty == "chaos" and block.kind == "thunder":
+                        phase = game.thunder_phase(block)
+                        left, right, bottom, top = game.thunder_bounds(block)
+                        if phase == 'warning':
+                            commands.append({"kind": "text", "role": "thunder_warning",
+                                             "coords": [block.x, -(top+bottom)/2], "text": "!!!",
+                                             "fill": "#ffe600", "font": ["Arial", 22, "bold"]})
+                        elif phase == 'strike':
+                            commands.append({"kind": "rectangle", "role": "thunder_strike",
+                                             "coords": [left, -top, right, -bottom],
+                                             "fill": "#ffe600", "outline": "#fff7ad", "width": 2})
+                            commands.append({"kind": "text", "coords": [block.x, -(top+bottom)/2],
+                                             "text": "ϟ", "fill": "#ffffff", "font": ["Arial", 34, "bold"]})
                     if game.difficulty == "chaos" and block.kind in FIRE_PATTERNS and block.flame_stage in (1, 2):
                         warning = block.flame_stage == 1
                         for ax, ay, bx, by in game.fire_rays(block):
@@ -280,7 +303,7 @@ class BrowserGame:
                         commands.append({"kind": "text", "coords": [tx, -ty-32], "text": f"! {block.warning_left:.1f}s",
                                          "fill": "#fff29e", "font": ["Arial", 13, "bold"]})
                     if game.difficulty == "chaos":
-                        radius = FIELD_RADII.get(block.kind, 65 if block.kind == "bomb" else 0)
+                        radius = AURA_RADIUS if block.kind in AURA_EFFECTS else FIELD_RADII.get(block.kind, 65 if block.kind == "bomb" else 0)
                         if radius:
                             commands.append({"kind": "oval", "coords": [block.x-radius, -block.y-radius, block.x+radius, -block.y+radius],
                                              "fill": "", "outline": block.color,
@@ -293,12 +316,19 @@ class BrowserGame:
                         ghost = game.difficulty == "chaos" and not block_is_solid(block)
                         rect(x, y, block.size, block.size, "" if ghost else block.color, block.color if ghost else outline, BLOCK_OUTLINE_WIDTH)
                         if game.difficulty == "chaos":
-                            commands[-1].update(chaos_kind=block.kind, ghost=ghost)
+                            commands[-1].update(chaos_kind=block.kind, ghost=ghost, fill_color=elite_fill_color(block))
                     if game.difficulty == "chaos":
                         info = CHAOS_BLOCKS[block.kind]
                         commands.append({"kind": "block_icon", "coords": [block.x, -block.y],
                                          "block": block.kind, "size": block.size*.82,
-                                         "ghost": ghost, "color": block.color, "age": block.age})
+                                         "ghost": ghost, "color": block.color, "age": block.age,
+                                         "cannons": game.cannon_angles(block) if block.cannons else None})
+                if game.difficulty == 'chaos':
+                    for pellet in game.pellets:
+                        radius = pellet.size/2
+                        commands.append({'kind': 'oval', 'role': 'blaster_pellet',
+                                         'coords': [pellet.x-radius, -pellet.y-radius, pellet.x+radius, -pellet.y+radius],
+                                         'fill': pellet.color, 'outline': '#57ff75' if pellet.kind == 'reflected_pellet' else '#ff4055', 'width': 1})
             if self.death_age is not None:
                 for x, y, size in death_pixels(game.x, game.y, self.death_age):
                     rect(x, y, size, size, "#ffffff")

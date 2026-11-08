@@ -233,6 +233,29 @@ class BrowserAdapterTests(unittest.TestCase):
         self.assertTrue(result["won"])
         self.assertEqual(result["word"].replace(" ", ""), word)
 
+    def test_random_hangman_uses_every_word_list_and_its_guess_limit(self):
+        from hangman_model import DIFFICULTY
+        pool = [(level, word) for level, rules in DIFFICULTY.items() for word in rules["words"]]
+        for level, rules in DIFFICULTY.items():
+            for win in (True, False):
+                word = rules["words"][0]
+                with self.subTest(level=level, win=win), patch("web.bridge.random.choice", return_value=(level, word)) as choose:
+                    result = self.start("hangman", "random")
+                    choose.assert_called_once_with(pool)
+                    self.assertEqual(result["difficulty"], level)
+                    self.assertTrue(result["random_mode"])
+                    self.assertEqual(result["remaining"], rules["max_attempts"])
+                    self.assertNotIn(word, result["word"])
+                    letters = set(word) if win else [c for c in "abcdefghijklmnopqrstuvwxyz" if c not in word]
+                    for key in letters:
+                        result = self.session.dispatch({"action": "guess", "key": key})
+                        if result["over"]:
+                            break
+                    self.assertTrue(result["over"])
+                    self.assertEqual(result["won"], win)
+                    self.assertEqual(result["difficulty"], level)
+                    self.assertEqual(result["word"].replace(" ", ""), word)
+
     def test_pumpkin_all_attacks_render_and_canvas_pool_is_bounded(self):
         from collections import Counter
         self.start("pumpkin", "phase2")

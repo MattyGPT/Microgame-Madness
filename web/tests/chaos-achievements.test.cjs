@@ -95,3 +95,33 @@ test('extra outlines identify pickups only, never solid hazards',()=>{
     assert.ok(svg.includes(`stroke="${Art.outlineColor(id)}" stroke-width="3"`));
   }
 });
+
+
+test('guide animation states include timed colors, teleport warnings, ghost phases and lightning',()=>{
+  const state=(id,age)=>Art.previewState({id,color:'#abc',preview_cells:[[0,0]],preview_size:32},age);
+  assert.equal(state('elite_turbo',.099).fill,state('elite_turbo',0).fill);
+  assert.notEqual(state('elite_turbo',.1).fill,state('elite_turbo',0).fill);
+  assert.notEqual(state('elite_leafy',.2).fill,state('elite_leafy',.1).fill);
+  assert.equal(state('glitch',1).warning,true);
+  assert.notDeepEqual([state('glitch',1).x,state('glitch',1).y],[state('glitch',2.21).x,state('glitch',2.21).y]);
+  assert.equal(state('ghost',2.1).ghost,true);
+  assert.equal(state('ghost',3.1).ghost,false);
+  assert.equal(state('thunder',1.1).warning,true);
+  assert.equal(state('thunder',1.3).strike,true);
+  assert.equal(state('thunder',1.6).strike,false);
+  assert.equal(state('fire_star',1.2).warning,true);
+  assert.equal(state('fire_star',2.6).strike,true);
+});
+
+test('new catalog blocks are eligible immediately and have a fallback thumbnail', () => {
+  const added = { id: 'future_catalog_block', name: 'Future block', color: '#57b9ff', weight: 2 };
+  const blocks = [{ id: 'normal', color: '#48d9ef', weight: 8 }, added];
+  assert.equal(Art.pickBlock(blocks, () => .7999).id, 'normal');
+  assert.equal(Art.pickBlock(blocks, () => .8), added);
+  assert.equal(Art.pickBlock(blocks, () => .9999), added);
+  const preview = Art.tabPreview(added, () => .3);
+  assert.ok(preview.src.startsWith('data:image/svg+xml'));
+  const svg = decodeURIComponent(preview.src.split(',')[1]);
+  assert.ok(svg.includes(added.color));
+  assert.ok(!svg.includes('undefined'));
+});

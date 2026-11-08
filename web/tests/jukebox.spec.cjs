@@ -10,7 +10,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');
   await expect(page.locator('[data-difficulty]')).toHaveCount(await page.evaluate(() => ArcadeMusic.jukeboxTracks.length));
   await page.locator('#difficulty-choices').screenshot({ path: testInfo.outputPath('song-cards.png') });
-  for (const id of ['arcade', 'pumpkin', 'singularity', 'boss_mean', 'rock_afterburn']) {
+  for (const id of ['arcade', 'pumpkin', 'singularity', 'boss_mean', 'rock_afterburn', 'starlight_soda', 'aurora_afterparty']) {
     await page.locator(`[data-difficulty="${id}"]`).click();
     await expect.poll(() => page.evaluate(() => musicPlayer.track)).toBe(id);
     expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(true);

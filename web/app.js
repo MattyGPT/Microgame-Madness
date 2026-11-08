@@ -49,6 +49,7 @@ const modes = {
       easy: ["Easy", "10 wrong guesses. A friendly start."],
       medium: ["Medium", "7 wrong guesses. A little more brainwork."],
       hard: ["Hard", "5 wrong guesses. Make every one count."],
+      random: ["Random", "A word from any difficulty. Its difficulty is revealed at the end."],
     },
   },
   keyboard: {
@@ -397,6 +398,16 @@ const songSleeves = {
   arcade_turbo: ["#ffdb7f", "#ed875c", "coin"],
   arcade_bubblebyte: ["#8df1ed", "#559cc1", "waves"],
   arcade_horizon: ["#ffbf8f", "#ac83e3", "sunrise"],
+  starlight_soda: ["#8ff5ed", "#e588e8", "soda"],
+  comet_courier: ["#ffbd7a", "#f16c80", "comet"],
+  lavender_lobby: ["#d6b8ff", "#8b79cb", "moon"],
+  copper_carousel: ["#edb783", "#bf7958", "carousel"],
+  laser_lemonade: ["#f4f77f", "#77d89b", "lemon"],
+  cloudsave_cruise: ["#b2e6ff", "#829de2", "cloud"],
+  midnight_pinball: ["#f195e9", "#7974df", "pinball"],
+  prism_picnic: ["#a8f4ca", "#dca4ee", "crystal"],
+  bonus_round_boulevard: ["#ffdb76", "#ef9c58", "coin"],
+  aurora_afterparty: ["#91ffd4", "#a18af3", "aurora"],
   dodge_easy: ["#b5eca0", "#69bca1", "shell"],
   dodge_normal: ["#a5ddff", "#718dd1", "rain"],
   dodge_hard: ["#ffdc76", "#779ca0", "waves"],
@@ -420,6 +431,12 @@ const songSleeves = {
   sunwheel_parade: ["#ffe18b", "#ec9675", "sunrise"],
 };
 const sleevePaths = {
+  soda: "M18 24h28l-4 33H22Z M17 24h30 M35 24l4-15h11 M25 34h14 M29 42v8m-4-4h8 M12 7v10m-5-5h10 M51 31v8m-4-4h8",
+  carousel: "M8 25 32 8l24 17Z M10 29h44 M32 8V3h10l-10 5 M32 29v24 M18 29v14m28-14v14 M12 45h12m16 0h12 M15 53h34l6 6H9Z",
+  lemon: "M10 44C9 22 28 10 48 17l6-2-2 7C55 44 32 57 16 48l-7 1Z M18 40c0-12 11-20 23-19 M38 6l-7 12h9l-5 12",
+  cloud: "M18 43a12 12 0 0 1-2-24 17 17 0 0 1 32-2 13 13 0 0 1 0 26 M32 48V27m-8 8 8-8 8 8 M13 55h38",
+  pinball: "M17 6h30l8 51H9Z M28 21a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z M46 30a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z M40 13a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M17 46l11 5m19-5-11 5 M30 33l-6 6",
+  aurora: "M7 42C17 5 23 48 32 18S48 8 57 27 M7 51C17 14 23 57 32 27S48 17 57 36 M7 33C17-4 23 39 32 9 M13 10v8m-4-4h8 M48 46v10m-5-5h10",
   cubie: "M18 8h28q10 0 10 10v28q0 10-10 10H18Q8 56 8 46V18Q8 8 18 8ZM22 24v8m20-8v8M23 41q9 9 18 0",
   pixels: "M12 12h12v12H12z M40 12h12v12H40z M26 26h12v12H26z M12 40h12v12H12z M40 40h12v12H40z",
   heart: "M32 51 10 29V17h9l13 10 13-10h9v12Z",
@@ -591,7 +608,7 @@ function unlockSingularity(navigate = true) {
   saved.player = $("player").value.trim() || "Player";
   persist();
   document.querySelector('[data-game="singularity"]').hidden = false;
-  $("game-count").textContent = "09";
+  $("game-count").textContent = "12";
   $("game-total").textContent = "8 GAMES + JUKEBOX + CLOSET + SHOP + GUIDE / ENDLESS REMATCHES";
   updateAchievements(achievementTracker.secret("gravitron"));
   if (navigate) {
@@ -1161,13 +1178,13 @@ let submissionRequest = 0;
 function updateGlobalDifficulties(difficulty) {
   const mode = $("leaderboard-game").value;
   document.querySelector('label[for="leaderboard-difficulty"]').textContent = mode === "wrath" ? "Attack" : "Difficulty";
-  $("leaderboard-difficulty").replaceChildren(...Object.entries(modes[mode].difficulties).map(([value, [label]]) => {
+  $("leaderboard-difficulty").replaceChildren(...Object.entries(modes[mode].difficulties).filter(([value]) => value !== "random").map(([value, [label]]) => {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = label;
     return option;
   }));
-  if (Object.hasOwn(modes[mode].difficulties, difficulty)) $("leaderboard-difficulty").value = difficulty;
+  if (difficulty !== "random" && Object.hasOwn(modes[mode].difficulties, difficulty)) $("leaderboard-difficulty").value = difficulty;
 }
 function initializeGlobalLeaderboards() {
   $("leaderboard-game").replaceChildren(...Object.entries(modes).filter(([, config]) => !config.localOnly).map(([value, config]) => {
@@ -1347,8 +1364,16 @@ function showGameArea() {
   fitArcade();
   document.querySelector(".game-main").scrollIntoView({ block: "start", behavior: "instant" });
 }
-let chaosGuideBlocks = [], chaosGuidePictures = new Map(), chaosGuideIcon = null, chaosGuideLastChange = 0;
+let chaosGuideCanvases = [], chaosGuideVisible = new Set(), chaosGuideObserver = null, chaosGuideFrame = 0;
+let chaosGuideBlocks = [], chaosGuideIcon = null, chaosGuideLastChange = 0;
 function animateChaosGuide(now, initial = false) {
+  if (selected === 'guide' && !document.hidden && now-chaosGuideFrame >= 1000/30) {
+    const age = trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : now/1000;
+    for (const entry of chaosGuideCanvases) if (chaosGuideVisible.has(entry.canvas)) {
+      ChaosArt.drawPreview(entry.context, entry.block, age, chaosGuideBlocks);
+    }
+    chaosGuideFrame = now;
+  }
   if (!chaosGuideIcon || !chaosGuideBlocks.length || document.hidden) return;
   if (!initial && (trailReducedMotion.matches || saved.preferences?.reducedMotion || now-chaosGuideLastChange < 500)) return;
   const block = ChaosArt.pickBlock(chaosGuideBlocks);
@@ -1361,8 +1386,15 @@ function animateChaosGuide(now, initial = false) {
 }
 function initializeChaosGuide(blocks) {
   chaosGuideBlocks = blocks;
-  chaosGuidePictures = new Map(blocks.map(block => [block.id,
-    ChaosArt.preview(block.id, block.preview_color || block.color, block.preview_cells, block.preview_size)]));
+  $("block-guide-count").textContent = blocks.length;
+  chaosGuideObserver?.disconnect();
+  chaosGuideCanvases = []; chaosGuideVisible.clear();
+  chaosGuideObserver = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) chaosGuideVisible.add(entry.target);
+      else chaosGuideVisible.delete(entry.target);
+    }
+  });
   chaosGuideIcon = document.createElement("img");
   chaosGuideIcon.className = "guide-tab-preview";
   chaosGuideIcon.alt = "";
@@ -1373,11 +1405,15 @@ function initializeChaosGuide(blocks) {
     card.className = "block-guide-card";
     card.style.setProperty("--block-color", block.color);
     card.dataset.block = block.id;
-    const icon = document.createElement("img");
+    const icon = document.createElement("canvas");
     icon.className = "block-guide-icon";
-    icon.src = chaosGuidePictures.get(block.id);
-    icon.alt = `${block.name} appearance`;
-    icon.width = 180; icon.height = 110;
+    icon.setAttribute('role', 'img');
+    icon.setAttribute('aria-label', `${block.name} animated preview`);
+    icon.width = 360; icon.height = 220;
+    const context = icon.getContext('2d'); context.scale(2, 2);
+    ChaosArt.drawPreview(context, block, 0, blocks);
+    chaosGuideCanvases.push({canvas: icon, context, block});
+    chaosGuideObserver.observe(icon);
     const title = document.createElement("h4");
     title.textContent = block.name;
     const rarity = document.createElement("p");
@@ -1388,6 +1424,89 @@ function initializeChaosGuide(blocks) {
     card.append(icon, title, rarity, detail);
     return card;
   }));
+}
+const dodgeBorderSizes = new ResizeObserver(entries => {
+  for (const { target, contentRect } of entries) {
+    target.style.setProperty("--flight-width", contentRect.width + "px");
+    target.style.setProperty("--flight-height", contentRect.height + "px");
+  }
+});
+const dodgeBorderVisibility = new IntersectionObserver(entries => {
+  for (const entry of entries) entry.target.classList.toggle("border-in-view", entry.isIntersecting);
+});
+document.addEventListener("visibilitychange", () => {
+  document.documentElement.classList.toggle("border-page-hidden", document.hidden);
+});
+const dodgeBorderSprites = new Map();
+function dodgeBorderSprite(index, color) {
+  const shapes = [
+    [[0,0],[1,0],[2,0],[3,0]], [[0,0],[1,0],[0,1],[1,1]],
+    [[0,0],[1,0],[2,0],[1,1]], [[0,0],[1,0],[1,1],[2,1]],
+    [[1,0],[2,0],[0,1],[1,1]], [[0,0],[1,0],[2,0],[0,1]],
+    [[0,0],[1,0],[2,0],[2,1]],
+  ];
+  const colors = ["#48d9ef", "#ffd166", "#bb86fc", "#69db7c", "#ff6b8a", "#659bff", "#ffa552"];
+  const fill = color || colors[index], key = index + fill;
+  if (!dodgeBorderSprites.has(key)) {
+    const cells = shapes[index], width = (Math.max(...cells.map(c => c[0])) + 1) * 7;
+    const height = (Math.max(...cells.map(c => c[1])) + 1) * 7;
+    const rects = cells.map(([x,y]) => `<rect x="${(30-width)/2+x*7}" y="${(30-height)/2+y*7}" width="6.5" height="6.5" fill="${fill}" stroke="#14191c" stroke-width=".7"/>`).join("");
+    dodgeBorderSprites.set(key, "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30">${rects}</svg>`));
+  }
+  return dodgeBorderSprites.get(key);
+}
+function decorateDodgeDifficulty(button, difficulty) {
+  const presets = {
+    easy: [20, 18, null, 22], normal: [35, 14, null, 22],
+    hard: [38, 10, "#ffdf00", 22], merciless: [40, 7, "#ff3030", 22],
+    impossible: [48, 5, "#ffffff", 16], chaos: [55, 10, "#a68cbe", 25],
+  };
+  const [count, seconds, color, size] = presets[difficulty];
+  const titleColors = { easy: "#78df91", normal: "#ffa552", hard: "#ffdf00",
+    merciless: "#ff5050", impossible: "#ffffff" };
+  if (titleColors[difficulty]) button.style.setProperty("--difficulty-title-color", titleColors[difficulty]);
+  button.classList.add("dodge-border-card");
+  if (difficulty === "chaos") {
+    button.classList.add("chaos-difficulty");
+    const rainbow = ["#ff557c", "#ffa64b", "#ffe66d", "#6ee88b", "#4bdcf1", "#688dff", "#bd79f5"];
+    for (let i = rainbow.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rainbow[i], rainbow[j]] = [rainbow[j], rainbow[i]];
+    }
+    button.style.setProperty("--chaos-rainbow", [...rainbow, rainbow[0]].join(", "));
+  }
+  if (["merciless", "impossible", "chaos"].includes(difficulty))
+    button.style.borderColor = color;
+  const orbit = document.createElement("span");
+  orbit.className = "chaos-border-flight";
+  orbit.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < count; i++) {
+    const chaos = difficulty === "chaos";
+    const block = chaos ? ChaosArt.pickBlock(chaosGuideBlocks) : null;
+    const image = document.createElement("img");
+    image.alt = "";
+    if (chaos) {
+      image.src = ChaosArt.tabPreview(block).src;
+      image.alt = "";
+      image.dataset.block = block.id;
+    } else {
+      image.src = dodgeBorderSprite(Math.floor(Math.random() * 7), color);
+    }
+    image.className = "chaos-border-block";
+    const duration = seconds * (1 + Math.random() * .15);
+    image.style.setProperty("--flight-time", duration + "s");
+    image.style.setProperty("--flight-delay", -(i / count + Math.random() / count) * duration + "s");
+    const side = Math.floor(Math.random() * 4), position = Math.random() * 100;
+    image.style.setProperty("--flight-x", (side === 0 ? position : side === 1 ? 100 : side === 2 ? position : 0) + "%");
+    image.style.setProperty("--flight-y", (side === 0 ? 0 : side === 1 ? position : side === 2 ? 100 : position) + "%");
+    image.style.setProperty("--block-size", size + Math.random() * (chaos ? 5 : 2) + "px");
+    image.style.setProperty("--block-turn", Math.random() * 360 + "deg");
+    image.style.animationDirection = Math.random() < .5 ? "normal" : "reverse";
+    orbit.append(image);
+  }
+  button.append(orbit);
+  dodgeBorderSizes.observe(orbit);
+  dodgeBorderVisibility.observe(orbit);
 }
 function selectGame(mode) {
   coreAftermath = false;
@@ -1434,6 +1553,8 @@ function selectGame(mode) {
   $("welcome-copy").textContent = config.copy;
   $("difficulty-title").textContent = config.choiceLabel || "Choose a difficulty to play";
   setTextIfChanged("game-instruction", config.controls);
+  dodgeBorderSizes.disconnect();
+  dodgeBorderVisibility.disconnect();
   $("difficulty-choices").replaceChildren(
     ...Object.entries(config.difficulties).map(([value, [label, description]]) => {
       const button = document.createElement("button");
@@ -1445,6 +1566,7 @@ function selectGame(mode) {
       detail.textContent = description;
       button.append(title, detail);
       if (mode === "jukebox") styleSongCard(button, value);
+      if (mode === "dodge") decorateDodgeDifficulty(button, value);
       button.onclick = () => startGame(value);
       return button;
     }),
@@ -1531,6 +1653,7 @@ function startGame(difficulty) {
     return;
   }
   if (!modes[selected].temporary || ["core_practice", "geomayhem"].includes(selected)) {
+    if (selected === "hangman" && snapshot.random_mode) selectedDifficulty = snapshot.difficulty;
     accountApp?.startRun(selected, selectedDifficulty);
     updateAchievements(achievementTracker.start(selected, selectedDifficulty));
   }
@@ -1721,7 +1844,7 @@ function render() {
     let title = s.won ? "You did it!" : "One more try?";
     let copy = s.death_message || `Score: ${s.score}. Your personal best is saved.`;
     if (selected === "hangman")
-      copy = `The word was ${s.word.replaceAll(" ", "")}. Score: ${s.score}.`;
+      copy = `The word was ${s.word.replaceAll(" ", "")}.${s.random_mode ? ` Difficulty: ${modes.hangman.difficulties[s.difficulty][0]}.` : ""} Score: ${s.score}.`;
     if (selected === "keyboard") {
       title = "Time’s up!";
       copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
@@ -1927,12 +2050,13 @@ function draw(s) {
       ctx.restore();continue;
     }
     if (command.chaos_kind) {
-      ChaosArt.tile(ctx, command.chaos_kind, c[0], c[1], c[2]-c[0], command.fill || command.outline, command.ghost);
+      ChaosArt.tile(ctx, command.chaos_kind, c[0], c[1], c[2]-c[0], command.fill || command.outline, command.ghost,
+        trailReducedMotion.matches || saved.preferences?.reducedMotion ? command.fill || command.outline : command.fill_color);
       continue;
     }
     if (command.kind === "block_icon") {
       ChaosArt.draw(ctx, command.block, c[0], c[1], command.size, command.ghost, command.color,
-        trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : command.age);
+        trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : command.age, command.cannons);
       continue;
     }
     if (s.mode === "geomayhem") {
@@ -2085,7 +2209,7 @@ function frame(now) {
   if (noteIcon) {
     const pulse = soundOn && !document.hidden && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
       ? musicPlayer?.melodyPulse() || 0 : 0;
-    noteIcon.style.transform = `scale(${1 + pulse * .22})`;
+    noteIcon.style.transform = `scale(${1 + pulse * .275})`;
   }
   lastFrame = now;
   requestAnimationFrame(frame);
@@ -2403,6 +2527,8 @@ document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("lostpointercapture", release);
 });
 let soundOn = pendingGaster?.soundOn !== false;
+let pendingSoundChoice = null;
+let soundSettingChain = Promise.resolve();
 let audioContext;
 let audioMaster;
 let musicPlayer;
@@ -2416,8 +2542,15 @@ if (!soundOn) {
 }
 $("sound").onclick = () => {
   soundOn = !soundOn;
-  if (!applyingAccountProfile && accountApp?.initialized)
-    accountApp.setting({ soundOn }).catch(error => accountApp.message(error.message));
+  if (!applyingAccountProfile) {
+    const choice = pendingSoundChoice = { value: soundOn };
+    soundSettingChain = soundSettingChain.then(async () => {
+      await accountApp.ready;
+      await accountApp.setting({ soundOn: choice.value });
+    }).catch(error => accountApp.message(error.message)).finally(() => {
+      if (pendingSoundChoice === choice) pendingSoundChoice = null;
+    });
+  }
   if (!soundOn) pendingAchievementDing = false;
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
@@ -2486,7 +2619,7 @@ $("jukebox-stop").onclick = () => {
 function initializeAudio() {
   if (!soundOn) return;
   try {
-    // Browsers unlock sound on a click/key press. Keep one context and one loop.
+    // Cubie’s welcome intro attempts autoplay; interaction resumes it if blocked.
     if (!audioContext) {
       audioContext = new AudioContext();
       audioMaster = audioContext.createGain();
@@ -2682,6 +2815,7 @@ coreOrigin = new CoreOrigin.Film($("core-origin"), {
   onChange: open => { coreAftermath = !open; clearKeys(); syncMusic(); },
 });
 let appliedAccountOwner;
+let appliedSoundPreference;
 function applyAccountProfile(profile) {
   if (!profile || active) return;
   const owner = accountApp?.controller?.state().owner;
@@ -2690,6 +2824,18 @@ function applyAccountProfile(profile) {
   applyingAccountProfile = true;
   try {
     saved = profile;
+    // A delayed snapshot must not roll back an already-applied sound setting.
+    // Revisions belong to the profile owner, so switching accounts resets this.
+    const soundRevision = saved.preferenceRevisions?.soundOn || 0;
+    if (!appliedSoundPreference || appliedSoundPreference.owner !== owner
+        || soundRevision > appliedSoundPreference.revision) {
+      appliedSoundPreference = { owner, revision: soundRevision,
+        value: saved.preferences?.soundOn !== false };
+    } else {
+      saved.preferences = { ...saved.preferences, soundOn: appliedSoundPreference.value };
+      saved.preferenceRevisions = { ...saved.preferenceRevisions,
+        soundOn: appliedSoundPreference.revision };
+    }
     saved.unlocks ||= { singularity: false };
     achievementTracker.data = new Achievements.Tracker(saved.achievements).data;
     achievementTracker.round = null;
@@ -2701,7 +2847,8 @@ function applyAccountProfile(profile) {
     for (const item of CubieCustoms.catalog)
       if (CubieCustoms.unlocked(item, saved.achievements.unlocked, saved.shop.owned, saved.testerTon618)) announcedCustoms.add(item.id);
     document.querySelector('[data-game="singularity"]').hidden = !saved.unlocks.singularity;
-    if (soundOn !== (saved.preferences?.soundOn !== false)) $("sound").click();
+    $("game-count").textContent = saved.unlocks.singularity ? "12" : "11";
+    if (!pendingSoundChoice && soundOn !== (saved.preferences?.soundOn !== false)) $("sound").click();
     document.documentElement.classList.toggle("account-reduced-motion", !!saved.preferences?.reducedMotion);
     renderAchievements(); applyCubieCustom(); showScores();
     if (selected === "shop") renderShop();
@@ -2715,7 +2862,10 @@ accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAc
   onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
 const arcadeWelcome = new ArcadeWelcome.Guide(accountApp);
-window.addEventListener('arcade-welcome-change', syncMusic);
+window.addEventListener('arcade-welcome-change', () => {
+  if (arcadeWelcome.dialog.open) initializeAudio();
+  syncMusic();
+});
 accountApp.ready.then(async () => {
   const client = await leaderboardReady;
   if (accountApp.session) client.accountSession = accountApp.session;
@@ -2804,3 +2954,64 @@ window.visualViewport?.addEventListener("resize", resizeGameArea);
 guidePreviewBootstrap.stop();
 initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
 initialize();
+
+
+// Pause decorative card animations outside the viewport and in background tabs.
+const animatedGameCards = [...document.querySelectorAll(".game-card")];
+const visibleGameCards = new Set();
+function syncCardDecorationVisibility() {
+  for (const card of animatedGameCards)
+    card.classList.toggle("card-effects-paused", document.hidden || !visibleGameCards.has(card));
+}
+const cardDecorationObserver = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (entry.isIntersecting) visibleGameCards.add(entry.target);
+    else visibleGameCards.delete(entry.target);
+  }
+  syncCardDecorationVisibility();
+});
+animatedGameCards.forEach(card => cardDecorationObserver.observe(card));
+document.addEventListener("visibilitychange", syncCardDecorationVisibility);
+
+// Seven reused actors draw from every sea creature before reshuffling the pool.
+const oceanSpecies = [...document.querySelectorAll('symbol[id^="ocean-"]')].map(n => n.id);
+let oceanCreatureBag = [];
+function randomizeOceanCreature(actor) {
+  if (!oceanCreatureBag.length) {
+    oceanCreatureBag = [...oceanSpecies];
+    for (let i = oceanCreatureBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [oceanCreatureBag[i], oceanCreatureBag[j]] = [oceanCreatureBag[j], oceanCreatureBag[i]];
+    }
+  }
+  const species = oceanCreatureBag.pop();
+  const size = 16 + Math.random() * 18;
+  actor.dataset.species = species;
+  actor.style.setProperty("--swim-depth", (34 + Math.random() * 98) + "px");
+  actor.style.color = ["#76b5c9", "#6f9dc0", "#90c6c1", "#ae9ecb", "#7ab8d9"][Math.floor(Math.random() * 5)];
+  actor.style.opacity = String(.3 + Math.random() * .25);
+  const art = actor.querySelector("use");
+  art.setAttribute("href", "#" + species);
+  art.setAttribute("width", size);
+  art.setAttribute("height", size * .7);
+}
+const oceanScene = document.querySelector('[data-game="dodge"] .ocean-creatures');
+for (let i = 0; i < 7; i++) {
+  const actor = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  actor.classList.add("ocean-swimmer");
+  const leftward = i % 2 === 1;
+  if (leftward) actor.classList.add("ocean-swimmer-left");
+  const turn = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  if (leftward) turn.setAttribute("transform", "scale(-1 1)");
+  turn.classList.add("ocean-swim-bob");
+  const art = document.createElementNS("http://www.w3.org/2000/svg", "use");
+  turn.append(art); actor.append(turn);
+  actor.style.setProperty("--swim-duration", (18 + Math.random() * 16) + "s");
+  actor.style.setProperty("--swim-delay", (-i * 4) + "s");
+  actor.style.setProperty("--ocean-rest-x", (12 + i * 32) + "px");
+  randomizeOceanCreature(actor);
+  actor.addEventListener("animationiteration", event => {
+    if (event.target === actor) randomizeOceanCreature(actor);
+  });
+  oceanScene.append(actor);
+}

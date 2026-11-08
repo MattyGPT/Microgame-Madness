@@ -80,7 +80,10 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await expect(page.locator('#account-auth')).toBeVisible();
   await expect.poll(() => page.evaluate(() => accountApp.controller.state().profile.shop.units)).toBe(0);
   await expect(page.locator('#account-history')).toContainText('Your next game starts your history');
-  await page.locator('#account-login').click();
+  await page.locator('#account-close').click();
+  await page.locator('#login-open').click();
+  await expect(page.locator('#account-auth-form')).toHaveAttribute('data-mode', 'login');
+  await expect(page.locator('#account-confirm-step')).toBeHidden();
   await credentials(page);
   await page.locator('#account-login').click();
   await expect(page.locator('#account-import')).toBeHidden();

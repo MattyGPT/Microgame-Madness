@@ -125,6 +125,32 @@ main,
 .quiet-button:hover {
   background: #282e2d;
 }
+.topbar-actions { display: flex; align-items: center; gap: 18px; }
+#login-open {
+  min-width: 190px;
+  min-height: 76px;
+  padding: 14px 28px;
+  border: 4px solid #00e5ff;
+  border-radius: 12px;
+  background: #102c32;
+  color: #e6fcff;
+  font-size: 30px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 0 20px #00e5ff30;
+  animation: login-shake 2s ease-in-out infinite;
+}
+#login-open:hover { background: #16434c; }
+#login-open:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+@keyframes login-shake {
+  0%, 75%, 100% { transform: translateX(0) rotate(0); }
+  80%, 90% { transform: translateX(-2px) rotate(-1deg); }
+  85%, 95% { transform: translateX(2px) rotate(1deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #login-open { animation: none; }
+}
+html.account-reduced-motion #login-open { animation: none; }
 #sound {
   min-width: 128px;
   min-height: 48px;
@@ -523,32 +549,210 @@ body.gaster-active { overflow: hidden; cursor: none; }
     sans-serif;
   letter-spacing: -2px;
 }
+.jukebox-art svg { overflow: visible; filter: drop-shadow(0 2px 1px #60285c65) drop-shadow(0 0 5px #f5a5dc25); }
+/* Full-card code rain stays beneath the readable game information. */
+.game-card[data-game="hangman"] { overflow: hidden; isolation: isolate; }
+.hangman-matrix {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: .48;
+  mask-image: linear-gradient(to bottom, #0005, #000 28%, #000b 65%, #0002);
+}
+.matrix-stream {
+  position: absolute;
+  top: 0;
+  left: calc(var(--column) * 8%);
+  white-space: pre;
+  font: 9px/13px monospace;
+  text-align: center;
+  color: transparent;
+  background: repeating-linear-gradient(to bottom, #235c3d 0, #3c9f5c 70px, #91edaa 115px, #dbffe2 130px, #235c3d 143px);
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: hangman-code-fall var(--fall) linear var(--offset) infinite;
+}
+@keyframes hangman-code-fall {
+  from { transform: translateY(-50%); }
+  to { transform: translateY(0); }
+}
+.game-card[data-game="hangman"] .card-top,
+.game-card[data-game="hangman"] .card-title,
+.game-card[data-game="hangman"] .card-description {
+  text-shadow: 0 1px 3px #07130b, 0 0 6px #07130b;
+}
+.word-art { gap: 5px; filter: drop-shadow(0 2px 2px #07190f); }
+.word-art .word-letter {
+  color: transparent;
+  background: linear-gradient(135deg, #f1ffcd, #c6f783 30%, #6cbd84 65%, #c3f7a0);
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: .35px #d7ffb580;
+}
+.word-art .word-question {
+  border-radius: 7px;
+  color: #e6ffbe;
+  background: radial-gradient(ellipse at 50% 60%, #122c20, #244d32);
+  box-shadow: inset 0 2px 4px #061d13, inset 0 -1px 0 #e2ffb866,
+    0 3px 0 #214b32, 0 0 10px #9cf58c20;
+  text-shadow: 0 0 7px #bfff8770;
+}
+@media (prefers-reduced-motion: reduce) {
+  .matrix-stream { animation: none; transform: translateY(-25%); }
+}
+html.account-reduced-motion .matrix-stream { animation: none; transform: translateY(-25%); }
+html.account-reduced-motion .word-art * { animation: none; }
 .word-art .word-question {
   transform: rotate(9deg);
   border: 1px solid var(--accent);
   padding: 0 10px;
   margin: 0 6px;
 }
-.keys-art {
-  gap: 5px;
+/* Sculpted letterforms with separate living gradients and etched facets. */
+.word-art { gap: 0; }
+.word-art .word-rune {
+  display: block;
+  width: 48px;
+  height: 64px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-text-stroke: 0;
 }
+.word-rune svg { width: 100%; height: 100%; overflow: visible; }
+.rune-type { font: 700 43px "Space Grotesk", sans-serif; letter-spacing: -1px; }
+.rune-stop { animation: rune-metal-flow 4.8s ease-in-out var(--stop-phase) infinite; }
+.rune-orbit { transform-origin: 24px 32px; animation: rune-orbit-turn 18s linear var(--rune-phase) infinite; }
+.word-rune:last-child .rune-orbit { animation-direction: reverse; }
+.rune-aura { animation: rune-breathe 3.8s ease-in-out var(--rune-phase) infinite alternate; }
+.rune-sparks { animation: rune-breathe 2.6s ease-in-out var(--rune-phase) infinite alternate; }
+.rune-sheen { animation: rune-sheen-pass 4.2s ease-in-out var(--rune-phase) infinite; }
+@keyframes rune-metal-flow {
+  0%, 100% { stop-color: #d8ffb0; }
+  25% { stop-color: #80dba9; }
+  50% { stop-color: #318d79; }
+  75% { stop-color: #afffd0; }
+}
+@keyframes rune-orbit-turn { to { transform: rotate(360deg); } }
+@keyframes rune-breathe { from { opacity: .3; } to { opacity: 1; } }
+@keyframes rune-sheen-pass {
+  0%, 15% { transform: translateX(-10px); }
+  80%, 100% { transform: translateX(65px); }
+}
+.keys-art { gap: 8px; }
 .keys-art i {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 43px;
+  box-sizing: border-box;
+  isolation: isolate;
+  overflow: hidden;
   font-style: normal;
   font-size: 23px;
-  border: 1px solid var(--accent);
-  border-bottom-width: 4px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  letter-spacing: 0;
+  color: #f0e9ff;
+  border: 1px solid #b4a4f0;
+  border-bottom: 4px solid #6658a2;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 20% 10%, #c3bbff70, transparent 65%),
+    linear-gradient(135deg, #514b91, #292c59 58%, #454078);
+  box-shadow: inset 0 1px 0 #e4dcff9c, inset 0 -2px 4px #12152f90,
+    0 3px 0 #262145, 0 5px 7px #080a203d, 0 0 8px #a699ee20;
   transform: rotate(-8deg);
+  --key-phase: 0s;
 }
 .keys-art i:nth-child(2) {
   transform: translateY(7px) rotate(5deg);
+  --key-phase: -1.3s;
 }
+.keys-art i:nth-child(3) { --key-phase: -2.6s; }
+.keys-art i::before {
+  content: "";
+  position: absolute;
+  inset: 3px 3px 4px;
+  z-index: 0;
+  border: 1px solid #aca2e76b;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 65%, #101631 15%, #171c42 55%, #34336a 100%);
+  box-shadow: inset 0 3px 5px #030719ef, inset 2px 0 3px #060c2480,
+    inset 0 -1px 1px #c6c0ff80, 0 1px 0 #d3c5ff40;
+  background-size: 300% 100%;
+  animation: key-color-flow 4s ease-in-out var(--key-phase) infinite alternate;
+}
+.keys-art i::after {
+  content: "";
+  position: absolute;
+  inset: -20px -30px;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, #e9e5ff08 43%, #eef4ff55 49%, #e3eaff12 54%, transparent 62%);
+  transform: translateX(-55px);
+  animation: key-polish 4.8s ease-in-out var(--key-phase) infinite;
+}
+.key-cosmos {
+  position: absolute;
+  inset: 5px 5px 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 70% 80%, #34559635, transparent 70%);
+  box-shadow: inset 0 2px 4px #02071d;
+}
+.key-cosmos svg { width: 100%; height: 100%; display: block; }
+.key-galaxy {
+  transform-origin: 20px 20px;
+  animation: key-galaxy-orbit 18s linear var(--key-phase) infinite;
+}
+.keys-art i:nth-child(2) .key-galaxy { animation-duration: 23s; animation-direction: reverse; }
+.keys-art i:nth-child(3) .key-galaxy { animation-duration: 20s; }
+.key-stars { animation: key-signal-glow 3.5s ease-in-out var(--key-phase) infinite alternate; }
+@keyframes key-galaxy-orbit { to { transform: rotate(360deg); } }
+.key-letter {
+  position: relative;
+  z-index: 1;
+  margin-top: -2px;
+  text-shadow: 0 2px 2px #030519, 0 0 3px #070b22, 0 0 7px #d4c7ff90;
+}
+.key-signal {
+  position: absolute;
+  bottom: 4px;
+  width: 9px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: #96d9ff;
+  box-shadow: 0 0 4px #8bcfff;
+  animation: key-signal-glow 2.8s ease-in-out var(--key-phase) infinite alternate;
+}
+@keyframes key-color-flow {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@keyframes key-polish {
+  0%, 15% { transform: translateX(-55px); }
+  75%, 100% { transform: translateX(55px); }
+}
+@keyframes key-signal-glow {
+  from { opacity: .4; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .keys-art i::before, .keys-art i::after { animation: none; }
+}
+html.account-reduced-motion .keys-art *,
+html.account-reduced-motion .keys-art i::before,
+html.account-reduced-motion .keys-art i::after { animation: none; }
 .blocks-art {
   font-size: 55px;
   gap: 12px;
 }
-.blocks-art span {
+.blocks-art span:last-child {
   transform: rotate(15deg) translateY(10px);
 }
 .boss-art {
@@ -650,8 +854,93 @@ body.gaster-active { overflow: hidden; cursor: none; }
 .keys-art i { animation: arcade-key-left 3.2s ease-in-out infinite; }
 .keys-art i:nth-child(2) { animation: arcade-key-middle 3.8s ease-in-out -1.2s infinite; }
 .keys-art i:nth-child(3) { animation: arcade-key-right 3.4s ease-in-out -.7s infinite; }
-.blocks-art { animation: arcade-block-drift 4.2s ease-in-out infinite; }
-.blocks-art span { animation: arcade-block-turn 3.4.8s ease-in-out -1.1s infinite; }
+/* An illuminated blue panel, with flowing etched curves and a passing sheen. */
+.turtle-prophecy { width: 180px; height: 97px; overflow: visible; filter: drop-shadow(0 3px 3px #02091d80); }
+.prophecy-stars, .prophecy-comet { filter: url(#turtle-soft-glow); }
+/* Separate gradient stops send blue color waves through each etched piece. */
+/* Deep blues ebb independently beneath the brighter etched details. */
+.prophecy-panel-gradient stop {
+  animation: prophecy-panel-blue 6s ease-in-out var(--panel-phase) infinite;
+}
+@keyframes prophecy-panel-blue {
+  0%, 100% { stop-color: #08132e; }
+  25% { stop-color: #102857; }
+  50% { stop-color: #164578; }
+  75% { stop-color: #172d65; }
+}
+.prophecy-blue-gradient stop {
+  animation: prophecy-blue-color var(--blue-duration) ease-in-out var(--blue-phase) infinite;
+}
+.prophecy-blue-depth stop { animation-name: prophecy-blue-depth; }
+@keyframes prophecy-blue-color {
+  0%, 100% { stop-color: #244cb4; }
+  20% { stop-color: #387ee8; }
+  40% { stop-color: #47b8f2; }
+  55% { stop-color: #b5eeff; }
+  70% { stop-color: #67cefa; }
+  85% { stop-color: #455bd2; }
+}
+@keyframes prophecy-blue-depth {
+  0%, 100% { stop-color: #102951; }
+  25% { stop-color: #174582; }
+  50% { stop-color: #3688c2; }
+  75% { stop-color: #245d9e; }
+}
+.prophecy-space {
+  /* One shared transform keeps every space detail drifting in the same direction. */
+  animation: prophecy-space-drift 8s ease-in-out infinite alternate;
+}
+.prophecy-nebula {
+  animation: prophecy-nebula-breathe 5s ease-in-out infinite alternate;
+}
+.prophecy-nebula-two { animation-duration: 6.5s; animation-delay: -3s; }
+/* Fine background details stay inside the shared directional drift. */
+.prophecy-galaxy {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: prophecy-galaxy-turn 28s linear infinite;
+}
+.prophecy-stardust { animation: prophecy-nebula-breathe 7s ease-in-out -2s infinite alternate; }
+.prophecy-comet { animation: prophecy-comet-glow 4.5s ease-in-out infinite; }
+.prophecy-comet-second { animation-delay: -2.2s; }
+@keyframes prophecy-galaxy-turn { to { transform: rotate(360deg); } }
+@keyframes prophecy-comet-glow {
+  0%, 100% { opacity: .2; }
+  45%, 60% { opacity: .95; }
+}
+.prophecy-space-star {
+  animation: prophecy-space-twinkle 3.8s ease-in-out var(--star-phase, 0s) infinite;
+}
+@keyframes prophecy-space-drift {
+  from { transform: translate(-18px, -12px); }
+  to { transform: translate(18px, 12px); }
+}
+@keyframes prophecy-nebula-breathe {
+  from { opacity: .5; }
+  to { opacity: 1; }
+}
+@keyframes prophecy-space-twinkle {
+  0%, 100% { opacity: .3; }
+  50% { opacity: 1; }
+}
+.prophecy-currents { animation: prophecy-current 3.2s ease-in-out infinite alternate; }
+.prophecy-turtle { animation: prophecy-float 3s ease-in-out infinite; transform-origin: 90px 49px; }
+.prophecy-shimmer { animation: prophecy-shine 2.8s linear infinite; mix-blend-mode: screen; }
+.prophecy-stars { animation: prophecy-glint 2s ease-in-out infinite alternate; }
+@keyframes prophecy-current {
+  from { transform: translate(-5px, -2px); opacity: .45; }
+  to { transform: translate(5px, 2px); opacity: .85; }
+}
+@keyframes prophecy-float {
+  0%, 100% { transform: translateY(1px) rotate(-1deg); }
+  50% { transform: translateY(-2px) rotate(1deg); }
+}
+@keyframes prophecy-shine {
+  from { transform: translateX(0); }
+  to { transform: translateX(245px); }
+}
+@keyframes prophecy-glint { from { opacity: .4; } to { opacity: 1; } }
+html.account-reduced-motion .turtle-prophecy * { animation: none; }
 .boss-art span {
   animation: arcade-boss-blink 4.4s ease-in-out -2s infinite,
     arcade-boss-look 8s ease-in-out infinite;
@@ -687,9 +976,9 @@ body.gaster-active { overflow: hidden; cursor: none; }
 }
  .word-art .word-letter {
   display: inline-block;
-  animation: arcade-letter .5s ease-in-out infinite;
+  animation: arcade-letter 3.6s ease-in-out infinite;
 }
-.word-art .word-letter:last-child { animation-delay: -.25s; }
+.word-art .word-letter:last-child { animation-delay: -1.8s; }
 @keyframes arcade-letter {
   0%, 100% { transform: rotate(-1.5deg); }
   50% { transform: translateY(-1px) rotate(1.5deg); }
@@ -712,11 +1001,11 @@ body.gaster-active { overflow: hidden; cursor: none; }
 }
 @keyframes arcade-block-drift {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
+  50% { transform: translateY(-3px); }
 }
 @keyframes arcade-block-turn {
   0%, 100% { transform: rotate(15deg) translateY(10px); }
-  50% { transform: rotate(5deg) translate(4px, 20px); }
+  50% { transform: rotate(11deg) translate(1px, 13px); }
 }
 @keyframes arcade-boss-look {
   0%, 10%, 95%, 100% { translate: 0 0; }
@@ -1417,8 +1706,14 @@ select:disabled {
 }
 @media (max-width: 700px) {
   .topbar {
-    height: 84px;
+    height: auto;
+    min-height: 84px;
+    padding-block: 14px;
+    flex-wrap: wrap;
+    gap: 16px;
   }
+  .topbar-actions { margin-left: auto; gap: 12px; }
+  #login-open { min-width: 170px; }
   .edition {
     display: none;
   }
@@ -2863,3 +3158,456 @@ html.account-reduced-motion .chaos-wild-card { animation: none !important; trans
 #geomayhem-boss[hidden] { display: none; }
 #geomayhem-boss-health { width: 45%; height: 8px; accent-color: #ff526a; }
 #geomayhem-upgrade-status { line-height: 1.4; }
+
+/* Boss Crush: the original glyph and facial geometry, lit as a metal shell. */
+.game-card[data-game="boss"] { overflow: hidden; isolation: isolate; }
+.boss-card-scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.boss-card-scene svg { width: 100%; height: 100%; display: block; }
+.game-card[data-game="boss"] .card-top,
+.game-card[data-game="boss"] .card-title,
+.game-card[data-game="boss"] .card-description { text-shadow: 0 1px 4px #201018, 0 0 5px #201018; }
+@property --boss-metal-0 { syntax: "<color>"; inherits: false; initial-value: #ffd9d9; }
+@property --boss-metal-1 { syntax: "<color>"; inherits: false; initial-value: #f1a3ac; }
+@property --boss-metal-2 { syntax: "<color>"; inherits: false; initial-value: #b65a72; }
+@property --boss-metal-3 { syntax: "<color>"; inherits: false; initial-value: #f4b6c1; }
+@property --boss-metal-4 { syntax: "<color>"; inherits: false; initial-value: #8c405b; }
+@property --boss-metal-5 { syntax: "<color>"; inherits: false; initial-value: #e896a5; }
+.boss-shell {
+  font: inherit;
+  color: transparent;
+  background: linear-gradient(125deg, var(--boss-metal-0) 0%, var(--boss-metal-1) 22%, var(--boss-metal-2) 45%, var(--boss-metal-3) 57%, var(--boss-metal-4) 78%, var(--boss-metal-5) 100%);
+  background-size: 220% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  filter: drop-shadow(0 2px 0 #672e43) drop-shadow(0 4px 3px #160c1d70);
+  animation: boss-shell-light 4.8s ease-in-out infinite alternate,
+    boss-shell-rage 8s ease-in-out 8s infinite;
+}
+.boss-reactor { animation: boss-reactor-breathe 4s ease-in-out infinite alternate; }
+.boss-target-ring { transform-origin: 120px 83px; animation: boss-target-rotate 28s linear infinite; }
+.boss-target-brackets { animation: boss-reactor-breathe 3s ease-in-out -1s infinite alternate; }
+.boss-scan { animation: boss-scan-pass 6s linear infinite; }
+.boss-ember { animation: boss-ember-rise 5s ease-out var(--ember-delay) infinite; }
+/* Match the eyebrow timing while retaining the metallic sheen underneath. */
+@keyframes boss-shell-rage {
+  0%, 37.5%, 100% { --boss-metal-0: #ffd9d9; --boss-metal-1: #f1a3ac; --boss-metal-2: #b65a72; --boss-metal-3: #f4b6c1; --boss-metal-4: #8c405b; --boss-metal-5: #e896a5; }
+  4.375%, 33.125% { --boss-metal-0: #ffd2bd; --boss-metal-1: #ff746b; --boss-metal-2: #c72c37; --boss-metal-3: #ff9b88; --boss-metal-4: #831e32; --boss-metal-5: #ed4c54; }
+}
+@keyframes boss-shell-light { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes boss-reactor-breathe { from { opacity: .35; } to { opacity: .85; } }
+@keyframes boss-target-rotate { to { transform: rotate(360deg); } }
+@keyframes boss-scan-pass { from { transform: translateY(-20px); } to { transform: translateY(205px); } }
+@keyframes boss-ember-rise {
+  0% { opacity: 0; transform: translate(0, 8px); }
+  20% { opacity: .7; }
+  100% { opacity: 0; transform: translate(7px, -65px); }
+}
+.boss-terminal-windows { opacity: .65; }
+.boss-code-text { font: 4.2px monospace; letter-spacing: .15px; }
+.boss-code-scroll { animation: boss-code-scroll 12s linear infinite; }
+.boss-terminal-cursor { animation: boss-cursor-blink 1.2s steps(1) infinite; }
+.boss-terminal-leds { animation: boss-reactor-breathe 1.8s ease-in-out infinite alternate; }
+.boss-terminal-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: boss-bar-activity 2s ease-in-out var(--bar-delay) infinite alternate;
+}
+.boss-signal-trace { stroke-dasharray: 70 30; animation: boss-signal-flow 3s linear infinite; }
+@keyframes boss-code-scroll { to { transform: translateY(-80px); } }
+@keyframes boss-cursor-blink { 50% { opacity: 0; } }
+@keyframes boss-bar-activity { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+@keyframes boss-signal-flow { to { stroke-dashoffset: -100; } }
+/* One eight-second cycle keeps the terminal failure aligned with the brows. */
+.boss-terminal-windows { animation: boss-terminal-rage 8s linear 8s infinite; }
+.boss-terminal-errors { opacity: 0; animation: boss-error-rage 8s linear 8s infinite; }
+@keyframes boss-terminal-rage {
+  0%, 37.5%, 100% { transform: translate(0); opacity: .65; filter: none; }
+  4.375%, 10%, 16%, 22%, 28%, 33.125% { transform: translate(-1.7px, .8px); opacity: 1; filter: saturate(2) brightness(1.4); }
+  7%, 13%, 19%, 25%, 31% { transform: translate(1.7px, -.8px); opacity: .8; filter: saturate(2) brightness(1.2); }
+}
+@keyframes boss-error-rage {
+  0%, 37.5%, 100% { opacity: 0; transform: translate(0); }
+  4.375%, 10%, 16%, 22%, 28%, 33.125% { opacity: .95; transform: translate(1px, -.6px); }
+  7%, 13%, 19%, 25%, 31% { opacity: .65; transform: translate(-1px, .6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boss-card-scene *, .boss-shell { animation: none; }
+  .boss-scan { opacity: 0; }
+}
+html.account-reduced-motion .boss-card-scene *,
+html.account-reduced-motion .boss-art,
+html.account-reduced-motion .boss-art *,
+html.account-reduced-motion .boss-art span::before,
+html.account-reduced-motion .boss-art span::after { animation: none; }
+html.account-reduced-motion .boss-scan { opacity: 0; }
+
+/* Pumpkin King: a haunted throne and an illuminated royal diamond. */
+.game-card[data-game="pumpkin"] { overflow: hidden; isolation: isolate; }
+.pumpkin-card-scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.pumpkin-card-scene svg { display: block; width: 100%; height: 100%; }
+.game-card[data-game="pumpkin"] .card-top,
+.game-card[data-game="pumpkin"] .card-title,
+.game-card[data-game="pumpkin"] .card-description { text-shadow: 0 1px 4px #20131b, 0 0 6px #20131b; }
+.pumpkin-art { text-shadow: none; transform: none; animation: pumpkin-royal-float 5s ease-in-out infinite; }
+.pumpkin-art svg { width: 100px; height: 97px; overflow: visible; filter: drop-shadow(0 3px 3px #130d2170); }
+.pumpkin-metal-stop { animation: pumpkin-metal-flow 5.2s ease-in-out var(--metal-phase) infinite; }
+.pumpkin-carving { filter: drop-shadow(0 0 2px #ffaf4b90); animation: pumpkin-firelight 3.2s ease-in-out infinite alternate; }
+.pumpkin-crown-gem { animation: pumpkin-firelight 2.7s ease-in-out -1s infinite alternate; }
+.pumpkin-candlelight { animation: pumpkin-firelight 2.4s ease-in-out infinite alternate; }
+.pumpkin-royal-runes { animation: pumpkin-firelight 5s ease-in-out -2s infinite alternate; }
+.pumpkin-throne-aura { animation: pumpkin-firelight 4.6s ease-in-out infinite alternate; }
+.pumpkin-sigil { transform-origin: 50px 49px; animation: pumpkin-sigil-turn 40s linear infinite; }
+.pumpkin-mist { animation: pumpkin-mist-drift 8s ease-in-out infinite alternate; }
+.pumpkin-ember { animation: pumpkin-ember-rise 5.5s ease-out var(--ember-phase) infinite; }
+@keyframes pumpkin-royal-float {
+  0%, 100% { transform: translateY(1px) rotate(-3deg); }
+  50% { transform: translateY(-3px) rotate(3deg); }
+}
+@keyframes pumpkin-metal-flow {
+  0%, 100% { stop-color: #ffdfa1; }
+  30% { stop-color: #eea454; }
+  60% { stop-color: #b8663b; }
+  80% { stop-color: #f4bb74; }
+}
+@keyframes pumpkin-firelight { from { opacity: .6; } to { opacity: 1; } }
+@keyframes pumpkin-sigil-turn { to { transform: rotate(360deg); } }
+@keyframes pumpkin-mist-drift { from { transform: translate(-12px, 0); opacity: .4; } to { transform: translate(12px, -4px); opacity: .8; } }
+@keyframes pumpkin-ember-rise {
+  0% { opacity: 0; transform: translate(0, 5px); }
+  20% { opacity: .8; }
+  100% { opacity: 0; transform: translate(9px, -66px); }
+}
+.pumpkin-arches { animation: pumpkin-arch-glow 6s ease-in-out infinite alternate; }
+.pumpkin-tracery { animation: pumpkin-arch-glow 7.5s ease-in-out -3s infinite alternate; }
+.pumpkin-bat-flight { animation: pumpkin-bat-flight 9s ease-in-out infinite alternate; }
+.pumpkin-bat-distant { animation-duration: 12s; animation-delay: -4s; animation-direction: alternate-reverse; }
+.pumpkin-bat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pumpkin-bat-flutter .65s ease-in-out infinite alternate;
+}
+.pumpkin-bat-distant .pumpkin-bat { animation-duration: .8s; animation-delay: -.3s; }
+.pumpkin-flame {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: pumpkin-flame-dance 1.3s ease-in-out infinite;
+}
+.pumpkin-flame-second { animation-duration: 1.7s; animation-delay: -.8s; }
+.pumpkin-royal-runes text { animation: pumpkin-rune-glow 4s ease-in-out infinite alternate; }
+.pumpkin-royal-runes text:nth-child(2) { animation-delay: -1.3s; }
+.pumpkin-royal-runes text:nth-child(3) { animation-delay: -2.6s; }
+@keyframes pumpkin-arch-glow {
+  from { opacity: .18; stroke: #985039; }
+  to { opacity: .42; stroke: #eab477; }
+}
+@keyframes pumpkin-bat-flight {
+  0% { transform: translate(-10px, 8px); }
+  50% { transform: translate(5px, -5px); }
+  100% { transform: translate(17px, 2px); }
+}
+@keyframes pumpkin-bat-flutter { from { transform: scaleY(.55) rotate(-5deg); } to { transform: scaleY(1.12) rotate(5deg); } }
+@keyframes pumpkin-flame-dance {
+  0%, 100% { transform: scale(1, 1) skewX(-4deg); opacity: .85; }
+  35% { transform: scale(.8, 1.15) skewX(7deg); opacity: 1; }
+  70% { transform: scale(1.1, .9) skewX(-7deg); opacity: .7; }
+}
+@keyframes pumpkin-rune-glow { from { fill: #ac7047; opacity: .45; } to { fill: #ffda8c; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .pumpkin-card-scene *, .pumpkin-art, .pumpkin-art * { animation: none !important; }
+}
+html.account-reduced-motion .pumpkin-card-scene *,
+html.account-reduced-motion .pumpkin-art,
+html.account-reduced-motion .pumpkin-art * { animation: none; }
+
+/* Freshly randomized Chaos tiles orbit the difficulty card's perimeter. */
+.difficulty-choice.dodge-border-card {
+  position: relative;
+  isolation: isolate;
+  padding: 23px;
+
+}
+.dodge-border-card .chaos-border-flight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 8px;
+}
+.chaos-border-block {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--block-size);
+  height: var(--block-size);
+  object-fit: contain;
+  transform: translate(-50%, -50%) rotate(var(--block-turn));
+  animation: chaos-border-orbit var(--flight-time) linear var(--flight-delay) infinite;
+}
+@keyframes chaos-border-orbit {
+  0%, 100% { transform: translate(-50%, -50%) rotate(var(--block-turn)); }
+  25% { transform: translate(calc(var(--flight-width) - 50%), -50%) rotate(var(--block-turn)); }
+  50% { transform: translate(calc(var(--flight-width) - 50%), calc(var(--flight-height) - 50%)) rotate(var(--block-turn)); }
+  75% { transform: translate(-50%, calc(var(--flight-height) - 50%)) rotate(var(--block-turn)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chaos-border-block { animation: none; left: var(--flight-x); top: var(--flight-y); }
+}
+html.account-reduced-motion .chaos-border-block { animation: none; left: var(--flight-x); top: var(--flight-y); }
+.chaos-border-flight:not(.border-in-view) .chaos-border-block,
+html.border-page-hidden .chaos-border-block { animation-play-state: paused; }
+
+@property --chaos-border-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.difficulty-choice.chaos-difficulty::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from var(--chaos-border-angle), var(--chaos-rainbow));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: chaos-rainbow-flow 8s linear infinite;
+}
+@keyframes chaos-rainbow-flow { to { --chaos-border-angle: 360deg; } }
+.chaos-difficulty:not(:has(.border-in-view))::before,
+html.border-page-hidden .chaos-difficulty::before { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .difficulty-choice.chaos-difficulty::before { animation: none; }
+}
+html.account-reduced-motion .chaos-difficulty::before { animation: none; }
+
+.dodge-border-card > strong { color: var(--difficulty-title-color, var(--accent)); }
+.difficulty-choice.chaos-difficulty > strong {
+  color: transparent;
+  background: linear-gradient(110deg, var(--chaos-rainbow));
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: chaos-title-rainbow 5s ease-in-out infinite alternate;
+}
+@keyframes chaos-title-rainbow {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+.chaos-difficulty:not(:has(.border-in-view)) > strong,
+html.border-page-hidden .chaos-difficulty > strong { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .difficulty-choice.chaos-difficulty > strong { animation: none; }
+}
+html.account-reduced-motion .chaos-difficulty > strong { animation: none; }
+
+/* Distinct atmospheric scenes share a small set of inexpensive motions. */
+.game-card:has(.arcade-card-scene) { isolation: isolate; overflow: hidden; }
+.arcade-card-scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; color: var(--scene-color); }
+.arcade-card-scene svg { width: 100%; height: 100%; display: block; }
+.game-card:has(.arcade-card-scene) .card-top,
+.game-card:has(.arcade-card-scene) .card-title,
+.game-card:has(.arcade-card-scene) .card-description { text-shadow: 0 1px 3px #11171e, 0 0 5px #11171e; }
+.scene-drift { animation: arcade-scene-drift 9s ease-in-out infinite alternate; }
+.scene-rise { animation: arcade-scene-rise 8s ease-in-out infinite; }
+.scene-breathe { animation: arcade-scene-breathe 5s ease-in-out infinite alternate; }
+.scene-rotate { transform-origin: 120px 80px; animation: arcade-scene-rotate 45s linear infinite; }
+.scene-signal { stroke-dasharray: 12 88; animation: arcade-scene-signal 6s linear infinite; }
+.scene-equalizer { transform-box: fill-box; transform-origin: bottom; animation: arcade-scene-equalizer 2.6s ease-in-out var(--scene-delay) infinite alternate; }
+.scene-scan { animation: arcade-scene-scan 7s ease-in-out infinite alternate; }
+.jukebox-metal-stop { animation: jukebox-metal-glint 4s ease-in-out infinite alternate; }
+@keyframes arcade-scene-drift { from { transform: translate(-5px, 2px); } to { transform: translate(5px, -3px); } }
+@keyframes arcade-scene-rise { 0% { transform: translateY(12px); opacity: 0; } 25%, 75% { opacity: .5; } 100% { transform: translateY(-20px); opacity: 0; } }
+@keyframes arcade-scene-breathe { from { opacity: .2; } to { opacity: .55; } }
+@keyframes arcade-scene-rotate { to { transform: rotate(360deg); } }
+@keyframes arcade-scene-signal { to { stroke-dashoffset: -100; } }
+@keyframes arcade-scene-equalizer { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+@keyframes arcade-scene-scan { from { transform: translateY(0); opacity: .2; } to { transform: translateY(94px); opacity: .5; } }
+@keyframes jukebox-metal-glint { from { stop-color: #ffdff7; } to { stop-color: #fff2fc; } }
+.game-card.card-effects-paused *, .game-card.card-effects-paused *::before,
+.game-card.card-effects-paused *::after { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .arcade-card-scene *, .jukebox-metal-stop { animation: none !important; }
+}
+html.account-reduced-motion .arcade-card-scene *,
+html.account-reduced-motion .jukebox-metal-stop { animation: none; }
+
+/* All seven King's Wrath attacks, arranged around the crown. */
+.wrath-memory-eye { animation: wrath-memory-colors 3.9s ease-in-out var(--attack-delay) infinite; }
+.wrath-bone-slide { animation: wrath-bone-slide 4s ease-in-out infinite alternate; }
+.wrath-ring-spin { animation: wrath-ring-spin 10s linear infinite; }
+.wrath-finger-reach { animation: wrath-finger-reach 3.6s ease-in-out infinite; }
+.wrath-finger-right { animation-name: wrath-finger-reach-right; animation-delay: -1.8s; }
+.wrath-projectile-orbit { animation: wrath-ring-spin 7s linear infinite reverse; }
+.wrath-slam-hand { animation: wrath-hand-slam 4.5s ease-in-out infinite; }
+.wrath-slam-impact { animation: wrath-impact 4.5s ease-in-out infinite; }
+.wrath-mouth-fire { transform-origin: 116px 142px; animation: wrath-fire-burst 4.5s ease-in-out infinite; }
+.wrath-quadrant-haunt { animation: wrath-quadrant-cycle 8s steps(1) infinite; }
+@keyframes wrath-memory-colors {
+  0%, 100% { fill: #245d94; stroke: #78ccff; opacity: .35; }
+  20% { fill: #6ecbff; stroke: #d4f0ff; opacity: .95; }
+  45% { fill: #9d5b2c; stroke: #ffbc73; opacity: .4; }
+  65% { fill: #ffac5a; stroke: #ffe4b6; opacity: .95; }
+}
+@keyframes wrath-bone-slide { from { transform: translateY(-7px); } to { transform: translateY(5px); } }
+@keyframes wrath-ring-spin { to { transform: rotate(360deg); } }
+@keyframes wrath-finger-reach { 0%, 100% { transform: translateX(-8px); opacity: .4; } 60%, 75% { transform: translateX(12px); opacity: .9; } }
+@keyframes wrath-finger-reach-right { 0%, 100% { transform: translateX(8px); opacity: .4; } 60%, 75% { transform: translateX(-12px); opacity: .9; } }
+@keyframes wrath-hand-slam { 0%, 100% { transform: translateY(0); } 30%, 45% { transform: translateY(-9px); } 55%, 65% { transform: translateY(4px); } }
+@keyframes wrath-impact { 0%, 45%, 80%, 100% { opacity: 0; } 55%, 65% { opacity: .9; } }
+@keyframes wrath-fire-burst { 0%, 60%, 100% { opacity: .15; transform: scale(.65); } 75%, 85% { opacity: .9; transform: scale(1.15); } }
+@keyframes wrath-quadrant-cycle { 0% { transform: translate(0, 0); } 25% { transform: translate(18px, 0); } 50% { transform: translate(18px, 13px); } 75% { transform: translate(0, 13px); } }
+@media (prefers-reduced-motion: reduce) {
+  .arcade-card-scene [data-wrath-attack] * { animation: none !important; }
+}
+html.account-reduced-motion .arcade-card-scene [data-wrath-attack] * { animation: none; }
+
+/* Quiet far-field layers deepen Key Rush without competing with the keys. */
+.key-distant-lights { animation: key-distance-glow 7s ease-in-out infinite alternate; }
+.key-distant-packets { animation: key-distance-drift 12s linear infinite; }
+@keyframes key-distance-glow { from { opacity: .15; } to { opacity: .4; } }
+@keyframes key-distance-drift {
+  0% { transform: translate(-7px, 3px); opacity: 0; }
+  25%, 75% { opacity: .3; }
+  100% { transform: translate(7px, -3px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .key-distant-lights, .key-distant-packets { animation: none !important; }
+}
+html.account-reduced-motion .key-distant-lights,
+html.account-reduced-motion .key-distant-packets { animation: none; }
+
+.ocean-rays { animation: ocean-ray-sway 12s ease-in-out infinite alternate; transform-origin: center top; }
+.ocean-kelp { animation: ocean-kelp-sway 7s ease-in-out infinite alternate; transform-origin: 120px 170px; }
+.ocean-swimmer { animation: ocean-swim-right var(--swim-duration) linear var(--swim-delay) infinite; }
+.ocean-swimmer-left { animation-name: ocean-swim-left; }
+.ocean-swim-bob { translate: 0 0; animation: ocean-swim-bob 3s ease-in-out infinite alternate; }
+@keyframes ocean-swim-right {
+  from { transform: translate(-70px, var(--swim-depth)); }
+  to { transform: translate(310px, var(--swim-depth)); }
+}
+@keyframes ocean-swim-left {
+  from { transform: translate(310px, var(--swim-depth)); }
+  to { transform: translate(-70px, var(--swim-depth)); }
+}
+@keyframes ocean-swim-bob { to { translate: 0 -3px; } }
+@keyframes ocean-ray-sway { from { transform: skewX(-4deg); opacity: .5; } to { transform: skewX(4deg); opacity: 1; } }
+@keyframes ocean-kelp-sway { from { transform: skewX(-2deg); } to { transform: skewX(2deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ocean-rays, .ocean-kelp, .ocean-swimmer, .ocean-swim-bob { animation: none !important; }
+  .ocean-swimmer { transform: translate(var(--ocean-rest-x), var(--swim-depth)); }
+}
+html.account-reduced-motion .ocean-rays,
+html.account-reduced-motion .ocean-kelp,
+html.account-reduced-motion .ocean-swimmer,
+html.account-reduced-motion .ocean-swim-bob { animation: none; }
+html.account-reduced-motion .ocean-swimmer { transform: translate(var(--ocean-rest-x), var(--swim-depth)); }
+
+/* Layered containment machine: a dark throat behind a luminous front disk. */
+.singularity-art .core-machine {
+  width: 140px; height: 100px; overflow: visible;
+  filter: drop-shadow(0 2px 3px #050b2070);
+  animation: core-machine-hover 7s ease-in-out infinite;
+}
+.singularity-art .core-machine circle { animation: none; }
+.core-containment-rotor { transform-origin: 70px 50px; animation: core-machine-rotate 26s linear infinite; }
+.core-lensing-arcs { transform-origin: 70px 50px; animation: core-machine-rotate 12s linear infinite reverse; }
+.core-accretion-stream { animation: core-accretion-flow 5s linear infinite; }
+.core-accretion-front { animation-duration: 3.8s; }
+.core-corona-glow { animation: core-corona-breathe 4.8s ease-in-out infinite alternate !important; }
+.core-polar-jets { animation: core-corona-breathe 6s ease-in-out -2s infinite alternate; }
+.core-status-lights { animation: core-status-breathe 3.5s ease-in-out infinite alternate; }
+.core-new-infall { animation: core-new-infall 4.23s linear var(--infall-delay) infinite; }
+@keyframes core-machine-hover { 0%, 100% { transform: translateY(1px) rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
+@keyframes core-machine-rotate { to { transform: rotate(360deg); } }
+@keyframes core-accretion-flow { to { stroke-dashoffset: -250; } }
+@keyframes core-corona-breathe { from { opacity: .45; } to { opacity: .9; } }
+@keyframes core-status-breathe { from { opacity: .35; } to { opacity: .95; } }
+@keyframes core-new-infall {
+  0% { transform: rotate(0deg) translateY(-25px) scale(.5); opacity: 0; }
+  15% { opacity: .9; }
+  65% { opacity: .8; }
+  100% { transform: rotate(240deg) translateY(-2px) scale(.05); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .singularity-art .core-machine, .singularity-art .core-machine * { animation: none !important; }
+  .core-new-infall { transform: translateY(-23px); opacity: .55; }
+}
+html.account-reduced-motion .singularity-art .core-machine,
+html.account-reduced-motion .singularity-art .core-machine * { animation: none !important; }
+html.account-reduced-motion .core-new-infall { transform: translateY(-23px); opacity: .55; }
+
+/* Deep-space layers behind the Core; slow group motion limits rendering work. */
+.cosmos-nebula-layer { animation: cosmos-cloud-drift 8s ease-in-out infinite alternate; transform-origin: 120px 90px; }
+.cosmos-nebula-far { animation: cosmos-cloud-drift 11s ease-in-out -4s infinite alternate-reverse; transform-origin: 120px 90px; }
+.cosmos-stars { animation: cosmos-starlight 4s ease-in-out var(--cosmos-phase) infinite alternate, cosmos-star-drift 13s ease-in-out var(--cosmos-phase) infinite alternate; }
+.cosmos-galaxy-spin { animation: cosmos-galaxy-turn var(--galaxy-speed) linear var(--galaxy-phase) infinite; }
+.cosmos-comet { animation: cosmos-comet-pass 8s linear infinite; }
+@keyframes cosmos-cloud-drift {
+  from { transform: translate(-9px, 5px) scale(.97) rotate(-2deg); opacity: .6; }
+  to { transform: translate(9px, -5px) scale(1.07) rotate(2deg); opacity: 1; }
+}
+@keyframes cosmos-starlight { from { opacity: .35; } to { opacity: .85; } }
+@keyframes cosmos-galaxy-turn { to { transform: rotate(360deg); } }
+@keyframes cosmos-comet-pass {
+  0% { transform: translate(-35px, -12px); opacity: 0; }
+  15%, 70% { opacity: .65; }
+  100% { transform: translate(70px, 25px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .core-cosmos * { animation: none !important; }
+}
+html.account-reduced-motion .core-cosmos * { animation: none; }
+
+/* Additional parallax preserves each galaxy's original SVG placement. */
+.cosmos-galaxy { animation: cosmos-galaxy-drift var(--galaxy-drift) ease-in-out var(--drift-phase) infinite alternate; }
+.cosmos-planet-drift { animation: cosmos-planet-drift 10s ease-in-out infinite; }
+.cosmos-moon-drift { animation: cosmos-planet-drift 13s ease-in-out -5s infinite reverse; }
+.cosmos-meteor { animation: cosmos-meteor-pass 9s linear var(--meteor-delay) infinite; }
+@keyframes cosmos-galaxy-drift {
+  from { translate: -5px 3px; }
+  to { translate: 5px -3px; }
+}
+@keyframes cosmos-star-drift {
+  from { transform: translate(-7px, -3px); }
+  to { transform: translate(7px, 3px); }
+}
+@keyframes cosmos-planet-drift {
+  0%, 100% { translate: -4px 0; }
+  25% { translate: 0 -4px; }
+  50% { translate: 4px 0; }
+  75% { translate: 0 4px; }
+}
+@keyframes cosmos-meteor-pass {
+  0% { transform: translate(-35px, var(--meteor-y)); opacity: 0; }
+  8%, 30% { opacity: .7; }
+  42% { transform: translate(275px, calc(var(--meteor-y) + 65px)); opacity: 0; }
+  100% { transform: translate(275px, calc(var(--meteor-y) + 65px)); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .core-cosmos * { animation: none !important; }
+  .cosmos-meteor { opacity: 0; }
+}
+html.account-reduced-motion .core-cosmos * { animation: none !important; }
+html.account-reduced-motion .cosmos-meteor { opacity: 0; }
+
+/* Polished chrome note; its parent retains the existing music-driven pulse. */
+.jukebox-art .jukebox-note-deluxe { width: 76px; height: 76px; filter: drop-shadow(0 3px 2px #23102970); }
+.jukebox-note-sheen { animation: jukebox-note-polish 4.6s ease-in-out infinite; }
+.jukebox-note-sparks { animation: jukebox-sparks-glow 3s ease-in-out infinite alternate; }
+.jukebox-record-grooves { transform-origin: 120px 77px; animation: jukebox-record-turn 24s linear infinite; }
+.jukebox-stage-beams { transform-origin: 120px 0; animation: jukebox-beam-sway 9s ease-in-out infinite alternate; }
+.jukebox-spectrum-bar { transform-box: fill-box; transform-origin: bottom; animation: jukebox-spectrum var(--spectrum-speed) ease-in-out var(--spectrum-phase) infinite alternate; }
+.jukebox-cone-pulse { transform-box: fill-box; transform-origin: center; animation: jukebox-cone 1.7s ease-in-out infinite; }
+.jukebox-sound-ripples { animation: jukebox-ripples 3s ease-in-out infinite; }
+.jukebox-floating-notes { animation: jukebox-notes-drift 7s ease-in-out infinite alternate; }
+@keyframes jukebox-note-polish { 0%, 15% { transform: translateX(-10px); } 80%, 100% { transform: translateX(65px); } }
+@keyframes jukebox-sparks-glow { from { opacity: .25; } to { opacity: .9; } }
+@keyframes jukebox-record-turn { to { transform: rotate(360deg); } }
+@keyframes jukebox-beam-sway { from { transform: skewX(-7deg); opacity: .5; } to { transform: skewX(7deg); opacity: 1; } }
+@keyframes jukebox-spectrum { from { transform: scaleY(.25); } to { transform: scaleY(1); } }
+@keyframes jukebox-cone { 0%, 100% { transform: scale(.9); } 30% { transform: scale(1.08); } 65% { transform: scale(.96); } }
+@keyframes jukebox-ripples { 0%, 100% { opacity: .15; } 50% { opacity: .5; } }
+@keyframes jukebox-notes-drift { from { transform: translateY(3px); } to { transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) {
+  .jukebox-studio-scene *, .jukebox-note-deluxe * { animation: none !important; }
+}
+html.account-reduced-motion .jukebox-studio-scene *,
+html.account-reduced-motion .jukebox-note-deluxe * { animation: none !important; }

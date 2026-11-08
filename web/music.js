@@ -607,6 +607,72 @@ const ArcadeMusic = (() => {
       * Math.min(1, i / (sampleRate * .008), (out.length - 1 - i) / (sampleRate * .015));
     return out;
   }
+  // New arcade originals: eight-bar themes return before the lifted reprise.
+  const arcadeExpansion = [
+    ["starlight_soda", "Starlight Soda", 132, "C Am F G C Em F G", [
+      "E5 G5 - C6 B5 G5 E5 -", "A5 E5 C5 E5 G5 A5 C6 -",
+      "F5 A5 C6 A5 G5 F5 E5 C5", "D5 G5 B5 D6 C6 B5 G5 -",
+      "C6 - G5 E5 D5 E5 G5 A5", "B5 G5 E5 - F#5 G5 B5 -",
+      "A5 C6 D6 C6 A5 G5 F5 -", "G5 B5 D6 B5 A5 G5 C6 -",
+    ], {groove:"skip", swing:.1, lead:"triangle"}],
+    ["comet_courier", "Comet Courier", 172, "Em C G D Em Am B Em", [
+      "E5 B5 G5 E5 F#5 G5 B5 E6", "G5 E5 C5 D5 E5 G5 C6 B5",
+      "D6 B5 G5 A5 B5 D6 G6 D6", "F#5 A5 D6 C6 A5 F#5 E5 D5",
+      "E5 G5 B5 E6 D6 B5 G5 F#5", "A5 E5 A5 C6 B5 A5 G5 E5",
+      "F#5 B5 D#6 B5 A5 F#5 D#5 B4", "E5 F#5 G5 B5 E6 B5 E5 -",
+    ], {groove:"drive", gate:.85}],
+    ["lavender_lobby", "Lavender Lobby", 88, "Fmaj7 Am Dm Bb Gm C Fmaj7 C", [
+      "A4 - C5 E5 - C5 A4 -", "E5 - C5 - B4 A4 C5 -",
+      "F5 E5 D5 - A4 - D5 -", "D5 F5 - A5 F5 D5 C5 -",
+      "Bb4 - D5 G5 - F5 D5 -", "E5 G5 - C6 B5 G5 E5 -",
+      "A5 G5 E5 C5 - A4 C5 -", "G4 - C5 E5 D5 - C5 -",
+    ], {groove:"hush", lead:"triangle", gate:1.2, bassOctave:3}],
+    ["copper_carousel", "Copper Carousel", 120, "Dm A7 Dm Gm Bb F A7 Dm", [
+      "D5 F5 A5 F5 E5 D5 C#5 E5", "C#5 E5 G5 A5 G5 E5 C#5 -",
+      "A5 F5 D5 F5 A5 C6 A5 F5", "G5 Bb5 D6 Bb5 A5 G5 F5 D5",
+      "F5 Bb5 A5 F5 D5 F5 Bb5 -", "A5 G5 F5 C5 F5 A5 C6 -",
+      "E5 G5 A5 C#6 A5 G5 E5 C#5", "D5 A5 F5 E5 D5 - D6 -",
+    ], {groove:"skip", swing:.16}],
+    ["laser_lemonade", "Laser Lemonade", 148, "A D F#m E A Bm D E", [
+      "A5 E5 C#5 E5 A5 - B5 C#6", "D6 A5 F#5 A5 G#5 F#5 E5 -",
+      "C#6 A5 F#5 C#5 F#5 A5 C#6 E6", "B5 G#5 E5 G#5 B5 A5 G#5 E5",
+      "E6 C#6 A5 E5 F#5 G#5 A5 -", "F#5 B5 D6 B5 A5 F#5 D5 -",
+      "A5 D6 C#6 A5 F#5 E5 D5 F#5", "G#5 B5 E6 D6 B5 G#5 A5 -",
+    ], {groove:"drive", gate:.9}],
+    ["cloudsave_cruise", "Cloudsave Cruise", 104, "Gmaj7 Em C D Gmaj7 Bm Am D", [
+      "B4 D5 F#5 - A5 F#5 D5 -", "G5 E5 B4 - D5 E5 G5 -",
+      "E5 G5 C6 - B5 G5 E5 -", "F#5 A5 D6 C6 A5 F#5 E5 D5",
+      "D5 G5 B5 A5 F#5 D5 B4 -", "F#5 D5 B4 D5 F#5 A5 B5 -",
+      "C6 B5 A5 G5 E5 C5 A4 -", "A4 D5 F#5 A5 G5 F#5 G5 -",
+    ], {groove:"hush", lead:"triangle", gate:1.1}],
+    ["midnight_pinball", "Midnight Pinball", 158, "Cm Fm Ab G Cm Eb Fm G", [
+      "C5 G5 Eb5 G5 Bb5 G5 Eb5 D5", "F5 C6 Ab5 F5 G5 Ab5 C6 -",
+      "Ab5 C6 Eb6 C6 Bb5 Ab5 G5 Eb5", "B4 D5 G5 B5 D6 B5 G5 F5",
+      "C6 Bb5 G5 Eb5 D5 Eb5 G5 C6", "G5 Bb5 Eb6 D6 Bb5 G5 F5 Eb5",
+      "Ab5 G5 F5 C5 F5 Ab5 G5 F5", "D5 G5 B5 D6 B5 G5 C6 -",
+    ], {groove:"drive", pulse:"narrow", gate:.8}],
+    ["prism_picnic", "Prism Picnic", 116, "Bb F Gm Eb Bb Dm Cm F", [
+      "D5 F5 Bb5 A5 F5 D5 C5 -", "A4 C5 F5 G5 A5 G5 F5 -",
+      "Bb5 G5 D5 G5 A5 Bb5 D6 -", "G5 Eb5 Bb4 Eb5 G5 Bb5 C6 Bb5",
+      "F5 Bb5 D6 C6 Bb5 A5 F5 D5", "A5 F5 D5 E5 F5 A5 C6 -",
+      "Eb5 G5 C6 Bb5 G5 Eb5 D5 C5", "C5 F5 A5 C6 Bb5 A5 Bb5 -",
+    ], {groove:"skip", lead:"triangle", swing:.08}],
+    ["bonus_round_boulevard", "Bonus Round Boulevard", 140, "D Bm G A D F#m Em A", [
+      "F#5 A5 D6 - C#6 A5 F#5 E5", "D5 F#5 B5 A5 F#5 D5 B4 -",
+      "B4 D5 G5 A5 B5 D6 B5 G5", "C#5 E5 A5 B5 C#6 B5 A5 -",
+      "D6 A5 F#5 D5 E5 F#5 A5 D6", "C#6 A5 F#5 E5 F#5 A5 C#6 -",
+      "G5 B5 E6 D6 B5 G5 F#5 E5", "E5 A5 C#6 E6 D6 C#6 D6 -",
+    ], {groove:"classic", gate:1.05}],
+    ["aurora_afterparty", "Aurora Afterparty", 126, "Am F C G Am Dm F E7", [
+      "A4 E5 A5 - C6 B5 A5 E5", "F5 C6 A5 G5 F5 E5 C5 -",
+      "G5 E5 C5 E5 G5 C6 B5 G5", "B5 A5 G5 D5 E5 G5 B5 -",
+      "C6 E6 C6 A5 G5 E5 C5 A4", "A5 D6 F6 E6 D6 A5 F5 -",
+      "C6 A5 F5 A5 G5 F5 E5 C5", "B4 E5 G#5 B5 A5 G#5 A5 -",
+    ], {groove:"skip", swing:.12, lead:"triangle"}],
+  ];
+  for (const [id, title, bpm, progression, bars, options] of arcadeExpansion) {
+    scores[id] = song(title, bpm, `${progression} ${progression}`, [...bars, ...bars], options);
+  }
   const loopThemes = ["chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];
@@ -1301,7 +1367,8 @@ const ArcadeMusic = (() => {
       }
       const note = notes[lo - 1];
       if (!note) return 0;
-      const age = time - note.start;
+      // Compress the visual envelope by 1.5 without changing note timing.
+      const age = (time - note.start) * 1.5;
       const length = Math.min(.4, note.duration);
       return age < length ? Math.sin(Math.PI * Math.min(1, age / .035) / 2) * (1 - age / length) ** 2 : 0;
     }

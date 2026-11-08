@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 27);
+  assert.equal(arcadeTracks.length, 37);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 27);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 37);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('twenty-seven distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 27);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 27);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 27);
+test('thirty-seven distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 37);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 37);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 37);
   assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
   assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
@@ -557,6 +557,11 @@ test('melody pulses follow synthesized notes, rests, pause and loop position', (
   player.context.currentTime = .52;
   const pulse = player.melodyPulse();
   assert.ok(pulse > 0 && pulse <= 1);
+  // A .2-second note now finishes its visual pulse after .2 / 1.5 seconds.
+  player.context.currentTime = .62;
+  assert.ok(player.melodyPulse() > 0);
+  player.context.currentTime = .64;
+  assert.equal(player.melodyPulse(), 0);
   player.context.currentTime = 1;
   assert.equal(player.melodyPulse(), 0);
   player.context.currentTime = 2.52;
