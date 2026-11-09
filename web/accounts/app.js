@@ -452,6 +452,14 @@ const AccountApp = (() => {
       if (!player || player === 'Player') await this.setting({ player: handle });
       this.registrationHandle = null;
     }
+    renderEntryButton(profile) {
+      const entry = this.$('login-open');
+      if (!entry) return;
+      const handle = this.signedIn ? (this.session?.snapshot().user?.handle || profile.player || 'Your profile') : '';
+      entry.classList.toggle('signed-in', !!handle);
+      entry.textContent = handle || 'Log In';
+      entry.title = handle ? `Signed in as ${handle}` : '';
+    }
     render(force = false) {
       if (!this.controller) return;
       const state = this.controller.state(), profile = state.profile || {};
@@ -480,6 +488,7 @@ const AccountApp = (() => {
       if (state.importRequired) status = 'Review your guest progress to finish saving your account';
       this.$('account-summary').textContent = status;
       this.$('account-status').textContent = status;
+      this.renderEntryButton(profile);
       this.$('account-auth').hidden = this.signedIn && !needsSignIn;
       this.$('account-user-actions').hidden = !this.signedIn;
       for (const id of ['account-signout', 'account-delete', 'account-change-password', 'account-rotate-recovery'])
