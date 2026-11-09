@@ -51,3 +51,41 @@ jobs:
       - uses: actions/deploy-pages@v4
         if: steps.current.outputs.deploy == 'true'
         id: deployment
+  deploy_cloudflare:
+    if: vars.CLOUDFLARE_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: cloudflare-workers
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser-build
+          path: browser-build
+      - name: Unpack the tested build for this revision
+        run: |
+          test "$(cat browser-build/build-sha.txt)" = "$GITHUB_SHA"
+          mkdir -p dist
+          tar -xzf browser-build/browser-build.tar.gz -C dist
+      - name: Check that this revision is still main
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          if [ "$latest_sha" = "$GITHUB_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipped superseded revision $GITHUB_SHA; main is $latest_sha." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: cloudflare/wrangler-action@v4
+        if: steps.current.outputs.deploy == 'true'
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
