@@ -61,7 +61,7 @@ export async function configure() {
     audit_log_disable_postgres:true
   }});
   await management(`/v1/projects/${projectRef}/secrets`,{method:'POST',body:[
-    {name:'ACCOUNTS_ALLOWED_ORIGINS',value:'https://mattygpt.github.io,http://localhost:8777,http://127.0.0.1:8777,http://127.0.0.1:8768'},
+    {name:'ACCOUNTS_ALLOWED_ORIGINS',value:'https://microgame-madness.com,https://mattygpt.github.io,http://localhost:8777,http://127.0.0.1:8777,http://127.0.0.1:8768'},
     {name:'ACCOUNTS_WRITES_ENABLED',value:'true'},{name:'ACCOUNTS_IMPORTS_ENABLED',value:'true'},{name:'ACCOUNTS_PURCHASES_ENABLED',value:'true'}
   ]});
   console.log('Configured contact restrictions, provider policy and exact allowed origins.');

@@ -1,0 +1,7 @@
+{
+  "name": "microgame-madness",
+  "compatibility_date": "2026-11-08",
+  "assets": {
+    "directory": "./dist"
+  }
+}

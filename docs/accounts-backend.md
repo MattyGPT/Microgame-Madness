@@ -33,7 +33,7 @@ The helper validates the exact project URL and scopes every management path. Mig
 
 The deferred `auth.users` credential trigger additionally blocks contact fields and direct password/provider-identifier changes without a fresh server-only mutation ticket. It validates final transaction metadata because Auth updates password/email and metadata in separate statements. No SMTP setup is needed or permitted for this flow. The adapter enforces a 72-byte UTF-8 password ceiling to avoid bcrypt truncation.
 
-The allowlisted origins are `https://mattygpt.github.io`, `http://localhost:8777`, `http://127.0.0.1:8777`, and the hosted-browser test origin `http://127.0.0.1:8768`. Origins exclude repository paths. Browser automation verifies `/Microgame-Madness/` without publishing account configuration to Pages.
+The allowlisted origins are `https://microgame-madness.com`, `https://mattygpt.github.io`, `http://localhost:8777`, `http://127.0.0.1:8777`, and the hosted-browser test origin `http://127.0.0.1:8768`. Origins exclude repository paths. Browser automation verifies `/Microgame-Madness/` without publishing account configuration to Pages.
 
 Official provider references: [Auth hooks](https://supabase.com/docs/guides/auth/auth-hooks), [email hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook), and [Management API function deployment](https://supabase.com/docs/reference/api/v1-deploy-a-function).
 

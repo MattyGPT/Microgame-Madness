@@ -1,6 +1,6 @@
 # Microgame Madness
 
-**[Play Microgame Madness in your browser →](https://mattygpt.github.io/Microgame-Madness/)**
+**[Play Microgame Madness in your browser →](https://microgame-madness.com/)**
 
 A collection of browser and Python games powered by the same Python rules. Play Hangman, Key Rush, Turtle Dodge, Boss Crush, The Pumpkin King, The King’s Wrath, and Geomayhem—plus a secret unlockable boss.
 
@@ -45,7 +45,7 @@ npm run test:browser
 ## Documentation
 
 - [Game and development reference](docs/game-and-development-reference.md): detailed rules, achievements, cosmetics, music, controls, and feature notes. Contains spoilers.
-- [Global leaderboard setup](docs/game-and-development-reference.md#connect-the-global-leaderboards), [source architecture](docs/game-and-development-reference.md#maintain-both-versions), and [GitHub Pages deployment](docs/game-and-development-reference.md#github-pages).
+- [Global leaderboard setup](docs/game-and-development-reference.md#connect-the-global-leaderboards), [source architecture](docs/game-and-development-reference.md#maintain-both-versions), and hosting via [Cloudflare Workers static assets](docs/game-and-development-reference.md#cloudflare-workers-static-assets) with a [GitHub Pages mirror](docs/game-and-development-reference.md#github-pages).
 - [Account service setup and operation](docs/accounts-backend.md), and [implementation status](docs/accounts-implementation-status.md).
 - [Accounts and progression design](docs/accounts-and-progression-design.md): proposed player experience, data model, sync, migration, and review decisions.
 - [Accounts and progression implementation plan](docs/accounts-and-progression-plan.md): dependencies, subagent work packages, integration gates, tests, and rollout.

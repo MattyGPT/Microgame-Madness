@@ -2,7 +2,7 @@
 
 Detailed gameplay, collection, audio, architecture, testing, and deployment notes for Microgame Madness. Commands and source paths are relative to the repository root. This reference includes secret unlocks and achievement spoilers.
 
-[Back to README](../README.md) · [Play in your browser](https://mattygpt.github.io/Microgame-Madness/)
+[Back to README](../README.md) · [Play in your browser](https://microgame-madness.com/)
 
 - [Games and collections](#games-and-collections)
 - [Singularity Core](#singularity-core-browser-rough-draft)
@@ -13,6 +13,7 @@ Detailed gameplay, collection, audio, architecture, testing, and deployment note
 - [Design proposals](#design-proposals)
 - [Source architecture](#maintain-both-versions)
 - [Tests](#validate-changes)
+- [Cloudflare Workers static assets](#cloudflare-workers-static-assets)
 - [GitHub Pages deployment](#github-pages)
 - [Additional feature notes](#additional-feature-notes)
 
@@ -315,9 +316,17 @@ Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web
 
 Pull requests run Python/JavaScript checks alongside a browser build and four browser shards. The shards download the same build artifact and run `npm run test:browser:built` without rebuilding it. Browser fixtures mock leaderboard configuration to keep production services out of the suite. Superseded checks for the same workflow/ref are cancelled. The publish workflow reruns checks on `main` and requires every check to pass before deployment.
 
+## Cloudflare Workers static assets
+
+Play the browser version at **https://microgame-madness.com/**.
+
+The canonical site is a Cloudflare Workers static-assets app named `microgame-madness`, described by the root `wrangler.jsonc`. The `deploy_cloudflare` job in `.github/workflows/pages.yml` publishes it from the same tested `browser-build` artifact with `cloudflare/wrangler-action`, without rebuilding. It is armed by the repository variable `CLOUDFLARE_ENABLED` set to `true` and needs the repository secrets `CLOUDFLARE_API_TOKEN`, an API token created from the "Edit Cloudflare Workers" permission policy and scoped to the account, and `CLOUDFLARE_ACCOUNT_ID`. Like the Pages job, it verifies that the tested revision is still the head of `main` before publishing; the first deploy creates the app.
+
+`www.microgame-madness.com` is intentionally not attached to the app: a proxied placeholder DNS record plus a zone-level redirect rule 301 it to the apex, so accounts see a single allowlisted origin. The app runs no Worker script, and requests for static assets are free and unlimited on the Workers free plan. Any new browser origin, including preview hostnames, must be appended to `ACCOUNTS_ALLOWED_ORIGINS` in the [account backend runbook](accounts-backend.md) before accounts work there.
+
 ## GitHub Pages
 
-Play the browser version at **https://mattygpt.github.io/Microgame-Madness/**.
+GitHub Pages keeps publishing the legacy mirror at **https://mattygpt.github.io/Microgame-Madness/** so guest saves from before the custom-domain move stay reachable.
 
 The repository and website are public. GitHub Pages publishes through GitHub Actions, with the repository variable `PAGES_ENABLED` set to `true`.
 
