@@ -96,9 +96,9 @@ BLOCK_TYPES = (
     ('parachute', 'Parachute block', '#dceca1', 'PA', 5, 'Uncommon', 'Falls quickly for 0.6 seconds, then opens its chute and falls at one quarter of Easy speed. 1 damage.'),
     ('rocket', 'Rocket block', '#ff9c92', 'RO', 3, 'Rare', 'Falls slowly for 1 second, then accelerates to the Chaos base speed limit. 2 damage. Falling-speed effects still stack.'),
     ('skater', 'Skater block', '#9bd1f4', 'SK', 5, 'Uncommon', 'Steers sideways away from you at up to 100 units per second as it falls. 1 damage.'),
-    ('fire_x', 'Fire X block', '#ff9367', 'FX', 2, 'Rare', 'Settles at the arena center, beeps and marks an X for 1.5 seconds, then fires diagonal flame lines to the edges for 0.65 seconds. Flames deal 2 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
-    ('fire_plus', 'Fire Plus block', '#ffb56c', 'F+', 2, 'Rare', 'Settles at the arena center, beeps and marks a + for 1.5 seconds, then fires horizontal and vertical flame lines to the edges for 0.65 seconds. Flames deal 2 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
-    ('fire_star', 'Fire Star block', '#ff7899', 'F*', 1, 'Rare', 'Settles at the arena center, beeps and marks both X and + for 1.5 seconds, then fires all eight flame lines together for 0.65 seconds. Flames deal 2 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
+    ('fire_x', 'Fire X block', '#ff9367', 'FX', 2, 'Rare', 'Settles at the arena center, beeps and marks an X for 1.5 seconds, then fires diagonal flame lines to the edges for 0.65 seconds. Flames deal 3 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
+    ('fire_plus', 'Fire Plus block', '#ffb56c', 'F+', 2, 'Rare', 'Settles at the arena center, beeps and marks a + for 1.5 seconds, then fires horizontal and vertical flame lines to the edges for 0.65 seconds. Flames deal 3 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
+    ('fire_star', 'Fire Star block', '#ff7899', 'F*', 1, 'Rare', 'Settles at the arena center, beeps and marks both X and + for 1.5 seconds, then fires all eight flame lines together for 0.65 seconds. Flames deal 3 damage and 1 burn damage after 2 seconds. Body contact deals 1 damage.'),
     ('vortex', 'Vortex block', '#b3a0ff', 'VX', 2.5, 'Rare', 'Swirls you and nearby blocks inward around a 200-unit field. Repellent protects you from the swirl. 1 contact damage.'),
     ('pinball', 'Pinball block', '#f6d37d', 'PB', 4, 'Rare', 'Ricochets off the side walls and bounces upward from the floor 3 times before falling out. 1 damage.'),
     ('iceburst', 'Iceburst block', '#9fe8ff', 'IB', 3, 'Rare', 'Splits into 3 small Frost shards after 1.4 seconds. Each shard deals 1 damage and slows you for 2.5 seconds. The unsplit block deals 1 damage.'),
@@ -982,7 +982,7 @@ class ChaosRules:
                     if not held: self.update_fire_pattern(block, 0)
                     if block.flame_stage == 3: continue
                     if self.touches_fire_pattern(block):
-                        if self.chaos_damage(2, block.kind):
+                        if self.chaos_damage(3, block.kind):
                             self.burn_ticks, self.burn_in = 1, 2
                         if not self.alive: return
                 if block.kind in ('splitter', 'iceburst', 'firecracker') and block.age >= 1.4:

@@ -927,7 +927,7 @@ class ChaosTests(unittest.TestCase):
             self.assertEqual(game.chaos_sound_events.count('chaos_fire_warning'), 3)
             game.update(.02, set())
             self.assertEqual(block.flame_stage, 2)
-            self.assertEqual(game.lives, 6)
+            self.assertEqual(game.lives, 5)
             self.assertEqual(game.burn_ticks, 1)
             self.assertEqual(game.chaos_sound_events.count('chaos_fire_burst'), 1)
             game.update(.66, set())
