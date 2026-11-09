@@ -7,6 +7,10 @@ test('Dodge ocean cycles through 24 creatures with seven reused actors', async (
   await expect(card.locator('.ocean-swimmer')).toHaveCount(7);
   const result = await card.evaluate(card => {
     const actors = [...card.querySelectorAll('.ocean-swimmer')];
+    // Real CSS iterations may consume entries while the runtime loads or the
+    // card scrolls into view. Begin counting at a fresh shuffle boundary.
+    oceanCreatureBag = [];
+    actors.forEach(randomizeOceanCreature);
     const seen = new Set(actors.map(n => n.dataset.species));
     for (let i = 0; i < 17; i++) {
       const actor = actors[i % actors.length];
