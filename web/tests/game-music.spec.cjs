@@ -384,7 +384,8 @@ test("games remain playable when browser audio is unavailable", async ({ page })
   });
   await openGame(page);
   await page.locator('[data-difficulty="easy"]').click();
-  await expect(page.locator("#sound")).toHaveText("Sound unavailable");
+  await expect(page.locator("#sound")).toHaveText("Sound on");
+  await expect(page.locator("#sound")).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#hangman-game")).toBeVisible();
   await page.getByRole("button", { name: "Guess A", exact: true }).click();
   await expect(page.getByRole("button", { name: "Guess A", exact: true })).toBeDisabled();

@@ -189,7 +189,8 @@ test('Gaster recovers from unavailable audio and interrupted sequences cannot un
   const reloaded = page.waitForEvent('load');
   await page.locator('#player').fill('GASTER');
   await reloaded;
-  await expect(page.locator('#sound')).toHaveText('Sound unavailable');
+  await expect(page.locator('#sound')).toHaveText('Sound on');
+  await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
@@ -316,7 +317,8 @@ test('Game Tester still unlocks when browser audio is unavailable', async ({ pag
   await openGame(page);
   await page.locator('#player').fill('ROCKNROY');
   await expect(page.locator('#profile-score')).toHaveText('2440');
-  await expect(page.locator('#sound')).toHaveText('Sound unavailable');
+  await expect(page.locator('#sound')).toHaveText('Sound on');
+  await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#name-surprise')).toBeHidden();
   expect(errors).toEqual([]);
 });
