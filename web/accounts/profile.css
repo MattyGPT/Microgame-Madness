@@ -47,9 +47,15 @@ html.account-reduced-motion *, html.account-reduced-motion *::before, html.accou
 .welcome-steps li[data-current] { border-color: #b7f298; color: #edffdf; font-weight: 700; }
 .welcome-dialog .welcome-primary { background: #b9ed91; border: 2px solid #d1ffac; color: #162c20; font-weight: 800; }
 .welcome-dialog .welcome-primary:hover { background: #d1ffa5; }
+.welcome-dialog .welcome-quiet { background: transparent; border: 1px solid #5c7264; color: #c8d8cc; font-weight: 600; }
+.welcome-dialog .welcome-quiet:hover:not(:disabled) { background: #20302a; border-color: #8aa593; color: #e6f4e6; }
+.welcome-auth-card { border: 1px solid #3d5249; border-radius: 12px; padding: 2px 18px 18px; margin-top: 16px; background: #18262a; }
+.welcome-auth-card h3 { margin-top: 14px; color: #d9f2cf; }
+.welcome-dialog #welcome-create { background: #b9ed91; border: 2px solid #d1ffac; color: #162c20; font-weight: 800; }
+.welcome-dialog #welcome-create:hover:not(:disabled) { background: #d1ffa5; }
+.welcome-dialog #welcome-login { border-color: #86b795; color: #e2f6e2; }
 .welcome-dialog .welcome-note { color: #b5c5c1; font-size: .78rem; }
-.welcome-auth-actions, .welcome-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.welcome-footer { margin-top: 22px; padding-top: 16px; border-top: 1px solid #3d5246; }
+.welcome-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 22px; padding-top: 16px; border-top: 1px solid #3d5246; }
 #welcome-next { margin-left: auto; }
 .welcome-dialog .welcome-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; margin: 8px 0; background: #1c2b29; border: 1px solid #3d5249; border-radius: 10px; }
 .welcome-option input { margin-top: 3px; accent-color: #9cde85; }
@@ -74,7 +80,7 @@ html.account-reduced-motion *, html.account-reduced-motion *::before, html.accou
   .welcome-steps li { font-size: .63rem; }
   .welcome-footer button { flex: 1; }
   #welcome-next { flex-basis: 100%; }
-  .welcome-auth-actions > button { width: 100%; }
+  .welcome-auth-card .account-actions > button { width: 100%; }
 }
 
 .welcome-footer { position: sticky; bottom: -26px; z-index: 2; padding-bottom: 16px; background: #151e21; box-shadow: 0 -12px 18px #151e21; }

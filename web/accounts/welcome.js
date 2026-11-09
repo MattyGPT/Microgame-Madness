@@ -39,6 +39,18 @@ const ArcadeWelcome = (() => {
       });
     }
     $(id) { return this.dialog.querySelector(`#welcome-${id}`); }
+    authTitle() {
+      const mode = this.$('auth-form').dataset.mode;
+      const titles = { register: 'Create your account', login: 'Sign in to your account', recover: 'Reset your password' };
+      const hints = {
+        register: 'Fill in the form and press <strong>Create my account</strong>, or skip this step with <strong>Continue as a guest</strong> below — guest progress stays on this device.',
+        login: 'Enter your handle and password and press <strong>Sign in</strong>, or skip this step with <strong>Continue as a guest</strong> below.',
+        recover: 'Enter your handle and saved recovery code, choose a new password, then press <strong>Reset password &amp; sign in</strong>.',
+      };
+      const title = this.$('auth-title'), hint = this.$('auth-hint');
+      if (title) title.textContent = titles[mode] || titles.register;
+      if (hint) hint.innerHTML = hints[mode] || hints.register;
+    }
     build() {
       const dialog = document.createElement('dialog'); this.dialog = dialog;
       dialog.id = 'welcome-dialog'; dialog.className = 'account-dialog welcome-dialog';
@@ -49,9 +61,12 @@ const ArcadeWelcome = (() => {
         <ol class="welcome-steps" aria-label="Setup steps"><li>Hello</li><li>Account</li><li>Preferences</li><li>Game tour</li></ol>
         <div id="welcome-hello"><p>I’m your arcade buddy. I’ll cheer you on, celebrate your wins, and keep you company between games.</p><p>First, let’s decide how to save your progress and make the arcade feel right for you. Then I’ll show you around!</p></div>
         <div id="welcome-account" hidden>
-          <p>Create an account with a handle and password to save across devices, or keep playing here as a guest.</p>
+          <p>Create an account with a handle and password to save across devices, or keep playing here as a guest. <span id="welcome-auth-hint">Fill in the form and press <strong>Create my account</strong>, or skip this step with <strong>Continue as a guest</strong> below — guest progress stays on this device.</span></p>
           <p id="welcome-cloud-note" class="welcome-note"></p>
-          ${AccountApp.AuthUI.form('welcome')}
+          <section id="welcome-auth-card" class="welcome-auth-card" aria-labelledby="welcome-auth-title">
+            <h3 id="welcome-auth-title">Create your account</h3>
+            ${AccountApp.AuthUI.form('welcome')}
+          </section>
           ${AccountApp.AuthUI.recovery('welcome')}
           <p id="welcome-account-success" hidden>Your account is ready. Let’s choose your preferences!</p>
         </div>
@@ -76,6 +91,10 @@ const ArcadeWelcome = (() => {
       this.$('skip-tour').onclick = () => this.finish();
       this.$('preferences').onsubmit = e => { e.preventDefault(); this.next(); };
       AccountApp.AuthUI.bind(dialog, 'welcome', mode => this.authenticate(mode), () => this.render());
+      // The shared form markup names its submit for the profile panel; this
+      // step creates a brand-new account, and its heading follows the mode.
+      this.$('create').textContent = 'Create my account';
+      for (const id of ['login', 'recover', 'new-account']) this.$(id).addEventListener('click', () => this.authTitle());
       this.$('video').addEventListener('error', () => { this.$('video-error').hidden = false; });
       games.forEach((game, i) => {
         const button = document.createElement('button'); button.type = 'button'; button.textContent = game.title;
@@ -107,13 +126,22 @@ const ArcadeWelcome = (() => {
       this.$('back').hidden = this.step === 0; this.$('back').disabled = !this.$('recovery-step').hidden;
       this.$('skip-tour').hidden = this.step !== 3;
       this.$('next').textContent = this.step === 0 ? 'Let’s go!' : this.step === 1 ? (this.app.signedIn ? 'Choose my preferences' : 'Continue as a guest') : this.step === 2 ? 'Save & show me the games' : this.game === games.length-1 ? 'Let’s play!' : 'Next game →';
+      // While account creation is on offer the guest skip stays quiet, so the
+      // step's one loud button is the one that saves an account. When accounts
+      // are unavailable, or already done, the footer button is the way on.
+      const guestQuiet = this.step === 1 && !this.app.signedIn && !!this.app.session?.configured;
+      this.$('next').classList.toggle('welcome-quiet', guestQuiet);
+      this.$('next').classList.toggle('welcome-primary', !guestQuiet);
       if (this.step === 1) {
         const configured = this.app.session?.configured;
         this.$('create').disabled = !configured || this.app.accountBound;
         this.$('login').disabled = !configured;
         this.$('cloud-note').textContent = configured ? 'Save your recovery code when you create an account. It is your way back if you forget your password.' : 'Cloud accounts aren’t connected on this preview. You can still choose your preferences and play as a guest.';
         this.$('recover').disabled = !configured;
+        this.$('auth-card').hidden = this.app.signedIn;
+        this.$('auth-hint').hidden = this.app.signedIn;
         this.$('auth-form').hidden = this.app.signedIn; this.$('account-success').hidden = !this.app.signedIn;
+        this.authTitle();
         this.$('next').disabled = !this.$('recovery-step').hidden;
       }
       if (this.step === 3) {
