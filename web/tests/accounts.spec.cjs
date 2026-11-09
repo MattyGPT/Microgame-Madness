@@ -191,6 +191,8 @@ test('profile recovery, password replacement and recovery rotation keep the same
   await expect(page.locator('#account-import')).toBeVisible();
   await page.locator('#account-import-confirm').click();
   await expect(page.locator('#account-import')).toBeHidden();
+  // Import hides its review before the final history refresh has completed.
+  await expect(page.locator('#account-dialog')).not.toHaveAttribute('aria-busy', 'true');
   const owner = await page.evaluate(() => accountApp.controller.state().owner);
   await page.locator('#account-signout').click();
   await expect(page.locator('#account-auth')).toBeVisible();
