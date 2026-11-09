@@ -151,6 +151,25 @@ main,
   #login-open { animation: none; }
 }
 html.account-reduced-motion #login-open { animation: none; }
+/* A signed-in player sees their handle, so the button is a profile entry point
+   rather than an invitation and must stop competing for attention. */
+#login-open.signed-in {
+  min-width: 0;
+  max-width: 240px;
+  min-height: 48px;
+  padding: 11px 18px;
+  border-width: 3px;
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  box-shadow: none;
+  animation: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#login-open.signed-in:hover { background: #282e2d; }
 #sound {
   min-width: 128px;
   min-height: 48px;
@@ -1740,6 +1759,7 @@ select:disabled {
   }
   .topbar-actions { margin-left: auto; gap: 12px; }
   #login-open { min-width: 170px; }
+  #login-open.signed-in { max-width: 150px; }
   .edition {
     display: none;
   }

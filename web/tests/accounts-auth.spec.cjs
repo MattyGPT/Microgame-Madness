@@ -69,6 +69,8 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await page.locator('#account-sync').click();
   await expect(page.locator('#account-history')).toContainText('hangman · easy · win · 10 pts');
   expect(service.state.shop.units).toBe(40000);
+  await expect(page.locator('#login-open')).toHaveClass(/signed-in/);
+  await expect(page.locator('#login-open')).toHaveText('private_player');
   await page.locator('#account-close').click();
   // Public account names are independent of legacy name-triggered secrets.
   await page.locator('#player').fill('GRAVITRON');
@@ -78,6 +80,8 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await openProfile(page);
   await page.locator('#account-signout').click();
   await expect(page.locator('#account-auth')).toBeVisible();
+  await expect(page.locator('#login-open')).toHaveText('Log In');
+  await expect(page.locator('#login-open')).not.toHaveClass(/signed-in/);
   await expect.poll(() => page.evaluate(() => accountApp.controller.state().profile.shop.units)).toBe(0);
   await expect(page.locator('#account-history')).toContainText('Your next game starts your history');
   await page.locator('#account-close').click();
@@ -90,6 +94,8 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await expect(page.locator('#account-user-actions')).toBeVisible();
   await expect.poll(() => page.evaluate(() => accountApp.controller.state().profile.shop.units)).toBe(40000);
   await expect(page.locator('#account-name')).toHaveValue('GRAVITRON');
+  // The entry button names the immutable handle, never the editable display name.
+  await expect(page.locator('#login-open')).toHaveText('private_player');
   await expect(page.locator('#account-history')).toContainText('hangman · easy · win · 10 pts');
   expect(service.state.achievements.stats.hangmanWins).toBe(1);
   expect(service.signupCount).toBe(1);
