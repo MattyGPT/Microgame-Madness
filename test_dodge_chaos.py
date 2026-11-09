@@ -25,6 +25,38 @@ class ChaosTests(unittest.TestCase):
     def block(self, game, kind, **extra):
         return Block(game.x, game.y, ((0, 0),), CATALOG[kind]['color'], kind=kind, **extra)
 
+    def test_gamble_blocks_both_outcomes_and_exact_boundary(self):
+        from unittest.mock import Mock
+        for kind in ('coin_flip', 'all_or_nothing'):
+            for roll in (0, .499999, .5, .999999):
+                game = self.game(); game.lives = 3
+                game.rng.random = Mock(return_value=roll)
+                game.chaos_contact(self.block(game, kind))
+                expected = (5 if kind == 'coin_flip' else 8) if roll < .5 else (1 if kind == 'coin_flip' else 0)
+                self.assertEqual(game.lives, expected)
+                self.assertEqual(game.alive, expected > 0)
+                game.rng.random.assert_called_once_with()
+                if not game.alive: self.assertEqual(game.death_cause, kind)
+        game = self.game(); game.lives = 7
+        game.rng.random = Mock(return_value=0)
+        game.chaos_contact(self.block(game, 'coin_flip'))
+        self.assertEqual(game.lives, 8)
+
+    def test_gamble_protection_and_single_contact_roll(self):
+        from unittest.mock import Mock
+        for kind in ('coin_flip', 'all_or_nothing'):
+            game = self.game()
+            game.shield = True; game.invulnerable = 2
+            game.rng.random = Mock(return_value=.75)
+            game.chaos_contact(self.block(game, kind))
+            self.assertEqual(game.lives, 8 if kind == 'coin_flip' else 0)
+            game = self.game(); game.lives = 2
+            game.blocks = [self.block(game, kind, speed_multiplier=0)]
+            game.rng.random = Mock(return_value=.25)
+            game.update(.1, set())
+            self.assertEqual(game.blocks, [])
+            game.rng.random.assert_called_once_with()
+
     def test_second_wind_regenerates_and_refreshes_without_stacking(self):
         game = self.game()
         game.lives = 1
@@ -1333,7 +1365,7 @@ class ChaosTests(unittest.TestCase):
         self.assertEqual(block.warning_left, before)
 
     def test_nine_new_types_and_slowed_speed_limit(self):
-        self.assertEqual(len(CATALOG), 132)
+        self.assertEqual(len(CATALOG), 134)
         game = self.game()
         for elapsed in (0, 30, 200):
             game.elapsed = elapsed

@@ -532,6 +532,9 @@ let snapshot = null;
 let handle = null;
 let lastFrame = 0;
 let roundSaved = false;
+let roundNewPersonalBest = false;
+let chaosTurtleAngle = 0;
+let chaosTurtleTarget = 0;
 let lastCashReward = 0;
 let currentPlayer = "Player";
 const keys = new Set();
@@ -1168,7 +1171,10 @@ function saveRound() {
   if (selected === "geomayhem") {
     accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
     roundSaved = true;
-    if (geomayhemRun) geomayhemResult = geomayhemRun.store.finish(geomayhemRun.id, snapshot);
+    if (geomayhemRun) {
+      roundNewPersonalBest = snapshot.cleared > (geomayhemRun.store.read().best[snapshot.level] || 0);
+      geomayhemResult = geomayhemRun.store.finish(geomayhemRun.id, snapshot);
+    }
     return;
   }
   accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
@@ -1179,6 +1185,7 @@ function saveRound() {
   lastCashReward = CubieShop.reward(saved.shop, selected, selectedDifficulty, snapshot.score);
   const list = rankings();
   const previous = list.find((entry) => entry.player === currentPlayer);
+  roundNewPersonalBest = snapshot.score > (previous?.score || 0);
   if (previous) previous.score = Math.max(previous.score, snapshot.score);
   else list.push({ player: currentPlayer, score: snapshot.score });
   saved.scores[scoreKey()] = list;
@@ -1664,6 +1671,8 @@ function startGame(difficulty) {
   persist();
   showScores();
   roundSaved = false;
+  roundNewPersonalBest = false;
+  chaosTurtleAngle = chaosTurtleTarget = 0;
   lastCashReward = 0;
   clearKeys();
   try {
@@ -1963,6 +1972,7 @@ function render() {
       copy += "Visit the workshop, then start a fresh expedition.";
       if (!geomayhemRun?.store.available) copy += " Storage is unavailable; progress lasts only for this visit.";
     }
+    if (!s.won && roundNewPersonalBest) title = "NEW PERSONAL BEST";
     showOverlay(
       title,
       copy,
@@ -2156,6 +2166,13 @@ function draw(s) {
       drawGeomayhemCommand(ctx,command);
       continue;
     }
+    const turningTurtle = command.role === "player" && s.mode === "dodge" && s.difficulty === "chaos";
+    if (turningTurtle) {
+      ctx.save();
+      ctx.translate(s.player.x, -s.player.y);
+      ctx.rotate(chaosTurtleAngle);
+      ctx.translate(-s.player.x, s.player.y);
+    }
     ctx.beginPath();
     ctx.globalAlpha = command.opacity ?? 1;
     ctx.setLineDash(command.dash || []);
@@ -2187,6 +2204,7 @@ function draw(s) {
     }
     if (command.fill) ctx.fill();
     if (command.outline) ctx.stroke();
+    if (turningTurtle) ctx.restore();
   }
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -2279,11 +2297,18 @@ function frame(now) {
     try {
       if (selected === "geomayhem" && geomayhemPointer)
         aimGeomayhem({clientX:geomayhemPointer[0],clientY:geomayhemPointer[1]});
+      const previousPlayer = snapshot?.player;
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
         keys: [...new Set([...keys, ...joystickKeys, ...geomayhemMovementKeys.values(), ...(selected === "geomayhem" && geomayhemFiring ? ["f"] : [])])],
         ...(selected === "geomayhem" ? { aim: geomayhemAim } : {}),
       });
+      if (selected === "dodge" && selectedDifficulty === "chaos" && snapshot.player && previousPlayer && !snapshot.paused) {
+        const dx = snapshot.player.x - previousPlayer.x, dy = snapshot.player.y - previousPlayer.y;
+        if (Math.hypot(dx, dy) > .001) chaosTurtleTarget = Math.atan2(dx, dy);
+        const difference = Math.atan2(Math.sin(chaosTurtleTarget - chaosTurtleAngle), Math.cos(chaosTurtleTarget - chaosTurtleAngle));
+        chaosTurtleAngle += difference * (trailReducedMotion.matches || saved.preferences?.reducedMotion ? 1 : 1 - Math.exp(-14 * Math.min(.1, Math.max(0, (now - lastFrame) / 1000))));
+      }
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
         TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches || !!saved.preferences?.reducedMotion);
       render();
@@ -2688,7 +2713,7 @@ function syncMusic() {
       : active && selected === "keyboard" ? "keyrush"
       : active && selected === "hangman" ? "hangman"
       : active && selected === "dodge" && selectedDifficulty === "chaos" ? "chaos_carnival"
-      : active && selected === "dodge" ? `dodge_${["impossible", "chaos"].includes(selectedDifficulty) ? "merciless" : selectedDifficulty}`
+      : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),

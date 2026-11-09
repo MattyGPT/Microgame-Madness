@@ -30,9 +30,9 @@ test('jukebox selects every catalog song, loops, pauses, switches, and returns t
 });
 
 test('the original arcade expansion has five distinct chiptunes with bounded levels and quiet endings', () => {
-  assert.equal(arcadeTracks.length, 46);
+  assert.equal(arcadeTracks.length, 47);
   assert.equal(arcadeTracks[0].id, 'arcade');
-  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 46);
+  assert.equal(new Set(arcadeTracks.map(track => track.title)).size, 47);
   const fingerprints = new Set();
   for (const track of arcadeTracks.filter(track => track.id === 'arcade' || track.id.startsWith('arcade_'))) {
     const samples = compose(track.id);
@@ -133,10 +133,10 @@ function context() {
   return ctx;
 }
 
-test('forty-six distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
-  assert.equal(tracks.length, 46);
-  assert.equal(new Set(tracks.map(track => track.id)).size, 46);
-  assert.equal(new Set(tracks.map(track => track.title)).size, 46);
+test('forty-seven distinct arcade songs and the boss score have safe levels and quiet boundaries', () => {
+  assert.equal(tracks.length, 47);
+  assert.equal(new Set(tracks.map(track => track.id)).size, 47);
+  assert.equal(new Set(tracks.map(track => track.title)).size, 47);
   assert.equal(tracks.find(track => track.id === 'hyperspeed').bpm, 212);
   assert.equal(tracks.find(track => track.id === 'velvet_tokens').bpm, 99);
   assert.ok(tracks.every(track => track.id !== 'pumpkin'));
@@ -249,9 +249,9 @@ test('Hangman has an original 64-second theme with safe audio levels outside the
   assert.notEqual(hash(samples), hash(compose('keyrush')));
 });
 
-test('Turtle Dodge has four distinct themes with rising tempos and bounded, click-free audio', () => {
-  assert.deepEqual(dodgeTracks.map(track => track.difficulty), ['easy', 'normal', 'hard', 'merciless']);
-  assert.equal(new Set(dodgeTracks.map(track => track.title)).size, 4);
+test('Turtle Dodge has five distinct themes with rising tempos and bounded, click-free audio', () => {
+  assert.deepEqual(dodgeTracks.map(track => track.difficulty), ['easy', 'normal', 'hard', 'merciless', 'impossible']);
+  assert.equal(new Set(dodgeTracks.map(track => track.title)).size, 5);
   const fingerprints = new Set();
   for (const [index, track] of dodgeTracks.entries()) {
     assert.ok(!tracks.some(arcade => arcade.id === track.id));
@@ -272,7 +272,7 @@ test('Turtle Dodge has four distinct themes with rising tempos and bounded, clic
     assert.equal(samples.at(-1), 0);
     fingerprints.add(createHash('sha256').update(Buffer.from(samples.buffer)).digest('hex'));
   }
-  assert.equal(fingerprints.size, 4);
+  assert.equal(fingerprints.size, 5);
 });
 
 test('Boss Crush rock themes get heavier and Impossible quotes the Pumpkin King opening motif', () => {
@@ -598,4 +598,14 @@ test('welcome music plays in its cutscene and jukebox but stays out of arcade sh
   player.setState({theme:'jukebox:cubie_hello', playing:true});
   assert.equal(player.track, 'cubie_hello');
   assert.equal(player.current.source.loop, true);
+});
+
+test('new arcade song is available in shuffle and jukebox; Impossible remixes Crown of Ruin', () => {
+  assert.ok(tracks.some(track => track.id === 'neon_daybreak'));
+  assert.ok(jukeboxTracks.some(track => track.id === 'neon_daybreak'));
+  assert.ok(jukeboxTracks.some(track => track.id === 'dodge_impossible'));
+  const remix = dodgeTracks.find(track => track.id === 'dodge_impossible');
+  assert.deepEqual(remix.riffs[0], bossTracks.find(track => track.id === 'boss_impossible').riffs[0]);
+  const a = compose('dodge_impossible', 8000), b = compose('boss_impossible', 8000);
+  assert.notEqual(a.length, b.length);
 });

@@ -4,6 +4,8 @@ from fractions import Fraction
 
 # One source for the in-game guide, spawn weights, colors and identifying glyphs.
 BLOCK_TYPES = (
+    ('coin_flip', 'Coin Flip', '#f4d37b', '+/-', 2, 'Rare', 'One roll on contact: 50% chance to heal 2 HP (up to 8), or 50% chance to take 2 damage. Shields and contact protection can block the damage. Consumed after the roll.'),
+    ('all_or_nothing', 'All or Nothing', '#d49cfa', 'A/N', 1, 'Very rare', 'One roll on contact: 50% chance to restore all missing HP, or 50% chance to die instantly, even through shields and protection. Healing does not clear status effects. Consumed after the roll.'),
     ('second_wind', 'Second Wind', '#65f2ba', 'SW+', 2, 'Rare', 'A harmless pickup: grants Regeneration for 4 seconds, restoring 1 HP each second, up to 8 HP. Repeats refresh the duration without stacking. Natural healing continues separately.'),
     ('backdraft', 'Backdraft', '#f39368', 'BD!', 2, 'Rare', '1 contact damage, then burns for 1 damage after 2 and 4 seconds and makes falling blocks 40% faster for 3 seconds. A shield or contact protection prevents all effects.'),
     ('storm_shelter', 'Storm Shelter', '#8fb5f5', 'SH+', 2, 'Rare', 'A harmless pickup: grants 3 seconds of contact protection and immunity to pushing and pulling fields. Status damage and instant-kill hazards still hurt.'),
@@ -294,7 +296,7 @@ def catalog():
                            preview_rotation_speed=block.rotation_speed,
                            preview_shot_interval=TURRET_BLOCKS.get(kind, {}).get('interval'),
                            helpful=kind in SAFE_BLOCKS and kind not in ARENA_PICKUPS and kind not in ('weak', 'curse')))
-    new_kinds = ('second_wind', 'backdraft', 'storm_shelter')
+    new_kinds = ('second_wind', 'backdraft', 'storm_shelter', 'coin_flip', 'all_or_nothing')
     new_blocks = {item['id']: item for item in result if item['id'] in new_kinds}
     result = [item for item in result if item['id'] not in new_kinds]
     after_horizontal = next(i for i, item in enumerate(result) if item['id'] == 'horizontal') + 1
@@ -360,7 +362,7 @@ class ChaosRules:
         from dodge_model import Block, CELL, SHAPES, COLORS
         info = CATALOG[kind]
         cells = tuple((i, 0) for i in range(6)) if kind == 'long' else self.rng.choice(SHAPES + NEW_SHAPES)
-        if kind in ARENA_PICKUPS or kind in PICKUP_EFFECTS or kind in CONTACT_EFFECTS or kind in MOTION_BLOCKS or kind in TURRET_BLOCKS or kind in AURA_EFFECTS or kind in ('amber', 'ricochet_shield', 'blaster', 'fan', 'giga_fan', 'spike', 'thunder', 'mystery', 'pusher', 'vortex', 'pinball', 'sanctuary', 'vertigo', 'fire_x', 'fire_plus', 'fire_star', 'gravity_well', 'force_wave', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby', 'rocket', 'parachute', 'corkscrew', 'boulder', 'mender', 'stasis', 'venom_fang', 'block_attractor', 'block_repulsor', 'chaos_nexus', 'black_hole', 'repulsor', 'heal', 'shield', 'haste', 'bomb', 'doom', 'antidote', 'sonic', 'snail', 'hourglass', 'bubble', 'heartburst', 'shatter', 'curse', 'glitch', 'elite_glitch'):
+        if kind in ARENA_PICKUPS or kind in PICKUP_EFFECTS or kind in CONTACT_EFFECTS or kind in MOTION_BLOCKS or kind in TURRET_BLOCKS or kind in AURA_EFFECTS or kind in ('coin_flip', 'all_or_nothing', 'amber', 'ricochet_shield', 'blaster', 'fan', 'giga_fan', 'spike', 'thunder', 'mystery', 'pusher', 'vortex', 'pinball', 'sanctuary', 'vertigo', 'fire_x', 'fire_plus', 'fire_star', 'gravity_well', 'force_wave', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby', 'rocket', 'parachute', 'corkscrew', 'boulder', 'mender', 'stasis', 'venom_fang', 'block_attractor', 'block_repulsor', 'chaos_nexus', 'black_hole', 'repulsor', 'heal', 'shield', 'haste', 'bomb', 'doom', 'antidote', 'sonic', 'snail', 'hourglass', 'bubble', 'heartburst', 'shatter', 'curse', 'glitch', 'elite_glitch'):
             cells = ((0, 0),)
         for _ in range(self.rng.randrange(4)):
             cells = tuple((-y, x) for x, y in cells)
@@ -492,6 +494,13 @@ class ChaosRules:
 
     def chaos_contact(self, block):
         kind = block.kind
+        if kind in ('coin_flip', 'all_or_nothing'):
+            if self.rng.random() < .5:
+                self.chaos_heal(2 if kind == 'coin_flip' else self.max_lives)
+            else:
+                self.chaos_damage(2 if kind == 'coin_flip' else self.lives,
+                                  kind, contact=kind == 'coin_flip')
+            return
         if kind == 'amber':
             self.pellet_freeze_left = 3
             return

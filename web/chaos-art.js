@@ -46,6 +46,8 @@ const ChaosArt = (() => {
     spinner: 'M24 7a12 12 0 1 0 3 15M24 2v7h-7M16 10v12M10 16h12',
     scatter: 'M16 28V4M16 21 3 8M16 21 29 8M11 9l5-5 5 5M3 14V8h6M23 8h6v6',
 
+    coin_flip: 'M29 16a13 13 0 1 1-26 0 13 13 0 0 1 26 0ZM6 11h8M10 7v8M19 23h7M22 7 10 25',
+    all_or_nothing: 'M16 2 30 16 16 30 2 16ZM9 11h6M12 8v6M19 18l6 6M25 18l-6 6',
     second_wind: 'M12 3h8v9h9v8h-9v9h-8v-9H3v-8h9ZM4 5 1 9M28 27l3-4',
     backdraft: 'M16 2q-8 10-5 16l5-6q9 6 6 14Q8 34 5 22M24 3v10M20 9l4 4 4-4',
     storm_shelter: 'M16 2 28 7v11q-2 8-12 12Q6 26 4 18V7ZM16 7l-5 10h6l-1 8 7-12h-6Z',
@@ -159,7 +161,7 @@ const ChaosArt = (() => {
   function outerOutlineColor(kind, ghost = false) {
     if (ghost) return null;
     if (helpfulKinds.has(kind)) return '#ff1493';
-    return ['haste','curse','target_lock','danger_edge','arena_shrink','project_mayhem','project_chaos'].includes(kind) ? '#ffe45c' : null;
+    return ['coin_flip','all_or_nothing','haste','curse','target_lock','danger_edge','arena_shrink','project_mayhem','project_chaos'].includes(kind) ? '#ffe45c' : null;
   }
   const cache = new Map();
   const filled = new Set(['fire','heal','shield','ghost','bomb','doom','antidote','poison','heavy']);

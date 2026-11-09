@@ -467,8 +467,6 @@ const ArcadeMusic = (() => {
       ],
     },
   };
-  const dodgeTracks = Object.freeze(Object.entries(scores).filter(([id]) => id.startsWith("dodge_"))
-    .map(([id, score]) => Object.freeze({ id, difficulty: id.slice(6), title: score.title, bpm: score.bpm })));
   const bossTracks = [
     { id: "boss_mean", difficulty: "mean", title: "First Blood Circuit", bpm: 128,
       drive: 2, chugs: 8, hats: 8, palmMute: .42,
@@ -493,6 +491,20 @@ const ArcadeMusic = (() => {
         [12, 11, 12, 15, 19, 18, 15, 12], [12, 15, 19, 24, 19, 15, 12, 11],
         [19, 18, 15, 12, 11, 12, 15, 19]] },
   ].map(track => Object.freeze({ ...track, loop: true }));
+  const impossibleRemix = Object.freeze({
+    ...bossTracks.find(track => track.id === "boss_impossible"),
+    id: "dodge_impossible", title: "Crown of Ruin — Undertow Remix", bpm: 204,
+    drive: 4.6, palmMute: .14,
+    roots: [38, 34, 43, 45, 41, 38, 34, 45],
+    kicks: [0, .5, .75, 1.5, 2, 2.5, 2.75, 3.25, 3.5],
+    riffs: [bossTracks[3].riffs[0], [12, 15, 19, 12, 24, 19, 18, 15],
+      [24, 23, 24, 27, 31, 30, 27, 24], [19, 15, 12, 11, 12, 19, 18, 12]],
+  });
+  const dodgeTracks = Object.freeze([
+    ...Object.entries(scores).filter(([id]) => id.startsWith("dodge_"))
+      .map(([id, score]) => Object.freeze({ id, difficulty: id.slice(6), title: score.title, bpm: score.bpm })),
+    impossibleRemix,
+  ]);
   // Original electronic arena scores: individual hooks, harmony and drum feels.
   // Thirty-two bars each: opening, main hook, breakdown, then a lifted reprise.
   const geomayhemTracks = [
@@ -676,6 +688,16 @@ const ArcadeMusic = (() => {
   // Sixteen authored bars per piece: opening motif, answer, contrast, resolution.
   // song() adds a second chorus with the existing answering voice and octave lift.
   const arcadeJourneys = [
+    ["neon_daybreak", "Neon Daybreak", 136, "E B C#m A E G#m F#m B C#m A E B F#m A B E", [
+      "E5 G#5 B5 - F#5 E5 B4 -", "D#5 F#5 B5 A5 F#5 D#5 B4 -",
+      "E5 G#5 C#6 B5 G#5 E5 D#5 -", "C#5 E5 A5 B5 C#6 A5 E5 -",
+      "B5 G#5 E5 F#5 G#5 B5 E6 -", "D#6 B5 G#5 F#5 D#5 B4 D#5 -",
+      "F#5 A5 C#6 E6 C#6 A5 G#5 F#5", "D#5 F#5 A5 B5 D#6 B5 F#5 -",
+      "C#6 G#5 E5 G#5 B5 C#6 E6 -", "E6 C#6 A5 G#5 E5 C#5 E5 -",
+      "G#5 B5 E6 F#6 E6 B5 G#5 -", "F#6 D#6 B5 A5 F#5 D#5 B4 -",
+      "A5 C#6 E6 C#6 A5 G#5 F#5 -", "E5 A5 C#6 B5 A5 E5 C#5 -",
+      "D#5 F#5 B5 D#6 F#6 E6 D#6 B5", "G#5 F#5 E5 B4 E5 - E6 -",
+    ], {groove:"drive", lead:"triangle", gate:.85, swing:.04}],
     ["compass_rose", "Compass Rose", 124, "D G Bm A D F#m G A Bm G Em A G D A D", [
       "D5 - A5 F#5 E5 - F#5 A5", "B5 A5 G5 - D5 G5 A5 -",
       "F#5 B5 D6 B5 A5 F#5 E5 D5", "C#5 E5 A5 - G5 E5 C#5 -",
@@ -941,6 +963,7 @@ const ArcadeMusic = (() => {
     ...Object.entries(scores).map(([id, score]) => ({ id, title: score.title, bpm: score.bpm,
       category: loopThemes.includes(id) ? "Game theme" : "Arcade soundtrack" })),
     { id: "singularity", title: "Singularity Core", bpm: 78, category: "Game theme" },
+    { ...impossibleRemix, category: "Turtle Dodge" },
     ...bossTracks.map(track => ({ ...track, category: "Boss Crush" })),
     ...geomayhemTracks.map(track => ({ ...track, category: "Geomayhem" })),
     ...rockTracks.map(track => ({ ...track, category: "Rock" })),
@@ -1289,7 +1312,7 @@ const ArcadeMusic = (() => {
     const chamber = chamberTracks.find(song => song.id === track);
     if (chamber) return composeChamber(chamber, sampleRate, notes);
     if (track === "singularity") return composeCinematicCore(sampleRate, notes);
-    const rock = rockTracks.find(song => song.id === track) || bossTracks.find(song => song.id === track);
+    const rock = rockTracks.find(song => song.id === track) || bossTracks.find(song => song.id === track) || (track === impossibleRemix.id ? impossibleRemix : null);
     if (rock) return composeRock(rock, sampleRate, notes);
     const score = scores[track];
     if (!score) throw new Error(`Unknown music theme: ${track}`);
