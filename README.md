@@ -1,6 +1,7 @@
 # Microgame Madness
 
-**[Play Microgame Madness in your browser →](https://microgame-madness.com/)**
+**[Play at microgame-madness.com →](https://microgame-madness.com/)**  
+**[Play on MattyGPT’s GitHub Pages →](https://mattygpt.github.io/Microgame-Madness/)**
 
 A collection of browser and Python games powered by the same Python rules. Play Hangman, Key Rush, Turtle Dodge, Boss Crush, The Pumpkin King, The King’s Wrath, and Geomayhem—plus a secret unlockable boss.
 
