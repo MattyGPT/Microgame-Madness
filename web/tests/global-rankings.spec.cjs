@@ -30,9 +30,12 @@ async function mockGlobalLeaderboards(page, service) {
       service.visibility.set(identity, body.p_visible);
       return route.fulfill({ headers, json: body.p_visible });
     }
-    if (request.url().endsWith('/submit_leaderboard_score')) {
+    if (request.url().endsWith('/submit_leaderboard_run')) {
       const id = `${key}:${identity}`, previous = service.scores.get(id);
-      const score = Math.max(previous?.score || 0, body.p_score);
+      service.receipts ||= new Set();
+      const receipt = `${identity}:${body.p_run_id}`;
+      const score = (previous?.score || 0) + (service.receipts.has(receipt) ? 0 : body.p_score);
+      service.receipts.add(receipt);
       service.scores.set(id, { key, identity, player: body.p_player, score });
       return route.fulfill({ headers, json: score });
     }
@@ -166,3 +169,31 @@ test('global outages keep games playable and queued scores retry after reload', 
   expect(service.guests).toBe(1);
 });
 
+
+test('lifetime totals add all rounds across tabs and do not repeat after reload', async ({ page, context }) => {
+  const service = { scores: new Map(), guests: 0, requested: new Set() };
+  await mockGlobalLeaderboards(page, service);
+  await openGame(page);
+  await page.evaluate(() => accountApp.ready);
+  const other = await context.newPage();
+  try {
+    await routeLocalRuntime(other);
+    await mockGlobalLeaderboards(other, service);
+    await other.goto(page.url());
+    await expect(other.locator('#runtime-status')).toContainText('All games ready');
+    await other.evaluate(() => accountApp.ready);
+    const submit = (tab, score) => tab.evaluate(async score => {
+      const client = await leaderboardReady;
+      await client.submit({mode:'hangman',difficulty:'easy',player:'Lifetime player',score});
+    }, score);
+    await Promise.all([submit(page,4),submit(other,9),submit(page,8)]);
+    expect(service.guests).toBe(1);
+    expect([...service.scores.values()].map(row=>row.score)).toEqual([21]);
+    await page.reload();
+    await expect(page.locator('#runtime-status')).toContainText('All games ready');
+    await page.locator('#global-tab').click();
+    await page.locator('#leaderboard-refresh').click();
+    await expect(page.locator('#global-scores')).toContainText('21');
+    expect([...service.scores.values()].map(row=>row.score)).toEqual([21]);
+  } finally { await other.close(); }
+});

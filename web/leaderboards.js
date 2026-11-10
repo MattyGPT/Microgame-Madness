@@ -27,7 +27,8 @@ const Leaderboards = (() => {
       this.storageKey = `microgame-madness.leaderboard.v1:${this.url}`;
       this.session = this.read('session') || null;
       this.pending = Object.fromEntries(Object.entries(this.read('pending') || {})
-        .filter(([key, entry]) => entry && valid(entry) && key === `${entry.mode}:${entry.difficulty}`));
+        .filter(([key, entry]) => entry && valid(entry) && (key === entry.runId || key === `${entry.mode}:${entry.difficulty}`))
+        .map(([key, entry]) => [key, { ...entry, legacy: !entry.runId }]));
       this.pendingOwner = this.read('pending-owner') || this.session?.user_id || null;
       this.authenticating = null;
       this.flushing = null;
@@ -120,24 +121,37 @@ const Leaderboards = (() => {
         return Array.isArray(rows) ? rows : [];
       } catch { return []; }
     }
-    async submit(entry) {
+    async pendingLock(callback) {
+      if (globalThis.navigator?.locks?.request)
+        return navigator.locks.request(`${this.storageKey}.queue`, async () => {
+          const stored = this.read('pending');
+          if (stored) this.pending = stored;
+          this.pendingOwner = this.read('pending-owner') || this.pendingOwner;
+          return callback();
+        });
+      return callback();
+    }
+    async submit(entry, { defer = false } = {}) {
       if (!valid(entry)) throw new Error('Invalid leaderboard score');
       if (!this.configured) return false;
-      const current = this.accountSession?.snapshot().user;
-      if (this.accountSession && current && !current.is_anonymous) throw new Error('Account results use account synchronization.');
-      if (Object.keys(this.pending).length && this.pendingOwner && current && this.pendingOwner !== current.id)
-        throw new Error('Earlier leaderboard submissions belong to another guest identity.');
-      if (!Object.keys(this.pending).length) this.pendingOwner = current?.id || this.session?.user_id || null;
-      const key = `${entry.mode}:${entry.difficulty}`;
-      this.pending[key] = { ...entry, player: entry.player.trim(), score: Math.max(entry.score, this.pending[key]?.score || 0) };
-      this.write('pending', this.pending);
-      await this.flush();
+      await this.pendingLock(async () => {
+        const current = this.accountSession?.snapshot().user;
+        if (this.accountSession && current && !current.is_anonymous) throw new Error('Account results use account synchronization.');
+        if (Object.keys(this.pending).length && this.pendingOwner && current && this.pendingOwner !== current.id)
+          throw new Error('Earlier leaderboard submissions belong to another guest identity.');
+        if (!Object.keys(this.pending).length) this.pendingOwner = current?.id || this.session?.user_id || null;
+        const runId = entry.runId || globalThis.crypto.randomUUID();
+        this.pending[runId] = { ...entry, runId, player: entry.player.trim() };
+        this.write('pending-owner', this.pendingOwner);
+        this.write('pending', this.pending);
+      });
+      if (!defer) await this.flush();
       return true;
     }
     async flush() {
       if (!this.configured) return;
       if (this.flushing) return this.flushing;
-      this.flushing = (async () => {
+      this.flushing = this.pendingLock(async () => {
         while (Object.keys(this.pending).length) {
           const [key, entry] = Object.entries(this.pending)[0];
           await this.beforeFlush?.();
@@ -147,14 +161,15 @@ const Leaderboards = (() => {
           const owner = current?.id || this.session?.user_id;
           if (this.pendingOwner && owner !== this.pendingOwner) throw new Error('Earlier leaderboard submissions belong to another guest identity.');
           this.pendingOwner = owner; this.write('pending-owner', owner);
-          const best = await this.request('/rest/v1/rpc/submit_leaderboard_score', {
+          const best = await this.request(entry.runId ? '/rest/v1/rpc/submit_leaderboard_run' : '/rest/v1/rpc/submit_leaderboard_score', {
+            ...(entry.runId ? { p_run_id: entry.runId } : {}),
             p_mode: entry.mode, p_difficulty: entry.difficulty, p_player: entry.player, p_score: entry.score,
           }, token);
           if (!Number.isSafeInteger(best) || best < entry.score) throw new Error('Your score is saved locally. Global submission needs another try.');
           if (this.pending[key] === entry) delete this.pending[key];
           this.write('pending', this.pending);
         }
-      })();
+      });
       try { await this.flushing; }
       finally { this.flushing = null; }
     }

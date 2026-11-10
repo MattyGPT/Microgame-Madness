@@ -348,7 +348,7 @@ const CubieCustoms = (() => {
     { flavor: "Types so fast the thunder arrives after the victory screen." });
   add("celestial_forge", "Celestial Forge Cubie", "boss_100", "#b35e39",
     '<path d="M23 90 60 105 97 90" stroke="#ffdb84" fill="none"/>', square,
-    { flavor: "Forged in a hundred victories. Still warm enough to toast a marshmallow." });
+    { flavor: "Forged in 350 victories. Still warm enough to toast a marshmallow." });
   add("abyssal_leviathan", "Abyssal Leviathan Cubie", "dodge_merciless_420", "#205a77",
     '<path d="M20 92Q60 112 100 92" stroke="#79fff2" fill="none"/>', square,
     { flavor: "Seven minutes beneath the impossible. Even the deep sea held its breath." });

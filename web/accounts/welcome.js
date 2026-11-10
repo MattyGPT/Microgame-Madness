@@ -74,7 +74,7 @@ const ArcadeWelcome = (() => {
           <label>What should I call you?<input id="welcome-name" maxlength="24" autocomplete="nickname" placeholder="Player"></label>
           <label class="welcome-option"><input id="welcome-sound" type="checkbox" checked><span><strong>Sound & music</strong><small>Hear the arcade’s music and game effects.</small></span></label>
           <label class="welcome-option"><input id="welcome-motion" type="checkbox"><span><strong>Reduce motion</strong><small>Keep decorative animation still and pause tour videos until you press Play.</small></span></label>
-          <label class="welcome-option"><input id="welcome-sharing" type="checkbox" checked><span><strong>Share my leaderboard scores</strong><small>On by default. Shares your display name and best scores, never your password or recovery code. You can switch it off here.</small></span></label>
+          <label class="welcome-option"><input id="welcome-sharing" type="checkbox" checked><span><strong>Share my leaderboard scores</strong><small>On by default. Shares your display name and lifetime score totals, never your password or recovery code. You can switch it off here.</small></span></label>
           <label class="welcome-option"><input id="welcome-public" type="checkbox" checked><span><strong>Public arcade profile</strong><small>On by default. Let other players view your arcade profile. Switch this off if you want it private.</small></span></label>
           <p class="welcome-note">You can change these anytime in Your arcade profile.</p>
         </form>

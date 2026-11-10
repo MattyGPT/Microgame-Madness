@@ -38,3 +38,19 @@ test('Phantom Emperor counts ten real clean victories, never healed damage or du
   assert.ok(tracker.data.unlocked.pumpkin_flawless_10);
   assert.equal(tracker.data.stats.pumpkinFlawlessWins, 10);
 });
+
+test('Celestial Forge achievement and Cubie require 350 wins even in old saves', () => {
+  const custom = Customs.catalog.find(c => c.id === 'celestial_forge');
+  const achievement = catalog.find(a => a.id === custom.achievements[0]);
+  assert.equal(achievement.target, 350);
+  for (const wins of [100, 349]) {
+    const tracker = new Tracker({ stats: { bossWins: wins }, unlocked: { boss_100: '2026-01-01T00:00:00Z' } });
+    tracker.visit();
+    assert.equal(Customs.unlocked(custom, tracker.data.unlocked), false);
+  }
+  const tracker = new Tracker({ stats: { bossWins: 349 } });
+  tracker.start('boss', 'mean');
+  tracker.observe({ mode: 'boss', difficulty: 'mean', over: true, won: true, damage_taken: 0 });
+  assert.equal(tracker.data.stats.bossWins, 350);
+  assert.equal(Customs.unlocked(custom, tracker.data.unlocked), true);
+});

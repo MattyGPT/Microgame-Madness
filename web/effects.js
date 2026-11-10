@@ -2,6 +2,30 @@
 (function (root) {
   'use strict';
   const DEATH_DURATION = 1.6, FINALE_DURATION = 5.4;
+  function resetBuffer(context, stage) {
+    const [duration, volume, rate, steps, pitch] = [
+      [.22, .07, 6000, 32, 240],
+      [.38, .14, 2800, 8, 170],
+      [.62, .18, 1400, 4, 110],
+    ][Math.max(0, Math.min(2, stage))];
+    const result = context.createBuffer(1, Math.ceil(duration * context.sampleRate), context.sampleRate);
+    const samples = result.getChannelData(0);
+    let seed = 71, held = 0, phase = 0;
+    const hold = Math.max(1, Math.floor(context.sampleRate / rate));
+    for (let i = 0; i < samples.length; i++) {
+      const t = i / context.sampleRate, progress = t / duration;
+      phase += 2 * Math.PI * pitch * (1 - .75 * progress) / context.sampleRate;
+      if (i % hold === 0) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        const noise = seed / 2147483648 - 1;
+        const wave = Math.sin(phase) * .6 + noise * .4;
+        held = Math.round(wave * steps) / steps;
+      }
+      const envelope = Math.min(1, t / .008) * Math.min(1, (duration - t) / .05);
+      samples[i] = held * volume * envelope * (1 - .3 * progress);
+    }
+    return result;
+  }
   function buffer(context, kind) {
     const duration = kind === 'death' ? DEATH_DURATION : FINALE_DURATION;
     const volume = kind === 'death' ? .85 : 1;
@@ -91,7 +115,7 @@
       source.start(now, this.offset);
     }
   }
-  const api = { buffer, SequencePlayer, DEATH_DURATION, FINALE_DURATION };
+  const api = { buffer, resetBuffer, SequencePlayer, DEATH_DURATION, FINALE_DURATION };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ArcadeEffects = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

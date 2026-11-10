@@ -58,3 +58,25 @@ test('reset requires two yes answers and clears persisted guest progress', async
   expect(positions.reset).toBeLessThanOrEqual(positions.login);
   expect(positions.width).toBeLessThanOrEqual(positions.viewport);
 });
+
+test('Reset plays progressively stronger sounds and lets the final sound finish before reload', async ({ page }) => {
+  await openGame(page);
+  await page.locator('#welcome-close').click();
+  const stages = [];
+  await page.exposeFunction('recordResetSound', (stage, duration) => { stages.push({stage, duration, time: Date.now()}); });
+  await page.evaluate(() => {
+    setSoundEnabled(true);
+    const original = ArcadeEffects.resetBuffer;
+    ArcadeEffects.resetBuffer = (context, stage) => {
+      const buffer = original(context, stage);
+      window.recordResetSound(stage, buffer.duration);
+      return buffer;
+    };
+  });
+  await page.locator('#reset-open').click();
+  await page.locator('#reset-yes').click();
+  await expect.poll(() => stages.length).toBe(2);
+  await Promise.all([page.waitForEvent('load'), page.locator('#reset-yes').click()]);
+  expect(stages.map(x => x.stage)).toEqual([0, 1, 2]);
+  expect(Date.now() - stages[2].time).toBeGreaterThanOrEqual(stages[2].duration * 1000 - 30);
+});

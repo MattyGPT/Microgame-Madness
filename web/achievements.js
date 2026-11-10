@@ -97,7 +97,7 @@ const Achievements = (() => {
   add("pumpkin_flawless_10", "Beyond the Phantom Crown", "empyrorite", "Pumpkin King", "Defeat the Pumpkin King 10 times without taking a hit, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 10);
   add("hangman_perfect_100", "The Living Grimoire", "empyrorite", "Hangman", "Win 100 Hangman games without a wrong guess.", "perfectWins", 100);
   add("typing_100", "Thunder at Your Fingertips", "empyrorite", "Key Rush", "Complete 100 rounds in one Key Rush game.", "typingBest", 100);
-  add("boss_100", "Heart of the Celestial Forge", "empyrorite", "Boss Crush", "Win 100 Boss Crush games.", "bossWins", 100);
+  add("boss_100", "Heart of the Celestial Forge", "empyrorite", "Boss Crush", "Win 350 Boss Crush games.", "bossWins", 350);
   add("dodge_merciless_420", "Seven Minutes Below Infinity", "empyrorite", "Turtle Dodge", "Survive 420 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 420);
   // Unicode equivalents of Wingdings M Y / A R M, repeated three times.
   // These remain symbols on devices without the Windows Wingdings font.
@@ -324,6 +324,7 @@ const Achievements = (() => {
       for (const key of statNames) this.data.stats[key] = count(raw?.stats?.[key]);
       for (const item of catalog) {
         const date = raw?.unlocked?.[item.id];
+        if (item.id === "boss_100" && this.data.stats.bossWins < 350) continue;
         if (typeof date === "string" && Number.isFinite(Date.parse(date)))
           this.data.unlocked[item.id] = date;
       }

@@ -46,3 +46,13 @@ test('sequence audio follows the animation clock through mute, pause, replacemen
   player.sync(null, null, true);
   assert.equal(player.source, null);
 });
+
+test('Reset sounds escalate in duration and loudness without clipping', () => {
+  const { resetBuffer } = require('../effects.js');
+  const c = context();
+  const sounds = [0, 1, 2].map(stage => resetBuffer(c, stage));
+  const rms = b => Math.sqrt(b.getChannelData(0).reduce((sum, x) => sum + x*x, 0) / b.getChannelData(0).length);
+  assert.ok(sounds[0].duration < sounds[1].duration && sounds[1].duration < sounds[2].duration);
+  assert.ok(rms(sounds[0]) < rms(sounds[1]) && rms(sounds[1]) < rms(sounds[2]));
+  for (const sound of sounds) assert.ok(sound.getChannelData(0).every(x => Number.isFinite(x) && Math.abs(x) < .25));
+});

@@ -1197,7 +1197,8 @@ function saveRound() {
   saved.scores[scoreKey()] = list;
   persist();
   showScores();
-  publishGlobalScore({ mode: selected, difficulty: selectedDifficulty, player: currentPlayer, score: snapshot.score });
+  publishGlobalScore({ mode: selected, difficulty: selectedDifficulty, player: currentPlayer, score: snapshot.score,
+    runId: accountApp?.lastFinishedRun?.id });
 }
 // The cloud identity uses its own key; never replace the existing local profile.
 const leaderboardReady = fetch("./leaderboard-config.json", { cache: "no-store" })
@@ -1294,7 +1295,7 @@ async function loadGlobalScores() {
     }
     $("leaderboard-previous").disabled = leaderboardOffset === 0 || leaderboardAroundMe;
     $("leaderboard-next").disabled = rows.length < 10 || leaderboardAroundMe;
-    $("leaderboard-status").textContent = rows.length ? "Best scores from players everywhere." : "No scores yet. Set the first record!";
+    $("leaderboard-status").textContent = rows.length ? "Lifetime score totals from every completed round." : "No scores yet. Set the first record!";
   } catch (error) {
     if (request === globalRequest) $("leaderboard-status").textContent = error.message;
   } finally {
@@ -1305,7 +1306,11 @@ async function publishGlobalScore(entry) {
   if (modes[entry.mode]?.localOnly) return;
   if (accountApp?.controller) {
     if (!accountApp.controller.state().profile.privacy?.leaderboard) {
-      $("leaderboard-submission").textContent = "Saved privately. Enable sharing in your profile to join casual rankings.";
+      if (!accountApp.accountBound) {
+        const client = await leaderboardReady;
+        await client.submit(entry, { defer: true });
+      }
+      $("leaderboard-submission").textContent = "Saved privately. Enable sharing in your profile to add these rounds to your lifetime rankings.";
       return;
     }
     if (accountApp.signedIn) {
@@ -1319,9 +1324,9 @@ async function publishGlobalScore(entry) {
   try {
     const client = await leaderboardReady;
     if (!client.configured) return;
-    $("leaderboard-submission").textContent = "Sharing your best score…";
+    $("leaderboard-submission").textContent = "Adding this round to your lifetime score…";
     await client.submit(entry);
-    if (request === submissionRequest) $("leaderboard-submission").textContent = "Your best score is on the global leaderboard.";
+    if (request === submissionRequest) $("leaderboard-submission").textContent = "Your lifetime score is on the global leaderboard.";
     if (!$("global-panel").hidden) loadGlobalScores();
   } catch {
     if (request === submissionRequest) $("leaderboard-submission").textContent = "Saved locally. We’ll retry your global score when you reconnect or press Refresh.";
@@ -1333,7 +1338,7 @@ async function retryGlobalScores() {
     const client = await leaderboardReady;
     if (!client.configured || !Object.keys(client.pending).length) return;
     await client.flush();
-    $("leaderboard-submission").textContent = "Your best score is on the global leaderboard.";
+    $("leaderboard-submission").textContent = "Your lifetime score is on the global leaderboard.";
   } catch {
     $("leaderboard-submission").textContent = "Saved locally. We’ll retry your global score when you reconnect or press Refresh.";
   }
@@ -3021,7 +3026,22 @@ accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAc
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
 let resetStep = 0;
 let resetPending = false;
+function playResetSound(stage) {
+  if (!soundOn) return Promise.resolve();
+  initializeAudio();
+  if (!audioContext || !audioMaster) return Promise.resolve();
+  const source = audioContext.createBufferSource();
+  source.buffer = ArcadeEffects.resetBuffer(audioContext, stage);
+  source.connect(audioMaster);
+  return new Promise(resolve => {
+    source.onended = () => { source.disconnect(); resolve(); };
+    source.start();
+    // A suspended audio device must never prevent the reset from finishing.
+    setTimeout(resolve, Math.ceil(source.buffer.duration * 1000) + 150);
+  });
+}
 $("reset-open").onclick = () => {
+  playResetSound(0);
   resetStep = 0;
   $("reset-heading").textContent = "REALLY reset?";
   $("reset-description").textContent = "This will reset the entire arcade and start over.";
@@ -3039,6 +3059,7 @@ $("reset-dialog").addEventListener("cancel", event => {
 $("reset-yes").onclick = async () => {
   if (resetPending) return;
   if (resetStep === 0) {
+    playResetSound(1);
     resetStep = 1;
     $("reset-heading").textContent = "Are you 100% sure?";
     $("reset-description").textContent = "This resets ALL progress, deletes your signed-in account and its cloud data, and clears all saved arcade profiles, settings, preferences, and other arcade data in this browser. This cannot be undone. The page will reload and replay Cubie’s introduction.";
@@ -3054,9 +3075,11 @@ $("reset-yes").onclick = async () => {
   }
   resetPending = true;
   $("reset-yes").disabled = $("reset-no").disabled = true;
+  const resetSoundFinished = playResetSound(2);
   try {
     await accountApp.resetDeviceProgress($("reset-password").value);
     $("reset-password").value = "";
+    await resetSoundFinished;
     location.reload();
   } catch (error) {
     $("reset-error").textContent = error.message || "Could not reset. Please try again.";

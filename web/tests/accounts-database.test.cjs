@@ -10,12 +10,12 @@ const first = '00000000-0000-0000-0000-000000000001';
 const second = '00000000-0000-0000-0000-000000000002';
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function op(id, kind, payload = {}, runId) { return { id, version: 1, streamId: 'device', kind, payload, ...(runId ? { runId } : {}) }; }
-async function setup(t) {
+async function setup(t, { legacy = false } = {}) {
   const db = new PGlite(); t.after(() => db.close());
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql')).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!legacy || !f.includes('lifetime_leaderboards'))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -204,11 +204,11 @@ test('history has stable owner-specific cursor pages and imports do not invent r
 test('nearby rankings include players beyond the first page and terminal rejections retain their original meaning',async t=>{
   const {db,role,call,read,ranking}=await setup(t);
   await role('postgres');
-  await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score) values($1,'hangman','easy','You',1)",[first]);
+  await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score,total) values($1,'hangman','easy','You',1,1)",[first]);
   for(let n=3;n<=16;n++){
     const id=`00000000-0000-0000-0000-${String(n).padStart(12,'0')}`;
     await db.query('insert into auth.users values($1)',[id]);
-    await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score) values($1,'hangman','easy',$2,10)",[id,`Player ${n}`]);
+    await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score,total) values($1,'hangman','easy',$2,10,10)",[id,`Player ${n}`]);
   }
   const top=await ranking(first);assert.equal(top.length,10);assert.equal(top.some(row=>row.is_you),false);
   const nearby=await ranking(first,null,true,5);assert.equal(Number(nearby.find(row=>row.is_you).rank),15);
@@ -219,4 +219,68 @@ test('nearby rankings include players beyond the first page and terminal rejecti
   assert.equal(denied.status,'rejected');
   assert.deepEqual(await call('account_receipt',[second,'denied','0'.repeat(64)]),denied);
   assert.equal((await call('account_receipt',[second,'denied','1'.repeat(64)])).error.code,'operation_conflict');
+});
+
+test('lifetime totals add 4 + 9 + 8 once for guests and accounts, with isolated difficulties and seasons', async t => {
+  const { db, role, call, apply, ranking, commit } = await setup(t);
+  await role('authenticated', first);
+  const ids = ['10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000003'];
+  for (const [i, score] of [4, 9, 8].entries()) {
+    await call('submit_leaderboard_run', [ids[i], 'hangman', 'easy', 'Guest', score]);
+    await call('submit_leaderboard_run', [ids[i], 'hangman', 'easy', 'Guest', score]);
+  }
+  assert.equal((await ranking(first))[0].score, 21);
+  await role('authenticated', first);
+  await assert.rejects(call('submit_leaderboard_run', [ids[0], 'hangman', 'easy', 'Guest', 5]), {code: '22023'});
+  await call('submit_leaderboard_run', ['10000000-0000-0000-0000-000000000004', 'hangman', 'hard', 'Guest', 5]);
+  assert.equal((await ranking(first))[0].score, 21);
+  await role('service_role');
+  await call('account_set_season', ['total-season', 'Total season', new Date(Date.now()-86400000).toISOString(), new Date(Date.now()+86400000).toISOString(), '1']);
+  for (const [i, score] of [4, 9, 8].entries()) {
+    await apply(second, op(`start-${i}`, 'run.start', {mode:'hangman', difficulty:'easy'}, `run-${i}`));
+    const finish = op(`finish-${i}`, 'run.finish', {snapshot:{over:true, won:true, score}, outcome:'win'}, `run-${i}`);
+    const done = await apply(second, finish);
+    await commit(second, finish, done.current, done.next);
+  }
+  const accountRow = (await ranking(second)).find(row => row.is_you);
+  assert.equal(accountRow.score, 21);
+  assert.equal((await ranking(second, 'total-season'))[0].score, 21);
+  await role('postgres');
+  assert.equal((await db.query('select score from leaderboard_private.scores where player_id=$1 and difficulty=$2', [second, 'easy'])).rows[0].score, 9);
+  await role('authenticated', second);
+  await assert.rejects(call('submit_leaderboard_run', [ids[0], 'hangman', 'easy', 'Account bypass', 4]), {code:'42501'});
+  await role('anon');
+  await assert.rejects(call('submit_leaderboard_run', [ids[0], 'hangman', 'easy', 'Impostor', 4]), {code:'42501'});
+});
+
+test('guest conversion cannot count an already-published run twice', async t => {
+  const {role,call,apply,ranking} = await setup(t);
+  const runId = 'converted-guest-run';
+  await role('authenticated', first);
+  assert.equal(await call('submit_leaderboard_run', [runId,'hangman','easy','Guest',9]),9);
+  await apply(first, op('start-imported','run.start',{mode:'hangman',difficulty:'easy'},runId));
+  await apply(first, op('finish-imported','run.finish',{snapshot:{over:true,won:true,score:9},outcome:'win'},runId));
+  assert.equal((await ranking(first))[0].score,9);
+  await apply(first, op('start-next','run.start',{mode:'hangman',difficulty:'easy'},'next'));
+  await apply(first, op('finish-next','run.finish',{snapshot:{over:true,won:true,score:4},outcome:'win'},'next'));
+  assert.equal((await ranking(first))[0].score,13);
+});
+
+test('migration recovers account history and preserves the known guest baseline', async t => {
+  const {db,role,call,apply,ranking} = await setup(t, {legacy:true});
+  for (const [i,score] of [4,9,8].entries()) {
+    await apply(first,op(`old-start-${i}`,'run.start',{mode:'hangman',difficulty:'easy'},`old-${i}`));
+    await apply(first,op(`old-finish-${i}`,'run.finish',{snapshot:{over:true,won:true,score},outcome:'win'},`old-${i}`));
+  }
+  assert.equal((await ranking(first))[0].score,9);
+  await role('authenticated',second);
+  await call('submit_leaderboard_score',['hangman','easy','Old guest',7]);
+  await role('postgres');
+  await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations/20261111000000_lifetime_leaderboards.sql'),'utf8'));
+  assert.equal((await ranking(first)).find(row=>row.is_you).score,21);
+  assert.equal((await ranking(second)).find(row=>row.is_you).score,7);
+  await role('authenticated',second);
+  assert.equal(await call('submit_leaderboard_run',['new-after-migration','hangman','easy','Old guest',8]),15);
+  await call('submit_leaderboard_score',['hangman','easy','Old client retry',7]);
+  assert.equal((await ranking(second)).find(row=>row.is_you).score,15);
 });

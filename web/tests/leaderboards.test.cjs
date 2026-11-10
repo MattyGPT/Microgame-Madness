@@ -49,25 +49,28 @@ test('completed rounds create one guest identity and submit authenticated scores
   await client.submit({ ...entry, score: 6 });
   assert.equal(calls.filter(call => call.url.includes('/auth/')).length, 1);
   assert.equal(calls[1].headers.Authorization, 'Bearer access');
-  assert.deepEqual(calls[1].body, { p_mode: 'hangman', p_difficulty: 'easy', p_player: 'Cubie', p_score: 7 });
+  assert.match(calls[1].body.p_run_id, /^[0-9a-f-]{36}$/);
+  assert.deepEqual(calls[1].body, { p_run_id: calls[1].body.p_run_id, p_mode: 'hangman', p_difficulty: 'easy', p_player: 'Cubie', p_score: 7 });
   assert.deepEqual(client.pending, {});
   assert.equal(store.getItem('microgame-madness.v1'), original);
   assert.equal(new Client(config, { storage: store }).session.user_id, 'player-one');
 });
 
-test('failed submissions survive reload and retry under the same identity, keeping only the highest pending score', async () => {
+test('failed submissions survive reload and retry under the same identity, retaining every round', async () => {
   const store = storage();
   const client = new Client(config, { storage: store, fetch: async url => response(url.includes('/auth/') ? session : {}, url.includes('/auth/') ? 200 : 503) });
   await assert.rejects(client.submit(entry), /unavailable/);
   await assert.rejects(client.submit({ ...entry, score: 3 }), /unavailable/);
-  assert.equal(client.pending['hangman:easy'].score, 7);
+  assert.deepEqual(Object.values(client.pending).map(row => row.score), [7, 3]);
+  const ids = Object.keys(client.pending);
   const calls = [];
   const reloaded = new Client(config, { storage: store, fetch: async (url, options) => {
     calls.push({ url, options });
     return response(7);
   } });
   await reloaded.flush();
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(call => JSON.parse(call.options.body).p_run_id), ids);
   assert.equal(calls[0].options.headers.Authorization, 'Bearer access');
   assert.equal(JSON.parse(calls[0].options.body).p_score, 7);
   assert.deepEqual(reloaded.pending, {});

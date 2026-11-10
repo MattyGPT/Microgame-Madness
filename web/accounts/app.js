@@ -222,6 +222,7 @@ const AccountApp = (() => {
     }
     startRun(mode, difficulty) {
       if (difficulty === 'final_cutscene') return;
+      this.lastFinishedRun = null;
       this.currentRun = { id: crypto.randomUUID(), mode, difficulty, last: null, signature: '' };
       this.enqueue('run.start', { mode, difficulty }, { runId: this.currentRun.id }).catch(() => {});
     }
@@ -239,6 +240,7 @@ const AccountApp = (() => {
     finish(snapshot, outcome = 'interrupted', occurredAt = Date.now()) {
       const run = this.currentRun;
       if (!run) return;
+      this.lastFinishedRun = run;
       this.currentRun = null;
       const data = snapshot ? compactSnapshot(snapshot) : run.last || { mode: run.mode, difficulty: run.difficulty, score: 0 };
       this.enqueue('run.finish', { snapshot: data, outcome }, { runId: run.id, occurredAt }).catch(() => {});
@@ -334,7 +336,7 @@ const AccountApp = (() => {
         <section><h3>Preferences</h3><label>Display name <input id="account-name" maxlength="24" autocomplete="nickname"></label>
           <label class="account-check"><input id="account-sound" type="checkbox"> Sound enabled</label>
           <label class="account-check"><input id="account-motion" type="checkbox"> Reduce motion</label>
-          <label class="account-check"><input id="account-ranking" type="checkbox"> Share my name and best scores on casual leaderboards</label>
+          <label class="account-check"><input id="account-ranking" type="checkbox"> Share my name and lifetime scores on casual leaderboards</label>
           <label class="account-check"><input id="account-public" type="checkbox"> Make my arcade profile public</label>
           <button type="button" id="account-save-settings">Save preferences</button>
         </section>
