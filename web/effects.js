@@ -33,7 +33,13 @@
     const track = music?.buffer.getChannelData(0);
     const trackRate = music?.buffer.sampleRate ?? 0;
     let cursor = (music?.offset ?? 0) * trackRate;
-    let seed = 0x51f7, nextSample = 0, noise = 0, melody = 0;
+    let seed = 0x51f7, nextSample = 0, noise = 0, crushedMusic = 0;
+    function readMusic(position) {
+      const index = Math.floor(position);
+      const start = track[music.loop ? index % track.length : index] ?? 0;
+      const next = track[music.loop ? (index + 1) % track.length : index + 1] ?? 0;
+      return start + (next - start) * (position - index);
+    }
     for (let i = 0; i < left.length; i++) {
       const t = i / sampleRate, progress = t / duration;
       if (i >= nextSample) {
@@ -43,22 +49,20 @@
         const chirp = Math.sin(2 * Math.PI * t * (390 - 150 * progress) + 2.4 * Math.sin(t * 190));
         noise = Math.round((rumble * .52 + chirp * .2 + staticNoise * .28) * 7) / 7;
         if (track) {
-          // Read short repeating slices while the underlying track keeps its place.
-          const stutter = (t > .24 && t < .38) || (t > .63 && t < .78);
-          const rewind = stutter ? (t % .033) * trackRate : 0;
-          let index = Math.max(0, Math.floor(cursor - rewind));
-          if (music.loop) index %= track.length;
-          const distorted = Math.tanh((track[index] ?? 0) * 2.2);
-          melody = Math.round(distorted * 11) / 11 * .22;
+          const stutter = (t > .27 && t < .35) || (t > .66 && t < .74);
+          const rewind = stutter ? (t % .022) * trackRate : 0;
+          const distorted = Math.tanh(readMusic(Math.max(0, cursor - rewind)) * 1.25);
+          crushedMusic = Math.round(distorted * 32) / 32;
         }
         nextSample = i + Math.max(1, Math.floor(sampleRate / (6300 - 3500 * progress)));
       }
+      const slowedMusic = track ? readMusic(cursor) : 0;
       cursor += (.55 + .07 * Math.sin(t * 24)) * trackRate / sampleRate;
       const envelope = Math.min(1, t / .018, (duration - t) / .11);
       const pulse = (.5 + .5 * Math.sin(t * 46)) ** 4;
       const rumble = noise * (.10 + .09 * pulse) * (1 - .48 * progress);
       const pan = .28 * Math.sin(t * 16);
-      const song = melody * (1 - .7 * pulse);
+      const song = (slowedMusic * .72 + crushedMusic * .28 * (1 - .45 * pulse)) * .22;
       left[i] = (song + rumble * (1 + pan)) * envelope;
       right[i] = (song + rumble * (1 - pan)) * envelope;
     }
