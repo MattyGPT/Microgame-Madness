@@ -1347,8 +1347,8 @@ A
           <span class="card-title">The King's Wrath <span>↗</span></span>
           <span class="card-description">Your attack. Your rematch.</span>
         </button>
-        <div id="singularity-rift" class="game-card singularity-rift" aria-hidden="true">
-          <svg viewBox="0 0 240 180" fill="none" focusable="false">
+        <button id="singularity-rift" class="game-card singularity-rift" type="button" aria-label="Disturb the rift">
+          <svg viewBox="0 0 240 180" fill="none" focusable="false" aria-hidden="true">
             <defs>
               <radialGradient id="rift-violet-haze">
                 <stop stop-color="#7c38ed" stop-opacity=".38"/>
@@ -1363,7 +1363,11 @@ A
                 <stop offset=".54" stop-color="#6741e8"/><stop offset=".76" stop-color="#438aff"/>
                 <stop offset="1" stop-color="#222e79"/>
               </linearGradient>
-              <path id="rift-tear" d="M145 12L122 29L111 29L91 40L73 43L78 49L51 57L59 65L29 77L41 81L18 93L35 96L24 109L49 113L54 126L81 132L76 139L100 147L108 166L123 150L149 146L144 139L171 133L164 126L191 119L182 115L211 104L202 99L223 84L205 82L214 69L190 67L196 57L173 55L178 47L154 41L160 32L145 36Z"/>
+              <radialGradient id="rift-depth">
+                <stop stop-color="#000006"/><stop offset=".72" stop-color="#02020b"/><stop offset="1" stop-color="#110b2d"/>
+              </radialGradient>
+              <path id="rift-tear" d="M145 12L130 29L117 30L108 42L94 39L87 45L65 44L74 51L53 56L58 65L34 68L41 76L18 90L39 96L28 102L35 109L59 111L53 123L70 126L65 133L92 135L87 145L103 148L108 166L126 150L141 153L146 143L160 139L154 130L178 128L172 119L193 119L187 111L211 108L202 100L223 84L199 81L210 73L191 72L192 63L176 58L184 52L163 49L169 43L149 38L156 26L142 34Z"/>
+              <path id="rift-veins" pathLength="100" d="M82 49Q64 43 57 35T32 27M46 78Q29 76 26 69T8 66M43 109Q26 115 27 125T12 137M95 142Q84 151 85 157T73 172M157 44Q175 39 183 28T210 20M195 77Q207 64 214 65T236 56M188 114Q204 124 214 122T236 129M147 141Q156 151 164 150T181 165"/>
               <clipPath id="rift-slices">
                 <path d="M0 38H240V45H0ZM0 72H240V84H0ZM0 109H240V114H0ZM0 135H240V144H0Z"/>
               </clipPath>
@@ -1372,11 +1376,17 @@ A
               <ellipse cx="93" cy="80" rx="112" ry="87" fill="url(#rift-violet-haze)"/>
               <ellipse cx="149" cy="104" rx="108" ry="76" fill="url(#rift-blue-haze)"/>
             </g>
+            <g stroke="url(#rift-edge)" stroke-linecap="round">
+              <use href="#rift-veins" stroke-width="5" opacity=".09"/>
+              <use href="#rift-veins" stroke-width="1" opacity=".42"/>
+              <use class="rift-energy-flow" href="#rift-veins" stroke-width="1.8"/>
+            </g>
             <g class="rift-fracture">
-              <use href="#rift-tear" stroke="#7138dc" stroke-width="12" opacity=".1"/>
-              <use href="#rift-tear" stroke="#674aff" stroke-width="5" opacity=".25"/>
-              <use href="#rift-tear" fill="#020208" stroke="url(#rift-edge)" stroke-width="1.6"/>
-              <path d="M106 27L91 35L82 37M53 61L25 73L34 76M219 73L212 79L229 82M191 114L173 121L181 124" stroke="#b095ff" stroke-width=".6" opacity=".7"/>
+              <use href="#rift-tear" stroke="url(#rift-edge)" stroke-width="12" opacity=".17"/>
+              <use href="#rift-tear" stroke="url(#rift-edge)" stroke-width="5" opacity=".36"/>
+              <use href="#rift-tear" fill="url(#rift-depth)" stroke="url(#rift-edge)" stroke-width="1.6"/>
+              <path d="M117 34L109 46L94 43L87 49L75 48M61 61L63 68L43 72L46 78L29 88M52 99L40 104L65 109L61 121L75 122M89 134L100 136L94 143L107 145L110 156M146 145L148 137L160 134L155 125L174 124M174 115L192 115L193 108L205 105M202 93L214 85L193 83L203 75L189 74M187 66L171 59L178 53L159 51L163 45L150 42" stroke="url(#rift-edge)" stroke-width=".8" opacity=".7"/>
+              <path d="M64 63L59 56L75 51M41 76L18 90L39 96M66 130L64 134L83 137M120 153L108 166L105 156M156 129L178 128L172 119M187 111L211 108L202 100M210 73L192 72M171 56L183 52L163 49" stroke="#dbccff" stroke-width=".65" opacity=".7"/>
               <g clip-path="url(#rift-slices)">
                 <use class="rift-echo rift-echo-violet" href="#rift-tear" fill="#080314" stroke="#a05aff" stroke-width="2"/>
                 <use class="rift-echo rift-echo-blue" href="#rift-tear" fill="#030815" stroke="#387cff" stroke-width="2"/>
@@ -1387,8 +1397,11 @@ A
               <path d="M62 48H74M203 78H232M18 115H51M137 143H159" stroke="#387cff"/>
               <path d="M41 61H46M223 101H231M65 135H72" stroke="#b29aff"/>
             </g>
+            <g class="rift-sparks" fill="#b694ff">
+              <path d="M53 34l6 2-4 1ZM23 60l4 1-2 2ZM36 120l6-1-3 3ZM81 158l4-3 1 4ZM181 33l3-3 3 1ZM213 55l7-3-4 4ZM225 117l6 3-7-1ZM165 160l2-4 4 2Z"/>
+            </g>
           </svg>
-        </div>
+        </button>
         <button class="game-card singularity-card" data-game="singularity"
           aria-pressed="false" style="--accent: #65f5ff" hidden><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#779fea">
  <svg class="core-cosmos" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" fill="none" stroke="none">
@@ -2275,6 +2288,7 @@ A
     <div id="healing-flash" aria-hidden="true"></div>
     <div id="achievement-celebrations" aria-hidden="true"></div>
     <div id="name-surprise" aria-hidden="true" hidden></div>
+    <div id="rift-screen-glitch" aria-hidden="true"></div>
     <div id="gaster-blackout" aria-hidden="true" hidden></div>
   </body>
 </html>

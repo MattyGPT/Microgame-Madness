@@ -817,7 +817,10 @@ html.account-reduced-motion .keys-art i::after { animation: none; }
   overflow: hidden;
   border-color: transparent;
   background: transparent;
-  pointer-events: none;
+}
+.game-card.singularity-rift:hover {
+  transform: none;
+  border-color: transparent;
 }
 .singularity-rift > svg {
   position: absolute;
@@ -826,11 +829,22 @@ html.account-reduced-motion .keys-art i::after { animation: none; }
   height: 100%;
 }
 .rift-haze { animation: rift-breathe 6s ease-in-out infinite alternate; }
+.singularity-rift:hover .rift-haze, .singularity-rift:focus-visible .rift-haze {
+  filter: brightness(1.35);
+}
+.rift-energy-flow {
+  stroke-dasharray: 1 3 2 7;
+  opacity: .85;
+  animation: rift-seep 6s linear infinite;
+}
+.rift-sparks { opacity: .48; animation: rift-drift 3.8s ease-in-out infinite alternate; }
 .rift-fracture { animation: rift-displace 5.7s steps(1, end) infinite; }
 .rift-echo-violet { opacity: .7; transform: translateX(-5px); animation: rift-slice 4.3s steps(1, end) infinite; }
 .rift-echo-blue { opacity: .6; transform: translateX(6px); animation: rift-slice 5.1s steps(1, end) -2s infinite reverse; }
 .rift-static { opacity: .25; animation: rift-interference 6.1s steps(1, end) infinite; }
 @keyframes rift-breathe { from { opacity: .5; } to { opacity: 1; } }
+@keyframes rift-seep { to { stroke-dashoffset: -26; } }
+@keyframes rift-drift { to { transform: translate(1px, -3px); opacity: .82; } }
 @keyframes rift-displace {
   0%, 39%, 43%, 74%, 78%, 100% { transform: translateX(0); }
   40%, 76% { transform: translateX(-2px) skewY(1deg); }
@@ -846,10 +860,81 @@ html.account-reduced-motion .keys-art i::after { animation: none; }
   30%, 71% { opacity: .6; transform: translateX(6px); }
   34%, 74% { opacity: .35; transform: translateX(-4px); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .singularity-rift * { animation: none !important; }
+#rift-screen-glitch {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(transparent 0 4px, #583ce944 4px 5px),
+    linear-gradient(112deg, #793ed977, #22154c55 48%, #225fff88);
+  backdrop-filter: hue-rotate(28deg) saturate(1.35);
 }
-html.account-reduced-motion .singularity-rift * { animation: none !important; }
+#rift-screen-glitch::before, #rift-screen-glitch::after {
+  content: "";
+  position: absolute;
+  inset: -12% -4%;
+  background: linear-gradient(90deg, #8649e27a, #2c3fff40 52%, #3a8fff84);
+  backdrop-filter: hue-rotate(-48deg) contrast(1.2);
+  clip-path: polygon(0 16%, 100% 16%, 100% 18%, 0 18%, 0 51%, 100% 51%, 100% 55%, 0 55%);
+}
+#rift-screen-glitch::after {
+  background: linear-gradient(90deg, #227cff66, #7644ee66 64%, #3121a37a);
+  clip-path: polygon(0 34%, 100% 34%, 100% 37%, 0 37%, 0 73%, 100% 73%, 100% 77%, 0 77%);
+}
+.rift-disturbed #rift-screen-glitch {
+  visibility: visible;
+  opacity: .8;
+  animation: rift-screen-tint var(--rift-burst-time) linear both;
+}
+.rift-disturbed #rift-screen-glitch::before {
+  animation: rift-screen-slices var(--rift-burst-time) steps(1, end) both;
+}
+.rift-disturbed #rift-screen-glitch::after {
+  animation: rift-screen-slices var(--rift-burst-time) steps(1, end) reverse both;
+}
+.rift-disturbed :is(.topbar, main, .site-footer) {
+  animation: rift-screen-shake var(--rift-burst-time) steps(1, end) both;
+}
+.rift-disturbed .singularity-rift > svg {
+  animation: rift-screen-shake var(--rift-burst-time) steps(1, end) reverse both;
+}
+@keyframes rift-screen-shake {
+  0% { translate: -7px 2px; }
+  7% { translate: 6px -3px; }
+  14% { translate: -4px -1px; }
+  22% { translate: 3px 2px; }
+  37% { translate: -5px 1px; }
+  46% { translate: 4px -1px; }
+  61% { translate: -3px 1px; }
+  69% { translate: 2px 0; }
+  82%, 100% { translate: 0; }
+}
+@keyframes rift-screen-tint {
+  0% { opacity: .9; }
+  28% { opacity: .72; }
+  55% { opacity: .84; }
+  78% { opacity: .52; }
+  100% { opacity: 0; }
+}
+@keyframes rift-screen-slices {
+  0%, 43% { translate: 1.5% -3%; }
+  15%, 56% { translate: -2% 6%; }
+  30%, 72% { translate: 2% -8%; }
+  85%, 100% { translate: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .singularity-rift *, .rift-disturbed :is(.topbar, main, .site-footer),
+  .rift-disturbed #rift-screen-glitch, .rift-disturbed #rift-screen-glitch::before,
+  .rift-disturbed #rift-screen-glitch::after { animation: none !important; }
+}
+html.account-reduced-motion .singularity-rift *,
+html.account-reduced-motion.rift-disturbed :is(.topbar, main, .site-footer),
+html.account-reduced-motion.rift-disturbed #rift-screen-glitch,
+html.account-reduced-motion.rift-disturbed #rift-screen-glitch::before,
+html.account-reduced-motion.rift-disturbed #rift-screen-glitch::after { animation: none !important; }
 .wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
 /* The whole cylinder turns together; no independently squashed face or edge. */
 .shop-card-art { position: relative; }

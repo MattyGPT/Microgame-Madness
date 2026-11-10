@@ -2672,8 +2672,12 @@ let pendingSoundChoice = null;
 let soundSettingChain = Promise.resolve();
 let audioContext;
 let audioMaster;
+let musicOutput;
 let musicPlayer;
 let sequencePlayer;
+const riftBurstDuration = 1.2;
+let riftBurstTimer;
+let riftBurstAudio;
 let pendingAchievementDing = false;
 let pendingRockSong = null;
 const soundEffects = new Set();
@@ -2696,7 +2700,10 @@ $("sound").onclick = () => {
 };
 function setSoundEnabled(value) {
   soundOn = value;
-  if (!soundOn) pendingAchievementDing = false;
+  if (!soundOn) {
+    pendingAchievementDing = false;
+    stopRiftAudio();
+  }
   $("sound").textContent = soundOn ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(soundOn));
   if (audioMaster && audioContext.state !== "closed") {
@@ -2771,12 +2778,15 @@ function initializeAudio() {
       try {
         const master = context.createGain();
         master.connect(context.destination);
-        const music = new ArcadeMusic.Player(context, master);
+        const musicGain = context.createGain();
+        musicGain.connect(master);
+        const music = new ArcadeMusic.Player(context, musicGain);
         const sequence = new ArcadeEffects.SequencePlayer(context, master);
         music.onPlaybackChange = renderNowPlaying;
         context.addEventListener("statechange", renderNowPlaying);
         audioContext = context;
         audioMaster = master;
+        musicOutput = musicGain;
         musicPlayer = music;
         sequencePlayer = sequence;
       } catch (error) {
@@ -2798,6 +2808,60 @@ function initializeAudio() {
     renderNowPlaying();
   }
 }
+function stopRiftAudio() {
+  if (!riftBurstAudio) return;
+  const { context, source, output } = riftBurstAudio;
+  riftBurstAudio = null;
+  source.onended = null;
+  source.stop();
+  source.disconnect();
+  output.gain.cancelScheduledValues(context.currentTime);
+  output.gain.setValueAtTime(1, context.currentTime);
+}
+function finishRiftBurst() {
+  clearTimeout(riftBurstTimer);
+  riftBurstTimer = undefined;
+  document.documentElement.classList.remove("rift-disturbed");
+  stopRiftAudio();
+}
+function playRiftAudio() {
+  initializeAudio();
+  if (!soundOn || !audioContext || !musicOutput) return;
+  const context = audioContext, output = musicOutput;
+  const voice = musicPlayer.current;
+  const music = voice && {
+    buffer: voice.source.buffer,
+    offset: voice.offset + context.currentTime - voice.started,
+    loop: voice.source.loop,
+  };
+  const source = context.createBufferSource();
+  source.buffer = ArcadeEffects.riftBuffer(context, riftBurstDuration, music);
+  source.connect(audioMaster);
+  const now = context.currentTime, end = now + riftBurstDuration;
+  if (music) {
+    output.gain.setValueAtTime(1, now);
+    output.gain.linearRampToValueAtTime(.06, now + .018);
+    output.gain.setValueAtTime(.06, end - .085);
+    output.gain.linearRampToValueAtTime(1, end);
+  }
+  source.onended = () => {
+    source.disconnect();
+    if (riftBurstAudio?.source === source) riftBurstAudio = null;
+  };
+  riftBurstAudio = { context, source, output };
+  source.start(now);
+}
+$("singularity-rift").onclick = () => {
+  if (riftBurstTimer !== undefined || $("singularity-rift").hidden) return;
+  playRiftAudio();
+  const root = document.documentElement;
+  root.style.setProperty("--rift-burst-time", `${riftBurstDuration}s`);
+  root.classList.add("rift-disturbed");
+  riftBurstTimer = setTimeout(finishRiftBurst, riftBurstDuration * 1000);
+};
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && riftBurstTimer !== undefined) finishRiftBurst();
+});
 document.addEventListener("click", initializeAudio);
 document.addEventListener("keydown", event => {
   if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) initializeAudio();

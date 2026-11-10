@@ -26,6 +26,44 @@
     }
     return result;
   }
+  function riftBuffer(context, duration, music) {
+    const sampleRate = context.sampleRate;
+    const result = context.createBuffer(2, Math.round(duration * sampleRate), sampleRate);
+    const left = result.getChannelData(0), right = result.getChannelData(1);
+    const track = music?.buffer.getChannelData(0);
+    const trackRate = music?.buffer.sampleRate ?? 0;
+    let cursor = (music?.offset ?? 0) * trackRate;
+    let seed = 0x51f7, nextSample = 0, noise = 0, melody = 0;
+    for (let i = 0; i < left.length; i++) {
+      const t = i / sampleRate, progress = t / duration;
+      if (i >= nextSample) {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        const staticNoise = seed / 2147483648 - 1;
+        const rumble = Math.sin(2 * Math.PI * (42 * t + 49 * (1 - Math.exp(-4 * t))));
+        const chirp = Math.sin(2 * Math.PI * t * (390 - 150 * progress) + 2.4 * Math.sin(t * 190));
+        noise = Math.round((rumble * .52 + chirp * .2 + staticNoise * .28) * 7) / 7;
+        if (track) {
+          // Read short repeating slices while the underlying track keeps its place.
+          const stutter = (t > .24 && t < .38) || (t > .63 && t < .78);
+          const rewind = stutter ? (t % .033) * trackRate : 0;
+          let index = Math.max(0, Math.floor(cursor - rewind));
+          if (music.loop) index %= track.length;
+          const distorted = Math.tanh((track[index] ?? 0) * 2.2);
+          melody = Math.round(distorted * 11) / 11 * .22;
+        }
+        nextSample = i + Math.max(1, Math.floor(sampleRate / (6300 - 3500 * progress)));
+      }
+      cursor += (.55 + .07 * Math.sin(t * 24)) * trackRate / sampleRate;
+      const envelope = Math.min(1, t / .018, (duration - t) / .11);
+      const pulse = (.5 + .5 * Math.sin(t * 46)) ** 4;
+      const rumble = noise * (.10 + .09 * pulse) * (1 - .48 * progress);
+      const pan = .28 * Math.sin(t * 16);
+      const song = melody * (1 - .7 * pulse);
+      left[i] = (song + rumble * (1 + pan)) * envelope;
+      right[i] = (song + rumble * (1 - pan)) * envelope;
+    }
+    return result;
+  }
   function buffer(context, kind) {
     const duration = kind === 'death' ? DEATH_DURATION : FINALE_DURATION;
     const volume = kind === 'death' ? .85 : 1;
@@ -115,7 +153,7 @@
       source.start(now, this.offset);
     }
   }
-  const api = { buffer, resetBuffer, SequencePlayer, DEATH_DURATION, FINALE_DURATION };
+  const api = { buffer, resetBuffer, riftBuffer, SequencePlayer, DEATH_DURATION, FINALE_DURATION };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ArcadeEffects = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
