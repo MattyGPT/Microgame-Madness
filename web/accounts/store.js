@@ -263,6 +263,19 @@ const AccountStore = (() => {
         return undefined;
       });
     }
+    async clearAll() {
+      await this.open();
+      if (!this.db) {
+        await this.memory.queue;
+        this.memory.records.clear();
+      } else await new Promise((resolve, reject) => {
+        const tx = this.db.transaction('profiles', 'readwrite');
+        tx.objectStore('profiles').clear();
+        tx.oncomplete = resolve;
+        tx.onabort = tx.onerror = () => reject(tx.error);
+      });
+      this.notify(null);
+    }
     close() { this.db?.close(); this.channel?.close(); this.listeners.clear(); }
   }
   return { Store, MemoryDatabase, clone, uuid: id };

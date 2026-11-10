@@ -570,7 +570,7 @@ class ChaosTests(unittest.TestCase):
         game.update(.001, set())
         self.assertEqual(game.lives, 7)
         self.assertIn(block, game.blocks)
-        block.age = 3.75
+        block.age = 4
         for a,b in zip(first,fan_blades(block)[0]):
             self.assertAlmostEqual(a[0],b[0])
             self.assertAlmostEqual(a[1],b[1])

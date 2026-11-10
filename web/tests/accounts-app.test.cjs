@@ -135,3 +135,43 @@ test('handle defaults wait for guest import and preserve an existing display nic
   await app.defaultHandle('another_player');
   assert.deepEqual(changes, [{ player: 'another_player' }]);
 });
+
+test('full reset deletes the signed-in account before clearing device data', async t => {
+  const calls = [];
+  const app = Object.create(App.prototype);
+  app.ready = app.chain = Promise.resolve();
+  app.render = () => {};
+  app.controller = {
+    state: () => ({ owner: 'signed-in-account' }),
+    deleteAccount: async password => { assert.equal(password, 'test password'); calls.push('delete'); },
+    close: () => calls.push('stop'), working: Promise.resolve(),
+  };
+  app.store = { clearAll: async () => calls.push('clear') };
+  app.session = { close: () => calls.push('session') };
+  const storage = () => {
+    const data = { 'microgame-madness.v1': 'old', 'microgame-madness.welcome.v1': 'complete', unrelated: 'keep' };
+    Object.defineProperty(data, 'removeItem', { value: key => { delete data[key]; } });
+    return data;
+  };
+  for (const key of ['localStorage', 'sessionStorage']) {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { value: storage(), configurable: true });
+    t.after(() => { if (previous) Object.defineProperty(globalThis, key, previous); else delete globalThis[key]; });
+  }
+  await app.resetDeviceProgress('test password');
+  assert.deepEqual(calls, ['delete', 'stop', 'clear', 'session']);
+  assert.deepEqual(Object.keys(localStorage), ['unrelated']);
+  assert.deepEqual(Object.keys(sessionStorage), ['unrelated']);
+});
+
+test('a failed account deletion preserves local data and permits retry', async () => {
+  const app = Object.create(App.prototype);
+  app.ready = app.chain = Promise.resolve();
+  app.render = () => {};
+  app.controller = { state: () => ({ owner: 'account' }),
+    deleteAccount: async () => { throw new Error('Incorrect password'); } };
+  app.store = { clearAll: async () => assert.fail('Must not clear data before account deletion succeeds') };
+  await assert.rejects(app.resetDeviceProgress('wrong'), /Incorrect password/);
+  assert.equal(app.busy, false);
+  assert.equal(app.resetting, false);
+});

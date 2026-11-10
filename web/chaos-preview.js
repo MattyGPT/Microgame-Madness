@@ -14,7 +14,7 @@ const GuideScanner = (() => {
       this.lastChange = 0;
       this.root = document.createElement('span');
       this.root.className = 'guide-scanner';
-      this.root.innerHTML = `<span class="guide-scan-object"><img class="guide-tab-preview" alt=""><span class="guide-scan-beam"></span><span class="guide-scan-id"></span></span><span class="guide-scan-readout"><span class="guide-scan-status">OBJECT RECOGNITION</span><span class="guide-scan-name"></span><span class="guide-scan-meta"></span><span class="guide-scan-disposition block-disposition"></span><span class="guide-scan-analysis"></span><span class="guide-scan-progress"><i></i></span></span>`;
+      this.root.innerHTML = `<span class="guide-scan-object"><img class="guide-tab-preview" alt=""><span class="guide-scan-beam"></span><span class="guide-scan-id"></span></span><span class="guide-scan-readout"><span class="guide-scan-status">OBJECT RECOGNITION</span><span class="guide-scan-name"></span><span class="guide-scan-meta"></span><span class="guide-scan-disposition block-disposition"></span><span class="guide-scan-collectible"></span><span class="guide-scan-solidity"></span><span class="guide-scan-analysis"></span><span class="guide-scan-progress"><i></i></span></span>`;
       this.icon = this.root.querySelector('img');
       this.copy = this.root.querySelector('.guide-scan-analysis');
       this.progress = this.root.querySelector('.guide-scan-progress i');
@@ -37,6 +37,8 @@ const GuideScanner = (() => {
       const disposition = this.root.querySelector('.guide-scan-disposition');
       disposition.dataset.disposition = block.disposition;
       disposition.textContent = block.disposition[0].toUpperCase() + block.disposition.slice(1);
+      this.root.querySelector('.guide-scan-collectible').textContent = block.collectible ? 'Collectible' : 'Not collectible';
+      this.root.querySelector('.guide-scan-solidity').textContent = block.solidity;
       this.fullText = analysis(block);
       this.root.title = `${block.name}: ${block.description}`;
       this.lastChange = now;

@@ -589,6 +589,7 @@ saved.turtleTrail = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned)?.
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
+  if (accountApp?.resetting) return;
   if (!applyingAccountProfile) accountApp?.preferences(saved);
   try {
     const json = JSON.stringify(saved);
@@ -626,13 +627,18 @@ $("cubie-hint-okay").onclick = () => {
   syncMusic();
   $("arena").focus({ preventScroll: true });
 };
+function syncSingularityCard() {
+  const unlocked = !!saved.unlocks.singularity;
+  document.querySelector('[data-game="singularity"]').hidden = !unlocked;
+  $("singularity-rift").hidden = unlocked;
+  $("game-count").textContent = unlocked ? "12" : "11";
+  $("game-total").textContent = `${unlocked ? 8 : 7} GAMES + JUKEBOX + CLOSET + SHOP + GUIDE / ENDLESS REMATCHES`;
+}
 function unlockSingularity(navigate = true) {
   saved.unlocks.singularity = true;
   saved.player = $("player").value.trim() || "Player";
   persist();
-  document.querySelector('[data-game="singularity"]').hidden = false;
-  $("game-count").textContent = "12";
-  $("game-total").textContent = "8 GAMES + JUKEBOX + CLOSET + SHOP + GUIDE / ENDLESS REMATCHES";
+  syncSingularityCard();
   updateAchievements(achievementTracker.secret("gravitron"));
   if (navigate) {
     selectGame("singularity");
@@ -1452,7 +1458,13 @@ function initializeChaosGuide(blocks) {
     disposition.className = "block-disposition";
     disposition.dataset.disposition = block.disposition;
     disposition.textContent = block.disposition[0].toUpperCase() + block.disposition.slice(1);
-    card.append(icon, title, rarity, disposition, detail);
+    const collectible = document.createElement('p');
+    collectible.className = 'block-collectible';
+    collectible.textContent = block.collectible ? 'Collectible' : 'Not collectible';
+    const solidity = document.createElement('p');
+    solidity.className = 'block-solidity';
+    solidity.textContent = block.solidity;
+    card.append(icon, title, rarity, disposition, collectible, solidity, detail);
     return card;
   }));
 }
@@ -2990,8 +3002,7 @@ function applyAccountProfile(profile) {
     announcedCustoms.clear();
     for (const item of CubieCustoms.catalog)
       if (CubieCustoms.unlocked(item, saved.achievements.unlocked, saved.shop.owned, saved.testerTon618)) announcedCustoms.add(item.id);
-    document.querySelector('[data-game="singularity"]').hidden = !saved.unlocks.singularity;
-    $("game-count").textContent = saved.unlocks.singularity ? "12" : "11";
+    syncSingularityCard();
     const desiredSound = localSoundPreference ?? (saved.preferences?.soundOn !== false);
     if (!pendingSoundChoice && soundOn !== desiredSound) setSoundEnabled(desiredSound);
     document.documentElement.classList.toggle("account-reduced-motion", !!saved.preferences?.reducedMotion);
@@ -3008,6 +3019,51 @@ accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAc
   isPlaying: () => active, config: leaderboardReady.then(client => ({ url: client.url, key: client.key })),
   onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
+let resetStep = 0;
+let resetPending = false;
+$("reset-open").onclick = () => {
+  resetStep = 0;
+  $("reset-heading").textContent = "REALLY reset?";
+  $("reset-description").textContent = "This will reset the entire arcade and start over.";
+  $("reset-password-label").hidden = true;
+  $("reset-password").value = "";
+  $("reset-error").textContent = "";
+  $("reset-dialog").showModal();
+  $("reset-no").focus();
+};
+$("reset-no").onclick = () => $("reset-dialog").close();
+$("reset-dialog").addEventListener("close", () => { $("reset-password").value = ""; });
+$("reset-dialog").addEventListener("cancel", event => {
+  if (resetPending) event.preventDefault();
+});
+$("reset-yes").onclick = async () => {
+  if (resetPending) return;
+  if (resetStep === 0) {
+    resetStep = 1;
+    $("reset-heading").textContent = "Are you 100% sure?";
+    $("reset-description").textContent = "This resets ALL progress, deletes your signed-in account and its cloud data, and clears all saved arcade profiles, settings, preferences, and other arcade data in this browser. This cannot be undone. The page will reload and replay Cubie’s introduction.";
+    await accountApp.ready;
+    $("reset-password-label").hidden = !accountApp.accountBound;
+    $("reset-no").focus();
+    return;
+  }
+  if (accountApp.accountBound && !$("reset-password").value) {
+    $("reset-error").textContent = "Enter your account password to delete your account and reset everything.";
+    $("reset-password").focus();
+    return;
+  }
+  resetPending = true;
+  $("reset-yes").disabled = $("reset-no").disabled = true;
+  try {
+    await accountApp.resetDeviceProgress($("reset-password").value);
+    $("reset-password").value = "";
+    location.reload();
+  } catch (error) {
+    $("reset-error").textContent = error.message || "Could not reset. Please try again.";
+    resetPending = false;
+    $("reset-yes").disabled = $("reset-no").disabled = false;
+  }
+};
 const arcadeWelcome = new ArcadeWelcome.Guide(accountApp);
 window.addEventListener('arcade-welcome-change', () => {
   if (arcadeWelcome.dialog.open) initializeAudio();
@@ -3043,6 +3099,7 @@ initializeAchievements();
 // Save elapsed open-page time across visits; a fresh load starts a fresh clock.
 let websiteTimeCheckpoint = performance.now();
 function saveWebsiteTime() {
+  if (accountApp?.resetting) return;
   const now = performance.now();
   // A timer/pagehide save must not replace a newer profile written by another
   // tab or an import with this page's older in-memory copy.

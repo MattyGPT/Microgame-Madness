@@ -27,7 +27,7 @@ BLOCK_TYPES = (
     ('chilly', 'Chilly block', '#a5e8ff', 'CH', 4, 'Rare', '1 contact damage. Its small 60-unit radius applies Frost: half movement speed, lasting 2.5 seconds after you leave.'),
     ('ricochet_shield', 'Ricochet Shield', '#80f3d4', 'RS', 2, 'Rare', 'A harmless pickup: grants one shield and instantly reflects Blaster pellets within 140 units away from you. Reflected pellets turn mint green and cannot hurt you.'),
     ('blaster', 'Blaster block', '#d0a375', 'BL', 0, 'Uncommon', '5% of spawns. Falls at 75% of Normal base speed. Fires 0.5-damage pellets every 0.3–0.9 seconds. Starts with one of eight cannon directions; each extra cannon has a 40% chance, up to eight. 30% rotate slowly, equally likely clockwise or counterclockwise. Body contact deals 1 damage.'),
-    ('giga_fan', 'Giga Fan', '#c69de5', 'GF', 2, 'Rare', 'Three enormous blades, each 8x the original Fan blade length. One rotation every 3.75 seconds. Body or blade contact deals 1 damage; the Giga Fan persists.'),
+    ('giga_fan', 'Giga Fan', '#c69de5', 'GF', 2, 'Rare', 'Three enormous blades, each 8x the original Fan blade length. One rotation every 4 seconds. Body or blade contact deals 1 damage; the Giga Fan persists.'),
     ('fan', 'Fan block', '#9ebacb', 'FN', 4, 'Rare', 'One square with three extra-long spinning blades (3x their original length). One rotation every 3.75 seconds. Body or blade contact deals 1 damage; the fan persists.'),
     ('leafy', 'Leafy block', '#7ecb76', 'LF', 5, 'Uncommon', 'Wild-shaped, harmless and pass-through. Slows your movement by 50% only while overlapping it.'),
     ('turbo', 'Turbo block', '#ffd46b', 'TB', 5, 'Uncommon', 'Wild-shaped, harmless and pass-through. Speeds your movement up by 50% only while overlapping it.'),
@@ -226,6 +226,10 @@ ARENA_PICKUPS = {
 }
 SAFE_BLOCKS = frozenset(('amber', 'ricochet_shield', 'sanctuary', 'weak', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'curse', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby'))
 SAFE_BLOCKS = SAFE_BLOCKS | frozenset(PICKUP_EFFECTS) | frozenset(ARENA_PICKUPS)
+COLLECTIBLE_BLOCKS = (SAFE_BLOCKS - {'weak'}) | {'coin_flip', 'all_or_nothing'}
+for _kind, _metadata in CATALOG.items():
+    _metadata['collectible'] = _kind in COLLECTIBLE_BLOCKS
+
 FIRE_PATTERNS = {'fire_x': ((1, 1), (-1, 1), (1, -1), (-1, -1)),
                  'fire_plus': ((1, 0), (-1, 0), (0, 1), (0, -1))}
 FIRE_PATTERNS['fire_star'] = FIRE_PATTERNS['fire_x'] + FIRE_PATTERNS['fire_plus']
@@ -291,6 +295,8 @@ def catalog():
         game.spawn_chaos(kind)
         block = game.blocks[0]
         result.append(dict(item, chance=item['weight'] / 10,
+                           solidity=('Solid / not solid (alternates)' if kind in ('blink', 'ghost', 'phase')
+                                     else 'Solid' if block_is_solid(block) else 'Not solid'),
                            preview_cells=block.cells, preview_size=block.cell_size, preview_color=block.color,
                            preview_speed=game.chaos_fall_speed(block), preview_cannons=block.cannons,
                            preview_rotation_speed=block.rotation_speed,

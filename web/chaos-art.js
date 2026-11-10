@@ -368,7 +368,7 @@ const ChaosArt = (() => {
       const full = size/.82;
       ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = color; ctx.strokeStyle = outlineColor(kind); ctx.lineWidth = 2;
-      const angles = ['fan','giga_fan'].includes(kind) ? [0, 1, 2].map(i => -(age*2*Math.PI/3.75+i*2*Math.PI/3)) : (cannons || [Math.PI/2]).map(a => -a);
+      const angles = ['fan','giga_fan'].includes(kind) ? [0, 1, 2].map(i => -(age*2*Math.PI/(kind === 'giga_fan' ? 4 : 3.75)+i*2*Math.PI/3)) : (cannons || [Math.PI/2]).map(a => -a);
       for (const angle of angles) {
         ctx.save(); ctx.rotate(angle); ctx.beginPath();
         if (kind === 'fan' || kind === 'giga_fan') {

@@ -183,6 +183,31 @@ const AccountApp = (() => {
       let pending;
       do { pending = this.chain; await pending; } while (pending !== this.chain);
     }
+    async resetDeviceProgress(password) {
+      await this.ready;
+      if (this.busy) throw new Error('Please wait for the current account change to finish.');
+      this.busy = true;
+      this.resetting = true;
+      try {
+        this.currentRun = null;
+        this.onIdentityLoss?.();
+        await this.settle();
+        if (this.accountBound) await this.controller.deleteAccount(password);
+        else await this.session.signOut();
+        this.controller.close();
+        await this.controller.working;
+        await this.store.clearAll();
+        this.session.close();
+        for (const storage of [localStorage, sessionStorage]) {
+          for (const key of Object.keys(storage)) {
+            if (key.startsWith('microgame-madness')) storage.removeItem(key);
+          }
+        }
+      } catch (error) {
+        this.resetting = false;
+        throw error;
+      } finally { this.busy = false; this.render(); }
+    }
     enqueue(kind, payload, options = {}) {
       const immutable = copy(payload);
       options = { occurredAt: Date.now(), ...options };

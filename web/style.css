@@ -126,6 +126,14 @@ main,
   background: #282e2d;
 }
 .topbar-actions { display: flex; align-items: center; gap: 18px; }
+#reset-open {
+  background: #b42332;
+  border-color: #ff7180;
+  color: #fff;
+  font-weight: 700;
+}
+#reset-open:hover { background: #921b28; }
+#reset-open:focus-visible { outline: 3px solid #ff7180; outline-offset: 4px; }
 #login-open {
   min-width: 190px;
   min-height: 76px;
@@ -803,6 +811,45 @@ html.account-reduced-motion .keys-art i::after { animation: none; }
 }
 .singularity-art svg { width: 100px; height: 80px; filter: drop-shadow(0 0 12px #a488ff66); }
 .singularity-card { background: linear-gradient(135deg, #121625, #242039); }
+/* A tear in an otherwise empty grid slot keeps the secret boss's place. */
+.game-card.singularity-rift {
+  padding: 0;
+  overflow: hidden;
+  border-color: transparent;
+  background: transparent;
+  pointer-events: none;
+}
+.singularity-rift > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.rift-haze { animation: rift-breathe 6s ease-in-out infinite alternate; }
+.rift-fracture { animation: rift-displace 5.7s steps(1, end) infinite; }
+.rift-echo-violet { opacity: .7; transform: translateX(-5px); animation: rift-slice 4.3s steps(1, end) infinite; }
+.rift-echo-blue { opacity: .6; transform: translateX(6px); animation: rift-slice 5.1s steps(1, end) -2s infinite reverse; }
+.rift-static { opacity: .25; animation: rift-interference 6.1s steps(1, end) infinite; }
+@keyframes rift-breathe { from { opacity: .5; } to { opacity: 1; } }
+@keyframes rift-displace {
+  0%, 39%, 43%, 74%, 78%, 100% { transform: translateX(0); }
+  40%, 76% { transform: translateX(-2px) skewY(1deg); }
+  42%, 77% { transform: translateX(3px); }
+}
+@keyframes rift-slice {
+  0%, 32%, 38%, 70%, 76%, 100% { translate: 0; }
+  33%, 73% { translate: -6px 1px; }
+  36%, 75% { translate: 9px -1px; }
+}
+@keyframes rift-interference {
+  0%, 29%, 36%, 68%, 75%, 100% { opacity: .15; transform: translateX(0); }
+  30%, 71% { opacity: .6; transform: translateX(6px); }
+  34%, 74% { opacity: .35; transform: translateX(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .singularity-rift * { animation: none !important; }
+}
+html.account-reduced-motion .singularity-rift * { animation: none !important; }
 .wrath-art svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px #ffe06633); }
 /* The whole cylinder turns together; no independently squashed face or edge. */
 .shop-card-art { position: relative; }
@@ -1757,9 +1804,10 @@ select:disabled {
     flex-wrap: wrap;
     gap: 16px;
   }
-  .topbar-actions { margin-left: auto; gap: 12px; }
-  #login-open { min-width: 170px; }
+  .topbar-actions { margin-left: auto; gap: 8px; max-width: 100%; }
+  #login-open { min-width: 0; padding-inline: 18px; }
   #login-open.signed-in { max-width: 150px; }
+  #reset-open, #sound { padding-inline: 10px; }
   .edition {
     display: none;
   }
@@ -4433,7 +4481,7 @@ html.account-reduced-motion .geo2-story .geo2-target { opacity: 1; transform: tr
 }
 
 /* Object-recognition HUD: one synchronized scan for every catalog entry. */
-.guide-scanner { width: 100%; display: grid; grid-template-columns: minmax(56px, 30%) minmax(0, 1fr); gap: 10px; align-items: center; height: 94px; font: 8px/1.4 monospace; letter-spacing: 0; color: #c8cfe7; }
+.guide-scanner { width: 100%; display: grid; grid-template-columns: minmax(56px, 30%) minmax(0, 1fr); gap: 10px; align-items: center; height: 124px; font: 8px/1.4 monospace; letter-spacing: 0; color: #c8cfe7; }
 .guide-scan-object { height: 77px; position: relative; display: grid; place-items: center; border: 1px solid #bda0ff55; border-radius: 5px; background: radial-gradient(ellipse, #9075d425, #10172255); }
 .guide-scan-object::before, .guide-scan-object::after { content: ""; position: absolute; width: 10px; height: 10px; border-color: #d7c2ff; border-style: solid; pointer-events: none; }
 .guide-scan-object::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
@@ -4453,7 +4501,7 @@ html.account-reduced-motion .geo2-story .geo2-target { opacity: 1; transform: tr
 @media (prefers-reduced-motion: reduce) { .guide-scan-beam { animation: none; opacity: 0; } }
 html.account-reduced-motion .guide-scan-beam { animation: none; opacity: 0; }
 /* Mobile cards normally shorten the art row; the scanner needs room for its readout. */
-.game-card[data-game="guide"] .card-art { min-height: 100px; }
+.game-card[data-game="guide"] .card-art { min-height: 130px; }
 
 /* Status-specific edge effects leave the center clear and never intercept input. */
 .chaos-status-layer[hidden] { display: none; }
@@ -4552,3 +4600,8 @@ html.account-reduced-motion .guide-scan-beam { animation: none; opacity: 0; }
 
 .chaos-screen-regeneration .chaos-effect-particle { animation-name: chaos-bubble-rise; animation-duration: 3s; }
 .chaos-screen-regeneration .chaos-effect-frame { border-style: dotted; border-width: 3px; animation: chaos-shield-breathe 2s ease-in-out infinite alternate; }
+
+.block-guide-card .block-disposition, .block-guide-card .block-collectible { margin: 3px 0; }
+.block-guide-card .block-collectible, .block-guide-card .block-solidity { font-size: 12px; font-weight: 700; }
+.block-guide-card .block-solidity { margin: 3px 0 8px; }
+.guide-scan-collectible, .guide-scan-solidity { font-size: 7px; line-height: 1.2; }
