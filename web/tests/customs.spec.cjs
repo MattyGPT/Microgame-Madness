@@ -96,7 +96,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.addInitScript(unlocked => {
     if (!localStorage.getItem('microgame-madness.v1'))
       localStorage.setItem('microgame-madness.v1', JSON.stringify({
-        player: 'Player', achievements: { stats: { visits: 1 }, unlocked },
+        player: 'Player', achievements: { stats: { visits: 1, bossWins: 350 }, unlocked },
       }));
   }, unlocked);
   await openGame(page);
