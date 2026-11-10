@@ -10,12 +10,12 @@ const first = '00000000-0000-0000-0000-000000000001';
 const second = '00000000-0000-0000-0000-000000000002';
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function op(id, kind, payload = {}, runId) { return { id, version: 1, streamId: 'device', kind, payload, ...(runId ? { runId } : {}) }; }
-async function setup(t, { legacy = false } = {}) {
+async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   const db = new PGlite(); t.after(() => db.close());
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!legacy || !f.includes('lifetime_leaderboards'))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || !f.includes('combined_leaderboards')) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -283,4 +283,69 @@ test('migration recovers account history and preserves the known guest baseline'
   assert.equal(await call('submit_leaderboard_run',['new-after-migration','hangman','easy','Old guest',8]),15);
   await call('submit_leaderboard_score',['hangman','easy','Old client retry',7]);
   assert.equal((await ranking(second)).find(row=>row.is_you).score,15);
+});
+
+test('combined boards use exact multipliers, round once, preserve raw scores, and enforce visibility', async t => {
+  const {db,role,call,read} = await setup(t);
+  const {multipliers}=require('../leaderboards.js');
+  const board = async (mode, season=null, offset=0, limit=10, around=false) =>
+    (await db.query('select * from public.get_game_leaderboard($1,$2,$3,$4,$5)',[mode,season,offset,limit,around])).rows;
+  await role('postgres');
+  for(const [mode,weights] of Object.entries(multipliers)) for(const [difficulty,weight] of Object.entries(weights)) {
+    assert.equal((await db.query('select leaderboard_private.weight_quarters($1,$2) weight',[mode,difficulty])).rows[0].weight,weight*4);
+  }
+  await role('authenticated',first);
+  for(const [i,difficulty] of ['easy','normal','chaos','hard','merciless','impossible'].entries())
+    await call('submit_leaderboard_run',[`dodge-${i}`,'dodge',difficulty,'Combined player',10]);
+  const dodge=await board('dodge');
+  assert.equal(dodge.length,1); assert.equal(dodge[0].score,190); assert.equal(dodge[0].is_you,true);
+  for(const [difficulty,score] of [['easy',4],['medium',6],['hard',5]])
+    await call('submit_leaderboard_run',[`word-${difficulty}`,'hangman',difficulty,'Combined player',score]);
+  assert.equal((await board('hangman'))[0].score,39);
+  for(let n=0;n<2;n++) await call('submit_leaderboard_run',[`cruel-${n}`,'boss','cruel','Combined player',1]);
+  assert.equal((await board('boss'))[0].score,5); // round(1×2.25 + 1×2.25), not 2+2.
+  await call('submit_leaderboard_run',['impossible','boss','impossible','Combined player',4]);
+  assert.equal((await board('boss'))[0].score,28); // round(4.5 + 23)
+  await role('postgres');
+  assert.equal((await db.query("select total::int from leaderboard_private.scores where player_id=$1 and mode='boss' and difficulty='cruel'",[first])).rows[0].total,2);
+  await role('authenticated',second);
+  await call('submit_leaderboard_run',['competitor','boss','mean','Second',27]);
+  assert.equal((await board('boss'))[0].player,'Combined player');
+  assert.equal((await board('boss',null,1,1))[0].player,'Second');
+  assert.ok((await board('boss',null,0,10,true)).some(row=>row.is_you));
+  await role('authenticated',first);
+  await call('set_guest_leaderboard_visibility',[false]);
+  await role('anon'); assert.deepEqual((await board('boss')).map(row=>row.player),['Second']);
+  await assert.rejects(board('invalid'),{code:'22023'});
+  await assert.rejects(db.exec('select * from leaderboard_private.scores'),{code:'42501'});
+  await role('service_role'); await call('account_delete',[second]);
+  await role('anon'); assert.equal((await board('boss')).length,0);
+});
+
+test('combined seasonal rankings weight all difficulties within the chosen period', async t=>{
+  const {db,role,call,apply}=await setup(t);
+  await role('service_role');
+  await call('account_set_season',['combined','Combined season',new Date(Date.now()-86400000).toISOString(),new Date(Date.now()+86400000).toISOString(),'1']);
+  for(const [difficulty,score] of [['easy',4],['medium',6],['hard',5]]) {
+    await apply(first,op(`start-${difficulty}`,'run.start',{mode:'hangman',difficulty},difficulty));
+    await apply(first,op(`finish-${difficulty}`,'run.finish',{snapshot:{over:true,won:true,score},outcome:'win'},difficulty));
+  }
+  await role('anon');
+  const rows=(await db.query("select * from public.get_game_leaderboard('hangman','combined')")).rows;
+  assert.equal(rows.length,1); assert.equal(rows[0].score,39);
+  assert.equal((await db.query("select * from public.get_game_leaderboard('hangman','unknown-season')")).rows.length,0);
+});
+
+test('scores saved before combined migration are reweighted without rewriting their raw totals', async t=>{
+  const {db,role,call}=await setup(t,{withoutCombined:true});
+  await role('authenticated',first);
+  await call('submit_leaderboard_run',['historical-mean','boss','mean','Existing player',10]);
+  await call('submit_leaderboard_run',['historical-cruel','boss','cruel','Existing player',2]);
+  await role('postgres');
+  const before=(await db.query('select mode,difficulty,total from leaderboard_private.scores order by difficulty')).rows;
+  await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations/20261112000000_combined_leaderboards.sql'),'utf8'));
+  assert.deepEqual((await db.query('select mode,difficulty,total from leaderboard_private.scores order by difficulty')).rows,before);
+  await role('anon');
+  const rows=(await db.query("select * from public.get_game_leaderboard('boss')")).rows;
+  assert.equal(rows.length,1); assert.equal(rows[0].score,15); // round(10 + 2×2.25)
 });

@@ -153,8 +153,8 @@ test("The King's Wrath Random Order saves separate records and offers global ran
   expect(profile.achievements.stats.pumpkinWins).toBe(0);
   await page.locator('#global-tab').click();
   await expect(page.locator('#leaderboard-game')).toHaveValue('wrath');
-  await expect(page.locator('#leaderboard-difficulty')).toHaveValue('random_order');
-  await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
+  await expect(page.locator('#leaderboard-multipliers')).toHaveText('All practice attacks ×1.');
+  await expect(page.locator('#leaderboard-difficulty')).toHaveCount(0);
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.scores['wrath:random_order'][0].player)).toBe('Shuffle player');
@@ -189,8 +189,8 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
   await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
   await page.locator('#global-tab').click();
   await expect(page.locator('#leaderboard-game')).toHaveValue('wrath');
-  await expect(page.locator('label[for="leaderboard-difficulty"]')).toHaveText('Attack');
-  await expect(page.locator('#leaderboard-difficulty option')).toHaveCount(8);
+  await expect(page.locator('#leaderboard-multipliers')).toHaveText('All practice attacks ×1.');
+  await expect(page.locator('#leaderboard-difficulty')).toHaveCount(0);
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   expect(await page.evaluate(() => saved.scores['wrath:bone_gauntlet'][0].player)).toBe('Practice player');

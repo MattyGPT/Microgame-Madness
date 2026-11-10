@@ -107,7 +107,7 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
       return route.fulfill({ status: 400, headers, json: { error: { code: 'invalid', message: 'Unknown account command' } } });
     }
     if (url.pathname.endsWith('/get_account_seasons')) return route.fulfill({ headers, json: [] });
-    if (url.pathname.endsWith('/get_leaderboard')) return route.fulfill({ headers, json: [] });
+    if (url.pathname.endsWith('/get_leaderboard') || url.pathname.endsWith('/get_game_leaderboard')) return route.fulfill({ headers, json: [] });
     return route.fulfill({ status: 404, headers, json: { error: 'Unexpected endpoint' } });
   });
   return service;

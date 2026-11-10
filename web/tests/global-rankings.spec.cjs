@@ -39,8 +39,17 @@ async function mockGlobalLeaderboards(page, service) {
       service.scores.set(id, { key, identity, player: body.p_player, score });
       return route.fulfill({ headers, json: score });
     }
-    service.requested.add(key);
-    const rows = [...service.scores.values()].filter(row => row.key === key && service.visibility.get(row.identity) !== false).sort((a, b) => b.score - a.score);
+    service.requested.add(body.p_mode);
+    const multipliers = require('../leaderboards.js').multipliers[body.p_mode];
+    const combined = new Map();
+    for (const row of service.scores.values()) {
+      const [mode, difficulty] = row.key.split(':');
+      if (mode !== body.p_mode || service.visibility.get(row.identity) === false) continue;
+      const total = combined.get(row.identity) || { ...row, score: 0 };
+      total.score += row.score * multipliers[difficulty];
+      combined.set(row.identity,total);
+    }
+    const rows = [...combined.values()].map(row => ({...row,score:Math.round(row.score)})).sort((a,b)=>b.score-a.score);
     return route.fulfill({ headers, json: rows.slice(0, 10).map((row, i) => ({
       rank: i + 1, player: row.player, score: row.score, is_you: row.identity === identity,
     })) });
@@ -72,7 +81,7 @@ test('unconfigured global rankings leave local scores and achievements usable', 
   expect(await page.evaluate(() => localStorage.getItem('microgame-madness.v1'))).toBe(before);
 });
 
-test('global rankings can browse all 26 modes without starting a round', async ({ page }) => {
+test('global rankings have one combined board per game without a difficulty filter', async ({ page }) => {
   await openGame(page);
   const service = { scores: new Map(), guests: 0, requested: new Set() };
   await mockGlobalLeaderboards(page, service);
@@ -80,15 +89,14 @@ test('global rankings can browse all 26 modes without starting a round', async (
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.locator('#global-tab').click();
   const modes = await page.evaluate(() => Leaderboards.difficulties);
-  for (const [mode, values] of Object.entries(modes)) {
+  for (const mode of Object.keys(modes)) {
     await page.locator('#leaderboard-game').selectOption(mode);
-    for (const difficulty of values) {
-      await page.locator('#leaderboard-difficulty').selectOption(difficulty);
-      await expect(page.locator('#leaderboard-status')).toHaveText('No scores yet. Set the first record!');
-      await expect.poll(() => service.requested.has(`${mode}:${difficulty}`)).toBe(true);
-    }
+    await expect(page.locator('#leaderboard-status')).toHaveText('No scores yet. Set the first record!');
+    await expect.poll(() => service.requested.has(mode)).toBe(true);
+    await expect(page.locator('#leaderboard-multipliers')).toContainText('×1');
   }
-  expect(service.requested.size).toBe(26);
+  await expect(page.locator('#leaderboard-difficulty')).toHaveCount(0);
+  expect(service.requested.size).toBe(6);
   expect(service.guests).toBe(1); // Default-on sharing establishes a guest identity.
   await page.locator('#global-tab').press('End');
   await expect(page.locator('#global-tab')).toBeFocused();
@@ -196,4 +204,24 @@ test('lifetime totals add all rounds across tabs and do not repeat after reload'
     await expect(page.locator('#global-scores')).toContainText('21');
     expect([...service.scores.values()].map(row=>row.score)).toEqual([21]);
   } finally { await other.close(); }
+});
+
+test('previous scores from different difficulties appear as one rounded game total', async ({page})=>{
+  const service={scores:new Map([
+    ['old-easy',{key:'hangman:easy',identity:'old',player:'Previous player',score:4}],
+    ['old-medium',{key:'hangman:medium',identity:'old',player:'Previous player',score:6}],
+    ['old-hard',{key:'hangman:hard',identity:'old',player:'Previous player',score:5}],
+    ['cruel',{key:'boss:cruel',identity:'old',player:'Previous player',score:2}],
+  ]),guests:0,requested:new Set()};
+  await mockGlobalLeaderboards(page,service);
+  await openGame(page);
+  await page.locator('#global-tab').click();
+  await expect(page.locator('#global-scores li')).toHaveCount(1);
+  await expect(page.locator('#global-scores strong')).toHaveText('39 pts');
+  await expect(page.locator('#leaderboard-multipliers')).toHaveText('Easy ×1 · Medium ×2.5 · Hard ×4');
+  await page.locator('#leaderboard-game').selectOption('boss');
+  await expect(page.locator('#global-scores strong')).toHaveText('5 pts');
+  await expect(page.locator('#leaderboard-multipliers')).toContainText('Impossible ×5.75');
+  await page.locator('#leaderboard-game').selectOption('dodge');
+  await expect(page.locator('#leaderboard-multipliers')).toHaveText('Easy ×1 · Normal ×1.75 · Chaos ×2.5 · Hard ×3.5 · Merciless ×4.75 · Impossible ×5.5');
 });

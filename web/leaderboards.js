@@ -8,6 +8,14 @@ const Leaderboards = (() => {
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
     wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'],
   });
+  const multipliers = Object.freeze({
+    hangman: { easy: 1, medium: 2.5, hard: 4 },
+    keyboard: { progressive: 1 },
+    dodge: { easy: 1, normal: 1.75, chaos: 2.5, hard: 3.5, merciless: 4.75, impossible: 5.5 },
+    boss: { mean: 1, cruel: 2.25, nightmare: 3.75, impossible: 5.75 },
+    pumpkin: { come_on: 1, baby: 1.75, coward: 2.5, phase2: 3.5 },
+    wrath: Object.fromEntries(difficulties.wrath.map(attack => [attack, 1])),
+  });
   function valid(entry) {
     return difficulties[entry.mode]?.includes(entry.difficulty)
       && typeof entry.player === 'string' && entry.player.trim().length >= 1
@@ -114,6 +122,21 @@ const Leaderboards = (() => {
         throw error;
       }
     }
+    async listGame(mode, { offset = 0, season = null, aroundMe = false } = {}) {
+      if (!this.configured) throw new Error('Global rankings aren’t connected yet. Your local scores are saved.');
+      if (!Object.hasOwn(multipliers, mode)) throw new Error('Unknown game');
+      let token;
+      if (this.accountSession?.snapshot().user) {
+        try { token = await this.accountSession.token(); } catch { /* Public browsing remains available. */ }
+      }
+      const rows = await this.request('/rest/v1/rpc/get_game_leaderboard', {
+        p_mode: mode, p_season: season, p_offset: offset, p_limit: 10, p_around_me: aroundMe,
+      }, token);
+      if (!Array.isArray(rows) || rows.some(row => !Number.isSafeInteger(Number(row.rank))
+          || Number(row.rank) < 1 || typeof row.player !== 'string' || !Number.isSafeInteger(row.score) || row.score < 0))
+        throw new Error('Global rankings could not be loaded. Please try again.');
+      return rows;
+    }
     async seasons() {
       if (!this.configured) return [];
       try {
@@ -174,6 +197,6 @@ const Leaderboards = (() => {
       finally { this.flushing = null; }
     }
   }
-  return { Client, difficulties, valid };
+  return { Client, difficulties, multipliers, valid };
 })();
 if (typeof module !== 'undefined') module.exports = Leaderboards;

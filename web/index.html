@@ -2204,17 +2204,16 @@ A
             <div class="global-filters">
               <label for="leaderboard-game">Game</label>
               <select id="leaderboard-game"></select>
-              <label for="leaderboard-difficulty">Difficulty</label>
-              <select id="leaderboard-difficulty"></select>
               <label for="leaderboard-season">Period</label>
               <select id="leaderboard-season"><option value="">All time</option></select>
             </div>
             <div class="leaderboard">
               <h3>Global top 10 <button id="leaderboard-refresh" class="quiet-button" type="button">Refresh</button></h3>
+              <p id="leaderboard-multipliers" class="global-note"></p>
               <p id="leaderboard-status" role="status" aria-live="polite"></p>
               <ol id="global-scores" aria-label="Global high scores"></ol>
               <div class="account-actions"><button id="leaderboard-previous" type="button" class="quiet-button" disabled>Previous</button><button id="leaderboard-next" type="button" class="quiet-button" disabled>Next</button><button id="leaderboard-near" type="button" class="quiet-button">Around me</button></div>
-              <p class="global-note">Casual rankings use browser-reported scores. Each difficulty has its own board; earlier records break ties. Choose whether to share scores in your profile.</p>
+              <p class="global-note">Casual rankings use browser-reported scores. Each game has one board. Difficulty multipliers apply to all saved scores; the combined total is rounded once. Earlier totals break ties. Choose whether to share scores in your profile.</p>
               <p id="leaderboard-submission" role="status" aria-live="polite"></p>
             </div>
           </section>

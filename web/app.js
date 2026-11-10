@@ -1209,16 +1209,11 @@ let globalRequest = 0;
 let leaderboardOffset = 0;
 let leaderboardAroundMe = false;
 let submissionRequest = 0;
-function updateGlobalDifficulties(difficulty) {
+function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
-  document.querySelector('label[for="leaderboard-difficulty"]').textContent = mode === "wrath" ? "Attack" : "Difficulty";
-  $("leaderboard-difficulty").replaceChildren(...Object.entries(modes[mode].difficulties).filter(([value]) => value !== "random").map(([value, [label]]) => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    return option;
-  }));
-  if (difficulty !== "random" && Object.hasOwn(modes[mode].difficulties, difficulty)) $("leaderboard-difficulty").value = difficulty;
+  const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
+    `${modes[mode].difficulties[difficulty][0]} ×${multiplier}`);
+  $("leaderboard-multipliers").textContent = mode === "wrath" ? "All practice attacks ×1." : labels.join(" · ");
 }
 function initializeGlobalLeaderboards() {
   $("leaderboard-game").replaceChildren(...Object.entries(modes).filter(([, config]) => !config.localOnly).map(([value, config]) => {
@@ -1227,9 +1222,8 @@ function initializeGlobalLeaderboards() {
     option.textContent = config.title;
     return option;
   }));
-  updateGlobalDifficulties();
-  $("leaderboard-game").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; updateGlobalDifficulties(); loadGlobalScores(); };
-  $("leaderboard-difficulty").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; loadGlobalScores(); };
+  updateGlobalMultipliers();
+  $("leaderboard-game").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; updateGlobalMultipliers(); loadGlobalScores(); };
   $("leaderboard-season").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; loadGlobalScores(); };
   $("leaderboard-previous").onclick = () => { leaderboardOffset = Math.max(0, leaderboardOffset - 10); leaderboardAroundMe = false; loadGlobalScores(); };
   $("leaderboard-next").onclick = () => { leaderboardOffset += 10; leaderboardAroundMe = false; loadGlobalScores(); };
@@ -1256,13 +1250,13 @@ function initializeGlobalLeaderboards() {
 }
 async function loadGlobalScores() {
   const request = ++globalRequest;
-  const mode = $("leaderboard-game").value, difficulty = $("leaderboard-difficulty").value;
+  const mode = $("leaderboard-game").value;
   $("global-scores").replaceChildren();
   $("global-scores").setAttribute("aria-busy", "true");
   $("leaderboard-status").textContent = "Loading global rankings…";
   try {
     const client = await leaderboardReady;
-    const rows = await client.listPage(mode, difficulty, { offset: leaderboardOffset,
+    const rows = await client.listGame(mode, { offset: leaderboardOffset,
       season: $("leaderboard-season").value || null, aroundMe: leaderboardAroundMe });
     if (request !== globalRequest) return;
     for (const entry of rows) {
@@ -1295,7 +1289,7 @@ async function loadGlobalScores() {
     }
     $("leaderboard-previous").disabled = leaderboardOffset === 0 || leaderboardAroundMe;
     $("leaderboard-next").disabled = rows.length < 10 || leaderboardAroundMe;
-    $("leaderboard-status").textContent = rows.length ? "Lifetime score totals from every completed round." : "No scores yet. Set the first record!";
+    $("leaderboard-status").textContent = rows.length ? "All difficulties combined. Weighted lifetime total, rounded to the nearest whole number." : "No scores yet. Set the first record!";
   } catch (error) {
     if (request === globalRequest) $("leaderboard-status").textContent = error.message;
   } finally {
@@ -1646,7 +1640,7 @@ function selectGame(mode) {
   showScores();
   if (!config.localOnly) {
     $("leaderboard-game").value = mode;
-    updateGlobalDifficulties();
+    updateGlobalMultipliers();
     if (!$("global-panel").hidden) loadGlobalScores();
   }
   syncMusic();
@@ -1678,7 +1672,7 @@ function startGame(difficulty) {
   selectedDifficulty = difficulty;
   if (!modes[selected].localOnly) {
     $("leaderboard-game").value = selected;
-    updateGlobalDifficulties(difficulty);
+    updateGlobalMultipliers();
     if (!$("global-panel").hidden) loadGlobalScores();
   }
   initializeAudio();

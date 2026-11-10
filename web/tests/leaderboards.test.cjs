@@ -141,3 +141,17 @@ test('invalid submissions and malformed rankings are rejected', async () => {
     await assert.rejects(client.submit({ ...entry, ...update }), /Invalid leaderboard/);
   await assert.rejects(client.list('hangman', 'easy'), /could not be loaded/);
 });
+
+test('combined leaderboard requests a game without a difficulty and keeps pagination and account identity', async () => {
+  const calls=[];
+  const client=new Client(config,{storage:storage(),fetch:async (url,options)=>{
+    calls.push({url,body:JSON.parse(options.body),headers:options.headers});
+    return response([{rank:11,player:'Combined',score:39,is_you:true}]);
+  }});
+  client.accountSession={snapshot:()=>({user:{id:'account'}}),token:async ()=>'account-token'};
+  assert.equal((await client.listGame('hangman',{season:'spring',offset:10,aroundMe:true}))[0].score,39);
+  assert.equal(calls[0].url,config.url+'/rest/v1/rpc/get_game_leaderboard');
+  assert.deepEqual(calls[0].body,{p_mode:'hangman',p_season:'spring',p_offset:10,p_limit:10,p_around_me:true});
+  assert.equal(calls[0].headers.Authorization,'Bearer account-token');
+  await assert.rejects(client.listGame('invalid'),/Unknown game/);
+});

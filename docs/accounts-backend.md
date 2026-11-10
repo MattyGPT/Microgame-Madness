@@ -123,3 +123,16 @@ Operational release limits remain explicit: no provider backup was listed at ins
 `20261111000000_lifetime_leaderboards.sql` adds exact integer totals alongside personal bests. Account finalization adds each eligible run once inside the existing receipt transaction. Guest clients queue every round with a persistent UUID and call `submit_leaderboard_run`; its owner/run receipt makes retries idempotent. Games and difficulties remain separate, and seasonal totals include only runs received during that season. Public reads retain privacy, moderation, and deletion filters.
 
 Migration reconstructs account totals from retained eligible history, using the larger of that sum or the known legacy best as the opening balance. Guest history was not retained, so only its known best can be preserved. Old clients can still submit best scores through the legacy RPC without lowering totals or repeatedly adding the same best. New clients add every new round, and queued private guest rounds wait for sharing to be enabled.
+
+## Combined game rankings
+
+`20261112000000_combined_leaderboards.sql` introduces `get_game_leaderboard`, with one row per identity per game across all difficulties. Raw totals and personal bests are preserved; both historical and new totals are weighted on every read. Integer quarter-multipliers and PostgreSQL numeric arithmetic avoid floating-point rounding drift. The sum is rounded once to the nearest integer (halves up). Seasons, pagination, nearby rankings, privacy, and deletion filters still apply. Legacy difficulty endpoints remain available to older clients.
+
+| Game | Multipliers, easiest to hardest |
+| --- | --- |
+| Hangman | Easy ×1, Medium (Normal) ×2.5, Hard ×4 |
+| Turtle Dodge | Easy ×1, Normal ×1.75, Chaos ×2.5, Hard ×3.5, Merciless ×4.75, Impossible ×5.5 |
+| Boss Crush | Mean ×1, Cruel ×2.25, Nightmare ×3.75, Impossible ×5.75 |
+| Pumpkin King | Come On ×1, Baby ×1.75, Coward ×2.5, Impossible Phase 2 ×3.5 |
+| Key Rush | ×1 |
+| King's Wrath | All practice attacks ×1 |
