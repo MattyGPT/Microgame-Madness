@@ -3312,7 +3312,12 @@ const cardDecorationObserver = new IntersectionObserver(entries => {
 });
 animatedGameCards.forEach(card => {
   cardDecorationObserver.observe(card);
-  card.addEventListener('animationstart', syncCardPlaybackRate);
+  card.addEventListener('animationstart', event => {
+    if (active) return;
+    for (const animation of event.target.getAnimations())
+      if (animation.animationName === event.animationName && animation.playbackRate !== cardPlaybackRate)
+        animation.updatePlaybackRate(cardPlaybackRate);
+  });
 });
 document.addEventListener("visibilitychange", syncCardDecorationVisibility);
 syncCardDecorationVisibility();
