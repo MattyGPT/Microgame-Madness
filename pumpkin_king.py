@@ -301,7 +301,7 @@ class PumpkinKing(BossCrush):
             gap = self.rng.uniform(-140, 25)
             left = self.volley % 2 == 0
             for y in range(-220, 221, 28):
-                if abs(y-gap) > 52:
+                if abs(y-gap) > getattr(self, "bone_gap_radius", 52):
                     self.bullets.append(Projectile(-309 if left else 309, y, 340 if left else -340, 0,
                                                   width=22, height=26, bone=True))
             self.volley += 1
@@ -320,7 +320,7 @@ class PumpkinKing(BossCrush):
             self.volley += 1
             return 0.8
         if name == "chaos":
-            for _ in range(5):
+            for _ in range(getattr(self, "chaos_volley_size", 5)):
                 angle = self.rng.uniform(-math.pi, 0)
                 speed = self.rng.uniform(130, 260)
                 self.bullets.append(Projectile(self.rng.uniform(-260, 260), 225,
@@ -363,8 +363,8 @@ class PumpkinKing(BossCrush):
         # Counter is an edge-triggered input, never an automatic shield when held.
         counter_down = "e" in keys
         if counter_down and not self.counter_held and self.counter_cooldown <= 0:
-            self.counter_time = COUNTER_WINDOW
-            self.counter_cooldown = COUNTER_COOLDOWN
+            self.counter_time = getattr(self, "counter_window", COUNTER_WINDOW)
+            self.counter_cooldown = getattr(self, "counter_delay", COUNTER_COOLDOWN)
         self.counter_held = counter_down
         steps = math.ceil(dt * 120)
         step = dt / steps
@@ -380,8 +380,8 @@ class PumpkinKing(BossCrush):
             dy = int("Up" in keys)-int("Down" in keys)
             length = math.hypot(dx, dy) or 1
             old = self.x, self.y
-            self.x = max(self.left-PLAYER_LEFT, min(self.right-PLAYER_RIGHT, self.x+dx/length*260*step))
-            self.y = max(self.bottom-PLAYER_BOTTOM, min(self.top-PLAYER_TOP, self.y+dy/length*260*step))
+            self.x = max(self.left-PLAYER_LEFT, min(self.right-PLAYER_RIGHT, self.x+dx/length*getattr(self, "movement_speed", 260)*step))
+            self.y = max(self.bottom-PLAYER_BOTTOM, min(self.top-PLAYER_TOP, self.y+dy/length*getattr(self, "movement_speed", 260)*step))
             moving = abs(self.x-old[0]) > 1e-9 or abs(self.y-old[1]) > 1e-9
             self.stage_age += step
             while self.stage_age + 1e-9 >= self.stage.duration:
@@ -438,12 +438,12 @@ class PumpkinKing(BossCrush):
                     bullet.age += step
                     vx, vy = self.x-bullet.x, self.y-bullet.y
                     distance = math.hypot(vx, vy) or 1
-                    if self.counter_time > 0 and distance <= COUNTER_RANGE:
+                    if self.counter_time > 0 and distance <= getattr(self, "counter_radius", COUNTER_RANGE):
                         self.counter_hits += 1
                         continue
                     blend = min(1, step*3.5)
-                    bullet.vx += (vx/distance*220-bullet.vx)*blend
-                    bullet.vy += (vy/distance*220-bullet.vy)*blend
+                    bullet.vx += (vx/distance*220*getattr(self, "projectile_speed", 1)-bullet.vx)*blend
+                    bullet.vy += (vy/distance*220*getattr(self, "projectile_speed", 1)-bullet.vy)*blend
                     if bullet.age > 5:
                         continue
                 bullet.x += bullet.vx*step
@@ -460,8 +460,8 @@ class PumpkinKing(BossCrush):
             self.bullets = bullets
             rings = []
             for ring in self.rings:
-                ring.y -= RING_FALL_SPEED*step
-                ring.angle += 0.55*step
+                ring.y -= RING_FALL_SPEED*getattr(self, "ring_speed", 1)*step
+                ring.angle += 0.55*getattr(self, "ring_speed", 1)*step
                 for x, y, width, height, rule in ring.pieces():
                     danger = rule == "normal" or rule == "blue" and moving or rule == "orange" and not moving
                     if danger and hits_player(self.x, self.y, x, y, width, height):

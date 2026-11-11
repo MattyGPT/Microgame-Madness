@@ -16,6 +16,13 @@ from pumpkin_king import (Finger, COUNTER_RANGE, SCARE_WARNING, SCARE_PREP_TIME,
 COLORS = {"normal": "#fff5e5", "blue": "#42c9ff", "orange": "#ff9d32", "magenta": "#ff42de"}
 BACKGROUND = "#111827"
 HAUNT_FACE_COLORS = ("#9e8cff", "#7cdae6", "#b8a3f4")
+# Each practice pattern has its own pastel and intense palette. Rule colors stay fixed.
+WRATH_PALETTES = (
+    ("#ffc4dc", "#ed5968"), ("#cce9ba", "#ed8d6c"),
+    ("#a5e8e0", "#a886ff"), ("#ffb5df", "#ff507c"),
+    ("#c8bfff", "#ff7b41"), ("#ffe0a0", "#ff4c59"),
+    ("#b4f1df", "#c078ff"),
+)
 STAR_RIMS = ("#61eaff", "#ba7cff", "#ff83d7")
 
 # Shared by the original shell face and the Impossible Boss Crush face.
@@ -186,7 +193,7 @@ class KingView:
                 self.oval(x+dx*(width/2-radius), y+dy*(height/2-radius),
                           radius*2, radius*2, color)
 
-    def draw_bone_walls(self, bullets):
+    def draw_bone_walls(self, bullets, variant="normal"):
         """Fuse each gauntlet column into two shafts with gap-facing knuckles."""
         columns = {}
         for bullet in bullets:
@@ -199,7 +206,7 @@ class KingView:
                 if runs[-1] and bone.y-runs[-1][-1].y > 30:
                     runs.append([])
                 runs[-1].append(bone)
-            color = COLORS.get(rule, "#ffffff")
+            color = ({"easy": "#e1efcc", "hard": "#d9b3a0"}.get(variant, COLORS.get(rule, "#ffffff")))
             for run in runs:
                 lower = run[0].y-run[0].height/2
                 upper = run[-1].y+run[-1].height/2
@@ -220,7 +227,7 @@ class KingView:
                     self.oval(x+side*5-1, cap_y+2, 6, 5, mix(color, "#ffffff", .6))
                 for index in range(int(abs(cap_y-edge)/42)):
                     py = edge+direction*(15+index*42)
-                    self.ribbon(((x-3, py-5), (x+1, py), (x-1, py+5)), 1.2, "#8f8292")
+                    self.ribbon(((x-3, py-5), (x+1, py), (x-1, py+5)), 2 if variant == "hard" else 1.2, "#e34035" if variant == "hard" else "#8f8292")
                 # Spent sections keep their shape beneath a ragged red stain.
                 for bone in run:
                     if not getattr(bone, "spent", False):
@@ -251,27 +258,53 @@ class KingView:
                             self.oval(x+side*6, cap_y-3, 3, 5, "#b50e28")
                             self.oval(x+side*5-2, cap_y+3, 3, 2, "#f46570")
 
+    def _wrath_theme(self, game):
+        variant = getattr(game, "variant", "normal")
+        if variant == "normal":
+            return
+        accent = WRATH_PALETTES[game.attack_index][variant == "hard"]
+        for side in (-1, 1):
+            for i in range(8):
+                x, y = side*294, -214+i*59
+                if variant == "easy":
+                    self.oval(x, y, 5, 8, mix(BACKGROUND, accent, .55))
+                else:
+                    self.poly(((x-side*4,y+10),(x+side*3,y+4),(x-side*2,y),
+                               (x+side*3,y-10),(x-side*6,y-3)), mix(BACKGROUND, accent, .7))
+        # A distinct crest at the top follows the current attack in Random Order.
+        for side in (-1, 1):
+            x = side*115
+            if variant == "easy":
+                self.oval(x, 224, 10, 10, accent)
+                self.oval(x, 225, 4, 4, "#fff5df")
+            else:
+                self.poly(((x-12,232),(x-7,219),(x,226),(x+7,219),(x+12,232),(x,228)), accent)
+
     def _attack_atmosphere(self, game):
         """Quiet stage decoration; only the existing hazards represent danger."""
         name, t = game.stage.name, game.elapsed
         if name in ("memory", "recall_ready", "color", "color_gap"):
             rule = game.eye_rule
-            color = COLORS.get(rule, "#a394cc")
+            eyes_only = getattr(game, "eyes_only_color", False)
+            color = "#ef6262" if eyes_only else COLORS.get(rule, "#a394cc")
             for side in (-1, 1):
                 for index in range(9):
                     y = -210+index*49
                     self.poly(((side*298, y-10), (side*290, y), (side*298, y+10)),
                               mix(BACKGROUND, color, .28+.12*math.sin(t*4+index)))
             if name == "memory":
-                current = int(game.stage_age/EYE_FLASH_PERIOD)
-                for index in range(6):
-                    x = (index-2.5)*27
-                    lit = index == current and game.stage_age%EYE_FLASH_PERIOD < EYE_FLASH_ON
+                count = len(game.sequence)
+                period = game.stage.duration / count
+                current = int(game.stage_age/period)
+                for index in range(count):
+                    x = (index-(count-1)/2)*27
+                    lit = index == current and game.eye_rule is not None
                     self.poly(((x-7, -218), (x, -211), (x+7, -218), (x, -225)),
                               color if lit else "#343047")
                 # Only the currently flashed color is shown, never the answer sequence.
             if name == "color":
-                self.text(0, -218, "Ⅱ  HOLD STILL" if rule == "blue" else "»  KEEP MOVING", color, 12)
+                caption = "WATCH HIS EYES" if eyes_only else "Ⅱ  HOLD STILL" if rule == "blue" else "»  KEEP MOVING"
+                self.text(0, -218, caption, color, 12)
         elif name in ("bones", "rings", "fingers", "chaos"):
             tint = {"bones": "#b9b2a5", "rings": "#7abfd2", "fingers": "#ed74ce", "chaos": "#c088ee"}[name]
             for side in (-1, 1):
@@ -284,7 +317,7 @@ class KingView:
                     x = -260+index*47
                     y = 224+4*math.sin(t*3+index)
                     self._star(x, y, 3, tint, t*4+index)
-        elif name == "raise":
+        elif name == "raise" and getattr(game, "variant", "normal") == "normal":
             # The raised hands already announce these exact slam regions.
             sides = (-1, 1) if game.stage.side == "both" else (-1,) if game.stage.side == "left" else (1,)
             for side in sides:
@@ -345,12 +378,29 @@ class KingView:
             self.item("oval", (x-15, -y-15, x+15, -y+15), fill="",
                       outline=mix(BACKGROUND, "#b8ffdc", .4+.3*math.sin(t*9)), width=1)
 
-    def _spell_projectile(self, bullet, t):
+    def _spell_projectile(self, bullet, t, variant="normal"):
         color = COLORS.get(bullet.rule, "#fff5e5")
         x, y, w, h = bullet.x, bullet.y, bullet.width, bullet.height
-        if isinstance(bullet, Finger):
+        if isinstance(bullet, Finger) and variant == "easy":
+            self.rounded_rect(x, y, w, h, w/2, "#ffb5df")
+            self.oval(x, y+h*.25, w*.7, w*.7, "#ffe8f6")
+            self.rect(x, y-h*.25, w*.7, 2, "#ed64be")
+        elif isinstance(bullet, Finger):
             self._finger_claw(x, y, h, -1 if bullet.vx > 0 else 1, t,
                               magenta=True, width=w)
+            if variant == "hard":
+                self.ribbon(((x-w*.25, y+h*.3), (x+w*.2, y), (x-w*.2, y-h*.4)), 2, "#ff405c")
+        elif variant == "hard":
+            # Sharp, horned shards retain the exact rule color and hitbox bounds.
+            self.poly(((x-w/2,y+h/2), (x,y+h*.25), (x+w/2,y+h/2),
+                       (x+w*.38,y-h*.2), (x,y-h/2), (x-w*.38,y-h*.2)), color)
+            for side in (-1, 1):
+                self.ribbon(((x+side*w*.12,y+h*.08),(x+side*w*.32,y+h*.2)), 1.5, "#301524")
+        elif variant == "easy":
+            self.oval(x, y, w, h, color)
+            for side in (-1, 1):
+                self.oval(x+side*w*.2, y+h*.1, w*.12, h*.15, "#272139")
+            self.ribbon(((x-w*.2,y-h*.15),(x,y-h*.25),(x+w*.2,y-h*.15)), 1, "#272139")
         else:
             # Little ghosts with domed heads, trailing hems, and round faces.
             # Chaos and Color Memory share these bullets and their rule colors.
@@ -364,14 +414,20 @@ class KingView:
             mouth_size = min(w, h)*.23
             self.oval(x, y-h*.14, mouth_size, mouth_size, "#182030")
 
-    def _runic_ring(self, ring, t):
+    def _runic_ring(self, ring, t, variant="normal"):
         for index, (x, y, w, h, rule) in enumerate(ring.pieces()):
             if not (-310 < x < 310 and -250 < y < 250):
                 continue
             color = COLORS[rule]
             self.rect(x, y, w, h, color if index % 2 else mix(color, "#263149", .18))
             if index % 8 == 0:
-                self.poly(((x-3, y), (x, y+4), (x+3, y), (x, y-4)), "#fff8e9")
+                if variant == "easy":
+                    self.oval(x, y, 5, 5, "#e4fff8")
+                elif variant == "hard":
+                    self.poly(((x-5,y+5),(x,y+2),(x+5,y+5),(x+3,y-5),(x-3,y-5)), "#351d4d")
+                    self.oval(x, y, 2, 3, "#ffffff")
+                else:
+                    self.poly(((x-3, y), (x, y+4), (x+3, y), (x, y-4)), "#fff8e9")
 
     def soft_poly(self, points, color):
         softened = []
@@ -446,6 +502,8 @@ class KingView:
             for i in range(17):
                 p = end*i/16
                 x = game.boss_x+sign*(27+p*262)
+                if hasattr(game, "arm_gesture_x"):
+                    x = game.arm_gesture_x(x)
                 y = shoulder_y+10-p*65+math.sin(p*math.pi)*18+lift*p
                 y -= (40+p*20)/2+3+rib*3+math.sin(i/16*math.pi)*4
                 y += (16+rib*3)*math.exp(-i/2.5)
@@ -532,6 +590,8 @@ class KingView:
                 continue
             sign = -1 if side == "left" else 1
             x = game.boss_x+sign*(45+p*242)
+            if hasattr(game, "arm_gesture_x"):
+                x = game.arm_gesture_x(x)
             y = shoulder_y+10-p*65+math.sin(p*math.pi)*18+lift*p
             rim = STAR_RIMS[index]
             self.poly(((x-sign*16, y+4), (x+sign*2, y+1), (x+sign*3, y-2), (x-sign*13, y-3)), rim)
@@ -629,7 +689,10 @@ class KingView:
         # An inverted, nearly equilateral carved pumpkin, with a living green
         # contour. All detail is procedural and follows the combat animation.
         silhouette = ((-50, 40), (50, 40), (0, -43))
-        for spread, color in ((7, "#183d37"), (4, "#2c8154"), (1.8, "#8eff9c")):
+        variant = getattr(game, "variant", "normal")
+        accent = WRATH_PALETTES[game.attack_index][variant == "hard"] if variant != "normal" else "#8eff9c"
+        outline = ((7, mix(BACKGROUND, accent, .2)), (4, mix(BACKGROUND, accent, .55)), (1.8, accent)) if variant != "normal" else ((7, "#183d37"), (4, "#2c8154"), (1.8, "#8eff9c"))
+        for spread, color in outline:
             points = []
             for index, (px, py) in enumerate(silhouette):
                 wobble = spread+math.sin(t*3.3+index*2.1)*1.5
@@ -645,6 +708,15 @@ class KingView:
         self._fire_crown(x, y, t)
         # Keep the whole Color Memory sequence readable, including its gaps:
         # neither idle blinking nor hit reactions may close the eyes.
+        if getattr(game, "variant", None) == "easy" and game.alive and not roar:
+            # Upright cat face: two round eyes above a symmetrical double-curve mouth.
+            for side in (-1, 1):
+                self.oval(x+side*20, y+17, 13, 16, glow)
+                self.oval(x+side*20-2, y+20, 3, 4, "#fff8de")
+                self.oval(x+side*29, y+2, 11, 5, "#ff8491")
+                self.ribbon([(x+side*(j/12*16), y-6-7*math.sin(j/12*math.pi))
+                             for j in range(13)], 3, "#38201c")
+            return
         gaze = max(-2, min(2, (game.x-x)/100))
         color_memory = game.attack_index == 0
         blink = .12 if t%4.7 > 4.56 and not color_memory and not game.eye_rule and not roar else 1
@@ -835,10 +907,12 @@ class KingView:
         self.rect(0, 0, 3, 480, "#d9b8f5")
         self.rect(0, 0, 600, 3, "#d9b8f5")
 
-    def _scares(self, game):
-        x, y, width, height = game.scare_rectangle
+    def _scares(self, game, rectangle=None):
+        x, y, width, height = rectangle or game.scare_rectangle
         warning = game.scare_warning
-        self.rect(x, y, width, height, "#251d30" if warning else "#482a60")
+        variant = getattr(game, "variant", "normal")
+        fill = {"easy": "#254942", "normal": "#482a60", "hard": "#482048"}[variant]
+        self.rect(x, y, width, height, "#251d30" if warning else fill)
         for index in range(5):
             py = y-100+index*44
             self.ribbon([(x-145+step*29, py+5*math.sin(step*.8+game.elapsed*4+index))
@@ -853,7 +927,17 @@ class KingView:
             # and jagged mouths. They share one hit allowance for this beat.
             for offset, lift, scale in ((-80, 40, .7), (0, -20, 1), (80, 40, .7)):
                 cx, cy = x + offset, y + lift
-                self._laughing_face(cx, cy, scale, "#e7d9ff", game.elapsed*1.4, offset*.07)
+                if variant == "easy":
+                    self.oval(cx, cy, 52*scale, 62*scale, "#d8fff2")
+                    for sign in (-1, 1):
+                        self.oval(cx+sign*10*scale, cy+6*scale, 5*scale, 8*scale, "#24443f")
+                    self.ribbon(((cx-10*scale,cy-6*scale),(cx,cy-12*scale),(cx+10*scale,cy-6*scale)), 2, "#24443f")
+                else:
+                    self._laughing_face(cx, cy, scale, "#ffb9e7" if variant == "hard" else "#e7d9ff", game.elapsed*1.4, offset*.07)
+                    if variant == "hard":
+                        for sign in (-1, 1):
+                            self.poly(((cx+sign*22*scale,cy+28*scale),(cx+sign*35*scale,cy+50*scale),
+                                       (cx+sign*8*scale,cy+35*scale)), "#cc6dff")
                 for side in (-1, 1):
                     self._star(cx+side*35*scale, cy+45*scale, 4, "#96e9f2", game.elapsed*7+side)
 
@@ -950,15 +1034,19 @@ class KingView:
                 self.audio.play(event)
         game.sound_events.clear()
         rule = game.screen_rule
-        bg = {"blue": "#123e69", "orange": "#713b17"}.get(rule, BACKGROUND)
+        variant = getattr(game, "variant", "normal")
+        theme_bg = mix(BACKGROUND, WRATH_PALETTES[game.attack_index][variant == "hard"], .07) if variant != "normal" else BACKGROUND
+        bg = "#681f2b" if getattr(game, "eyes_only_color", False) else {"blue": "#123e69", "orange": "#713b17"}.get(rule, theme_bg)
         background = self.rect(0, 0, 600, 480, bg)
         self.canvas.tag_lower(background)
+        self._wrath_theme(game)
         name = game.stage.name
         progress = min(1, game.stage_age/game.stage.duration)
         if name == "scare_ready" and not game.won:
             self._haunting_intro(game)
         elif name == "scares" and not game.won:
-            self._scares(game)
+            for rectangle in getattr(game, "scare_rectangles", [game.scare_rectangle]):
+                self._scares(game, rectangle)
         if not game.won:
             self._arm(game, "left")
             self._arm(game, "right")
@@ -978,37 +1066,54 @@ class KingView:
                         self.poly(((x-5, y), (x+6, y+4), (x+2, y+12)), mix("#ffffff", bg, progress))
         if not game.won:
             self._attack_atmosphere(game)
-        if name == "scares" and game.scare_warning and not game.won:
-            x, y, _, _ = game.scare_rectangle
-            # Upper-quadrant warnings sit below the arms and draw in front so
-            # the King cannot hide the cue to move out of the active section.
-            y = 40 if y > 0 else y
-            color = "#ff4d55" if int(game.stage_age * 2 / SCARE_WARNING) % 2 == 0 else "#ffe45c"
-            for offset in (-76, 0, 76):
-                self.text(x + offset, y, "!", color, 64)
+        if (name == "scare_ready" or name == "scares" and game.scare_warning) and not game.won:
+            for x, y, _, _ in getattr(game, "scare_rectangles", [(-150, 120, 300, 240)] if name == "scare_ready" else [game.scare_rectangle]):
+                # Upper-quadrant warnings sit below the arms and draw in front so
+                # the King cannot hide the cue to move out of the active section.
+                y = 40 if y > 0 else y
+                color = "#ff4d55" if int(game.stage_age * 2 / SCARE_WARNING) % 2 == 0 else "#ffe45c"
+                for offset in (-96, -32, 32, 96):
+                    self.text(x + offset, y, "!", color, 64)
         if name == "scare_ready" and not game.won:
             self.rect(0, -21, 458, 64, "#101021")
             self.text(0, -9, "THEY'RE LAUGHING AT YOU", "#b8a3f4", 18)
             seconds = math.ceil(max(0, SCARE_PREP_TIME-game.stage_age))
-            self.text(0, -35, f"TOP LEFT FIRST · MOVE CLEAR · {seconds}", "#a4f4ff", 14)
+            first = "OPPOSITE CORNERS FIRST" if getattr(game, "variant", None) == "hard" else "TOP LEFT FIRST"
+            self.text(0, -35, f"{first} · MOVE CLEAR · {seconds}", "#a4f4ff", 14)
+        for x, y, width, height in getattr(game, "slam_warnings", []):
+            self.rect(x, y, width, height, "#382331")
+            self.rect(x, y-height/2+2, width, 3, "#ffcf66")
+            for column in range(max(1, int(width/55))):
+                px = x-width/2+(column+.5)*width/max(1, int(width/55))
+                for py in (-195, -125, -55, 15):
+                    if y-height/2 < py < y+height/2:
+                        self.text(px, py, "!", "#ffe066", 34)
         for x, y, width, height in game.hazard_rectangles():
             if name == "fire":
                 self._mouth_fire(x, y, width, height, game.elapsed, game.boss_x, game.boss_y-9)
             else:
                 self._slam_impact(x, y, width, height, progress)
-        self.draw_bone_walls(game.bullets)
+        self.draw_bone_walls(game.bullets, variant)
         for bullet in game.bullets:
             if getattr(bullet, "bone", False):
                 continue
-            self._spell_projectile(bullet, game.elapsed)
+            self._spell_projectile(bullet, game.elapsed, variant)
         for ring in game.rings:
-            self._runic_ring(ring, game.elapsed)
+            self._runic_ring(ring, game.elapsed, variant)
+        if name != "wrath_ready" and not game.won:
+            for ghost in getattr(game, "ghosts", []):
+                x, y = ghost.x, ghost.y
+                self.oval(x, y+3, 20, 24, "#ffffff")
+                self.poly(((x-10, y), (x-10, y-12), (x-5, y-8), (x, y-12),
+                           (x+5, y-8), (x+10, y-12), (x+10, y)), "#ffffff")
+                self.oval(x-4, y+4, 3, 5, "#171c30")
+                self.oval(x+4, y+4, 3, 5, "#171c30")
         for shot in game.shots:
             self.rect(shot.x, shot.y, 4, 12, "#67e8f9")
         for pickup in game.healing_pickups:
             self._candy(pickup, game.elapsed)
         if game.counter_time > 0:
-            r = COUNTER_RANGE
+            r = getattr(game, "counter_radius", COUNTER_RANGE)
             self.item("oval", (game.x-r, -game.y-r, game.x+r, -game.y+r),
                       fill="", outline="#ff69e5", width=3)
         if name == "wrath_ready" and not game.won:

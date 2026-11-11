@@ -4697,3 +4697,18 @@ html.account-reduced-motion .guide-scan-beam { animation: none; opacity: 0; }
 .block-guide-card .block-collectible, .block-guide-card .block-solidity { font-size: 12px; font-weight: 700; }
 .block-guide-card .block-solidity { margin: 3px 0 8px; }
 .guide-scan-collectible, .guide-scan-solidity { font-size: 7px; line-height: 1.2; }
+
+/* Named King's Wrath variants: gentle, classic and severe crests. */
+.difficulty-choice[data-wrath-level] {
+  --accent: var(--wrath-tint);
+  border-color: color-mix(in srgb, var(--wrath-tint) 40%, var(--line));
+  background: radial-gradient(ellipse at 90% 0, color-mix(in srgb, var(--wrath-tint) 12%, transparent), transparent 65%), var(--panel);
+}
+.difficulty-choice[data-wrath-level="easy"] { border-radius: 22px; }
+.difficulty-choice[data-wrath-level="hard"] {
+  border-radius: 3px;
+  box-shadow: inset 0 3px var(--wrath-tint);
+  background: repeating-linear-gradient(135deg, transparent 0 16px, #ffffff03 16px 18px), var(--panel);
+}
+.wrath-difficulty-art { display: block; width: 66px; height: 66px; margin: 0 0 14px; color: var(--wrath-tint); }
+.difficulty-choice[data-wrath-level="hard"] .wrath-difficulty-art { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--wrath-tint) 30%, transparent)); }

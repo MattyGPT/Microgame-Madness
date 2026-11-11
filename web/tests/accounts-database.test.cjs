@@ -15,7 +15,7 @@ async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || !f.includes('combined_leaderboards')) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards')))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || !f.includes('combined_leaderboards') && !f.includes('wrath_variants')) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('wrath_variants')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -348,4 +348,15 @@ test('scores saved before combined migration are reweighted without rewriting th
   await role('anon');
   const rows=(await db.query("select * from public.get_game_leaderboard('boss')")).rows;
   assert.equal(rows.length,1); assert.equal(rows[0].score,15); // round(10 + 2×2.25)
+});
+
+
+test('Wrath difficulty variants retain raw scores and carry exact global weights', async t => {
+  const {db} = await setup(t);
+  for (const attack of ['color_memory','bone_gauntlet','rotating_rings','magenta_fingers','chaos','royal_slams','haunted_quadrants','random_order']) {
+    for (const [suffix, quarters] of [['__easy',2],['',4],['__hard',8]]) {
+      const result = await db.query("select leaderboard_private.valid_mode('wrath',$1) as valid, leaderboard_private.weight_quarters('wrath',$1) as weight", [attack+suffix]);
+      assert.deepEqual(result.rows[0], {valid:true, weight:quarters});
+    }
+  }
 });

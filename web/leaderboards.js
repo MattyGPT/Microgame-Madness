@@ -6,7 +6,7 @@ const Leaderboards = (() => {
     dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible', 'chaos'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
-    wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'],
+    wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'].flatMap(attack => [attack, `${attack}__easy`, `${attack}__hard`]),
   });
   const multipliers = Object.freeze({
     hangman: { easy: 1, medium: 2.5, hard: 4 },
@@ -14,7 +14,7 @@ const Leaderboards = (() => {
     dodge: { easy: 1, normal: 1.75, chaos: 2.5, hard: 3.5, merciless: 4.75, impossible: 5.5 },
     boss: { mean: 1, cruel: 2.25, nightmare: 3.75, impossible: 5.75 },
     pumpkin: { come_on: 1, baby: 1.75, coward: 2.5, phase2: 3.5 },
-    wrath: Object.fromEntries(difficulties.wrath.map(attack => [attack, 1])),
+    wrath: Object.fromEntries(difficulties.wrath.map(attack => [attack, attack.endsWith("__easy") ? .5 : attack.endsWith("__hard") ? 2 : 1])),
   });
   function valid(entry) {
     return difficulties[entry.mode]?.includes(entry.difficulty)

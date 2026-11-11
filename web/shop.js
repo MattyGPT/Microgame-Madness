@@ -7,9 +7,13 @@ const CubieShop = (() => {
     dodge: { base: 1.2, modes: { easy: 1, normal: 2, hard: 3, merciless: 5, impossible: 6, chaos: 2 } },
     boss: { base: 1, modes: { mean: 1, cruel: 2, nightmare: 3, impossible: 5 } },
     pumpkin: { base: 1, modes: { come_on: 1, baby: 2, coward: 3, phase2: 5 } },
-    wrath: { base: 1, modes: { color_memory: 1, bone_gauntlet: 1, rotating_rings: 1, magenta_fingers: 1, chaos: 1, royal_slams: 1, haunted_quadrants: 1, random_order: 2 } },
+    wrath: { base: 1, modes: { color_memory: 1, bone_gauntlet: 1, rotating_rings: 1, magenta_fingers: 1, chaos: 1, royal_slams: 1, haunted_quadrants: 1, random_order: 1 } },
     singularity: { base: .1, modes: { gravitron: 3 } },
   };
+  for (const attack of Object.keys(rates.wrath.modes)) {
+    rates.wrath.modes[`${attack}__easy`] = .5;
+    rates.wrath.modes[`${attack}__hard`] = 2;
+  }
   const limit = Number.MAX_SAFE_INTEGER;
   function restore(raw, catalog) {
     return {

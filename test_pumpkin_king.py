@@ -537,8 +537,6 @@ class KingTests(unittest.TestCase):
         for game in games:
             with self.subTest(mode=game.difficulty):
                 game.begin_attack(6)
-                if isinstance(game, KingsWrath):
-                    game.update(3, set())
                 game.x, game.y = -150, 30
                 self.assertEqual(game.stage.name, "scare_ready")
                 self.assertIn("GET IN POSITION", game.pattern_label)
@@ -557,8 +555,6 @@ class KingTests(unittest.TestCase):
         self.assertAlmostEqual(1/SCARE_PERIOD, (1/(.5/2.4))*.75)
         for game in (PumpkinKing(), KingsWrath("haunted_quadrants")):
             game.begin_attack(6)
-            if isinstance(game, KingsWrath):
-                game.update(3, set())
             before = game.x
             game.update(.25, {"Right"})
             self.assertAlmostEqual(game.x-before, 65)

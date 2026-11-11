@@ -456,7 +456,7 @@ const Achievements = (() => {
       const sovereignFight = s.mode === "boss" && sovereignDifficulties.includes(s.difficulty);
       const sovereignBroken = sovereignFight && s.damage_taken > 0 && this.data.stats.bossSovereignStreak > 0;
       const core = s.mode === "singularity" && s.difficulty === "gravitron";
-      const wrath = s.mode === "wrath" && wrathModes.includes(s.difficulty);
+      const wrath = s.mode === "wrath" && wrathModes.includes(s.difficulty.split("__")[0]);
       const corePractice = s.mode === 'core_practice' && attackRewards.some(reward => reward.family === 'core' && reward.key === s.difficulty);
       const healingMode = ["boss", "pumpkin"].includes(s.mode) || core || wrath || corePractice;
       const healing = healingMode ? count(s.healing_collected) : 0;
@@ -466,7 +466,7 @@ const Achievements = (() => {
         ? s.attack_survivals.map(count) : [];
       const newSurvivals = family && survivalCounts.some((value, index) => value > (round.survivals[index] || 0));
       const protocols = Math.min(15, count(s.attacks_completed));
-      const randomSets = wrath && s.difficulty === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
+      const randomSets = wrath && s.difficulty.split("__")[0] === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
       const counters = (wrath || s.mode === "pumpkin") ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
       const mercifulTime = s.mode === "pumpkin" && s.shots_fired === 0 && s.lives > 0
         && Number.isFinite(s.fight_elapsed) && s.fight_elapsed >= 0 ? Math.floor(s.fight_elapsed) : 0;
@@ -550,7 +550,7 @@ const Achievements = (() => {
         }
         if (wrath) {
           stats.wrathWins++;
-          stats[`wrath_${s.difficulty}`] = 1;
+          stats[`wrath_${s.difficulty.split("__")[0]}`] = 1;
           stats.wrathLessons = wrathModes.slice(0, 7).filter(mode => stats[`wrath_${mode}`] > 0).length;
           if (s.damage_taken === 0) {
             stats.wrathFlawlessWins++;

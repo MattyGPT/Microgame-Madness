@@ -67,3 +67,61 @@ class PumpkinArtTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class WrathRedMemoryTests(unittest.TestCase):
+    def test_red_arena_keeps_eye_rules_and_hides_other_color_cues(self):
+        from kings_wrath import KingsWrath
+        from pumpkin_king import Stage
+        for level in ("easy", "normal", "hard"):
+            for rule, eye_color in (("blue", "#42c9ff"), ("orange", "#ff9d32")):
+                game = KingsWrath("color_memory__" + level)
+                game.stage = Stage("color", .65, rule)
+                view = KingView(DrawCanvas(), audio=False)
+                view.draw(game)
+                commands = view.canvas.commands()
+                expected_bg = "#681f2b" if level == "hard" else {"blue":"#123e69", "orange":"#713b17"}[rule]
+                self.assertEqual(commands[0]["fill"], expected_bg)
+                self.assertEqual(game.screen_rule, rule)
+                self.assertEqual(game.eye_rule, rule)
+                self.assertTrue(any(c["kind"] in ("polygon", "oval") and c.get("fill") == eye_color for c in commands))
+                if level == "hard":
+                    self.assertIn("WATCH HIS EYES", game.pattern_label)
+                    text = " ".join(c.get("text", "") for c in commands)
+                    self.assertNotIn("HOLD STILL", text)
+                    self.assertNotIn("KEEP MOVING", text)
+                    game.update(.25, {"Right"} if rule == "blue" else set())
+                    self.assertEqual(game.damage_taken, 1)
+        for phase in ("memory", "recall_ready", "color_gap"):
+            game = KingsWrath("color_memory__hard")
+            game.stage = Stage(phase, 1)
+            self.assertFalse(game.eyes_only_color)
+
+class WrathThemeArtTests(unittest.TestCase):
+    def test_every_pattern_has_distinct_pure_difficulty_art(self):
+        from kings_wrath import KingsWrath, WRATH_ATTACKS
+        for attack in WRATH_ATTACKS:
+            drawings = []
+            for suffix in ("__easy", "", "__hard"):
+                game = KingsWrath(attack+suffix, rng=random.Random(4))
+                game.update(3.2, set())
+                game.sound_events.clear()
+                before = pickle.dumps(game)
+                view = KingView(DrawCanvas(), audio=False)
+                view.draw(game)
+                drawings.append(repr(view.canvas.commands()))
+                self.assertEqual(pickle.dumps(game), before)
+            self.assertEqual(len(set(drawings)), 3, attack)
+
+    def test_laughing_preparation_shows_first_quadrant_exclamation_marks(self):
+        from kings_wrath import KingsWrath
+        from pumpkin_king import Stage
+        games = [PumpkinKing()]+[KingsWrath('haunted_quadrants'+suffix) for suffix in ('__easy','','__hard')]
+        for game in games:
+            game.begin_attack(6)
+            game.stage = Stage('scare_ready', 2)
+            game.stage_age = 1.5
+            view = KingView(DrawCanvas(), audio=False)
+            view.draw(game)
+            marks = [c for c in view.canvas.commands() if c.get('text') == '!']
+            self.assertEqual(len(marks), 8 if getattr(game, 'variant', None) == 'hard' else 4)

@@ -3,7 +3,7 @@ import random
 import unittest
 
 from pumpkin_king import PumpkinKing, ATTACK_BREAK
-from kings_wrath import KingsWrath, WRATH_ATTACKS
+from kings_wrath import KingsWrath, WRATH_ATTACKS, WRATH_BREAK_TIME
 from singularity_core import SingularityCore, ATTACKS
 from singularity_practice import SingularityPractice, SingularityCutscene, PRACTICE_ATTACKS
 from web.bridge import BrowserGame
@@ -26,8 +26,7 @@ class AttackSurvivalTests(unittest.TestCase):
                     if mode == 'pumpkin':
                         game.begin_attack(index)
                     duration = game.stage.duration + sum(stage.duration for stage in game.queue)
-                    if mode == 'pumpkin':
-                        duration -= ATTACK_BREAK
+                    duration -= ATTACK_BREAK if mode == 'pumpkin' else WRATH_BREAK_TIME
                     game.update(duration - .01, set())
                     self.assertEqual(game.attack_survivals, [0] * 7)
                     game.update(.01, set())

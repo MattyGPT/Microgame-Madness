@@ -140,7 +140,7 @@ const modes = {
     category: "06 / ATTACK PRACTICE",
     art: "",
     heading: "Choose your attack. Or shuffle them all.",
-    copy: "Start with 15 HP and a three-second countdown before each attack. Repeat one pattern or face all seven in Random Order. Body and arm contact still kills instantly.",
+    copy: "Start with 15 HP and a one three-second countdown at the start. Repeat one pattern or face all seven in Random Order. Every cycle has a half-second break and resets your turtle to its starting position. Body and arm contact still kills instantly.",
     accent: "#ffe066",
     controls: "Arrows move · F shoots · E counters · D pauses · Esc picks another attack",
     choiceLabel: "Choose an attack to load",
@@ -151,8 +151,8 @@ const modes = {
       magenta_fingers: ["Magenta Fingers", "Tap E just before a magenta finger reaches you."],
       chaos: ["Chaos", "Dodge the King's mixed projectile patterns."],
       royal_slams: ["Royal Slams", "Avoid the raised hands, then escape the mouth fire."],
-      haunted_quadrants: ["Haunted Quadrants", "Three-second countdown, then two more seconds to get in position. Dodge slower clockwise scares. Half a heart per hit."],
-      random_order: ["Random Order", "All seven attacks in a shuffled order. Three seconds to prepare for each. Reshuffles after every seven attacks."],
+      haunted_quadrants: ["Haunted Quadrants", "Two seconds to get in position. Dodge slower clockwise scares. Half a heart per hit."],
+      random_order: ["Random Order", "All seven attacks in a shuffled order. One countdown at the start. Reshuffles after every seven attacks."],
     },
   },
   singularity: {
@@ -184,6 +184,93 @@ const modes = {
     difficulties: {},
   },
 };
+const wrathVariants = {
+  color_memory: ["Do Your Cute Face", "Chromatic Nightmare"],
+  bone_gauntlet: ["Brittle Bones", "Bone Barrage"],
+  rotating_rings: ["Gentle Rings", "Terror Rings"],
+  magenta_fingers: ["Pinkie Practice", "Crimson Clutches"],
+  chaos: ["Little Trouble", "Total Havoc"],
+  royal_slams: ["Royal Taps", "Blind Rage"],
+  haunted_quadrants: ["Baby Spooks", "Twin Terrors"],
+  random_order: ["Royal Rehearsal", "King's Nightmare"],
+};
+for (const [attack, names] of Object.entries(wrathVariants)) {
+  const descriptions = {
+    color_memory: ["Three color flashes, no bullets, an upright cute face, and 30% longer memory and recall breaks.", "Six eye-color flashes at 30% faster speed; 15% shorter recall breaks, with bullets moving and spawning 25% faster. The dodge phases turn red—read his eyes for the color rule."],
+    bone_gauntlet: ["Wider openings between the top and bottom bones. Bones move and spawn 30% slower; the attack is 20% shorter.", "Narrower openings between the top and bottom bones. Bones spawn 50% faster and move 12.5% faster than Normal; the attack lasts 20% longer."],
+    rotating_rings: ["Rings fall, spin, and spawn 30% slower; the attack is 20% shorter.", "40% longer; rings fall, spin, and spawn 38% faster. Complete rings with no openings. Exactly six white ghosts cross the arena. Use the colored sections to pass safely."],
+    magenta_fingers: ["15% larger counter radius, 15% longer counter window, 15% shorter cooldown; fingers move and spawn 15% slower.", "Fingers move and spawn 25% faster; the attack lasts 20% longer. Standard counters."],
+    chaos: ["Projectiles move and spawn 30% slower; the attack is 20% shorter.", "40% more projectiles per volley (seven instead of five). Projectiles move and spawn 25% faster; the attack lasts 20% longer."],
+    royal_slams: ["25% slower, extra recovery between slams, 20% narrower slam/fire areas, and lots of warning marks. Damage is unchanged.", "Blind Rage: 20% faster, 11 randomized slams, random roar/fire bursts, plus Center Crush, Split Strike, and Low Sweep. No ground warnings—read the hand gestures. Your turtle moves 20% faster."],
+    haunted_quadrants: ["Spooks move 50% slower. One active quadrant at a time.", "Two opposite spooks move 28.25% faster than Normal (5% slower than before). Danger reaches the center—move into a safe quadrant during the warning."],
+    random_order: ["Shuffle all seven Easy variants, with each attack's easier rules.", "Shuffle all seven Hard variants, including Terror Rings, Twin Terrors, and Blind Rage."],
+  }[attack];
+  for (const [index, level] of ["easy", "hard"].entries())
+    modes.wrath.difficulties[`${attack}__${level}`] = [`${names[index]} (${level === "easy" ? "Easy" : "Hard"})`, descriptions[index]];
+}
+function wrathDifficultyArt(attack, level) {
+  const paths = {
+    color_memory: 'M12 28Q22 13 32 28Q22 38 12 28ZM40 28Q50 13 60 28Q50 38 40 28ZM25 46Q31 54 36 46Q41 54 47 46',
+    bone_gauntlet: 'M27 20C17 10 11 22 20 28L44 52C52 62 64 51 54 43L30 19M20 28C10 37 23 45 29 35M44 52C36 61 48 68 54 57',
+    rotating_rings: 'M14 36A22 22 0 1 0 44 15M24 36A12 12 0 1 0 39 24M47 12L50 22L60 25M36 6V12M6 36H12M60 36H66M36 60V66',
+    magenta_fingers: 'M26 52V24Q26 17 32 24V39V13Q36 6 40 13V39V20Q46 13 46 20V42L52 36Q61 34 57 44L49 58H30Z',
+    chaos: 'M36 8L40 26L58 17L47 33L65 39L46 43L53 61L37 49L24 64L27 45L8 43L25 34L16 17L32 26Z',
+    royal_slams: 'M14 24L21 36L36 17L51 36L58 24L52 52H20ZM21 59H51M28 42V47M44 42V47',
+    haunted_quadrants: 'M18 55V30A18 18 0 0 1 36 12A18 18 0 0 1 54 30V55L45 49L36 56L27 49ZM28 29V35M44 29V35',
+    random_order: 'M12 22H22L48 50H60M49 41L60 50L49 59M12 50H22L48 22H60M49 13L60 22L49 31',
+  };
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 72 72');
+  svg.setAttribute('class', 'wrath-difficulty-art');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(svg.namespaceURI, 'path');
+  path.setAttribute('d', paths[attack]);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', level === 'hard' ? '3' : '2.5');
+  path.setAttribute('stroke-linecap', level === 'easy' ? 'round' : 'square');
+  path.setAttribute('stroke-linejoin', level === 'hard' ? 'miter' : 'round');
+  svg.append(path);
+  const ornament = document.createElementNS(svg.namespaceURI, 'path');
+  ornament.setAttribute('d', level === 'easy' ? 'M9 11h6m-3-3v6M56 60h6m-3-3v6' : level === 'hard' ? 'M8 20L4 4L20 8M52 8L68 4L64 20M8 52L4 68L20 64M52 64L68 68L64 52' : 'M8 16V8H16M56 8H64V16M8 56V64H16M56 64H64V56');
+  ornament.setAttribute('fill', 'none');
+  ornament.setAttribute('stroke', 'currentColor');
+  ornament.setAttribute('stroke-width', '2');
+  svg.append(ornament);
+  return svg;
+}
+function chooseWrathDifficulty(attack) {
+  $("difficulty-title").textContent = `${modes.wrath.difficulties[attack][0]} — choose a difficulty`;
+  const choices = ["easy", "normal", "hard"].map(level => {
+    const key = level === "normal" ? attack : `${attack}__${level}`;
+    const [label, description] = modes.wrath.difficulties[key];
+    const button = document.createElement("button");
+    button.className = "difficulty-choice";
+    button.dataset.difficulty = key;
+    button.dataset.wrathLevel = level;
+    const palettes = {
+      color_memory: ['#ffc4dc','#ffe066','#ed5968'], bone_gauntlet: ['#cce9ba','#e8dbc6','#ed8d6c'],
+      rotating_rings: ['#a5e8e0','#7abfd2','#a886ff'], magenta_fingers: ['#ffb5df','#ff75de','#ff507c'],
+      chaos: ['#c8bfff','#c088ee','#ff7b41'], royal_slams: ['#ffe0a0','#f6c45c','#ff4c59'],
+      haunted_quadrants: ['#b4f1df','#b8a3f4','#c078ff'], random_order: ['#b4f1df','#ffe066','#ff507c'],
+    };
+    button.style.setProperty('--wrath-tint', palettes[attack][['easy','normal','hard'].indexOf(level)]);
+    const title = document.createElement("strong");
+    title.textContent = level === "normal" ? `${label} (Normal)` : label;
+    const detail = document.createElement("span");
+    detail.textContent = `${description} Global score & Cubie Cash ×${level === "easy" ? "0.5" : level === "hard" ? "2" : "1"}.`;
+    button.append(wrathDifficultyArt(attack, level), title, detail);
+    button.onclick = () => startGame(key);
+    return button;
+  });
+  const back = document.createElement("button");
+  back.className = "difficulty-choice";
+  back.textContent = "← All attacks";
+  back.onclick = () => selectGame("wrath");
+  $("difficulty-choices").replaceChildren(...choices, back);
+  choices[0].focus({ preventScroll: true });
+}
+
 let geomayhemArmory = [];
 let geomayhemArenas = [];
 let geomayhemFiring = false;
@@ -1229,7 +1316,7 @@ function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
     `${modes[mode].difficulties[difficulty][0]} ×${multiplier}`);
-  $("leaderboard-multipliers").textContent = mode === "wrath" ? "All practice attacks ×1." : labels.join(" · ");
+  $("leaderboard-multipliers").textContent = mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · ");
 }
 function initializeGlobalLeaderboards() {
   $("leaderboard-game").replaceChildren(...Object.entries(modes).filter(([, config]) => !config.localOnly).map(([value, config]) => {
@@ -1631,7 +1718,7 @@ function selectGame(mode) {
   dodgeBorderSizes.disconnect();
   dodgeBorderVisibility.disconnect();
   $("difficulty-choices").replaceChildren(
-    ...Object.entries(config.difficulties).map(([value, [label, description]]) => {
+    ...Object.entries(config.difficulties).filter(([value]) => mode !== "wrath" || !value.includes("__")).map(([value, [label, description]]) => {
       const button = document.createElement("button");
       button.className = "difficulty-choice";
       button.dataset.difficulty = value;
@@ -1642,7 +1729,7 @@ function selectGame(mode) {
       button.append(title, detail);
       if (mode === "jukebox") styleSongCard(button, value);
       if (mode === "dodge") decorateDodgeDifficulty(button, value);
-      button.onclick = () => startGame(value);
+      button.onclick = () => mode === "wrath" ? chooseWrathDifficulty(value) : startGame(value);
       return button;
     }),
   );

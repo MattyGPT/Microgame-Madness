@@ -18,7 +18,7 @@ class KingsWrathTests(unittest.TestCase):
         self.assertEqual(game.attacks_completed, 0)
         game.update(.01, set())
         self.assertEqual(game.attacks_completed, 1)
-        self.assertEqual(game.stage.name, "wrath_ready")
+        self.assertEqual(game.stage.name, "wrath_break")
         game.update(WRATH_READY_TIME, set())
         self.assertEqual(game.attacks_completed, 1)
         game.hp = 5
@@ -37,8 +37,7 @@ class KingsWrathTests(unittest.TestCase):
             game.update(.05, set())
             self.assertTrue(game.alive)
             if game.attack_index != order[-1]:
-                self.assertEqual(game.stage.name, "wrath_ready")
-                self.assertIn(ATTACK_NAMES[game.attack_index], game.pattern_label)
+                self.assertNotEqual(game.stage.name, "wrath_ready")
                 order.append(game.attack_index)
             if len(order) == 21:
                 break
@@ -65,7 +64,7 @@ class KingsWrathTests(unittest.TestCase):
         game.invulnerable = 1000
         game.update(duration, set())
         self.assertNotEqual(game.attack_index, first)
-        self.assertEqual(game.stage.name, "wrath_ready")
+        self.assertNotEqual(game.stage.name, "wrath_ready")
         self.assertEqual((game.lives, game.hp), (9, 700))
 
     def test_random_order_depends_on_the_supplied_random_seed(self):
@@ -103,15 +102,14 @@ class KingsWrathTests(unittest.TestCase):
                 game.update(WRATH_READY_TIME, set())
                 first_stage = game.stage.name
                 game.invulnerable = 1000
-                saw_countdown = False
                 for _ in range(500):
                     game.update(.05, set())
                     self.assertTrue(game.alive)
                     self.assertEqual(game.attack_index, index)
-                    if game.stage.name == "wrath_ready":
-                        saw_countdown = True
-                        self.assertIn("GET READY", game.pattern_label)
-                    elif saw_countdown:
+                    self.assertNotEqual(game.stage.name, "wrath_ready")
+                    if game.attacks_completed:
+                        self.assertEqual(game.stage.name, "wrath_break")
+                        game.update(.5, set())
                         self.assertEqual(game.stage.name, first_stage)
                         break
                 else:
@@ -185,9 +183,9 @@ class KingsWrathTests(unittest.TestCase):
         game.update(.001, set())
         self.assertEqual(game.stage.name, "scares")
         game.update(5, set())
-        self.assertEqual(game.stage.name, "wrath_ready")
+        self.assertEqual(game.stage.name, "wrath_break")
+        game.update(.5, set())
         damage = game.damage_taken
-        game.update(3, set())
         self.assertEqual(game.stage.name, "scare_ready")
         game.update(1.999, set())
         self.assertEqual(game.stage.name, "scare_ready")
@@ -213,3 +211,200 @@ class KingsWrathTests(unittest.TestCase):
     def test_unknown_attack_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "Unknown King's Wrath attack"):
             KingsWrath("unknown")
+
+
+class WrathVariantTests(unittest.TestCase):
+    def test_bone_openings_and_barrage_spawn_rate(self):
+        from dodge_model import PLAYER_TOP, PLAYER_BOTTOM
+        narrower_barrages = 0
+        for seed in range(30):
+            openings = []
+            for suffix, speed in (("__easy", .7), ("", 1), ("__hard", 1.5)):
+                game = KingsWrath("bone_gauntlet" + suffix, rng=random.Random(seed))
+                game.update(3, set())
+                interval = game._spawn()
+                self.assertAlmostEqual(interval, 1.05 / speed)
+                movement = 1.25 * .9 if suffix == "__hard" else speed
+                self.assertTrue(all(abs(abs(b.vx) - 340 * movement) < 1e-8 for b in game.bullets))
+                bones = sorted(game.bullets, key=lambda b: b.y)
+                opening = max(top.y-top.height/2-(bottom.y+bottom.height/2)
+                              for bottom, top in zip(bones, bones[1:]))
+                self.assertGreater(opening, PLAYER_TOP-PLAYER_BOTTOM)
+                openings.append(opening)
+            self.assertGreater(openings[0], openings[1])
+            # Whole bones snap to 28px rows, so some rolls share a gap size.
+            self.assertGreaterEqual(openings[1], openings[2])
+            narrower_barrages += openings[1] > openings[2]
+        self.assertGreater(narrower_barrages, 15)
+
+
+    def test_hard_memory_flashes_thirty_percent_faster_than_normal(self):
+        normal = KingsWrath("color_memory", rng=random.Random(4))
+        hard = KingsWrath("color_memory__hard", rng=random.Random(4))
+        for game in (normal, hard):
+            game.update(3, set())
+        self.assertEqual(hard.sequence, normal.sequence)
+        self.assertAlmostEqual(hard.stage.duration * 1.3, normal.stage.duration)
+        period = hard.stage.duration / len(hard.sequence)
+        for index, rule in enumerate(hard.sequence):
+            hard.stage_age = (index + .1) * period
+            self.assertEqual(hard.eye_rule, rule)
+            hard.stage_age = (index + .9) * period
+            self.assertIsNone(hard.eye_rule)
+
+
+    def test_easy_memory_three_flashes_no_bullets(self):
+        game = KingsWrath("color_memory__easy", rng=random.Random(4))
+        game.update(3, set())
+        self.assertEqual(len(game.sequence), 3)
+        self.assertIn("all 3 colors", game.pattern_label)
+        period = game.stage.duration / 3
+        for i, color in enumerate(game.sequence):
+            game.stage_age = i * period + .01
+            self.assertEqual(game.eye_rule, color)
+            game.stage_age = (i + .9) * period
+            self.assertIsNone(game.eye_rule)
+        game.hurt = lambda *a, **kw: None
+        for _ in range(1000):
+            game.update(.02, set())
+            self.assertFalse(game.bullets)
+
+    def test_terror_rings_has_complete_rings_and_six_damaging_ghosts(self):
+        game = KingsWrath("rotating_rings__hard", rng=random.Random(4))
+        game.update(3, set())
+        self.assertAlmostEqual(game.stage.duration, 11.2)
+        self.assertEqual(game.ring_speed, 1.38)
+        from pumpkin_king import RING_SEGMENTS
+        game.invulnerable = 1000
+        game.update(.15, {"Up"})
+        for _ in range(1400):
+            game.update(.01, set())
+            self.assertEqual(len(game.ghosts), 0 if game.stage.name == "wrath_break" else 6)
+            self.assertTrue(all(-290 <= g.x <= 290 for g in game.ghosts))
+            for ring in game.rings:
+                self.assertEqual(len(list(ring.pieces())), RING_SEGMENTS)
+        game.invulnerable = 0
+        game.rings.clear()
+        ghost = game.ghosts[0]
+        game.x, game.y = ghost.x, ghost.y
+        game.update(.01, set())
+        self.assertGreater(game.damage_taken, 0)
+
+    def test_spook_speeds_and_opposite_pair(self):
+        for level, speed in (("easy", .5), ("hard", 1.35 * .95)):
+            game = KingsWrath("haunted_quadrants__" + level)
+            self.assertEqual(game.scare_speed, speed)
+            game.update(5, set())
+            if level == "hard":
+                a, b = game.scare_rectangles
+                self.assertEqual(a[:2], (-b[0], -b[1]))
+                game.x, game.y = 0, -160
+                game.update(.15, set())
+                self.assertGreater(game.damage_taken, 0)
+
+    def test_blind_rage_deck_and_timing(self):
+        orders = []
+        for seed in range(4):
+            game = KingsWrath("royal_slams__hard", rng=random.Random(seed))
+            stages = list(game.queue)
+            slams = [s.side for s in stages if s.name == "slam"]
+            self.assertEqual(len(slams), 11)
+            self.assertTrue({"center", "split", "sweep"}.issubset(slams))
+            self.assertEqual(sum(s.name == "roar" for s in stages), 3)
+            self.assertTrue(all(abs(s.duration-.5/1.2) < 1e-8 for s in stages if s.name == "raise"))
+            orders.append(slams)
+        self.assertNotEqual(orders[0], orders[1])
+
+    def test_easy_slams_warnings_smaller_areas_and_unchanged_damage(self):
+        game = KingsWrath("royal_slams__easy")
+        game.update(3, set())
+        self.assertAlmostEqual(game.stage.duration, .5/.75)
+        self.assertEqual(game.slam_warnings, [(-150, 0, 240, 480)])
+        game.x, game.y = -150, -170
+        game.update(game.stage.duration+.01, set())
+        self.assertEqual(game.damage_taken, 1)
+
+    def test_easy_fingers_counter_and_movement(self):
+        from pumpkin_king import COUNTER_RANGE, COUNTER_WINDOW, COUNTER_COOLDOWN, Finger
+        game = KingsWrath("magenta_fingers__easy")
+        game.update(3, set())
+        self.assertAlmostEqual(game.counter_radius, COUNTER_RANGE*1.15)
+        self.assertAlmostEqual(game.counter_window, COUNTER_WINDOW*1.15)
+        self.assertAlmostEqual(game.counter_delay, COUNTER_COOLDOWN*.85)
+        self.assertEqual(game.projectile_speed, .85)
+        game.bullets = [Finger(game.x+COUNTER_RANGE*1.1, game.y, 0, 0)]
+        game.spawn_in = 5
+        game.update(.001, {"e"})
+        self.assertEqual(game.counter_hits, 1)
+        self.assertFalse(game.bullets)
+
+
+class WrathCycleBreakTests(unittest.TestCase):
+    def test_all_modes_reset_and_pause_exactly_half_a_second_each_cycle(self):
+        for attack in (*WRATH_ATTACKS, RANDOM_ORDER):
+            for suffix in ("", "__easy", "__hard"):
+                with self.subTest(attack=attack, suffix=suffix):
+                    game = KingsWrath(attack + suffix, rng=random.Random(42))
+                    game.update(3, set())
+                    game.hurt = lambda *args, **kwargs: None
+                    for cycle in range(2):
+                        # Finish all combat stages but leave the cycle break untouched.
+                        duration = game.stage.duration-game.stage_age + sum(s.duration for s in game.queue if s.name != "wrath_break")
+                        game.x, game.y = 80, -160
+                        game.update(duration, set())
+                        self.assertEqual(game.stage.name, "wrath_break")
+                        self.assertEqual(game.attacks_completed, cycle+1)
+                        self.assertEqual(sum(game.attack_survivals), cycle+1)
+                        self.assertEqual((game.x, game.y), game.spawn_position)
+                        self.assertFalse(game.bullets or game.rings or game.shots or game.ghosts)
+                        state = game.x, game.y, game.hp, game.lives, game.elapsed, game.heal_in
+                        game.update(.499, {"Right", "f", "e"})
+                        self.assertEqual(game.stage.name, "wrath_break")
+                        self.assertEqual((game.x, game.y, game.hp, game.lives, game.elapsed, game.heal_in), state)
+                        game.update(.001, set())
+                        self.assertNotIn(game.stage.name, ("wrath_ready", "wrath_break"))
+                        self.assertEqual((game.x, game.y), game.spawn_position)
+                        self.assertAlmostEqual(game.stage_age, 0)
+
+    def test_break_preserves_overflow_into_next_cycle(self):
+        game = KingsWrath("bone_gauntlet")
+        game.hurt = lambda *args, **kwargs: None
+        game.update(3+6+.5+.125, set())
+        self.assertEqual(game.stage.name, "bones")
+        self.assertAlmostEqual(game.stage_age, .125)
+        self.assertEqual(game.attacks_completed, 1)
+        self.assertAlmostEqual(game.elapsed, 6.125)
+
+class WrathThemeBalanceTests(unittest.TestCase):
+    def test_total_havoc_adds_exactly_two_projectiles_per_volley(self):
+        for suffix, count in (("__easy", 5), ("", 5), ("__hard", 7)):
+            game = KingsWrath("chaos"+suffix, rng=random.Random(12))
+            game.update(3, set())
+            game._spawn()
+            self.assertEqual(len(game.bullets), count)
+
+    def test_blind_rage_speed_and_physical_hints(self):
+        from pumpkin_king import Stage
+        game = KingsWrath("royal_slams__hard")
+        game.update(3, set())
+        game.update(.1, {"Right"})
+        self.assertAlmostEqual(game.x, 31.2)
+        poses = []
+        for side in ("left", "right", "both", "center", "split", "sweep"):
+            game.stage = Stage("raise", .5/1.2, side)
+            game.stage_age = game.stage.duration*.95
+            self.assertFalse(game.slam_warnings)
+            poses.append(tuple(tuple(game.hand_rectangles(hand)) for hand in ("left", "right")))
+        self.assertEqual(len(set(poses)), 6)
+        game.begin_attack(4)
+        self.assertEqual(game.movement_speed, 260)
+
+    def test_twin_terrors_center_hurts_but_warning_allows_dodging(self):
+        game = KingsWrath("haunted_quadrants__hard")
+        game.update(5, set())
+        game.x, game.y = -12, -160
+        for _ in range(4999):
+            target = 12 if game.scare_beat % 2 else -12
+            keys = {"Right"} if game.x < target-.3 else {"Left"} if game.x > target+.3 else set()
+            game.update(.001, keys)
+        self.assertEqual(game.damage_taken, 0)
