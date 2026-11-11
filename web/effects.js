@@ -49,20 +49,21 @@
         const chirp = Math.sin(2 * Math.PI * t * (390 - 150 * progress) + 2.4 * Math.sin(t * 190));
         noise = Math.round((rumble * .52 + chirp * .2 + staticNoise * .28) * 7) / 7;
         if (track) {
-          const stutter = (t > .27 && t < .35) || (t > .66 && t < .74);
-          const rewind = stutter ? (t % .022) * trackRate : 0;
-          const distorted = Math.tanh(readMusic(Math.max(0, cursor - rewind)) * 1.25);
+          const stutter = (t > .3 && t < .35) || (t > .7 && t < .75);
+          const rewind = stutter ? (t % .014) * trackRate : 0;
+          const distorted = Math.tanh(readMusic(Math.max(0, cursor - rewind)) * 1.1);
           crushedMusic = Math.round(distorted * 32) / 32;
         }
         nextSample = i + Math.max(1, Math.floor(sampleRate / (6300 - 3500 * progress)));
       }
       const slowedMusic = track ? readMusic(cursor) : 0;
-      cursor += (.55 + .07 * Math.sin(t * 24)) * trackRate / sampleRate;
+      // A steady speed keeps the notes in tune with each other throughout the slowdown.
+      cursor += .93 * trackRate / sampleRate;
       const envelope = Math.min(1, t / .018, (duration - t) / .11);
       const pulse = (.5 + .5 * Math.sin(t * 46)) ** 4;
       const rumble = noise * (.10 + .09 * pulse) * (1 - .48 * progress);
       const pan = .28 * Math.sin(t * 16);
-      const song = (slowedMusic * .72 + crushedMusic * .28 * (1 - .45 * pulse)) * .22;
+      const song = (slowedMusic * .9 + crushedMusic * .1) * .22;
       left[i] = (song + rumble * (1 + pan)) * envelope;
       right[i] = (song + rumble * (1 - pan)) * envelope;
     }
