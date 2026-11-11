@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Unlinked operator page: keep it out of indexes and archives. -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <title>Usage · Microgame Madness</title>
+    <link rel="stylesheet" href="./usage.css" />
+    <script src="./usage.js" defer></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <p class="eyebrow">Operator dashboard · not linked from the arcade</p>
+      <h1>Arcade usage</h1>
+      <p class="lede">
+        Aggregate counters only: page loads, distinct browsers, sign-ins, and per-game play.
+        Nothing here identifies a player — the store holds one salted hash per browser per day,
+        never an IP address, handle, score payload, or credential.
+      </p>
+      <p id="provenance" class="provenance">Not loaded.</p>
+    </header>
+
+    <p id="status" class="status" role="status" data-kind="info">Loading configuration…</p>
+
+    <section id="gate" class="gate" hidden aria-labelledby="gate-heading">
+      <h2 id="gate-heading">Enter the operator token</h2>
+      <p>
+        The token is the <code>USAGE_REPORT_TOKEN</code> secret on the project. It unlocks aggregate
+        counters and nothing else. It is stored in this browser only, and every request goes straight
+        to the <code>usage</code> Edge Function — the service key never reaches this page.
+      </p>
+      <form id="token-form">
+        <label for="token-input">Operator token</label>
+        <div class="token-row">
+          <input id="token-input" name="token" type="password" autocomplete="off" spellcheck="false"
+            aria-describedby="token-hint" required />
+          <button type="submit">Load usage</button>
+        </div>
+        <p id="token-hint" class="hint">
+          Regenerate or print it with <code>npm run usage:token</code>.
+        </p>
+      </form>
+    </section>
+
+    <main id="dashboard" hidden>
+      <div class="controls">
+        <label for="window-select">Window</label>
+        <select id="window-select">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+        <button id="refresh" type="button">Refresh</button>
+        <button id="forget" type="button" class="quiet">Forget token</button>
+        <p class="window-note">
+          Showing <strong id="window-label">30 days</strong>. Days are UTC and every day in the
+          window is present, so a quiet day reads as zero rather than a gap.
+        </p>
+      </div>
+
+      <section id="stats" class="stats" aria-label="Headline numbers for the window"></section>
+
+      <section class="panel" aria-labelledby="traffic-heading">
+        <h2 id="traffic-heading">Traffic</h2>
+        <p id="traffic-finding" class="finding"></p>
+        <figure>
+          <div id="traffic-chart" class="chart"></div>
+          <figcaption>
+            Page loads versus distinct browsers per day. Both are counts of the same unit
+            (events and browsers), so they share one axis starting at zero.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="panel" aria-labelledby="players-heading">
+        <h2 id="players-heading">Who is playing</h2>
+        <p class="finding">
+          Distinct browsers per day, split by whether the player was signed in. Guest segments are
+          striped as well as colored, so the split does not depend on hue.
+        </p>
+        <div id="players-legend"></div>
+        <figure>
+          <div id="players-chart" class="chart"></div>
+          <figcaption>
+            One browser can appear in both segments on the day it signs in; the lifetime
+            distinct-browser total below the window deduplicates across days.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="panel" aria-labelledby="signins-heading">
+        <h2 id="signins-heading">Logins and registrations</h2>
+        <p class="finding">
+          A login is a credential sign-in to an account this browser did not already have. A
+          registration is a guest converting in place. A cached session restored on page load is
+          counted as a visit, not a login.
+        </p>
+        <figure>
+          <div id="signins-chart" class="chart"></div>
+        </figure>
+      </section>
+
+      <section class="panel" aria-labelledby="plays-heading">
+        <h2 id="plays-heading">Games</h2>
+        <p id="plays-finding" class="finding"></p>
+        <figure>
+          <div id="plays-chart" class="chart"></div>
+          <figcaption>Plays per game in the window, most played first.</figcaption>
+        </figure>
+        <figure>
+          <div id="winrate-chart" class="chart"></div>
+          <figcaption>
+            Win rate over finished rounds only. Each bar is labeled with its denominator, because a
+            rate from three finishes is not comparable to one from three hundred.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="panel" aria-labelledby="daily-heading">
+        <h2 id="daily-heading">Daily counters</h2>
+        <div id="daily-table"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="games-heading">
+        <h2 id="games-heading">Per-game counters</h2>
+        <div id="game-table"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="runs-heading">
+        <h2 id="runs-heading">Signed-in play, server-side</h2>
+        <p class="finding">
+          These rows come from synced account runs, not from beacons, so they are the check on
+          everything above.
+        </p>
+        <div id="runs-table"></div>
+      </section>
+
+      <footer class="caveats">
+        <h2>How to read this</h2>
+        <ul>
+          <li>
+            Counters are client-reported. A browser with JavaScript disabled, or one blocking the
+            project domain, is not counted at all.
+          </li>
+          <li>
+            Distinct browsers means distinct browsers, not people: one player on two devices counts
+            twice, and clearing site data starts a new one.
+          </li>
+          <li>
+            Do Not Track and Global Privacy Control are honored, so those visitors opt out entirely
+            and the totals undercount by an unknown amount.
+          </li>
+          <li>
+            Temporary modes — jukebox, shop, custom Cubie, and the block guide — never start a run,
+            so they produce visits but no plays.
+          </li>
+          <li>
+            A hostile client can inflate counters but cannot read them. If totals run far above
+            distinct browsers, treat the numbers as a trend, not a measurement.
+          </li>
+        </ul>
+        <p>
+          The command line reads the same document: <code>npm run usage:report -- --days 30</code>.
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

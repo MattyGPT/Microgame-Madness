@@ -119,6 +119,12 @@ const AccountApp = (() => {
       try {
         this.config = await this.configPromise;
         this.session = new AccountSession.Client(this.config);
+        // Analytics sits inside this try, so it must never abort account setup.
+        try {
+          this.usage = globalThis.Usage?.Client
+            ? new globalThis.Usage.Client(this.config).attach(this.session) : null;
+          this.usage?.visit();
+        } catch { this.usage = null; }
         this.store = new AccountStore.Store({ rules: AccountRules });
         this.controller = new AccountSync.Controller({ config: this.config, store: this.store,
           session: this.session, rules: AccountRules });
@@ -224,6 +230,7 @@ const AccountApp = (() => {
       if (difficulty === 'final_cutscene') return;
       this.lastFinishedRun = null;
       this.currentRun = { id: crypto.randomUUID(), mode, difficulty, last: null, signature: '' };
+      this.usage?.play(mode, difficulty);
       this.enqueue('run.start', { mode, difficulty }, { runId: this.currentRun.id }).catch(() => {});
     }
     observe(snapshot, changed, occurredAt = Date.now()) {
@@ -242,6 +249,7 @@ const AccountApp = (() => {
       if (!run) return;
       this.lastFinishedRun = run;
       this.currentRun = null;
+      this.usage?.finish(run.mode, run.difficulty, outcome);
       const data = snapshot ? compactSnapshot(snapshot) : run.last || { mode: run.mode, difficulty: run.difficulty, score: 0 };
       this.enqueue('run.finish', { snapshot: data, outcome }, { runId: run.id, occurredAt }).catch(() => {});
     }

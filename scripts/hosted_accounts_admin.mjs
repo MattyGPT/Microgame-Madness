@@ -1,6 +1,7 @@
 // Project-scoped infrastructure helpers. Never print provider responses or secrets.
+// Sole exception: usage-token prints a freshly generated dashboard token once.
 import { readFile, readdir } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 export const projectRef = 'vikuhlqongfqwqhiwwxv';
 export function environment() {
@@ -67,7 +68,7 @@ export async function configure() {
   console.log('Configured contact restrictions, provider policy and exact allowed origins.');
 }
 export async function deploy(slug) {
-  if(!['accounts','identity'].includes(slug)) throw new Error('Unknown function.');
+  if(!['accounts','identity','usage'].includes(slug)) throw new Error('Unknown function.');
   const body = new FormData();
   const entry = `supabase/functions/${slug}/index.ts`;
   body.set('metadata',JSON.stringify({name:slug,entrypoint_path:entry,verify_jwt:false}));
@@ -78,11 +79,22 @@ export async function deploy(slug) {
   const result = await management(`/v1/projects/${projectRef}/functions/deploy?slug=${slug}`,{method:'POST',body});
   console.log(`Deployed ${slug} version ${result.version}, ${result.status}`);
 }
+// The usage dashboard's only credential. Reuse USAGE_REPORT_TOKEN from the
+// environment when set; otherwise generate one and print it a single time, the
+// same way a recovery code is shown once. It unlocks aggregate counters only.
+export async function configureUsage() {
+  const provided = process.env.USAGE_REPORT_TOKEN;
+  const token = provided || randomBytes(32).toString('hex');
+  await management(`/v1/projects/${projectRef}/secrets`,{method:'POST',body:[{name:'USAGE_REPORT_TOKEN',value:token}]});
+  console.log(provided ? 'Uploaded USAGE_REPORT_TOKEN from the environment.'
+    : `Uploaded a generated USAGE_REPORT_TOKEN. Copy it now; it is not shown again:\n${token}`);
+}
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     if (process.argv[2] === 'configure') await configure();
     else if (process.argv[2] === 'migrate') await migrate();
     else if(process.argv[2] === 'deploy') await deploy(process.argv[3]);
+    else if (process.argv[2] === 'usage-token') await configureUsage();
     else if (process.argv[2] === 'inspect') console.log(JSON.stringify(await inspect(), null, 2));
     else throw new Error('Use inspect. Deployment actions are explicit exported functions.');
   } catch (error) { console.error(error.message); process.exitCode=1; }
