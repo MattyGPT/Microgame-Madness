@@ -103,7 +103,7 @@ test('registration preserves its one-time recovery code if cloud activation fail
   fields.password.value = fields.confirm.value = 'Unique password 42!';
   const root = { querySelector: selector => fields[selector.replace('#account-', '')],
     querySelectorAll: selector => selector === '[data-password]' ? [] : [fields.password, fields.confirm, fields.recovery] };
-  app.nodes = { panel: root }; app.config = { url: 'https://example.test', key: 'public' };
+  app.nodes = { panel: root, message: { textContent: '' } }; app.config = { url: 'https://example.test', key: 'public' };
   let registered = false;
   app.session = { register: async () => { registered = true; return { recoveryCode: 'one-time-secret' }; }, snapshot: () => ({ user: { id: 'owner' } }) };
   app.controller = { activate: async (_owner, options) => {

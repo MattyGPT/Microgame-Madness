@@ -206,7 +206,14 @@ test('profile recovery, password replacement and recovery rotation keep the same
   expect(await page.locator('#account-recovery-code').inputValue()).not.toBe(code);
   await page.locator('#account-recovery-saved').click();
   await expect.poll(() => page.evaluate(() => accountApp.controller.state().owner)).toBe(owner);
-  await page.getByText('Password & recovery', { exact: true }).click();
+  await page.getByText('View or change password', { exact: true }).click();
+  await page.locator('#account-current-password').fill('Replacement password 43!');
+  await page.locator('#account-remember-password').click();
+  await expect(page.locator('#account-message')).toContainText('Password remembered');
+  await page.locator('#account-view-password').click();
+  await expect(page.locator('#account-remembered-password')).toHaveValue('Replacement password 43!');
+  await page.locator('#account-view-password').click();
+  await expect(page.locator('#account-remembered-password')).toHaveValue('');
   await page.locator('#account-current-password').fill('Replacement password 43!');
   await page.locator('#account-new-password').fill('Changed arcade password 44!');
   await page.locator('#account-new-confirm').fill('Changed arcade password 44!');
@@ -214,6 +221,11 @@ test('profile recovery, password replacement and recovery rotation keep the same
   await expect(page.locator('#account-message')).toContainText('Password changed');
   await expect(page.locator('#account-current-password')).toHaveValue('');
   await page.locator('#account-recovery-saved').click();
+  await page.locator('#account-view-password').click();
+  await expect(page.locator('#account-remembered-password')).toHaveValue('Changed arcade password 44!');
+  await page.locator('#account-forget-password').click();
+  await expect(page.locator('#account-remembered-password')).toBeHidden();
+  expect(await page.evaluate(() => localStorage.getItem(accountApp.passwordKey()))).toBeNull();
   await page.locator('#account-current-password').fill('Changed arcade password 44!');
   await page.locator('#account-rotate-recovery').click();
   await expect(page.locator('#account-recovery-step')).toBeVisible();

@@ -50,6 +50,10 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
         service.password = body.newPassword; service.recoveryCode = 'b'.repeat(64);
         return route.fulfill({headers,json:{session:session(),recoveryCode:service.recoveryCode}});
       }
+      if (body.action === 'reauthenticate') {
+        if (body.password !== service.password) return fail();
+        return route.fulfill({headers,json:{session:session()}});
+      }
       if (['change_password','rotate_recovery'].includes(body.action)) {
         if (body.password !== service.password) return fail();
         if(body.action === 'change_password') service.password = body.newPassword;

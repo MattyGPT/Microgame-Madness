@@ -71,7 +71,7 @@ const AccountApp = (() => {
       if (mode !== 'login' && $('password').value !== $('confirm').value) throw new Error('The passwords do not match.');
       return { handle: $('handle').value.trim(), password: $('password').value, code: $('recovery').value.trim() };
     },
-    clear(root) { root.querySelectorAll('input[type="password"], input[data-sensitive], [name="password"], [name="confirm"], [name="recovery-code"], [name="current-password"], [name="new-password"], [name="delete-password"]').forEach(input => { input.value = ''; if (input.hasAttribute('data-sensitive')) input.type = 'password'; }); root.querySelectorAll('[data-password]').forEach(button => { button.textContent = 'Show'; button.setAttribute('aria-pressed', 'false'); button.setAttribute('aria-label', `Show ${root.querySelector(`label[for="${button.dataset.password}"]`)?.textContent.toLowerCase() || 'password'}`); }); },
+    clear(root) { const remembered = root.querySelector?.('#account-remembered-password'); if (remembered) { remembered.hidden = true; root.querySelector('#account-view-password').textContent = 'Show remembered password'; } root.querySelectorAll('input[type="password"], input[data-sensitive], [name="password"], [name="confirm"], [name="recovery-code"], [name="current-password"], [name="new-password"], [name="delete-password"]').forEach(input => { input.value = ''; if (input.hasAttribute('data-sensitive')) input.type = 'password'; }); root.querySelectorAll('[data-password]').forEach(button => { button.textContent = 'Show'; button.setAttribute('aria-pressed', 'false'); button.setAttribute('aria-label', `Show ${root.querySelector(`label[for="${button.dataset.password}"]`)?.textContent.toLowerCase() || 'password'}`); }); },
     showRecovery(root, prefix, code) {
       if (!code) return;
       const field = root.querySelector(`#${prefix}-recovery-code`); field.value = code;
@@ -348,7 +348,13 @@ const AccountApp = (() => {
           <label>Review a saved backup <input id="account-file" type="file" accept="application/json,.json"></label>
           <div id="account-user-actions" hidden><p>Signing out keeps unsynced work on this device for this account. Other signed-in players cannot use it.</p>
             <button type="button" id="account-signout">Sign out</button>
-            <details><summary>Password & recovery</summary><p>Confirm your current password to change it or replace your recovery code. A password change signs out your other sessions.</p>
+            <details><summary>View or change password</summary>
+              <p>Optionally remember your password on this browser. Anyone with access to this browser can reveal it. It is stored only here, separately on each site, and is not included in progress backups. Changes made on another device can make this saved copy outdated.</p>
+              <button type="button" id="account-remember-password">Remember current password on this device</button>
+              <button type="button" id="account-view-password">Show remembered password</button>
+              <button type="button" id="account-forget-password">Forget remembered password</button>
+              <input id="account-remembered-password" type="password" data-sensitive readonly autocomplete="off" aria-label="Remembered password" hidden>
+              <p>Confirm your current password to change it or replace your recovery code. A password change signs out your other sessions.</p>
               <input name="username" id="account-security-handle" autocomplete="username" hidden>
               ${AuthUI.password('account', 'current-password', 'Current password', 'current-password')}
               ${AuthUI.password('account', 'new-password', 'New password')}
@@ -377,10 +383,33 @@ const AccountApp = (() => {
       dialog.addEventListener('cancel', event => { if (!canClose()) event.preventDefault(); });
       dialog.addEventListener('close', () => { AuthUI.clear(dialog); profileOpener.focus(); });
       AuthUI.bind(dialog, 'account', mode => this.action(() => this.authenticate(mode)), () => this.render());
+      $('account-remember-password').onclick = () => this.action(async () => {
+        if (!this.signedIn || !$('account-current-password').reportValidity()) return;
+        const password = $('account-current-password').value;
+        await this.session.accountCredential('reauthenticate', password);
+        localStorage.setItem(this.passwordKey(), password);
+        AuthUI.clear(dialog);
+        this.message('Password remembered on this browser. Use Show remembered password to view it.');
+      });
+      $('account-view-password').onclick = () => {
+        const field = $('account-remembered-password');
+        if (!this.signedIn) return;
+        if (!field.hidden) { field.hidden = true; field.value = ''; $('account-view-password').textContent = 'Show remembered password'; return; }
+        try {
+          const password = localStorage.getItem(this.passwordKey());
+          if (!password) { this.message('Enter your current password below, then choose Remember current password on this device.'); return; }
+          field.value = password; field.type = 'text'; field.hidden = false;
+          $('account-view-password').textContent = 'Hide remembered password';
+        } catch { this.message('Browser storage is unavailable.'); }
+      };
+      $('account-forget-password').onclick = () => this.action(async () => {
+        localStorage.removeItem(this.passwordKey()); AuthUI.clear(dialog);
+        this.message('Remembered password removed from this browser.');
+      });
       $('account-change-password').onclick = () => this.action(async () => {
         for (const id of ['current-password', 'new-password', 'new-confirm']) if (!$(`account-${id}`).reportValidity()) return;
         if ($('account-new-password').value !== $('account-new-confirm').value) throw new Error('The passwords do not match.');
-        try { const result = await this.session.changePassword($('account-current-password').value, $('account-new-password').value); this.recoveryOwner = this.session.snapshot().user?.id; AuthUI.showRecovery(dialog, 'account', result?.recoveryCode); this.message('Password changed. Your other sessions are signed out.'); }
+        try { const result = await this.session.changePassword($('account-current-password').value, $('account-new-password').value); this.updateRememberedPassword($('account-new-password').value); this.recoveryOwner = this.session.snapshot().user?.id; AuthUI.showRecovery(dialog, 'account', result?.recoveryCode); this.message('Password changed. Your other sessions are signed out.'); }
         finally { AuthUI.clear(dialog); }
       });
       $('account-rotate-recovery').onclick = () => this.action(async () => {
@@ -403,7 +432,8 @@ const AccountApp = (() => {
       $('account-delete').onclick = () => this.action(async () => {
         if ($('account-delete-confirm').value !== 'DELETE') throw new Error('Type DELETE to confirm account deletion.');
         if (!$('account-delete-password').reportValidity()) return;
-        try { await this.controller.deleteAccount($('account-delete-password').value); } finally { AuthUI.clear(dialog); }
+        const passwordKey = this.passwordKey();
+        try { await this.controller.deleteAccount($('account-delete-password').value); localStorage.removeItem(passwordKey); } finally { AuthUI.clear(dialog); }
         $('account-delete-confirm').value = '';
         this.applyCurrent(); this.render(true); await this.loadHistory(); this.message('Your account was deleted. Guest play is available.');
       });
@@ -464,6 +494,7 @@ const AccountApp = (() => {
           : mode === 'recover' ? await this.session.recover(values.handle, values.code, values.password)
             : await this.session.login(values.handle, values.password);
         const user = this.session.snapshot().user;
+        this.updateRememberedPassword(values.password);
         this.recoveryOwner = user.id;
         if (mode === 'register') this.registrationHandle = values.handle.toLowerCase();
         // Show the one-time secret even if subsequent progress activation needs a retry.
@@ -472,6 +503,11 @@ const AccountApp = (() => {
         await this.defaultHandle();
         this.applyCurrent(); this.render(true); await this.loadHistory();
       } finally { AuthUI.clear(this.nodes.panel); }
+    }
+    passwordKey() { return `microgame-madness.remembered-password:${this.config.url}:${this.session.snapshot().user.id}`; }
+    updateRememberedPassword(password) {
+      try { const key = this.passwordKey(); if (localStorage.getItem(key) !== null) localStorage.setItem(key, password); }
+      catch { this.message('Password changed, but the remembered copy could not be updated.'); }
     }
     async defaultHandle(handle = this.registrationHandle) {
       if (!handle || this.controller.state().importRequired) return;
