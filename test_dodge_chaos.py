@@ -25,6 +25,23 @@ class ChaosTests(unittest.TestCase):
     def block(self, game, kind, **extra):
         return Block(game.x, game.y, ((0, 0),), CATALOG[kind]['color'], kind=kind, **extra)
 
+    def test_time_capsule_is_consumed_and_grants_shield_and_slowfall(self):
+        game = self.game()
+        game.lives = 5
+        block = self.block(game, 'time_capsule', speed_multiplier=0)
+        game.blocks = [block]
+        game.update(.01, set())
+        self.assertNotIn(block, game.blocks)
+        self.assertEqual(game.lives, 5)
+        self.assertTrue(game.shield)
+        self.assertAlmostEqual(game.slowfall_left, 3, delta=.02)
+        game.chaos_contact(self.block(game, 'time_capsule'))
+        self.assertEqual(game.slowfall_left, 3)
+        info = next(b for b in catalog() if b['id'] == 'time_capsule')
+        self.assertTrue(info['collectible'])
+        self.assertEqual(info['disposition'], 'helpful')
+        self.assertGreater(info['chance'], 0)
+
     def test_gamble_blocks_both_outcomes_and_exact_boundary(self):
         from unittest.mock import Mock
         for kind in ('coin_flip', 'all_or_nothing'):
@@ -318,7 +335,7 @@ class ChaosTests(unittest.TestCase):
         self.assertEqual(len(EXPANSION_TYPES), 30)
         names = {row[0] for row in EXPANSION_TYPES}
         self.assertEqual(len(names), 30)
-        self.assertEqual(names | {'second_wind', 'storm_shelter', 'backdraft'}, set(PICKUP_EFFECTS)|set(CONTACT_EFFECTS)|set(MOTION_BLOCKS)|set(TURRET_BLOCKS))
+        self.assertEqual(names | {'time_capsule', 'second_wind', 'storm_shelter', 'backdraft'}, set(PICKUP_EFFECTS)|set(CONTACT_EFFECTS)|set(MOTION_BLOCKS)|set(TURRET_BLOCKS))
         for kind in names:
             game = self.game()
             game.spawn_chaos(kind)
@@ -1365,7 +1382,7 @@ class ChaosTests(unittest.TestCase):
         self.assertEqual(block.warning_left, before)
 
     def test_nine_new_types_and_slowed_speed_limit(self):
-        self.assertEqual(len(CATALOG), 134)
+        self.assertEqual(len(CATALOG), 135)
         game = self.game()
         for elapsed in (0, 30, 200):
             game.elapsed = elapsed

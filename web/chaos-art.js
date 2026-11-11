@@ -6,6 +6,7 @@ const ChaosArt = (() => {
     thunder: 'M7 28C-2 28-2 14 6 13C3 3 16-2 21 7C29 3 34 13 29 18C36 25 28 31 23 28Z',
   };
   const paths = {
+    time_capsule: 'M16 2 28 7v10q-2 9-12 13Q6 26 4 17V7ZM11 9h10M11 23h10M12 9v4l8 6v4M20 9v4l-8 6v4',
     amber: 'M9 2h14l7 14-7 14H9L2 16ZM20 16a4 4 0 1 1-8 0 4 4 0 0 1 8 0M8 9l5-3M23 23l-4 3',
     anti_gravity: 'M16 29V3M6 13 16 3l10 10M5 27h5M22 27h5',
     target_lock: 'M27 16a11 11 0 1 1-22 0 11 11 0 0 1 22 0M16 1v10M16 21v10M1 16h10M21 16h10',
@@ -150,7 +151,7 @@ const ChaosArt = (() => {
     antidote: 'M10 4h12v6H10z M11 10l-3 5v12h16V15l-3-5 M16 16v7 M12.5 19.5h7',
     thorn: 'M13 28V8a3 3 0 0 1 6 0v20 M13 20H8q-3 0-3-3v-7 M19 16h5q3 0 3-3V7 M10 28h12 M10 11h3 M19 22h3 M2 13h3 M24 9h3',
   };
-  const helpfulKinds = new Set(['second_wind','storm_shelter','amber','bandage','medkit','detox','coolant','compass','battery','snowglobe','sweeper','oasis','clean_slate','ricochet_shield', 'sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
+  const helpfulKinds = new Set(['time_capsule','second_wind','storm_shelter','amber','bandage','medkit','detox','coolant','compass','battery','snowglobe','sweeper','oasis','clean_slate','ricochet_shield', 'sanctuary', 'heal', 'shield', 'antidote', 'bubble', 'hourglass', 'heartburst', 'mender', 'stasis', 'phoenix', 'aegis', 'mint', 'clockwork', 'repellent', 'lullaby']);
   function outlineColor(kind, ghost = false) {
     if (kind === 'thunder') return '#ff4055';
     if (['leafy','elite_leafy'].includes(kind)) return '#ffe45c';

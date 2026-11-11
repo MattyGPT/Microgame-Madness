@@ -4,6 +4,7 @@ from fractions import Fraction
 
 # One source for the in-game guide, spawn weights, colors and identifying glyphs.
 BLOCK_TYPES = (
+    ('time_capsule', 'Time Capsule', '#81dfdc', 'TC', 2, 'Rare', 'A harmless collectible: grants one shield and slows falling blocks by 40% for 3 seconds. Repeats refresh the slow effect without stacking. Consumed on contact.'),
     ('coin_flip', 'Coin Flip', '#f4d37b', '+/-', 2, 'Rare', 'One roll on contact: 50% chance to heal 2 HP (up to 8), or 50% chance to take 2 damage. Shields and contact protection can block the damage. Consumed after the roll.'),
     ('all_or_nothing', 'All or Nothing', '#d49cfa', 'A/N', 1, 'Very rare', 'One roll on contact: 50% chance to restore all missing HP, or 50% chance to die instantly, even through shields and protection. Healing does not clear status effects. Consumed after the roll.'),
     ('second_wind', 'Second Wind', '#65f2ba', 'SW+', 2, 'Rare', 'A harmless pickup: grants Regeneration for 4 seconds, restoring 1 HP each second, up to 8 HP. Repeats refresh the duration without stacking. Natural healing continues separately.'),
@@ -144,6 +145,7 @@ EXPANSION_TYPES = (
 )
 BLOCK_TYPES += EXPANSION_TYPES
 PICKUP_EFFECTS = {
+    'time_capsule': {'shield': True, 'timers': {'slowfall_left': 3}},
     'second_wind': {'regeneration': 4},
     'storm_shelter': {'timers': {'invulnerable': 3, 'repellent_left': 3}},
     'bandage': {'heal': 1},
