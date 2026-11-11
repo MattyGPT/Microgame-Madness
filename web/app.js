@@ -1311,8 +1311,14 @@ async function publishGlobalScore(entry) {
       return;
     }
     if (accountApp.signedIn) {
-      await accountApp.chain;
-      try { await accountApp.controller.flush(); $("leaderboard-submission").textContent = "Your account scores are synced."; }
+      await accountApp.settle();
+      try {
+        const state = await accountApp.controller.flush();
+        $("leaderboard-submission").textContent = state.pending
+          ? "Saved on this device. Your account still has scores waiting to sync."
+          : "Your account scores are synced.";
+        if (!$("global-panel").hidden) await loadGlobalScores();
+      }
       catch { $("leaderboard-submission").textContent = "Saved on this device. Sharing will resume when you reconnect."; }
       return;
     }
@@ -1331,6 +1337,15 @@ async function publishGlobalScore(entry) {
 }
 async function retryGlobalScores() {
   try {
+    await accountApp.ready;
+    if (accountApp.signedIn) {
+      await accountApp.settle();
+      const state = await accountApp.controller.flush();
+      $("leaderboard-submission").textContent = state.pending
+        ? "Saved on this device. Your account still has scores waiting to sync."
+        : "Your account scores are synced.";
+      return;
+    }
     if (!await syncGuestLeaderboardPrivacy()) return;
     const client = await leaderboardReady;
     if (!client.configured || !Object.keys(client.pending).length) return;
@@ -2306,7 +2321,6 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
-  updateCardMotionBudget(now);
   jackpotMachine.tick(now);
   animateChaosGuide(now);
   if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman"
@@ -3243,40 +3257,25 @@ function resizeGameArea() {
 }
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);
-// Keep all previews on fast devices. If sustained dropped frames show that the
-// decorations are too expensive, reserve detailed motion for the hovered or
-// keyboard-focused card for the rest of this visit. Do not oscillate as FPS recovers.
+// Idle cards stay animated. The game panel slows previews to quarter speed;
+// returning to the menu restores normal speed. Offscreen art does no work.
 const animatedGameCards = [...document.querySelectorAll(".game-card")];
 const visibleGameCards = new Set();
-let limitedCardMotion = false, cardMotionLastFrame = 0, cardMotionElapsed = 0;
-let cardMotionFrames = 0, cardMotionSlowFrames = 0, cardMotionPlaying = false;
-function updateCardMotionBudget(now) {
-  const playing = !!active;
-  if (playing !== cardMotionPlaying) {
-    cardMotionPlaying = playing;
-    syncCardDecorationVisibility();
-  }
-  const elapsed = now - cardMotionLastFrame;
-  cardMotionLastFrame = now;
-  if (!ready || document.hidden || playing || !visibleGameCards.size || elapsed > 250 || elapsed <= 0) {
-    cardMotionElapsed = cardMotionFrames = cardMotionSlowFrames = 0;
-    return;
-  }
-  if (limitedCardMotion) return;
-  cardMotionElapsed += elapsed;
-  cardMotionFrames++;
-  if (elapsed > 1000 / 40) cardMotionSlowFrames++;
-  if (cardMotionElapsed < 1500) return;
-  if (cardMotionSlowFrames / cardMotionFrames > .4) {
-    limitedCardMotion = true;
-    syncCardDecorationVisibility();
-  }
-  cardMotionElapsed = cardMotionFrames = cardMotionSlowFrames = 0;
-}
-function syncCardDecorationVisibility() {
+let cardPlaybackRate = 1;
+function syncCardPlaybackRate() {
   for (const card of animatedGameCards)
-    card.classList.toggle("card-effects-paused", document.hidden || cardMotionPlaying || !visibleGameCards.has(card)
-      || (limitedCardMotion && !card.matches(':hover, :focus-visible')));
+    for (const animation of card.getAnimations({ subtree: true }))
+      if (animation.playbackRate !== cardPlaybackRate) animation.updatePlaybackRate(cardPlaybackRate);
+}
+const gamePanelMotionObserver = new IntersectionObserver(entries => {
+  cardPlaybackRate = entries[0].isIntersecting ? .25 : 1;
+  syncCardPlaybackRate();
+}, { rootMargin: '0px 0px -35% 0px' });
+gamePanelMotionObserver.observe(document.querySelector('.game-main'));
+function syncCardDecorationVisibility() {
+  syncCardPlaybackRate();
+  for (const card of animatedGameCards)
+    card.classList.toggle("card-effects-paused", document.hidden || !visibleGameCards.has(card));
   if (guideCard.classList.contains('card-effects-paused') && chaosGuideScanner?.fullText)
     chaosGuideScanner.type(performance.now(), true);
 }
@@ -3289,11 +3288,47 @@ const cardDecorationObserver = new IntersectionObserver(entries => {
 });
 animatedGameCards.forEach(card => {
   cardDecorationObserver.observe(card);
-  for (const event of ['pointerenter', 'pointerleave', 'focus', 'blur'])
-    card.addEventListener(event, syncCardDecorationVisibility);
+  card.addEventListener('animationstart', syncCardPlaybackRate);
 });
 document.addEventListener("visibilitychange", syncCardDecorationVisibility);
 syncCardDecorationVisibility();
+
+// Observe individual decorative tiles, including ones rebuilt by filters.
+const decorationSelector = '.intro, [data-difficulty], .custom-tile, .achievement-card';
+const decorationVisibility = new Map();
+function syncOffscreenDecoration(element, visible) {
+  element.classList.toggle('decoration-paused', document.hidden || !visible);
+}
+const decorationObserver = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    decorationVisibility.set(entry.target, entry.isIntersecting);
+    syncOffscreenDecoration(entry.target, entry.isIntersecting);
+  }
+});
+function observeDecorationTree(root, removed = false) {
+  if (root.nodeType !== 1) return;
+  const elements = [...(root.matches(decorationSelector) ? [root] : []), ...root.querySelectorAll(decorationSelector)];
+  for (const element of elements) {
+    if (removed) { decorationObserver.unobserve(element); decorationVisibility.delete(element); }
+    else if (!decorationVisibility.has(element)) {
+      decorationVisibility.set(element, false);
+      syncOffscreenDecoration(element, false);
+      decorationObserver.observe(element);
+    }
+  }
+}
+observeDecorationTree(document.body);
+const decorationChanges = new MutationObserver(records => {
+  for (const record of records) {
+    record.removedNodes.forEach(node => observeDecorationTree(node, true));
+    record.addedNodes.forEach(node => observeDecorationTree(node));
+  }
+});
+for (const container of document.querySelectorAll('#difficulty-choices, #customs-room, #shop-room, #achievements-list'))
+  decorationChanges.observe(container, { childList: true, subtree: true });
+document.addEventListener('visibilitychange', () => {
+  for (const [element, visible] of decorationVisibility) syncOffscreenDecoration(element, visible);
+});
 guidePreviewBootstrap.stop();
 initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
 initializeChaosScreenKey();

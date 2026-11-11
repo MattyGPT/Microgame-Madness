@@ -3603,7 +3603,9 @@ html.account-reduced-motion .chaos-difficulty > strong { animation: none; }
 .game-card.card-effects-paused, .game-card.card-effects-paused::before,
 .game-card.card-effects-paused::after,
 .game-card.card-effects-paused *, .game-card.card-effects-paused *::before,
-.game-card.card-effects-paused *::after { animation-play-state: paused !important; }
+.game-card.card-effects-paused *::after,
+.decoration-paused, .decoration-paused::before, .decoration-paused::after,
+.decoration-paused *, .decoration-paused *::before, .decoration-paused *::after { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
   .arcade-card-scene *, .jukebox-metal-stop { animation: none !important; }
 }

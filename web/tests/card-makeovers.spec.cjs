@@ -17,34 +17,22 @@ test('new scenes remain decorative, respect reduced motion and pause offscreen',
   expect(await page.locator('.arcade-card-scene').evaluateAll(ns => ns.every(n => n.getAnimations({subtree:true}).length === 0))).toBe(true);
 });
 
-test('slow frames reduce idle decoration work while hover and keyboard previews still run', async ({ page }) => {
+test('cards slow during selection and return to full motion when scrolling back up', async ({ page }) => {
   await openGame(page);
   const key = page.locator('[data-game="keyboard"]');
   await key.scrollIntoViewIfNeeded();
   await page.mouse.move(0, 0);
-  await page.evaluate(() => {
-    limitedCardMotion = false;
-    cardMotionLastFrame = 1000;
-    cardMotionElapsed = cardMotionFrames = cardMotionSlowFrames = 0;
-    // One isolated stall must not disable the full set of decorations.
-    updateCardMotionBudget(1600);
-    if (limitedCardMotion) throw Error('An isolated stall reduced motion');
-    for (let time = 1650; time <= 3200; time += 50) updateCardMotionBudget(time);
-    if (!limitedCardMotion) throw Error('Sustained slow frames were ignored');
-  });
-  await expect(key).toHaveClass(/card-effects-paused/);
-  await key.hover();
   await expect(key).not.toHaveClass(/card-effects-paused/);
-  await page.mouse.move(0, 0);
-  await expect(key).toHaveClass(/card-effects-paused/);
-  await page.keyboard.press('Tab');
-  await key.focus();
+  const rates = () => key.evaluate(n => n.getAnimations({subtree:true}).map(a => a.playbackRate));
+  await expect.poll(async () => (await rates()).every(rate => rate === 1)).toBe(true);
+  await key.click();
+  await page.locator('#difficulty-choices').scrollIntoViewIfNeeded();
+  await expect.poll(async () => (await rates()).every(rate => rate === .25)).toBe(true);
+  await expect(page.locator('.intro')).toHaveClass(/decoration-paused/);
+  await key.scrollIntoViewIfNeeded();
+  await expect.poll(async () => (await rates()).every(rate => rate === 1)).toBe(true);
   await expect(key).not.toHaveClass(/card-effects-paused/);
-  await page.evaluate(() => {
-    active = true;
-    updateCardMotionBudget(performance.now());
-  });
-  await expect(key).toHaveClass(/card-effects-paused/);
+  await expect(page.locator('[data-difficulty="progressive"]')).toHaveClass(/decoration-paused/);
 });
 
 test('offscreen scanner does not mutate its preview every frame', async ({ page }) => {
