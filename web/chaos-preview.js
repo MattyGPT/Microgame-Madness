@@ -69,6 +69,9 @@ const guidePreviewBootstrap = (() => {
   const scanner = new GuideScanner.Scanner(document.querySelector('[data-game="guide"] .card-art'), JSON.parse(source.textContent));
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   scanner.tick(performance.now(), motion.matches, true);
-  const timer = setInterval(() => scanner.tick(performance.now(), motion.matches), 40);
-  return { scanner, stop() { clearInterval(timer); } };
+  let visible = false;
+  const observer = new IntersectionObserver(entries => { visible = entries[0].isIntersecting; });
+  observer.observe(scanner.root.closest('.game-card'));
+  const timer = setInterval(() => { if (visible) scanner.tick(performance.now(), motion.matches); }, 40);
+  return { scanner, stop() { clearInterval(timer); observer.disconnect(); } };
 })();

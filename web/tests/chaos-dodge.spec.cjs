@@ -67,6 +67,8 @@ test('guide preview changes on 2.5-second ticks and Chaos Cubies equip and persi
   await openGame(page);
   const preview=page.locator('[data-game="guide"] .guide-tab-preview');
   await expect(preview).toBeVisible();
+  await page.locator('[data-game="guide"]').hover();
+  await expect(page.locator('[data-game="guide"]')).not.toHaveClass(/card-effects-paused/);
   const timings=await page.evaluate(()=>{
     // Use an exact millisecond boundary so float rounding cannot turn 2500 into 2499.999…
     const before=chaosGuideLastChange=Math.floor(chaosGuideLastChange);
@@ -145,6 +147,7 @@ test('guide preview appears and cycles before the game engine has loaded', async
     await page.goto('/',{waitUntil:'commit'});
     const preview=page.locator('[data-game="guide"] .guide-tab-preview');
     await expect(preview).toBeVisible();
+    await preview.scrollIntoViewIfNeeded();
     await expect.poll(()=>preview.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
     await expect(page.locator('#runtime-status')).not.toContainText('All games ready');
     await preview.evaluate(img=>{

@@ -1,6 +1,9 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
+const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
+const jukeboxCard = jukeboxNote?.closest('.game-card');
+const guideCard = document.querySelector('[data-game="guide"]');
 const modes = {
   guide: {
     title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
@@ -1406,9 +1409,11 @@ function animateChaosGuide(now, initial = false) {
     }
     chaosGuideFrame = now;
   }
-  if (!chaosGuideScanner || document.hidden) return;
+  if (!chaosGuideScanner || document.hidden || (!initial &&
+      (!visibleGameCards.has(guideCard) || guideCard.classList.contains('card-effects-paused')))) return;
   chaosGuideScanner.lastChange = chaosGuideLastChange;
-  chaosGuideScanner.tick(now, trailReducedMotion.matches || !!saved.preferences?.reducedMotion, initial);
+  chaosGuideScanner.tick(now, trailReducedMotion.matches || !!saved.preferences?.reducedMotion
+    || guideCard.classList.contains('card-effects-paused'), initial);
   chaosGuideLastChange = chaosGuideScanner.lastChange;
 }
 function initializeChaosGuide(blocks) {
@@ -1427,7 +1432,7 @@ function initializeChaosGuide(blocks) {
   chaosGuideScanner.blocks = blocks;
   chaosGuideIcon = chaosGuideScanner.icon;
   chaosGuideLastChange = chaosGuideScanner.lastChange;
-  animateChaosGuide(performance.now());
+  animateChaosGuide(performance.now(), true);
   $("block-guide-grid").replaceChildren(...blocks.map(block => {
     const card = document.createElement("article");
     card.className = "block-guide-card";
@@ -2301,6 +2306,7 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
+  updateCardMotionBudget(now);
   jackpotMachine.tick(now);
   animateChaosGuide(now);
   if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman"
@@ -2335,11 +2341,12 @@ function frame(now) {
       draw(snapshot);
     } catch (error) { fail(error); }
   }
-  const noteIcon = document.querySelector('[data-game="jukebox"] .card-art');
-  if (noteIcon) {
-    const pulse = soundOn && !document.hidden && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
+  if (jukeboxNote) {
+    const pulse = soundOn && !document.hidden && visibleGameCards.has(jukeboxCard)
+      && !jukeboxCard.classList.contains('card-effects-paused') && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
       ? musicPlayer?.melodyPulse() || 0 : 0;
-    noteIcon.style.transform = `scale(${1 + pulse * .275})`;
+    const transform = `scale(${1 + pulse * .275})`;
+    if (jukeboxNote.style.transform !== transform) jukeboxNote.style.transform = transform;
   }
   lastFrame = now;
   requestAnimationFrame(frame);
@@ -3236,18 +3243,42 @@ function resizeGameArea() {
 }
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);
-guidePreviewBootstrap.stop();
-initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
-initializeChaosScreenKey();
-initialize();
-
-
-// Pause decorative card animations outside the viewport and in background tabs.
+// Keep all previews on fast devices. If sustained dropped frames show that the
+// decorations are too expensive, reserve detailed motion for the hovered or
+// keyboard-focused card for the rest of this visit. Do not oscillate as FPS recovers.
 const animatedGameCards = [...document.querySelectorAll(".game-card")];
 const visibleGameCards = new Set();
+let limitedCardMotion = false, cardMotionLastFrame = 0, cardMotionElapsed = 0;
+let cardMotionFrames = 0, cardMotionSlowFrames = 0, cardMotionPlaying = false;
+function updateCardMotionBudget(now) {
+  const playing = !!active;
+  if (playing !== cardMotionPlaying) {
+    cardMotionPlaying = playing;
+    syncCardDecorationVisibility();
+  }
+  const elapsed = now - cardMotionLastFrame;
+  cardMotionLastFrame = now;
+  if (!ready || document.hidden || playing || !visibleGameCards.size || elapsed > 250 || elapsed <= 0) {
+    cardMotionElapsed = cardMotionFrames = cardMotionSlowFrames = 0;
+    return;
+  }
+  if (limitedCardMotion) return;
+  cardMotionElapsed += elapsed;
+  cardMotionFrames++;
+  if (elapsed > 1000 / 40) cardMotionSlowFrames++;
+  if (cardMotionElapsed < 1500) return;
+  if (cardMotionSlowFrames / cardMotionFrames > .4) {
+    limitedCardMotion = true;
+    syncCardDecorationVisibility();
+  }
+  cardMotionElapsed = cardMotionFrames = cardMotionSlowFrames = 0;
+}
 function syncCardDecorationVisibility() {
   for (const card of animatedGameCards)
-    card.classList.toggle("card-effects-paused", document.hidden || !visibleGameCards.has(card));
+    card.classList.toggle("card-effects-paused", document.hidden || cardMotionPlaying || !visibleGameCards.has(card)
+      || (limitedCardMotion && !card.matches(':hover, :focus-visible')));
+  if (guideCard.classList.contains('card-effects-paused') && chaosGuideScanner?.fullText)
+    chaosGuideScanner.type(performance.now(), true);
 }
 const cardDecorationObserver = new IntersectionObserver(entries => {
   for (const entry of entries) {
@@ -3256,8 +3287,17 @@ const cardDecorationObserver = new IntersectionObserver(entries => {
   }
   syncCardDecorationVisibility();
 });
-animatedGameCards.forEach(card => cardDecorationObserver.observe(card));
+animatedGameCards.forEach(card => {
+  cardDecorationObserver.observe(card);
+  for (const event of ['pointerenter', 'pointerleave', 'focus', 'blur'])
+    card.addEventListener(event, syncCardDecorationVisibility);
+});
 document.addEventListener("visibilitychange", syncCardDecorationVisibility);
+syncCardDecorationVisibility();
+guidePreviewBootstrap.stop();
+initializeChaosGuide(JSON.parse($("chaos-bootstrap").textContent));
+initializeChaosScreenKey();
+initialize();
 
 // Seven reused actors draw from every sea creature before reshuffling the pool.
 const oceanSpecies = [...document.querySelectorAll('symbol[id^="ocean-"]')].map(n => n.id);

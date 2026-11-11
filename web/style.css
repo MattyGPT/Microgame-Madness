@@ -3600,6 +3600,8 @@ html.account-reduced-motion .chaos-difficulty > strong { animation: none; }
 @keyframes arcade-scene-equalizer { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
 @keyframes arcade-scene-scan { from { transform: translateY(0); opacity: .2; } to { transform: translateY(94px); opacity: .5; } }
 @keyframes jukebox-metal-glint { from { stop-color: #ffdff7; } to { stop-color: #fff2fc; } }
+.game-card.card-effects-paused, .game-card.card-effects-paused::before,
+.game-card.card-effects-paused::after,
 .game-card.card-effects-paused *, .game-card.card-effects-paused *::before,
 .game-card.card-effects-paused *::after { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
