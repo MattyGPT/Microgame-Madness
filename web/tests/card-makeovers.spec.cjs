@@ -49,3 +49,39 @@ test('offscreen scanner does not mutate its preview every frame', async ({ page 
   });
   expect(changes).toBe(0);
 });
+
+test('gameplay pause wins over scrolling and quarter-speed card previews', async ({ page }) => {
+  await openGame(page);
+  const key = page.locator('[data-game="keyboard"]');
+  await key.click();
+  await expect.poll(() => page.evaluate(() => cardPlaybackRate)).toBe(.25);
+  await page.evaluate(() => { active = true; gasterActive = true; updateCardGameplayPause(); });
+  await key.scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => cardPlaybackRate)).toBe(1);
+  await expect(key).toHaveClass(/card-effects-paused/);
+  expect(await key.evaluate(n => n.getAnimations({subtree:true}).every(a => a.playState === 'paused'))).toBe(true);
+  await page.locator('#difficulty-choices').scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => cardPlaybackRate)).toBe(.25);
+  expect(await page.locator('.game-card').evaluateAll(cards => cards.every(card =>
+    card.getAnimations({subtree:true}).every(animation => animation.playState === 'paused')))).toBe(true);
+  await page.evaluate(() => { active = false; gasterActive = false; updateCardGameplayPause(); });
+  await key.scrollIntoViewIfNeeded();
+  await expect(key).not.toHaveClass(/card-effects-paused/);
+  await expect.poll(() => key.evaluate(n => n.getAnimations({subtree:true}).every(a => a.playbackRate === 1))).toBe(true);
+});
+
+test('simultaneous achievement tiers share a bounded visible confetti budget', async ({ page }) => {
+  await openGame(page);
+  const result = await page.evaluate(() => {
+    document.getElementById('achievement-celebrations').replaceChildren();
+    celebrateAchievements(['bronze', 'silver', 'gold', 'rainbow'].map(tier => ({ tier })));
+    const layers = [...document.querySelectorAll('.achievement-confetti')];
+    const visible = layer => [...layer.children].filter(piece => !piece.hidden);
+    return { tiers: layers.length, particles: layers.flatMap(visible).length,
+      rainbowColors: new Set(visible(layers.find(layer => layer.dataset.tier === 'rainbow'))
+        .map(piece => piece.style.getPropertyValue('--confetti-color'))).size };
+  });
+  expect(result.tiers).toBe(4);
+  expect(result.particles).toBe(32);
+  expect(result.rainbowColors).toBe(6);
+});

@@ -305,8 +305,8 @@ test('all achievement tiers celebrate immediately, hold confetti four seconds, t
     if (tier === 'diamond') expect([...new Set(fills.map(fill => fill.expected))]).toEqual([
       'rgb(85, 221, 255)', 'rgb(169, 244, 255)', 'rgb(57, 186, 255)',
     ]);
-    const opacity = await layer.evaluate(el => {
-      const animation = el.getAnimations()[0];
+    const opacity = await layer.locator('i').first().evaluate(el => {
+      const animation = el.getAnimations().find(animation => animation.animationName === 'confetti-fade');
       animation.pause();
       animation.currentTime = 4000;
       const held = Number(getComputedStyle(el).opacity);

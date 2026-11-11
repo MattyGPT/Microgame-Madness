@@ -359,7 +359,6 @@ h1 em {
 .achievement-confetti {
   position: absolute;
   inset: 0;
-  animation: confetti-fade 5s linear forwards;
 }
 .achievement-confetti i {
   position: absolute;
@@ -368,8 +367,9 @@ h1 em {
   width: 9px;
   height: 14px;
   background: linear-gradient(135deg, var(--confetti-color), #ffffff99, var(--confetti-color));
-  animation: confetti-fall var(--fall) linear infinite;
-  animation-delay: var(--delay);
+  /* Fade small particles, not a separate full-screen surface for every tier. */
+  animation: confetti-fall var(--fall) linear var(--delay) infinite,
+    confetti-fade 5s linear forwards;
 }
 .achievement-confetti[data-tier="crystal"] i,
 .achievement-confetti[data-tier="diamond"] i,
@@ -3605,7 +3605,10 @@ html.account-reduced-motion .chaos-difficulty > strong { animation: none; }
 .game-card.card-effects-paused *, .game-card.card-effects-paused *::before,
 .game-card.card-effects-paused *::after,
 .decoration-paused, .decoration-paused::before, .decoration-paused::after,
-.decoration-paused *, .decoration-paused *::before, .decoration-paused *::after { animation-play-state: paused !important; }
+.decoration-paused *, .decoration-paused *::before, .decoration-paused *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   .arcade-card-scene *, .jukebox-metal-stop { animation: none !important; }
 }

@@ -677,6 +677,17 @@ function empyroriteGem() {
     + '<path d="m57 3 2 6 6 2-6 2-2 6-2-6-6-2 6-2ZM10 46l2 4 4 2-4 2-2 4-2-4-4-2 4-2Z" fill="#d6fff1"/>';
   return gem;
 }
+function syncCelebrationParticleBudget() {
+  const layers = [...$("achievement-celebrations").children];
+  // Keep a full single-tier burst. Overlapping awards share a particle budget,
+  // with at least six pieces per tier so every Rainbow color remains visible.
+  const perTier = layers.length <= 1 ? 40 : Math.max(6, Math.floor(32 / layers.length));
+  for (const layer of layers)
+    [...layer.children].forEach((piece, index) => {
+      // Do not restart a hidden piece's fade when another tier expires.
+      if (index >= perTier) piece.hidden = true;
+    });
+}
 function celebrateAchievements(earned) {
   if (!earned.length) return;
   // One clear ding for simultaneous awards; one visual layer per tier.
@@ -708,8 +719,10 @@ function celebrateAchievements(earned) {
     celebrationTimers.set(tier, setTimeout(() => {
       layer.remove();
       celebrationTimers.delete(tier);
+      syncCelebrationParticleBudget();
     }, 5000));
   }
+  syncCelebrationParticleBudget();
 }
 function dismissAchievementToast(toast) {
   clearTimeout(activeAchievementToasts.get(toast));
@@ -2321,6 +2334,7 @@ function fail(error) {
   $("overlay-action").onclick = () => location.reload();
 }
 function frame(now) {
+  updateCardGameplayPause();
   jackpotMachine.tick(now);
   animateChaosGuide(now);
   if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman"
@@ -3258,11 +3272,21 @@ function resizeGameArea() {
 window.addEventListener("resize", resizeGameArea);
 window.visualViewport?.addEventListener("resize", resizeGameArea);
 // Idle cards stay animated. The game panel slows previews to quarter speed;
-// returning to the menu restores normal speed. Offscreen art does no work.
+// returning to the menu restores normal speed. Live rounds override both with
+// a pause, and offscreen art does no work.
 const animatedGameCards = [...document.querySelectorAll(".game-card")];
 const visibleGameCards = new Set();
 let cardPlaybackRate = 1;
+let cardsPausedForGameplay = false;
+function updateCardGameplayPause() {
+  if (cardsPausedForGameplay === !!active) return;
+  cardsPausedForGameplay = !!active;
+  syncCardDecorationVisibility();
+  for (const [element, visible] of decorationVisibility) syncOffscreenDecoration(element, visible);
+}
 function syncCardPlaybackRate() {
+  // Changing playback speed must never resume a card while a round is active.
+  if (active) return;
   for (const card of animatedGameCards)
     for (const animation of card.getAnimations({ subtree: true }))
       if (animation.playbackRate !== cardPlaybackRate) animation.updatePlaybackRate(cardPlaybackRate);
@@ -3275,7 +3299,7 @@ gamePanelMotionObserver.observe(document.querySelector('.game-main'));
 function syncCardDecorationVisibility() {
   syncCardPlaybackRate();
   for (const card of animatedGameCards)
-    card.classList.toggle("card-effects-paused", document.hidden || !visibleGameCards.has(card));
+    card.classList.toggle("card-effects-paused", active || document.hidden || !visibleGameCards.has(card));
   if (guideCard.classList.contains('card-effects-paused') && chaosGuideScanner?.fullText)
     chaosGuideScanner.type(performance.now(), true);
 }
@@ -3297,7 +3321,7 @@ syncCardDecorationVisibility();
 const decorationSelector = '.intro, [data-difficulty], .custom-tile, .achievement-card';
 const decorationVisibility = new Map();
 function syncOffscreenDecoration(element, visible) {
-  element.classList.toggle('decoration-paused', document.hidden || !visible);
+  element.classList.toggle('decoration-paused', active || document.hidden || !visible);
 }
 const decorationObserver = new IntersectionObserver(entries => {
   for (const entry of entries) {
