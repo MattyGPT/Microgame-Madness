@@ -140,7 +140,7 @@ const modes = {
     category: "06 / ATTACK PRACTICE",
     art: "",
     heading: "Choose your attack. Or shuffle them all.",
-    copy: "Start with 15 HP and a one three-second countdown at the start. Repeat one pattern or face all seven in Random Order. Every cycle has a half-second break and resets your turtle to its starting position. Body and arm contact still kills instantly.",
+    copy: "Start with 15 HP and one three-second countdown at the start. Repeat one pattern or face all seven in Random Order. Every cycle has a half-second break and resets your turtle to its starting position. Body and arm contact still kills instantly.",
     accent: "#ffe066",
     controls: "Arrows move · F shoots · E counters · D pauses · Esc picks another attack",
     choiceLabel: "Choose an attack to load",
@@ -202,7 +202,7 @@ for (const [attack, names] of Object.entries(wrathVariants)) {
     magenta_fingers: ["15% larger counter radius, 15% longer counter window, 15% shorter cooldown; fingers move and spawn 15% slower.", "Fingers move and spawn 25% faster; the attack lasts 20% longer. Standard counters."],
     chaos: ["Projectiles move and spawn 30% slower; the attack is 20% shorter.", "40% more projectiles per volley (seven instead of five). Projectiles move and spawn 25% faster; the attack lasts 20% longer."],
     royal_slams: ["25% slower, extra recovery between slams, 20% narrower slam/fire areas, and lots of warning marks. Damage is unchanged.", "Blind Rage: 20% faster, 11 randomized slams, random roar/fire bursts, plus Center Crush, Split Strike, and Low Sweep. No ground warnings—read the hand gestures. Your turtle moves 20% faster."],
-    haunted_quadrants: ["Spooks move 50% slower. One active quadrant at a time.", "Two opposite spooks move 28.25% faster than Normal (5% slower than before). Danger reaches the center—move into a safe quadrant during the warning."],
+    haunted_quadrants: ["Spooks move 50% slower. One active quadrant at a time.", "Two opposite spooks move 28.25% faster than Normal. Danger reaches the center—move into a safe quadrant during the warning."],
     random_order: ["Shuffle all seven Easy variants, with each attack's easier rules.", "Shuffle all seven Hard variants, including Terror Rings, Twin Terrors, and Blind Rage."],
   }[attack];
   for (const [index, level] of ["easy", "hard"].entries())

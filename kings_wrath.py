@@ -295,6 +295,8 @@ class KingsWrath(PumpkinKing):
             if self.practice_attack is None:
                 return f"GET READY — {seconds} · NEXT: {ATTACK_NAMES[self.attack_index]}"
             return f"GET READY — {seconds} · POSITION YOUR FINGERS"
+        if self.stage.name == "scare_ready" and self.variant == "hard":
+            return f"GET IN POSITION — TOP LEFT + BOTTOM RIGHT FIRST · {max(0, self.stage.duration-self.stage_age):.1f}s"
         if self.eyes_only_color:
             return "WATCH HIS EYES — FOLLOW THE COLOR"
         if self.stage.name == "memory":
