@@ -4,9 +4,9 @@ const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 
 test("welcome achievement fades, persists once, and collection tabs work", async ({ page }, testInfo) => {
-  await openGame(page);
-  await page.evaluate(() => localStorage.removeItem('microgame-madness.v1'));
-  await page.reload();
+  // Each test has a fresh context. Observe the initial award before runtime loading
+  // can outlast its toast; clearing localStorage does not clear the account database.
+  await page.goto('/');
   const toast = page.locator('#achievement-toast');
   await expect(toast).toContainText('Welcome to Microgame Madness!');
   await expect(page.locator('.achievement-confetti[data-tier="bronze"] i')).toHaveCount(40);
