@@ -1,0 +1,142 @@
+:root {
+  color-scheme: dark;
+  --bg: #101315;
+  --panel: #191d20;
+  --panel-alt: #1f2427;
+  --line: #343a3c;
+  --grid: #2a3032;
+  --muted: #a4aba7;
+  --ink: #f1f3e9;
+  --lime: #c6f783;
+  --amber: #fbbf24;
+  --teal: #5eead4;
+  --danger: #fb7185;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 24px 20px 64px;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+main, .masthead, .gate, .status { max-width: 1180px; margin-inline: auto; }
+h1 { font-size: clamp(26px, 4vw, 38px); margin: 2px 0 10px; letter-spacing: -0.02em; }
+h2 { font-size: 17px; margin: 0 0 6px; letter-spacing: -0.01em; }
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.9em; background: var(--panel-alt); padding: 1px 5px; border-radius: 4px;
+}
+.eyebrow {
+  margin: 0; color: var(--lime); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.lede { margin: 0; color: var(--muted); max-width: 74ch; }
+.provenance {
+  margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums;
+}
+.status { margin: 20px auto 0; font-size: 14px; color: var(--muted); }
+.status[data-kind="error"] { color: var(--danger); }
+
+.gate {
+  margin-top: 22px; padding: 20px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; max-width: 620px;
+}
+.gate p { color: var(--muted); margin: 8px 0 16px; }
+.gate label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.token-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.hint { margin: 10px 0 0; font-size: 12.5px; }
+
+input, select, button { font: inherit; color: inherit; }
+input, select {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 11px; min-width: 0;
+}
+input { flex: 1 1 260px; }
+button {
+  background: var(--lime); color: #14180f; border: 1px solid transparent;
+  border-radius: 8px; padding: 9px 16px; font-weight: 700; cursor: pointer;
+}
+button.quiet { background: transparent; color: var(--muted); border-color: var(--line); font-weight: 600; }
+button:hover { filter: brightness(1.06); }
+button.quiet:hover { color: var(--ink); border-color: var(--muted); }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+.controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 22px 0 18px; padding: 14px 16px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.controls label { font-size: 13px; font-weight: 600; color: var(--muted); }
+.window-note { margin: 0; flex: 1 1 320px; font-size: 12.5px; color: var(--muted); }
+
+.stats {
+  display: grid; gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)); margin-bottom: 18px;
+}
+.stats .stat { background: var(--panel); padding: 14px 16px; }
+.stats dt { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.stats dd { margin: 4px 0 0; font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stats .stat-note { font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 4px; }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px; margin-bottom: 16px;
+}
+.finding { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; max-width: 88ch; }
+figure { margin: 0 0 8px; }
+figcaption { margin-top: 8px; font-size: 12.5px; color: var(--muted); max-width: 88ch; }
+.chart { width: 100%; overflow-x: auto; }
+.chart svg { display: block; width: 100%; height: auto; min-width: 520px; }
+.empty { color: var(--muted); font-size: 13.5px; margin: 8px 0; }
+
+svg .gridline line { stroke: var(--grid); stroke-width: 1; }
+svg .baseline { stroke: var(--line); stroke-width: 1; }
+svg .axis { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+svg .axis-title {
+  fill: var(--muted); font-size: 10.5px; letter-spacing: 0.07em; text-transform: uppercase;
+}
+svg .end-label { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+svg .bar-label { fill: var(--ink); font-size: 12.5px; }
+svg .bar-value { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+svg .mark:hover rect, svg .mark:hover circle { stroke: var(--ink); stroke-width: 1.5; }
+
+.legend { display: flex; gap: 18px; flex-wrap: wrap; list-style: none; padding: 0; margin: 0 0 10px; }
+.legend li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); }
+.swatch {
+  width: 15px; height: 15px; border-radius: 3px; background: var(--swatch);
+  border: 1px solid rgba(0, 0, 0, 0.35); flex: none;
+}
+.swatch-amber {
+  background-image: repeating-linear-gradient(45deg, transparent 0 3px, var(--panel) 3px 5.5px);
+}
+
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+caption {
+  text-align: left; color: var(--muted); font-size: 12.5px; padding-bottom: 10px; max-width: 88ch;
+}
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+thead th {
+  position: sticky; top: 0; background: var(--panel-alt); font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); z-index: 1;
+}
+tbody th { font-weight: 600; }
+.num { text-align: right; }
+thead .num { text-align: right; }
+tbody tr:hover { background: var(--panel-alt); }
+
+.caveats { margin-top: 26px; color: var(--muted); font-size: 13.5px; }
+.caveats h2 { color: var(--ink); }
+.caveats ul { padding-left: 20px; margin: 8px 0; }
+.caveats li { margin-bottom: 7px; max-width: 92ch; }
+
+@media (max-width: 640px) {
+  body { padding: 18px 12px 48px; }
+  .panel, .controls, .gate { padding: 14px; }
+  .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .stats dd { font-size: 22px; }
+}

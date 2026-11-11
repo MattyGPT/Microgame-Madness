@@ -281,6 +281,7 @@ Change shared rules once, then test and rebuild. **Do not edit `dist/`**: it is 
 | `scores.py` | Desktop score persistence |
 | `web/bridge.py` | Browser session adapter and Canvas drawing commands |
 | `web/leaderboards.js`, `supabase/migrations/` | Shared rankings client, guest identity, retry queue, and database access rules |
+| `web/usage.js`, `scripts/usage_report.mjs` | Aggregate visit/login/per-game counters and the operator report; see [usage analytics](usage-analytics.md) |
 | `web/music.js` | Original chiptune and rock scores, synthesis, shuffled playback, and music transitions |
 | `web/effects.js` | Bit-crushed death sound, cinematic stereo effects, and playback synchronized to animation |
 | `web/achievements.js` | Achievement catalog, progress rules, and profile points |

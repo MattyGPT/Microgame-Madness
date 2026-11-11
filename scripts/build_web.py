@@ -109,7 +109,7 @@ def build():
     finally:
         sys.path.pop(0)
     html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
-    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
@@ -122,6 +122,15 @@ def build():
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     shutil.copytree(ROOT / "web" / "accounts" / "tours", OUTPUT / "accounts" / "tours")
+    # The operator dashboard ships unlinked: nothing in the arcade references it.
+    (OUTPUT / "ops").mkdir()
+    for name in ("usage.html", "usage.css", "usage.js"):
+        shutil.copy2(ROOT / "web" / "ops" / name, OUTPUT / "ops" / name)
+    ops_html = (OUTPUT / "ops" / "usage.html").read_text()
+    for name in ("usage.css", "usage.js"):
+        version = hashlib.sha256((OUTPUT / "ops" / name).read_bytes()).hexdigest()[:12]
+        ops_html = ops_html.replace(f'"./{name}"', f'"./{name}?v={version}"')
+    (OUTPUT / "ops" / "usage.html").write_text(ops_html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
     python_dir = OUTPUT / "python"
     python_dir.mkdir()

@@ -15,6 +15,8 @@ async function mockGlobalLeaderboards(page, service) {
     if (service.offline) return route.fulfill({ status: 503, headers, json: {} });
     const body = request.method() === 'GET' ? {} : request.postDataJSON();
     if (request.url().endsWith('/get_account_seasons')) return route.fulfill({ headers, json: [] });
+    // Aggregate usage counters share this project but are not ranking traffic.
+    if (request.url().endsWith('/rpc/record_usage')) return route.fulfill({ headers, json: 1 });
     if (request.url().endsWith('/auth/v1/user')) {
       const id = (request.headers().authorization || '').replace('Bearer ', '');
       return route.fulfill({ headers, json: { id, is_anonymous: true } });

@@ -98,6 +98,8 @@ Deletion first writes a permanent minimal owner-ID tombstone, hides/deletes priv
 
 The tombstone retains an opaque UUID and deletion time to prevent stale-session resurrection, not an email or gameplay history. Account history, wallet records, and receipts remain until account deletion. There is no automatic anonymous-account cleanup or raw-event compaction in this release. Decide anonymous cleanup, operational logs, and backup expiry policy before launch; backup retention is managed by the deployment, not this migration.
 
+Aggregate usage counters live separately in `stats_private`, are not linked to an owner, and survive account deletion because nothing ties them to one. They are operator-readable only. See [usage analytics](usage-analytics.md) for what they hold, how to read them, and how to set a retention window.
+
 ## Disable writes safely
 
 Server-side controls accept the string `false` to pause a category:
