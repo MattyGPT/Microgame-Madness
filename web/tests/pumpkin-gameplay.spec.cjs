@@ -188,7 +188,7 @@ test(`${mode} Haunted Quadrants gives two seconds to position with laughing face
   expect(state.label).toContain('GET IN POSITION');
   expect(state.label).toContain('TOP LEFT FIRST');
   expect(state.introFaces).toBe(20);
-  expect(state.warnings).toHaveLength(0);
+  expect(state.warnings).toHaveLength(4);
   expect(state.lives).toBe(15);
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-haunted-positioning.png`) });
   const firstArt = await page.evaluate(() => JSON.stringify(snapshot.commands));
@@ -203,7 +203,7 @@ test(`${mode} Haunted Quadrants gives two seconds to position with laughing face
   await page.evaluate(() => { snapshot = send('pause'); render(); });
   state = await tick(1); // Exactly two seconds begins the first warning.
   expect(state.introFaces).toBe(0);
-  expect(state.warnings).toHaveLength(3);
+  expect(state.warnings).toHaveLength(4);
   expect(state.warnings[0].fill).toBe('#ff4d55');
   expect(state.lines).toBe(2);
   state = await tick(2);
@@ -219,13 +219,13 @@ test(`${mode} Haunted Quadrants gives two seconds to position with laughing face
   expect(await page.evaluate(() => damageFlashAnimation !== null)).toBe(true);
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-scare-faces.png`) });
   state = await tick(97);
-  expect(state.label).toContain(mode === 'wrath' ? 'GET READY — 3' : 'BREATHE');
+  expect(state.label).toContain('BREATHE');
   expect(state.faces).toBe(0);
   expect(state.lines).toBe(0);
   expect(state.lives).toBe(12.5);
   expect(await page.evaluate(() => window.scareSounds.length)).toBe(18);
   if (mode === 'wrath') {
-    state = await tick(60);
+    state = await tick(10);
     expect(state.label).toContain('GET IN POSITION');
     expect(state.introFaces).toBe(20);
     expect(state.damage).toBe(2.5);

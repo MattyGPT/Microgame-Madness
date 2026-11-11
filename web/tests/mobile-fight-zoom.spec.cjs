@@ -8,6 +8,7 @@ test('pinch zoom preserves every fight canvas and does not force scrolling',asyn
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});
   await page.evaluate(mode=>selectGame(mode),mode);
   await page.locator('#difficulty-choices [data-difficulty]').first().click();
+  if(mode==='wrath') await page.locator('[data-difficulty="color_memory"]').click();
   await expect(page.locator('#game-canvas')).toBeVisible();
   await page.waitForTimeout(120);
   const before=await size();

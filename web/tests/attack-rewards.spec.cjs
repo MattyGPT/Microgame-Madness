@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => {
   });
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await expect.poll(() => page.evaluate(() => !accountApp?.blocked)).toBe(true);
 });
 
 async function clearCelebrations(page) {
@@ -23,7 +24,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
     attackTestRuntime.runPython('from bridge import session\ngame = session.game\ngame.invulnerable = 1000000\ngame.touches_king = lambda: False\nfor _ in range(4):\n    game.begin_attack(1)\n    game.update(6, set())');
     snapshot = send('tick', { dt: 0 }); render();
     selectGame('wrath'); startGame('bone_gauntlet'); active = false;
-    attackTestRuntime.runPython('game = session.game\ngame.invulnerable = 1000000\ngame.touches_king = lambda: False\ngame.update(45, set())');
+    attackTestRuntime.runPython('game = session.game\ngame.invulnerable = 1000000\ngame.touches_king = lambda: False\ngame.update(35, set())');
     snapshot = send('tick', { dt: 0 }); render();
   });
   expect(await page.evaluate(() => saved.achievements.stats.survive_pumpkin_bone_gauntlet)).toBe(9);
@@ -35,6 +36,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await expect.poll(() => page.evaluate(() => !accountApp?.blocked)).toBe(true);
   await page.evaluate(() => {
     selectGame('wrath'); startGame('bone_gauntlet'); active = false;
     attackTestRuntime.runPython('from bridge import session\ngame = session.game\ngame.invulnerable = 1000000\ngame.touches_king = lambda: False\ngame.update(9, set())');
@@ -81,5 +83,6 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await expect.poll(() => page.evaluate(() => !accountApp?.blocked)).toBe(true);
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'attack_core_photon_rain');
 });

@@ -362,6 +362,7 @@ test("ROCKNROY and The King's Wrath work together and restore the boss theme", a
   await page.locator('[data-game="wrath"]').click();
   await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
   await page.locator('[data-difficulty="color_memory"]').click();
+  await page.locator('[data-difficulty="color_memory"]').click();
   await expect(page.locator('#game-canvas')).toBeVisible();
   expect(await page.evaluate(() => snapshot.mode)).toBe('wrath');
   expect(await page.evaluate(() => musicPlayer.theme)).toMatch(/^rock_/);
