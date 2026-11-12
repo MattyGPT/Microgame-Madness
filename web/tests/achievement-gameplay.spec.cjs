@@ -4,8 +4,9 @@ const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 
 test("welcome achievement fades, persists once, and collection tabs work", async ({ page }, testInfo) => {
-  // Each test has a fresh context. Observe the initial award before runtime loading
-  // can outlast its toast; clearing localStorage does not clear the account database.
+  // Freeze the toast lifetime while runtime loading and assertions run on busy CI.
+  await page.clock.install();
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await page.goto('/');
   const toast = page.locator('#achievement-toast');
   await expect(toast).toContainText('Welcome to Microgame Madness!');
@@ -16,7 +17,9 @@ test("welcome achievement fades, persists once, and collection tabs work", async
   expect(box.y).toBeLessThan(20);
   await page.screenshot({ path: testInfo.outputPath('welcome-achievement.png') });
   await expect(page.locator('#profile-score')).toHaveText('10');
-  await expect(toast).toBeHidden({ timeout: 7000 });
+  await page.clock.runFor(4500);
+  await expect(toast).toBeHidden();
+  await page.clock.resume();
   await page.locator('#achievements-tab').click();
   await expect(page.locator('#achievements-panel')).toBeVisible();
   await expect(page.locator('#scores-panel')).toBeHidden();
