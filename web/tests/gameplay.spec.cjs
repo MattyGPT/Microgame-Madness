@@ -191,7 +191,7 @@ test('Key Rush touch keyboard handles case and symbols without opening the devic
   await page.route('**/python/bridge.py', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace(
-      'sequence, seconds = make_round(self.completed + 1)', 'sequence, seconds = ("aA7?", 600)') });
+      'sequence, seconds = make_round(self.completed + 1, self.difficulty)', 'sequence, seconds = ("aA7?", 600)') });
   });
   await openGame(page);
   await page.locator('[data-game="keyboard"]').click();
