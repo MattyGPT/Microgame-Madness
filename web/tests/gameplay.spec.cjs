@@ -62,7 +62,7 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   page.on("pageerror", (error) => errors.push(error.message));
   await page.locator('[data-game="keyboard"]').click();
   await expect(page.locator("#keyboard-game")).toBeHidden();
-  await expect(page.locator("#difficulty-choices button")).toHaveCount(1);
+  await expect(page.locator("#difficulty-choices button")).toHaveCount(2);
   await page.locator('[data-difficulty="progressive"]').click();
   const sequence = await page.locator("#sequence").innerText();
   if (testInfo.project.name === "mobile") {

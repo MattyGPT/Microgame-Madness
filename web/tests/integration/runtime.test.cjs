@@ -27,6 +27,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     ["geomayhem", "level_1"],
     ["geomayhem", "level_10"],
     ["keyboard", "progressive"],
+    ["keyboard", "endurance"],
     ["dodge", "merciless"],
     ["dodge", "impossible"],
     ["boss", "impossible"],

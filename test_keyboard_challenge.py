@@ -56,6 +56,13 @@ class KeyboardTests(unittest.TestCase):
                 make_round(level)
             self.assertEqual(choose.call_args.args[0], expected)
 
+    def test_endurance_never_increases_length_or_shortens_timer(self):
+        for level in (1, 3, 9, 30, 1000, 100000):
+            sequence, seconds = make_round(level, "endurance")
+            self.assertEqual(len(sequence), 6)
+            self.assertEqual(seconds, 8.0)
+            self.assertTrue(set(sequence) <= set(string.ascii_lowercase + string.digits))
+
     def test_menu_routes_new_mode(self):
         with patch("builtins.input", side_effect=["4", "3"]), patch("hangman.start_keyboard_challenge") as start, redirect_stdout(io.StringIO()):
             main_menu()

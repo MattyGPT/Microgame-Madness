@@ -3,10 +3,15 @@
 import random
 import string
 
-def make_round(level):
-    """Increase length, add new key types, and gradually reduce the time limit."""
+def make_round(level, difficulty="progressive"):
+    """Generate progressive challenges or fixed six-character endurance rounds."""
     if level < 1:
         raise ValueError("Level must be positive.")
+    if difficulty == "endurance":
+        alphabet = string.ascii_lowercase + string.digits
+        return "".join(random.choice(alphabet) for _ in range(6)), 8.0
+    if difficulty != "progressive":
+        raise ValueError("Unknown Key Rush mode.")
     alphabet = "asdfjkl"
     if level >= 3:
         alphabet = string.ascii_lowercase

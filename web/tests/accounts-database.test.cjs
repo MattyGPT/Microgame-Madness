@@ -15,7 +15,7 @@ async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || !f.includes('combined_leaderboards') && !f.includes('wrath_variants')) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('wrath_variants')))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -348,6 +348,19 @@ test('scores saved before combined migration are reweighted without rewriting th
   await role('anon');
   const rows=(await db.query("select * from public.get_game_leaderboard('boss')")).rows;
   assert.equal(rows.length,1); assert.equal(rows[0].score,15); // round(10 + 2×2.25)
+});
+
+ test('Endurance global rounds count at half the Progressive rate', async t => {
+  const { db, role, call } = await setup(t);
+  await role('authenticated', first);
+  await call('submit_leaderboard_run', ['endurance-1','keyboard','endurance','Typist',10]);
+  const board = async () => (await db.query("select * from public.get_game_leaderboard('keyboard')")).rows;
+  assert.equal((await board())[0].score,5);
+  await call('submit_leaderboard_run', ['progressive-1','keyboard','progressive','Typist',10]);
+  assert.equal((await board())[0].score,15);
+  // Retries must not award the same run twice.
+  await call('submit_leaderboard_run', ['endurance-1','keyboard','endurance','Typist',10]);
+  assert.equal((await board())[0].score,15);
 });
 
 

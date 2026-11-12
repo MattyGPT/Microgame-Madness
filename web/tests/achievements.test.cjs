@@ -628,3 +628,30 @@ test('Gaster remix medal requires audible music and unlocked, equipped Gaster, a
   assert.equal(restored.hearMusic('gaster_remix', 'gaster', true).changed, false);
   assert.equal(restored.score, tracker.score);
 });
+
+test('Endurance cannot unlock Key Rush medals or Cubies, including through restored progress', () => {
+  const Customs = require('../customs.js');
+  let tracker = new Tracker();
+  const keyRushIds = catalog.filter(item => item.id === 'play_keyboard' || item.id.startsWith('typing_')).map(item => item.id);
+  const keyRushCubies = Customs.catalog.filter(item => item.achievements.some(id => keyRushIds.includes(id)));
+  assert.ok(keyRushCubies.length >= 5);
+  tracker.start('keyboard', 'endurance');
+  for (const over of [false, true]) {
+    tracker.observe({ mode: 'keyboard', difficulty: 'endurance', score: 1000, over, won: false });
+    for (const id of keyRushIds) assert.equal(tracker.data.unlocked[id], undefined);
+    assert.equal(tracker.data.stats.typingBest, 0);
+    for (const item of keyRushCubies)
+      assert.equal(Customs.unlocked(item, tracker.data.unlocked, []), false);
+  }
+  tracker = new Tracker(JSON.parse(JSON.stringify(tracker.data)));
+  tracker.start('keyboard', 'progressive');
+  tracker.observe({ mode: 'keyboard', difficulty: 'progressive', score: 5, over: false });
+  assert.ok(tracker.data.unlocked.play_keyboard);
+  assert.ok(tracker.data.unlocked.typing_5);
+  assert.equal(tracker.data.unlocked.typing_10, undefined);
+  tracker.start('keyboard', 'endurance');
+  tracker.observe({ mode: 'keyboard', difficulty: 'endurance', score: 1000, over: true, won: false });
+  assert.equal(tracker.data.stats.typingBest, 5);
+  assert.ok(tracker.data.unlocked.typing_5);
+  assert.equal(tracker.data.unlocked.typing_10, undefined);
+});

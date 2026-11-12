@@ -144,12 +144,16 @@ test('Puzzle Cube turns independent layers, loops seamlessly, and stays still wi
   await page.setContent(`<style>${css}</style><div style="width:145px;height:145px;margin:100px auto">${Customs.svg(item)}</div>`);
   const inspect = phase => page.evaluate(phase => {
     document.getAnimations().forEach(animation => {
-      animation.pause(); animation.currentTime = animation.animationName === 'custom-float' ? 0 : animation.effect.getTiming().duration * phase;
+      animation.pause(); animation.currentTime = ['custom-float', 'model-float'].includes(animation.animationName) ? 0 : animation.effect.getTiming().duration * phase;
     });
     return [...document.querySelectorAll('.puzzle-layer')].map(el => getComputedStyle(el).transform);
   }, phase);
   await expect(page.locator('.puzzle-block')).toHaveCount(27);
-  await expect(page.locator('.puzzle-block .puzzle-face')).toHaveCount(162);
+  // Only the 54 exterior tiles remain: internal block walls caused stray
+  // gray planes during turns. Four continuous caps seal the slice interfaces.
+  await expect(page.locator('.puzzle-block .puzzle-face')).toHaveCount(54);
+  await expect(page.locator('.puzzle-face:not(:has(.puzzle-sticker))')).toHaveCount(0);
+  await expect(page.locator('.puzzle-cap')).toHaveCount(4);
   const start = await inspect(0);
   const face = page.locator('.puzzle-expression');
   const originalFace = await face.boundingBox();
@@ -196,4 +200,31 @@ test('Puzzle Cube turns independent layers, loops seamlessly, and stays still wi
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   await expect(page.locator('.cubie-smile')).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('puzzle-cube-still.png') });
+});
+
+test('shop and closet icon spacing does not displace the 3D Cubie surfaces', async ({ page }, testInfo) => {
+  const skins = ['shop_puzzle_cube', 'shop_disco'];
+  await page.setContent(`<style>${css}
+    body { padding:24px; background:#202a32; display:flex; gap:24px; }
+    article { width:170px; }
+  </style>${['div', 'button'].flatMap(tag => skins.map(id =>
+    `<article class="custom-tile" data-custom="${id}"><${tag} class="custom-swatch">${Customs.svg(Customs.catalog.find(c => c.id === id))}</${tag}></article>`
+  )).join('')}`);
+  for (const phase of [0, .12, .44, .78]) {
+    await page.evaluate(phase => document.getAnimations().forEach(a => {
+      a.pause();
+      a.currentTime = a.animationName === 'model-float' ? 0 : a.effect.getTiming().duration * phase;
+    }), phase);
+    const displaced = await page.locator('.puzzle-face svg, .puzzle-expression svg, .disco-tile svg').evaluateAll(surfaces =>
+      surfaces.filter(svg => {
+        const style = getComputedStyle(svg), parent = getComputedStyle(svg.parentElement);
+        return ['marginTop', 'marginRight', 'marginBottom', 'marginLeft'].some(side => style[side] !== '0px')
+          || Math.abs(parseFloat(style.width) - parseFloat(parent.width)) > .1
+          || Math.abs(parseFloat(style.height) - parseFloat(parent.height)) > .1;
+      }).length);
+    expect(displaced, `displaced model surfaces at phase ${phase}`).toBe(0);
+  }
+  // The spacing belongs to the outer icon only.
+  await expect(page.locator('.custom-swatch > svg').first()).toHaveCSS('margin-top', '24px');
+  await page.screenshot({ path: testInfo.outputPath('shop-3d-surfaces.png') });
 });

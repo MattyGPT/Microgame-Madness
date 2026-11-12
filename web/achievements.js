@@ -31,7 +31,7 @@ const Achievements = (() => {
     ["dodge", "Shell We Dance?", "Turtle Dodge"],
     ["boss", "Challenge Accepted", "Boss Crush"],
     ["pumpkin", "Royal Invitation", "Pumpkin King"],
-  ]) add(`play_${game}`, title, "bronze", label, `Start a ${label} game.`, `play_${game}`);
+  ]) add(`play_${game}`, title, "bronze", label, `Start a ${game === "keyboard" ? "Progressive Key Rush" : label} game.`, `play_${game}`);
   add("sampler", "A Little of Everything", "silver", "Arcade", "Play all five original games.", "gamesPlayed", 5);
   add("hangman_win", "Good Game", "silver", "Hangman", "Win a Hangman game.", "hangmanWins");
   add("hangman_hard", "You've Got the Hang of It!!", "silver", "Hangman", "Win a hard Hangman game.", "hardWins");
@@ -40,10 +40,10 @@ const Achievements = (() => {
   add("hangman_5", "Word Wizard", "gold", "Hangman", "Win 5 Hangman games.", "hangmanWins", 5);
   add("hangman_10", "Professional Prodigy", "gold", "Hangman", "Win 10 Hangman games.", "hangmanWins", 10);
   add("hangman_25", "Walking Dictionary", "gold", "Hangman", "Win 25 Hangman games.", "hangmanWins", 25);
-  add("typing_1", "Warm-Up Lap", "bronze", "Key Rush", "Complete a Key Rush round.", "typingBest");
-  add("typing_5", "Finding Your Rhythm", "silver", "Key Rush", "Complete 5 rounds in one Key Rush game.", "typingBest", 5);
-  add("typing_10", "Keyboard Lightning", "gold", "Key Rush", "Complete 10 rounds in one Key Rush game.", "typingBest", 10);
-  add("typing_20", "Speed of Type", "gold", "Key Rush", "Complete 20 rounds in one Key Rush game.", "typingBest", 20);
+  add("typing_1", "Warm-Up Lap", "bronze", "Key Rush", "Complete a Progressive Key Rush round.", "typingBest");
+  add("typing_5", "Finding Your Rhythm", "silver", "Key Rush", "Complete 5 rounds in one Progressive Key Rush game.", "typingBest", 5);
+  add("typing_10", "Keyboard Lightning", "gold", "Key Rush", "Complete 10 rounds in one Progressive Key Rush game.", "typingBest", 10);
+  add("typing_20", "Speed of Type", "gold", "Key Rush", "Complete 20 rounds in one Progressive Key Rush game.", "typingBest", 20);
   add("dodge_early_death", "At Least You Tried", "bronze", "Turtle Dodge", "Die in less than 5 seconds in Turtle Dodge.", "dodgeEarlyDeath");
   add("dodge_15", "Just Keep Moving", "bronze", "Turtle Dodge", "Survive 15 seconds in Turtle Dodge.", "dodgeBest", 15);
   add("dodge_30", "Shell Shockproof", "silver", "Turtle Dodge", "Survive 30 seconds in Turtle Dodge.", "dodgeBest", 30);
@@ -63,12 +63,12 @@ const Achievements = (() => {
   add("pumpkin_flawless", "King of Suffering", "diamond", "Pumpkin King", "Defeat the Pumpkin King in any mode without taking a single hit. Healing does not erase damage.", "pumpkinFlawless");
   add("hangman_50", "Lexicon Legend", "crystal", "Hangman", "Win 50 Hangman games.", "hangmanWins", 50);
   add("hangman_hard_10", "Hard-Earned Words", "crystal", "Hangman", "Win 10 hard Hangman games.", "hardWins", 10);
-  add("typing_30", "Keys to the Kingdom", "crystal", "Key Rush", "Complete 30 rounds in one Key Rush game.", "typingBest", 30);
+  add("typing_30", "Keys to the Kingdom", "crystal", "Key Rush", "Complete 30 rounds in one Progressive Key Rush game.", "typingBest", 30);
   add("boss_10", "Boss Rush Royalty", "crystal", "Boss Crush", "Win 10 Boss Crush games.", "bossWins", 10);
   add("pumpkin_10", "Pumpkin Carver", "crystal", "Pumpkin King", "Defeat the Pumpkin King 10 times in any mode.", "pumpkinWins", 10);
   add("hangman_100", "Master of Every Letter", "diamond", "Hangman", "Win 100 Hangman games.", "hangmanWins", 100);
   add("hangman_perfect_25", "Flawless Vocabulary", "diamond", "Hangman", "Win 25 Hangman games without a wrong guess.", "perfectWins", 25);
-  add("typing_50", "Beyond the Speed Limit", "diamond", "Key Rush", "Complete 50 rounds in one Key Rush game.", "typingBest", 50);
+  add("typing_50", "Beyond the Speed Limit", "diamond", "Key Rush", "Complete 50 rounds in one Progressive Key Rush game.", "typingBest", 50);
   add("dodge_merciless_120", "Merciless Marathon", "diamond", "Turtle Dodge", "Survive 120 seconds in one Merciless game.", "mercilessBest", 120);
   add("boss_flawless", "Untouchable Champion", "diamond", "Boss Crush", "Defeat the Impossible boss without taking a single hit. Healing does not erase damage.", "bossFlawless");
   add("dodge_360", "Gerson Boom", "rainbow", "Turtle Dodge", "Survive 360 seconds in one Turtle Dodge game.", "dodgeBest", 360);
@@ -90,13 +90,13 @@ const Achievements = (() => {
   add("pumpkin_come_on", "First Crown", "silver", "Pumpkin King", "Defeat the Pumpkin King in Come On, Are You Really That Bad at the Game? mode.", "pumpkin_come_on");
   add("boss_clean_streak_10", "Untouchable Ten", "diamond", "Boss Crush", "Win 10 consecutive Boss Crush fights without damage. Damage, losses, and abandoned fights reset the streak.", "bossCleanStreak", 10);
   add("hangman_250", "Rainbow Lexicon", "rainbow", "Hangman", "Win 250 Hangman games.", "hangmanWins", 250);
-  add("typing_75", "Spectrum Speed", "rainbow", "Key Rush", "Complete 75 rounds in one Key Rush game.", "typingBest", 75);
+  add("typing_75", "Spectrum Speed", "rainbow", "Key Rush", "Complete 75 rounds in one Progressive Key Rush game.", "typingBest", 75);
   add("dodge_merciless_240", "Beyond Mercy", "rainbow", "Turtle Dodge", "Survive 240 seconds in one Merciless game.", "mercilessBest", 240);
   add("boss_clean_streak_15", "Unbreakable Spectrum", "rainbow", "Boss Crush", "Win 15 consecutive Boss Crush fights without damage. Damage, losses, and abandoned fights reset the streak.", "bossCleanStreak", 15);
   add("pumpkin_flawless_5", "Sovereign of Suffering", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 5 times without taking damage, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 5);
   add("pumpkin_flawless_10", "Beyond the Phantom Crown", "empyrorite", "Pumpkin King", "Defeat the Pumpkin King 10 times without taking a hit, in any mode. Healing does not erase damage.", "pumpkinFlawlessWins", 10);
   add("hangman_perfect_100", "The Living Grimoire", "empyrorite", "Hangman", "Win 100 Hangman games without a wrong guess.", "perfectWins", 100);
-  add("typing_100", "Thunder at Your Fingertips", "empyrorite", "Key Rush", "Complete 100 rounds in one Key Rush game.", "typingBest", 100);
+  add("typing_100", "Thunder at Your Fingertips", "empyrorite", "Key Rush", "Complete 100 rounds in one Progressive Key Rush game.", "typingBest", 100);
   add("boss_100", "Heart of the Celestial Forge", "empyrorite", "Boss Crush", "Win 350 Boss Crush games.", "bossWins", 350);
   add("dodge_merciless_420", "Seven Minutes Below Infinity", "empyrorite", "Turtle Dodge", "Survive 420 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 420);
   // Unicode equivalents of Wingdings M Y / A R M, repeated three times.
@@ -160,14 +160,14 @@ const Achievements = (() => {
   add("name_high_score", "Name on the Leaderboard", "crystal", "Arcade", "Enter HIGH SCORE as your arcade name.", "name_high_score");
   add("hangman_hard_perfect_5", "Five-Star Vocabulary", "crystal", "Hangman", "Win 5 hard Hangman games without a wrong guess.", "hardPerfectWins", 5);
   add("hangman_last_chance_5", "Clutch Wordsmith", "crystal", "Hangman", "Win 5 Hangman games with only one wrong guess remaining.", "lastChanceWins", 5);
-  add("typing_15", "Turbo Typist", "gold", "Key Rush", "Complete 15 rounds in one Key Rush game.", "typingBest", 15);
+  add("typing_15", "Turbo Typist", "gold", "Key Rush", "Complete 15 rounds in one Progressive Key Rush game.", "typingBest", 15);
   add("dodge_90", "Shell Endurance", "gold", "Turtle Dodge", "Survive 90 seconds in one Turtle Dodge game.", "dodgeBest", 90);
   add("boss_50", "Arena All-Star", "rainbow", "Boss Crush", "Win 50 Boss Crush games.", "bossWins", 50);
   add("pumpkin_50", "Endless Harvest", "rainbow", "Pumpkin King", "Defeat the Pumpkin King 50 times in any mode.", "pumpkinWins", 50);
   add("wrath_win_10", "Royal Regular", "crystal", "The King's Wrath", "Win 10 practice fights, in any modes.", "wrathWins", 10);
   // More entry-level milestones make the twenty-bronze collection attainable.
   add("hangman_win_2", "Another Word", "bronze", "Hangman", "Win 2 Hangman games.", "hangmanWins", 2);
-  add("typing_3", "Three-Key Rhythm", "bronze", "Key Rush", "Complete 3 rounds in one Key Rush game.", "typingBest", 3);
+  add("typing_3", "Three-Key Rhythm", "bronze", "Key Rush", "Complete 3 rounds in one Progressive Key Rush game.", "typingBest", 3);
   add("dodge_10", "First Ten Seconds", "bronze", "Turtle Dodge", "Survive 10 seconds in one Turtle Dodge game.", "dodgeBest", 10);
   add("cube_pet_10", "Getting Acquainted", "bronze", "Arcade", "Pet Cubie 10 times.", "cubePets", 10);
   add("boss_win_2", "Back for Seconds", "bronze", "Boss Crush", "Win 2 Boss Crush games.", "bossWins", 2);
@@ -177,12 +177,12 @@ const Achievements = (() => {
   add("hangman_win_3", "Third Word's the Charm", "bronze", "Hangman", "Win 3 Hangman games.", "hangmanWins", 3);
   add("hangman_hard_3", "Taking the Hard Way", "bronze", "Hangman", "Win 3 hard Hangman games.", "hardWins", 3);
   add("hangman_perfect_3", "Clean Spelling", "bronze", "Hangman", "Win 3 Hangman games without a wrong guess.", "perfectWins", 3);
-  add("typing_2", "Double Tap", "bronze", "Key Rush", "Complete 2 rounds in one Key Rush game.", "typingBest", 2);
+  add("typing_2", "Double Tap", "bronze", "Key Rush", "Complete 2 rounds in one Progressive Key Rush game.", "typingBest", 2);
   add("dodge_20", "Twenty-Second Turtle", "bronze", "Turtle Dodge", "Survive 20 seconds in one Turtle Dodge game.", "dodgeBest", 20);
   add("cube_pet_25", "Quarter-Century Cuddles", "bronze", "Arcade", "Pet Cubie 25 times.", "cubePets", 25);
   add("wrath_win_2", "Second Rehearsal", "bronze", "The King's Wrath", "Win 2 practice fights, in any modes.", "wrathWins", 2);
   add("dodge_close_3", "Three Close Shaves", "bronze", "Turtle Dodge", "Make 3 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 3);
-  add("typing_4", "Four on the Floor", "bronze", "Key Rush", "Complete 4 rounds in one Key Rush game.", "typingBest", 4);
+  add("typing_4", "Four on the Floor", "bronze", "Key Rush", "Complete 4 rounds in one Progressive Key Rush game.", "typingBest", 4);
   add("hangman_hard_5", "Tough Words", "silver", "Hangman", "Win 5 hard Hangman games.", "hardWins", 5);
   add("dodge_close_10", "Thread the Shell", "gold", "Turtle Dodge", "Make 10 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 10);
   add("hangman_perfect_10", "Ten out of Ten", "crystal", "Hangman", "Win 10 Hangman games without a wrong guess.", "perfectWins", 10);
@@ -233,7 +233,7 @@ const Achievements = (() => {
   add("hangman_win_4", "Four Words Forward", "bronze", "Hangman", "Win 4 Hangman games.", "hangmanWins", 4);
   add("hangman_win_7", "Lucky Letters", "silver", "Hangman", "Win 7 Hangman games.", "hangmanWins", 7);
   add("hangman_perfect_4", "Spotless Spelling", "silver", "Hangman", "Win 4 Hangman games without a wrong guess.", "perfectWins", 4);
-  add("typing_7", "Seven-Key Stride", "silver", "Key Rush", "Complete 7 rounds in one Key Rush game.", "typingBest", 7);
+  add("typing_7", "Seven-Key Stride", "silver", "Key Rush", "Complete 7 rounds in one Progressive Key Rush game.", "typingBest", 7);
   add("dodge_45", "Three-Quarter Minute", "silver", "Turtle Dodge", "Survive 45 seconds in one Turtle Dodge game.", "dodgeBest", 45);
   add("dodge_merciless_20", "Mercy Can Wait", "silver", "Turtle Dodge", "Survive 20 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 20);
   add("dodge_close_5", "Narrow Escapes", "silver", "Turtle Dodge", "Make 5 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 5);
@@ -414,7 +414,7 @@ const Achievements = (() => {
         stats.bossRunActive = mode === "boss" ? 1 : 0;
         stats.bossSovereignRunActive = mode === "boss" && sovereignDifficulties.includes(difficulty) ? 1 : 0;
         if (mode === "dodge" && difficulty === "chaos") stats.chaosPlayed = 1;
-        stats[`play_${mode}`] = 1;
+        if (mode !== "keyboard" || difficulty === "progressive") stats[`play_${mode}`] = 1;
         stats.gamesPlayed = games.filter(game => stats[`play_${game}`]).length;
       });
     }
@@ -514,7 +514,7 @@ const Achievements = (() => {
           stats.wrathCounterHits += counters;
           round.counterHits = Math.max(round.counterHits, count(s.counter_hits));
         }
-        if (s.mode === "keyboard") stats.typingBest = Math.max(stats.typingBest, count(s.score));
+        if (s.mode === "keyboard" && s.difficulty === "progressive") stats.typingBest = Math.max(stats.typingBest, count(s.score));
         if (s.mode === "dodge") {
           if (s.difficulty === "chaos") {
             stats.chaosBest = Math.max(stats.chaosBest, count(s.elapsed));

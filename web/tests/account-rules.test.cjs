@@ -315,3 +315,24 @@ test('slot results sync only for an owned equipped Jackpot Cubie and visible 777
   assert.equal(state.achievements.unlocked.chaos_jackpot_777, stamp);
   assert.throws(() => apply(state, 'arcade', {...payload,symbols:[5,0,0]}), {code:'invalid'});
 });
+
+ test('Endurance exit earns exactly half Progressive Cash and preserves raw rounds', () => {
+  const state = start(Rules.initial(), 'keyboard', 'endurance');
+  const result = apply(state, 'run.finish', { outcome: 'exit', snapshot: { over: false, won: false, score: 12 } }, 'round-one');
+  assert.equal(result.state.shop.units, 24000);
+  assert.equal(result.run.score, 12);
+  assert.equal(result.run.eligible, true);
+});
+
+test('Endurance checkpoints and finishes never grant Key Rush achievements', () => {
+  for (const outcome of ['exit', 'loss']) {
+    let state = start(Rules.initial(), 'keyboard', 'endurance');
+    state = apply(state, 'run.checkpoint', { snapshot: { over: false, won: false, score: 100 } }, 'round-one').state;
+    state = JSON.parse(JSON.stringify(state));
+    const result = apply(state, 'run.finish', { outcome, snapshot: { over: outcome === 'loss', won: false, score: 100 } }, 'round-one');
+    assert.equal(result.state.shop.units, 200000);
+    assert.equal(result.state.achievements.stats.typingBest, 0);
+    assert.equal(result.state.achievements.stats.play_keyboard, 0);
+    assert.equal(Object.keys(result.state.achievements.unlocked).some(id => id === 'play_keyboard' || id.startsWith('typing_')), false);
+  }
+});

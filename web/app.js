@@ -68,6 +68,10 @@ const modes = {
         "Progressive",
         "Each round adds a little more speed and complexity.",
       ],
+      endurance: [
+        "Endurance",
+        "Survive as long as you can: 6 letters or digits, 8 seconds every round. 50% global score and Cubie Cash. No Key Rush achievements or Cubies.",
+      ],
     },
   },
   dodge: {
@@ -2052,7 +2056,7 @@ function render() {
       `${s.mistakes} mistakes · ${s.score} rounds completed`;
     setTextIfChanged("metric", `${s.remaining.toFixed(1)}s`);
     $("timer-bar").style.width =
-      `${Math.max(0, Math.min(100, (s.remaining / Math.max(4, 8 - (s.level - 1) * 0.25)) * 100))}%`;
+      `${Math.max(0, Math.min(100, (s.remaining / s.time_limit) * 100))}%`;
   } else {
     draw(s);
     if (selected === "singularity") {

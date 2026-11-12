@@ -118,7 +118,8 @@ class BrowserGame:
             raise ValueError("Unknown game")
 
     def new_round(self, now):
-        sequence, seconds = make_round(self.completed + 1)
+        sequence, seconds = make_round(self.completed + 1, self.difficulty)
+        self.round_seconds = seconds
         self.game = KeyboardRound(sequence, seconds, now)
 
     def dispatch(self, request):
@@ -195,7 +196,7 @@ class BrowserGame:
         elif self.mode == "keyboard":
             result.update(over=game.result is not None, won=False, score=self.completed,
                           sequence=game.sequence, matched=game.matched, mistakes=game.mistakes,
-                          remaining=game.remaining(self.now), level=self.completed+1)
+                          remaining=game.remaining(self.now), time_limit=self.round_seconds, level=self.completed+1)
         else:
             if not game.alive and self.death_age is None:
                 self.death_age = 0.0

@@ -123,14 +123,35 @@ const CubieCustoms = (() => {
   for (const [id,name,achievement,color,flavor] of geomayhemCustoms)
     add(id,name,achievement,color,`<path d="M24 34h72" stroke="${color}"/>`,square,{flavor});
   add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
-    '<path d="M21 34h78v12H21Z" fill="#173f66"/><path d="M25 43h70v47H25Z" fill="#78c7e0" stroke="#e7b85c" stroke-width="2"/>' +
-    '<path d="M22 94h76v13H22Z" fill="#ce4758"/><path d="M14 107h92l10 13H4Z" fill="#324c69" stroke="#a5bed2" stroke-width="2"/>' +
-    '<path d="M22 110 16 118m23-8-3 8m24-8v8m21-8 3 8m14-8 6 8" stroke="#d5e7ee" stroke-width="2"/>' +
-    ['#ff617c','#ffac45','#ffdf5c','#7ee2a5','#66cfff','#b894ff'].map((color,i) => `<rect x="${24+i*12}" y="96" width="12" height="5" fill="${color}"/>`).join('') +
-    [25,95].map(x => `<g transform="translate(${x} 110)"><g class="choo-wheel"><circle r="10" fill="#1e334c" stroke="#f3c35f" stroke-width="2.5"/><path d="M-7 0H7M0-7V7m-5-5 10 10m0-10L-5 5" stroke="#aacbdf" stroke-width="1.5"/><circle r="3" fill="#f2ba51"/></g></g>`).join(''), square, {
+    '<circle cx="60" cy="28" r="6" fill="#173f66" stroke="#f3c35f" stroke-width="2"/><circle cx="60" cy="28" r="3.5" fill="#fff2bc"/><circle cx="59" cy="27" r="1.3" fill="#fffef4"/>' +
+    '<path d="M24 52v40m72-40v40" stroke="#23567e" stroke-width="4" stroke-linecap="round"/>' +
+    '<path d="M22 34h76v17H22Z" fill="#173f66"/>' +
+    '<path d="M27 37h20v11H27Zm46 0h20v11H73Z" fill="#b9e9f2" stroke="#e7b85c" stroke-width="2"/>' +
+    '<path d="m29 39 7 7m43-7 7 7" stroke="#f0fcff" stroke-width="2" opacity=".75"/>' +
+    '<circle cx="60" cy="68" r="34" fill="#173f66" stroke="#f3c35f" stroke-width="3"/>' +
+    '<circle cx="60" cy="68" r="29" fill="#91d5e7" stroke="#d3f0f5" stroke-width="1.5"/>' +
+    '<path d="M36 84a29 29 0 0 0 48 0" fill="none" stroke="#56a5c2" stroke-width="2" stroke-linecap="round"/>' +
+    [0,45,90,135,180,225,270,315].map(deg => {
+      const angle = deg * Math.PI / 180;
+      return `<circle cx="${60+32*Math.cos(angle)}" cy="${68+32*Math.sin(angle)}" r="1" fill="#fff2be"/>`;
+    }).join('') +
+    '<path d="M39 47q21-17 42 0" fill="none" stroke="#e6faff" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M18 98h84v12H18Z" fill="#ce4758" stroke="#ffb28f" stroke-width="1.5"/>' +
+    ['#ff617c','#ffac45','#ffdf5c','#7ee2a5','#66cfff','#b894ff'].map((color,i) => `<rect x="${36+i*8}" y="100" width="8" height="4" fill="${color}"/>`).join('') +
+    '<path d="M32 110h56l10 13H22Z" fill="#324c69" stroke="#a5bed2" stroke-width="2"/>' +
+    '<path d="m37 113-6 8m17-8-3 8m15-8v8m12-8 3 8m8-8 6 8" stroke="#d5e7ee" stroke-width="2"/>' +
+    [25,95].map(x => `<rect x="${x-7}" y="99" width="14" height="9" rx="3" fill="#1e334c" stroke="#a5bed2" stroke-width="2"/>`).join('') +
+    '<path d="M21 99h78M25 109h70" stroke="#ffcc9c" stroke-width="1" opacity=".7"/>' +
+    '<path d="M20 101h10m60 0h10" stroke="#738da4" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<rect x="55" y="106" width="10" height="8" rx="2" fill="#1e334c" stroke="#f3c35f" stroke-width="2"/>', square, {
       flavor: "Five hours of adventures. Next stop: another smile!", faceColor: "#17374b",
-      back: '<path d="M22 32V12h21v20M18 10h29v8H18Z" fill="#263f5b" stroke="#f3c35f" stroke-width="2"/><path d="M69 29V17h21v12" fill="#dc5866"/><path d="M14 28h92l-7-9H21Z" fill="#db5364" stroke="#ffb28f" stroke-width="1.5"/>' +
-        [0,1,2].map(i => `<circle class="choo-steam" style="animation-delay:${-i*.8}s" cx="33" cy="7" r="${5+i*2}" fill="#e4f6ff"/>`).join(''),
+      back: [10,96].map(x => `<g><rect x="${x}" y="94" width="14" height="31" rx="5" fill="#142638" stroke="#8da8bd" stroke-width="1.5"/><rect x="${x+3}" y="97" width="8" height="25" rx="3" fill="#314c65"/><path d="M${x+4} 99v21" stroke="#b6c9d6" stroke-width="1.5"/><path d="M${x+6} 101h5m-5 5h5m-5 5h5m-5 5h5" stroke="#182d41" stroke-width="2"/></g>`).join('') +
+        '<path d="M24 114h72" stroke="#263f5b" stroke-width="5"/>' +
+        '<path d="M14 32h92l-8-10H22Z" fill="#db5364" stroke="#ffb28f" stroke-width="1.5"/>' +
+        '<path d="M51 24V7h18v17M47 4h26v7H47Z" fill="#263f5b" stroke="#f3c35f" stroke-width="2"/>' +
+        '<path d="M20 29h80M54 10v11" stroke="#ffe0a2" stroke-width="1.5" stroke-linecap="round"/>' +
+        '<path d="M50 5h20" stroke="#fff0b9" stroke-width="1.5"/>' +
+        [0,1,2].map(i => `<circle class="choo-steam" style="animation-delay:${-i*.8}s" cx="60" cy="0" r="${5+i*2}" fill="#e4f6ff"/>`).join(''),
     });
   add("three_d", "3D Cubie", "cube_pet_500", "#c6f783",
     '<path d="M60 20 104 45v50l-44 25-44-25V45Z" fill="#c6f783"/>', square,
@@ -1752,13 +1773,19 @@ const CubieCustoms = (() => {
         const faces = sides.map(side => {
           const external = {front:depth===2, back:depth===0, left:column===0,
             right:column===2, top:row===0, bottom:row===2}[side];
-          const color = external ? stickers[sticker++] : '#28333e';
+          // Hidden block walls intersect when a slice turns. Only draw its shell.
+          if (!external) return '';
+          const color = stickers[sticker++];
           const tile = external ? `<rect class="puzzle-sticker" data-color="${color}" x="1.5" y="1.5" width="33" height="33" rx="2.3" fill="${color}"/><path d="M4 13V5q0-1 1-1h24" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".8"/><path d="M32 22v8q0 2-2 2H9" fill="none" stroke="#101820" stroke-opacity=".22" stroke-width=".8"/>` : '';
-          return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" rx=".6" fill="#28333e"/>${tile}</svg></div>`;
+          return `<div class="puzzle-face puzzle-face-${side}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" fill="#28333e"/>${tile}</svg></div>`;
         }).join('');
         return `<div class="puzzle-block" style="left:${column*36}px;transform:translateZ(${(depth-1)*36}px)">${faces}</div>`;
       }).join('');
-      return `<div class="puzzle-layer puzzle-layer-${row}" style="top:${row*36-54}px">${blocks}</div>`;
+      // A single solid cap closes each hidden horizontal surface. Shared block
+      // faces would otherwise leave seams and z-fighting inside the turning slice.
+      const caps = (row > 0 ? '<div class="puzzle-cap puzzle-cap-top"></div>' : '')
+        + (row < 2 ? '<div class="puzzle-cap puzzle-cap-bottom"></div>' : '');
+      return `<div class="puzzle-layer puzzle-layer-${row}" style="top:${row*36-54}px">${blocks}${caps}</div>`;
     }).join('');
     // The expression is composited above the solid slices, so no rotating
     // edge can carry an eye away or draw a seam across Cubie's smile.
@@ -1767,7 +1794,7 @@ const CubieCustoms = (() => {
   }
   function discoSphereSvg() {
     const colors = ['#b6bbc4', '#d0d3d9', '#a6adb8', '#c3c6cd', '#dde0e5', '#b5b8c5'];
-    const radius = 62, rows = 12, columns = 24;
+    const radius = 64, rows = 12, columns = 24;
     const radians = Math.PI / 180;
     const halfLongitude = Math.PI / columns;
     const fixed = value => Number(value.toFixed(4));
@@ -1789,13 +1816,13 @@ const CubieCustoms = (() => {
         .map(point => point.map(fixed).join(',')).join(' ');
       for (let column = 0; column < columns; column++) {
         const longitude = -180 + (column + .5) * 360 / columns;
-        const eye = Math.abs(longitude) === 22.5 && (row === 3 || row === 4);
+        const eye = Math.abs(longitude) === 22.5 && (row === 4 || row === 5);
         const smile = (row === 7 && Math.abs(longitude) <= 22.5)
           || (row === 6 && Math.abs(longitude) === 22.5);
-        const tile = `<polygon points="${points}" fill="${colors[(row*3+column)%colors.length]}" stroke="#747d8b" stroke-width=".6"/>`;
-        const face = eye ? `<g class="cubie-eyes"><polygon points="${points}" fill="#253449"/></g>`
+        const tile = `<polygon points="${points}" fill="${colors[(row*7+column*11+(row*column)%5)%colors.length]}" stroke="#747d8b" stroke-width=".6"/>`;
+        const face = eye ? `<g class="cubie-eyes"><rect x="${fixed(width*.12)}" y="0" width="${fixed(width*.76)}" height="${fixed(height*(row === 5 ? .55 : 1))}" fill="#253449"/></g>`
           : smile ? `<polygon class="cubie-smile" points="${points}" fill="#253449"/>` : '';
-        const blush = row === 5 && [37.5, 52.5].includes(Math.abs(longitude))
+        const blush = row === 6 && [37.5, 52.5].includes(Math.abs(longitude))
           ? `<g class="cubie-blush"><polygon points="${points}" fill="#f17f99"/></g>` : '';
         const transform = `translate(-50%, -50%) rotateY(${longitude}deg) translate3d(0, ${fixed((yTop+yBottom)/2)}px, ${fixed((zTop+zBottom)/2)}px) rotateX(${fixed(tilt)}deg)`;
         tiles.push(`<div class="disco-tile" style="width:${fixed(width)}px;height:${fixed(height)}px;transform:${transform}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${fixed(width)} ${fixed(height)}">${tile}${face}${blush}</svg></div>`);
@@ -1854,8 +1881,8 @@ const CubieCustoms = (() => {
       (item.id === 'shop_hourglass' ? '<g class="hourglass-turn">' : '') +
       (item.id === 'shop_koi' ? '<g class="koi-orientation" transform="rotate(180 72.5 72.5)">' : '') +
       `<g class="cubie-back" transform="${fit}" stroke-linejoin="round">${back}</g>` +
-      silhouette(enhanced?.shadowColor || '#202b22', enhanced?.shadowOffset ?? 25, 'cubie-shadow') +
-      silhouette(enhanced?.sideColor || (item.id === 'classic' ? '#6d8b44' : sideColor(item.color)), enhanced?.sideOffset ?? 13, 'cubie-side') +
+      silhouette(enhanced?.shadowColor || '#202b22', enhanced?.shadowOffset ?? (item.id === 'choo_choo' ? 0 : 25), 'cubie-shadow') +
+      silhouette(enhanced?.sideColor || (item.id === 'classic' ? '#6d8b44' : sideColor(item.color)), enhanced?.sideOffset ?? (item.id === 'choo_choo' ? 0 : 13), 'cubie-side') +
       `<g class="cubie-underbody" transform="${fit}" stroke-linejoin="round">${item.underBody || ''}</g>` +
       silhouette(item.color, 0, 'cubie-front') +
       `<g class="cubie-trim" transform="${fit}" stroke-linejoin="round">${detail}</g>` +

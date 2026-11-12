@@ -2,7 +2,7 @@
 
 const Leaderboards = (() => {
   const difficulties = Object.freeze({
-    hangman: ['easy', 'medium', 'hard'], keyboard: ['progressive'],
+    hangman: ['easy', 'medium', 'hard'], keyboard: ['progressive', 'endurance'],
     dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible', 'chaos'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
@@ -10,7 +10,7 @@ const Leaderboards = (() => {
   });
   const multipliers = Object.freeze({
     hangman: { easy: 1, medium: 2.5, hard: 4 },
-    keyboard: { progressive: 1 },
+    keyboard: { progressive: 1, endurance: .5 },
     dodge: { easy: 1, normal: 1.75, chaos: 2.5, hard: 3.5, merciless: 4.75, impossible: 5.5 },
     boss: { mean: 1, cruel: 2.25, nightmare: 3.75, impossible: 5.75 },
     pumpkin: { come_on: 1, baby: 1.75, coward: 2.5, phase2: 3.5 },

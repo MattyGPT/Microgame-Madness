@@ -3,7 +3,7 @@ const CubieShop = (() => {
   // 1,000 wallet units = 1 Cash. Integer units retain fractional earnings.
   const rates = {
     hangman: { base: 400, modes: { easy: 1, medium: 2, hard: 3 } },
-    keyboard: { base: 400, modes: { progressive: 1 } },
+    keyboard: { base: 400, modes: { progressive: 1, endurance: .5 } },
     dodge: { base: 1.2, modes: { easy: 1, normal: 2, hard: 3, merciless: 5, impossible: 6, chaos: 2 } },
     boss: { base: 1, modes: { mean: 1, cruel: 2, nightmare: 3, impossible: 5 } },
     pumpkin: { base: 1, modes: { come_on: 1, baby: 2, coward: 3, phase2: 5 } },

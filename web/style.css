@@ -1195,7 +1195,7 @@ html.account-reduced-motion .turtle-prophecy * { animation: none; }
   .game-card .card-art,
   .game-card .card-art * { animation: none !important; }
 }
-#welcome-art svg { display: block; width: 56px; height: 56px; margin: auto; }
+#welcome-art > svg { display: block; width: 56px; height: 56px; margin: auto; }
 .card-title {
   font:
     500 17px "Space Grotesk",
@@ -2375,7 +2375,7 @@ select:disabled {
 .custom-tile { display: flex; flex-direction: column; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #1c2325; }
 .custom-tile[data-equipped="true"] { border-color: var(--lime); background: #c6f7830a; }
 .custom-swatch { height: 108px; padding: 3px 0 9px; margin-bottom: 8px; background: radial-gradient(ellipse, #ffffff0b, transparent 70%); }
-.custom-swatch svg { width: 62px; height: 62px; margin: 24px auto 0; }
+.custom-swatch > svg { width: 62px; height: 62px; margin: 24px auto 0; }
 .custom-swatch .cubie-float, .custom-swatch .cubie-eyes { animation: none; }
 .custom-tile h5 { font-size: 14px; line-height: 1.4; margin: 4px 0 8px; }
 .custom-tile p { font-size: 11px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; overflow-wrap: anywhere; flex-grow: 1; }
@@ -2740,7 +2740,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 }
 /* Give Hacker's tall fingertips breathing room in the shop and closet cards. */
 .custom-tile[data-custom="shop_hacker"] .custom-swatch { height: 124px; }
-.custom-tile[data-custom="shop_hacker"] .custom-swatch svg { margin-top: 40px; }
+.custom-tile[data-custom="shop_hacker"] .custom-swatch > svg { margin-top: 40px; }
 
 .hacker-finger { animation: hacker-finger-curl 5.5s ease-in-out infinite alternate; }
 @keyframes hacker-finger-curl { to { transform: rotate(var(--finger-angle)); } }
@@ -2940,15 +2940,30 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .cabinet-scan { animation: cabinet-scan 4s linear infinite; }
 @keyframes cabinet-scan { to { transform: translateY(54px); } }
 
+/* Keep the 3D models upright and centered instead of adding the flat skins' roll.
+   Their internal transforms already supply depth and rotation. */
+.cubie-custom-art:is([data-custom="shop_puzzle_cube"], [data-custom="shop_disco"]) .cubie-float {
+  transform: none;
+  transform-origin: 72.5px 72.5px;
+  animation-name: model-float;
+}
+@keyframes model-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.pixel-face.custom-equipped .cubie-custom-art:is([data-custom="shop_puzzle_cube"], [data-custom="shop_disco"]) .cubie-float {
+  animation: none;
+}
+
 /* Joined latitude bands form a complete mirrored sphere, including its poles. */
 .disco-volume { overflow: visible; }
-.disco-scene { width: 145px; height: 145px; position: relative; perspective: 650px; overflow: visible; }
+.disco-scene { width: 145px; height: 145px; position: relative; perspective: 1200px; overflow: visible; }
 .disco-sphere {
   width: 145px;
   height: 145px;
   position: relative;
   transform-style: preserve-3d;
-  transform: rotateX(-12deg) rotateY(0deg);
+  transform: rotateX(0deg) rotateY(0deg);
   animation: disco-turn 12s linear infinite;
 }
 .disco-tile {
@@ -2961,7 +2976,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .disco-tile svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .disco-shading {
   position: absolute;
-  inset: 9px;
+  inset: 8px;
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(circle at 32% 25%, #ffffff55, transparent 40%),
@@ -2969,13 +2984,13 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 }
 /* Linger around the smile, accelerate across the back, then ease back in. */
 @keyframes disco-turn {
-  0% { transform: rotateX(-12deg) rotateY(0deg); }
-  25% { transform: rotateX(-12deg) rotateY(45deg); }
-  40% { transform: rotateX(-12deg) rotateY(90deg); }
-  50% { transform: rotateX(-12deg) rotateY(180deg); }
-  60% { transform: rotateX(-12deg) rotateY(270deg); }
-  75% { transform: rotateX(-12deg) rotateY(315deg); }
-  100% { transform: rotateX(-12deg) rotateY(360deg); }
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  25% { transform: rotateX(0deg) rotateY(45deg); }
+  40% { transform: rotateX(0deg) rotateY(90deg); }
+  50% { transform: rotateX(0deg) rotateY(180deg); }
+  60% { transform: rotateX(0deg) rotateY(270deg); }
+  75% { transform: rotateX(0deg) rotateY(315deg); }
+  100% { transform: rotateX(0deg) rotateY(360deg); }
 }
 
 /* Loco's body and face jiggle together. */
@@ -3001,11 +3016,10 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 @keyframes cubie-3d-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .cubie-3d-float { animation: none; } }
 
-.choo-wheel { animation: choo-wheel 2s linear infinite; }
-@keyframes choo-wheel { to { transform: rotate(360deg); } }
+.cubie-custom-art[data-custom="choo_choo"] .cubie-float { transform: none; animation: none; }
 .choo-steam { animation: choo-steam 2.4s ease-out infinite; }
-@keyframes choo-steam { from { transform: translate(0, 0); opacity: .75; } to { transform: translate(16px, -28px); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .choo-wheel, .choo-steam { animation: none; } }
+@keyframes choo-steam { from { transform: translate(0, 0); opacity: .75; } to { transform: translate(0, -28px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .choo-steam { animation: none; } }
 
 .cubie-custom-art[data-custom="shop_balloon"] .cubie-float { animation: balloon-bob 4s ease-in-out infinite; transform-origin: 72.5px 72.5px; }
 @keyframes balloon-bob { 0%, 100% { transform: translate(-2px, 2px) rotate(-7deg); } 50% { transform: translate(3px, -7px) rotate(5deg); } }
@@ -3076,12 +3090,12 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 
 /* Puzzle Cube: closed, solid slices share one vertical axis and turn in sequence. */
 .puzzle-volume { overflow: visible; }
-.puzzle-scene { width: 145px; height: 145px; position: relative; perspective: 700px; overflow: visible; }
+.puzzle-scene { width: 145px; height: 145px; position: relative; perspective: 1200px; overflow: visible; }
 .puzzle-cube, .puzzle-face-anchor {
   position: absolute; left: 50%; top: 50%; width: 0; height: 0;
   transform-origin: 0 0;
   transform-style: preserve-3d;
-  transform: scale(.9) rotateX(-16deg) rotateY(-22deg);
+  transform: scale(.94) rotateX(-20deg) rotateY(-18deg);
 }
 .puzzle-layer {
   position: absolute; left: -54px; width: 108px; height: 36px;
@@ -3093,6 +3107,12 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .puzzle-block { position:absolute; top:0; width:36px; height:36px; transform-style:preserve-3d; }
 .puzzle-face { position:absolute; left:0; top:0; width:36px; height:36px; backface-visibility:hidden; }
 .puzzle-face svg { display:block; width:100%; height:100%; }
+.puzzle-cap {
+  position: absolute; left: 0; top: -36px; width: 108px; height: 108px;
+  background: #36434f; backface-visibility: hidden;
+}
+.puzzle-cap-top { transform: rotateX(90deg) translateZ(18px); }
+.puzzle-cap-bottom { transform: rotateX(-90deg) translateZ(18px); }
 .puzzle-face-front { transform:translateZ(18px); }
 .puzzle-face-right { transform:rotateY(90deg) translateZ(18px); }
 .puzzle-face-back { transform:rotateY(180deg) translateZ(18px); }
@@ -3102,7 +3122,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .puzzle-face-right svg, .puzzle-face-left svg { filter: brightness(.88); }
 .puzzle-face-back svg, .puzzle-face-bottom svg { filter: brightness(.74); }
 /* Separate compositing keeps the familiar face above every turning seam. */
-.puzzle-face-overlay { position: absolute; inset: 0; perspective: 700px; pointer-events: none; }
+.puzzle-face-overlay { position: absolute; inset: 0; perspective: 1200px; pointer-events: none; }
 .puzzle-expression { position: absolute; left: -54px; top: -54px; width: 108px; height: 108px; transform: translateZ(54px); }
 .puzzle-expression svg { display: block; width: 100%; height: 100%; overflow: visible; }
 @keyframes puzzle-top {

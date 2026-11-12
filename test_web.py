@@ -213,6 +213,23 @@ class BrowserAdapterTests(unittest.TestCase):
             self.assertEqual((restarted["lives"], restarted["max_lives"]), (hp, hp))
             self.assertIsNone(restarted["death_message"])
 
+    def test_keyboard_endurance_resets_timer_and_keeps_penalties(self):
+        result = self.start("keyboard", "endurance")
+        now = 0
+        for completed in range(40):
+            self.assertEqual(len(result["sequence"]), 6)
+            self.assertEqual(result["remaining"], 8)
+            now += 1
+            for key in result["sequence"]:
+                result = self.session.dispatch({"action": "key", "key": key, "now": now})
+            self.assertEqual(result["score"], completed + 1)
+            self.assertEqual(result["difficulty"], "endurance")
+        result = self.session.dispatch({"action": "key", "key": "!", "now": now})
+        self.assertEqual(result["remaining"], 7.5)
+        result = self.session.dispatch({"action": "tick", "now": now + 7.5})
+        self.assertTrue(result["over"])
+        self.assertEqual(result["score"], 40)
+
     def test_keyboard_progress_and_late_input(self):
         self.start("keyboard", "progressive")
         word = self.session.game.sequence
