@@ -431,7 +431,7 @@ class PackagingTests(unittest.TestCase):
                 files = {str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
                 expected = {"index.html", "style.css", "app.js", "jackpot-slots.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
                 expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
-                expected |= {"account-rules.js", "accounts/profile.css", "turtle-customs.js", "geomayhem-bosses.js", "boss-showcase.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js"}
+                expected |= {"account-rules.js", "accounts/profile.css", "turtle-customs.js", "geomayhem-bosses.js", "boss-showcase.html", "playtest-progress.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js"}
                 expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app", "welcome")}
                 expected |= {f"accounts/tours/{game}.{ext}" for game in ("hangman", "keyboard", "dodge", "boss", "pumpkin", "wrath", "geomayhem") for ext in ("webm", "webp")}
                 expected |= {f"ops/usage.{ext}" for ext in ("html", "css", "js")}

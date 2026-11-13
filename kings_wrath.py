@@ -133,7 +133,10 @@ class KingsWrath(PumpkinKing):
                     duration *= .8 if self.variant == "easy" else 1.2
                 adjusted.append(Stage(stage.name, duration, stage.side))
             stages = adjusted
-        stages.append(Stage("wrath_break", WRATH_BREAK_TIME))
+        break_time = WRATH_BREAK_TIME
+        if index == WRATH_ATTACKS["pendulum_court"] and self.variant == "hard":
+            break_time *= .5 / 1.25
+        stages.append(Stage("wrath_break", break_time))
         self.stage, self.queue = stages[0], deque(stages[1:])
         self.ghosts = []
         if index == 2 and self.variant == "hard":

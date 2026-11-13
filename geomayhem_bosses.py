@@ -31,13 +31,18 @@ def boss_pressure(level, phase=1):
     progress = (max(1, min(20, level))-1)/19
     late = max(0, (level-10)/10)**1.4
     rage = max(0, min(2, phase-1))
-    return dict(cast_interval=4.4-1.7*progress-1.05*late-.22*rage,
+    pressure = dict(cast_interval=4.4-1.7*progress-1.05*late-.22*rage,
                 volley_interval=2.0-.85*progress-.5*late-.07*rage,
                 projectile_speed=160+110*progress+110*late+15*rage,
                 warning=max(.55,1.1-.32*progress-.16*late-.035*rage),
                 stagger=1-.36*progress-.18*late,
                 dash_speed=340+140*progress+80*late,
                 echoes=int(level>=11)+int(level>=16)+int(level>=19))
+    if level == 20:
+        # A 25% higher attack rate means dividing cooldowns by 1.25.
+        pressure['cast_interval'] /= 1.25
+        pressure['volley_interval'] /= 1.25
+    return pressure
 
 
 def boss_attack(game, enemy, phase):

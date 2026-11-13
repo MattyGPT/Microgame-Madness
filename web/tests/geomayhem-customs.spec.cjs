@@ -16,7 +16,7 @@ test('every Cubie Custom has a portable arena sprite and equipped skins appear i
   expect(await page.evaluate(()=>snapshot.commands.filter(c=>c.kind==='geomayhem_cubie').length)).toBe(1);
   await page.evaluate(()=>saved.cubieCustom='shop_disco');
   await expect.poll(()=>page.evaluate(()=>geomayhemCubieSprites.get('shop_disco')?.naturalWidth||0)).toBeGreaterThan(0);
-  for (const id of ['shop_toasted_marshmallow','shop_atelier_butter_biscuit','shop_atelier_jubilation_monarch']) {
+  for (const id of ['shop_boba','shop_starlight_terrarium','shop_toasted_marshmallow','shop_atelier_butter_biscuit','shop_atelier_jubilation_monarch']) {
     await page.evaluate(id=>{saved.shop.owned.push(id);saved.cubieCustom=id;},id);
     await expect.poll(()=>page.evaluate(id=>geomayhemCubieSprites.get(id)?.naturalWidth||0,id)).toBeGreaterThan(0);
   }

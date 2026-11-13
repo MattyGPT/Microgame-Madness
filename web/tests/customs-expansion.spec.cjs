@@ -8,7 +8,7 @@ test('new shop collection buys, equips, persists, and pauses hidden artwork',asy
   });
   await openGame(page);
   await page.evaluate(async()=>{await accountApp.ready;selectGame('shop');});
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(169);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(171);
   const first=page.locator('#shop-grid article[data-custom="shop_atelier_butter_biscuit"]');
   await first.scrollIntoViewIfNeeded();
   await expect(first).not.toHaveClass(/shop-art-paused/);

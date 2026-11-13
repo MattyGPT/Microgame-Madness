@@ -40,7 +40,7 @@ test('purchases deduct exactly once, persist ownership, and gate equipment', () 
   const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
   assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
   assert.deepEqual(Shop.restore({ units: -1, owned: ['gaster', item.id, item.id, '__proto__'] }, Customs.catalog), { units: 0, owned: [item.id] });
-  assert.equal(Customs.catalog.filter(c => c.price).length, 169);
+  assert.equal(Customs.catalog.filter(c => c.price).length, 171);
 });
 
 test('original shop prices increase tenfold without removing existing ownership', () => {
@@ -49,8 +49,8 @@ test('original shop prices increase tenfold without removing existing ownership'
   assert.deepEqual(items.slice(0, 12).map(c => c.price), prices);
   const wallet = Shop.restore({ units: 0, owned: ['shop_blue_mint'] }, Customs.catalog);
   assert.equal(Customs.selected('shop_blue_mint', {}, wallet.owned).id, 'shop_blue_mint');
-  assert.equal(new Set(items.map(c => c.detail)).size, 169);
-  assert.equal(new Set(items.map(c => c.flavor)).size, 169);
+  assert.equal(new Set(items.map(c => c.detail)).size, 171);
+  assert.equal(new Set(items.map(c => c.flavor)).size, 171);
 });
 
 test('Hacker Cubie costs exactly 4000 Cash and keeps purchased ownership', () => {
@@ -115,4 +115,21 @@ test('Toasted Marshmallow Cubie costs 310 Cash and retains purchased equipment',
   const restored = Shop.restore(JSON.parse(JSON.stringify(wallet)), Customs.catalog);
   assert.equal(Customs.selected(item.id, {}, restored.owned).id, item.id);
   assert.match(Customs.svg(item), /mallow/);
+});
+
+
+test('Boba and Starlight Terrarium buy once, persist, and have portable arena artwork', () => {
+  for (const [id,price,marker] of [['shop_boba',435,'boba-'],['shop_starlight_terrarium',925,'terrarium-']]) {
+    const item=Customs.catalog.find(x=>x.id===id);
+    assert.equal(item.price,price);
+    const wallet={units:price*1000-1,owned:[]};
+    assert.equal(Shop.buy(wallet,item),false);
+    wallet.units++;
+    assert.equal(Shop.buy(wallet,item),true);
+    assert.equal(wallet.units,0);
+    assert.equal(Shop.buy(wallet,item),false);
+    const restored=Shop.restore(JSON.parse(JSON.stringify(wallet)),Customs.catalog);
+    assert.equal(Customs.selected(id,{},restored.owned).id,id);
+    assert.ok(Customs.gameSvg(item).includes(marker));
+  }
 });

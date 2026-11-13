@@ -604,6 +604,14 @@ const CubieCustoms = (() => {
     '<path d="M25 39Q37 23 60 30Q81 22 95 39V48Q87 57 80 45Q73 60 64 46Q52 59 45 45Q34 54 25 46Z" fill="#704435"/><ellipse cx="35" cy="81" rx="8" ry="4" fill="#eea5a0"/><ellipse cx="85" cy="81" rx="8" ry="4" fill="#eea5a0"/>',
     '<rect x="20" y="28" width="80" height="80" rx="23"/>',
     { price: 310, tier: "silver", faceColor: "#603b32", flavor: "Toasty on the outside. A complete softie inside." });
+  add("shop_boba", "Boba Cubie", null, "#d7aa87",
+    '<path d="M72 34L79 9H88L80 34Z" fill="#a687d2" stroke="#f4dafa" stroke-width="1.2"/><path d="M78 16h8m-10 7h8" stroke="#fff0e8" stroke-width="2"/><rect x="18" y="28" width="84" height="9" rx="4" fill="#fff0dc"/><g fill="#573e4b" stroke="#986e78" stroke-width="1"><circle cx="33" cy="96" r="5"/><circle cx="46" cy="99" r="5"/><circle cx="60" cy="96" r="5"/><circle cx="74" cy="99" r="5"/><circle cx="87" cy="96" r="5"/></g>',
+    '<path d="M20 28H100L94 96Q93 108 81 108H39Q27 108 26 96Z"/>',
+    { price: 435, tier: "silver", faceColor: "#573e4b", flavor: "A little sip of happiness. Extra pearls, always." });
+  add("shop_starlight_terrarium", "Starlight Terrarium Cubie", null, "#87c9c4",
+    '<rect x="27" y="25" width="66" height="12" rx="5" fill="#b98b63" stroke="#f6d9a3"/><path d="M27 92Q60 84 93 92L89 104H31Z" fill="#497d75"/><path d="M60 102V88M60 96Q44 94 48 86Q59 85 60 96M60 93Q76 91 73 83Q62 82 60 93" fill="#a6e4b4" stroke="#d9f5b9" stroke-width="1"/><path d="m34 43 2-5 2 5 5 2-5 2-2 5-2-5-5-2Zm48 5 1-4 2 4 4 2-4 1-2 4-1-4-4-1Z" fill="#fff1ba"/>',
+    '<path d="M32 28H88V37Q100 44 100 60V91Q100 108 83 108H37Q20 108 20 91V60Q20 44 32 37Z"/>',
+    { price: 925, tier: "crystal", faceColor: "#244c63", flavor: "Grows tiny constellations. Water with moonlight." });
   add("shop_puzzle_cube", "Puzzle Cube Cubie", null, "#548eea",
     '<path d="M20 54h80M20 81h80M47 28v80M73 28v80" stroke="#172027" stroke-width="3"/>', square,
     { price: 2000, tier: "rainbow", flavor: "One more turn. Almost there. Forever." });
@@ -965,6 +973,16 @@ const CubieCustoms = (() => {
   }
   function animatedArt(item, uid) {
     if (item.expansion) return expansion.art(item, uid);
+    if (item.id === 'shop_boba') return {
+      sideColor:'#997159',faceColor:'#573e4b',
+      detail:`<defs><linearGradient id="boba-${uid}" x2=".4" y2="1"><stop stop-color="#ffecd3"/><stop offset=".5" stop-color="#dfb597"/><stop offset="1" stop-color="#b88267"/></linearGradient></defs><g fill="url(#boba-${uid})">${item.body}</g>`+item.detail+
+        '<path d="M29 43L33 85" stroke="#fff4e2" stroke-width="3" stroke-linecap="round" opacity=".75"/><path d="M90 44L86 84" stroke="#b58169" stroke-width="1.2"/><g fill="#e0b9bb"><ellipse cx="31" cy="94" rx="1.5" ry="1"/><ellipse cx="58" cy="94" rx="1.5" ry="1"/><ellipse cx="85" cy="94" rx="1.5" ry="1"/></g>',
+    };
+    if (item.id === 'shop_starlight_terrarium') return {
+      sideColor:'#426d81',faceColor:'#244c63',
+      detail:`<defs><linearGradient id="terrarium-${uid}" x2=".8" y2="1"><stop stop-color="#d4fff1"/><stop offset=".45" stop-color="#8acbc9"/><stop offset="1" stop-color="#6889b8"/></linearGradient></defs><g fill="url(#terrarium-${uid})">${item.body}</g>`+item.detail+
+        '<path d="M29 59Q29 47 37 43M27 67v14" fill="none" stroke="#effff8" stroke-width="3" stroke-linecap="round"/><path d="M91 57V88Q91 99 83 100" fill="none" stroke="#c1f5f0" stroke-width="1.2"/><path d="M35 29h47" stroke="#e8bf88" stroke-width="1.4"/><g class="cubie-motion motion-energy"><circle cx="45" cy="42" r="1.5" fill="#fff8ca"/><circle cx="87" cy="75" r="1.4" fill="#fff8ca"/><circle cx="33" cy="85" r="1.2" fill="#fff8ca"/></g>',
+    };
     if (item.id === 'shop_toasted_marshmallow') return {
       sideColor:'#b78059', faceColor:'#603b32',
       detail:`<defs><radialGradient id="${uid}-mallow" cx=".38" cy=".3" r=".85"><stop stop-color="#fffdf0"/><stop offset=".65" stop-color="#fff0d7"/><stop offset="1" stop-color="#c89061"/></radialGradient></defs><rect x="20" y="28" width="80" height="80" rx="23" fill="url(#${uid}-mallow)"/>` + item.detail +
@@ -1921,7 +1939,7 @@ const CubieCustoms = (() => {
     if(item.expansion) {
       const art=expansion.art(item, uid, true);
       detail=art.detail; back=art.back;
-    } else if(tier>=3 || item.id==='shop_toasted_marshmallow') {
+    } else if(tier>=3 || ['shop_toasted_marshmallow','shop_boba'].includes(item.id)) {
       const art=polishAttackArt(item,animatedArt(item,++artId),artId);
       detail=art?.detail || detail;back=art?.back ?? back;
     }

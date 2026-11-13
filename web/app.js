@@ -198,7 +198,7 @@ const wrathExclusive = {
     ],
     "descriptions": [
       "Single small star marks, long warnings, and generous time between impacts.",
-      "Three meteors strike together with wider impact zones and shorter warnings."
+      "Four meteors strike together with wider impact zones and shorter warnings."
     ],
     "palette": [
       "#ffe9ab",
@@ -216,7 +216,7 @@ const wrathExclusive = {
     ],
     "descriptions": [
       "One slow clock hand swings from the left tower.",
-      "Two thick clock hands swing from opposite towers together."
+      "Three lowered guillotines spawn every 0.75 seconds and swing rapidly. The outer blades swap high and low while the center blade reverses direction."
     ],
     "palette": [
       "#bce9ef",
@@ -252,7 +252,7 @@ const wrathExclusive = {
     ],
     "descriptions": [
       "Single vertical mirror walls with broad openings.",
-      "Paired mirror walls advance from opposite sides, alternating axes with narrower shared openings."
+      "Paired mirror walls advance from opposite sides, alternating axes with narrower shared openings. Each hit deals 2 damage."
     ],
     "palette": [
       "#b9f5f0",
@@ -317,14 +317,14 @@ const wrathExclusive = {
   },
   "royal_loom": {
     "title": "Royal Loom",
-    "hint": "Dashed threads warn of lasers. Weave between the lit threads.",
+    "hint": "Dodge lit threads and filled squares. Dashed outlines warn before they fire.",
     "variants": [
       "Silken Threads",
       "Razor Tapestry"
     ],
     "descriptions": [
-      "One thread fires at a time with a long warning.",
-      "Three parallel threads and one crossing thread fire together after shorter warnings."
+      "One thread and one solid square activate after a warning.",
+      "Three solid squares, three parallel threads, and one crossing thread activate together."
     ],
     "palette": [
       "#c5eeff",

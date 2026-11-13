@@ -10,7 +10,7 @@ NEW_ATTACKS = {
     "briar_pursuit": ("BRIAR PURSUIT", "Keep moving; seeds bloom into thorns behind you.", ("#ceefae", "#8bd470", "#e96f9b")),
     "eclipse_waltz": ("ECLIPSE WALTZ", "Stay inside the moving moonlight. The dark floor hurts.", ("#d4ddff", "#b49aff", "#f17cdd")),
     "resonant_bells": ("RESONANT BELLS", "Dodge the expanding sound rings, or tap E as they reach you.", ("#ffe6ad", "#ffc76e", "#ff8360")),
-    "royal_loom": ("ROYAL LOOM", "Dashed threads warn of lasers. Weave between the lit threads.", ("#c5eeff", "#74b9ff", "#ff71df")),
+    "royal_loom": ("ROYAL LOOM", "Dodge lit threads and filled squares. Dashed outlines warn before they fire.", ("#c5eeff", "#74b9ff", "#ff71df")),
 }
 
 
@@ -53,12 +53,29 @@ class WrathPattern:
         self.countered = set()
         self.duration = (10, 12, 14)[self.level]
         self.warning = (1.4, 1.05, .8)[self.level]
+        if key == "pendulum_court" and self.level == 2:
+            self.warning /= 1.5 * 1.25 * 1.25
+            self.duration /= 1.25
         self.interval = {
             "starfall_verdict": (2.2, 1.8, 1.45), "pendulum_court": (3.4, 3, 2.7),
             "crown_chess": (2.8, 2.4, 2), "mirror_lances": (3.2, 2.7, 2.4),
             "briar_pursuit": (.7, .5, .35), "eclipse_waltz": (99, 99, 99),
             "resonant_bells": (2.8, 2.3, 1.8), "royal_loom": (2.7, 2.2, 1.9),
         }[key][self.level]
+        if key == "pendulum_court" and self.level == 2:
+            self.interval = .75
+        if key == "starfall_verdict":
+            self.warning /= 1.3
+            self.interval /= 1.3
+            self.duration /= 1.3
+        if key == "crown_chess":
+            self.warning /= 1.5
+            self.interval /= 1.5
+            self.duration /= 1.5
+        if key == "royal_loom":
+            self.warning /= 1.6
+            self.interval /= 1.6
+            self.duration /= 1.6
         self.hazards = []
 
     def update(self, dt, x, y):
@@ -78,11 +95,13 @@ class WrathPattern:
         shapes = []
         k, level = self.key, self.level
         if k == "eclipse_waltz":
-            t = max(0, self.age-1.6)
+            t = max(0, self.age-1.6) * (1 if level == 0 else 1.25)
             speed = (.35, .48, .62)[level]
             x = (75, 135, 175)[level]*math.sin(t*speed)
             y = -120-45*math.cos(t*speed)
             radius = (122, 96, 78)[level] + (6*math.sin(t*2) if level == 2 else 0)
+            if level == 2:
+                radius *= .9
             shapes.append(Hazard("safe", (x, y, radius), self.age > 1.6))
             return shapes
         for token, birth, px, py, seed in self.events:
@@ -92,16 +111,31 @@ class WrathPattern:
             progress = max(0, min(1, age/self.warning))
             def add(shape, coords, live=active):
                 shapes.append(Hazard(shape, tuple(coords), live, progress, token))
-            if k == "starfall_verdict" and t < .5:
+            if k == "starfall_verdict" and t < .5 / 1.3:
                 radius = (34, 44, 52)[level]
                 for offset in ((0,) if level < 2 else (-115, 0, 115)):
                     add("disc", (max(-260, min(260, px+offset)), max(-200, min(25, py)), radius))
-            elif k == "pendulum_court" and t < 1.7:
-                for side in ((-1,) if level == 0 else ((-1, 1) if level == 2 else ((-1,) if token % 2 == 0 else (1,)))):
-                    ax, ay = side*210, 35
-                    angle = -math.pi/2-side*(.95-math.pi*max(0,t)/(2.8,2.2,1.8)[level])
-                    add("line", (ax, ay, ax+300*math.cos(angle), ay+300*math.sin(angle), (10,14,18)[level]))
-            elif k == "crown_chess" and t < .65:
+                if level == 2:
+                    # A fourth impact above/below the row stays on the playable floor.
+                    fourth_y = py + 115 if py < -85 else py - 115
+                    add("disc", (max(-260, min(260, px)), max(-200, min(25, fourth_y)), radius))
+            elif k == "pendulum_court" and t < 1.7 / (1, 1.15, 1.3 * 1.25)[level]:
+                for side in ((-1,) if level == 0 else ((-1, 1, 0) if level == 2 else ((-1,) if token % 2 == 0 else (1,)))):
+                    ax, ay = side*(189 if level == 2 else 210), -5 if level >= 1 else 35
+                    swing_time = max(0, t) * (1, 1.15, 1.3 * 1.25)[level]
+                    direction = side or (-1 if token % 2 == 0 else 1)
+                    angle = -math.pi/2-direction*(.95-math.pi*swing_time/(2.8,2.2,1.8)[level])
+                    # Midnight's blades trade high/low reach on every swing.
+                    # Use the same reach for the warning and damaging blade.
+                    reach = (210 if (token + (side == 1)) % 2 == 0 else 270) if level == 2 else 300
+                    if level == 2 and side == 0:
+                        ay += 55
+                        # Travel across the court, reversing on the next wave.
+                        # Freeze at the starting position during the warning.
+                        ax = direction * 90 * math.cos(math.pi * swing_time / 1.7)
+                        reach = 240
+                    add("line", (ax, ay, ax+reach*math.cos(angle), ay+reach*math.sin(angle), (10,14,18)[level]))
+            elif k == "crown_chess" and t < .65 / 1.5:
                 divisor = (4, 3, 2)[level]
                 for row in range(3):
                     for col in range(6):
@@ -113,7 +147,7 @@ class WrathPattern:
                 # Both hard walls share one safe opening, never sealing it.
                 opening = (-140, -65, 10)[token % 3] if horizontal else (-170, 0, 170)[token % 3]
                 for direction in ((1, -1) if level == 2 else ((1,) if token % 2 == 0 else (-1,))):
-                    speed = (170, 200, 225)[level]
+                    speed = (170, 230, 258.75)[level]
                     position = direction*(-310+max(0,t)*speed)
                     if not active:
                         # Entry warnings must be inside the visible arena, not off-screen.
@@ -134,8 +168,13 @@ class WrathPattern:
                 add("ring", (cx,cy, 22+max(0,t)*(85,110,135)[level], (8,10,13)[level]))
                 if level == 2 and t > .55:
                     add("ring", (cx,cy,22+(t-.55)*135,10))
-            elif k == "royal_loom" and t < .75:
+            elif k == "royal_loom" and t < .75 / 1.6:
                 horizontal = token % 2 == 0
+                size = (90, 105, 120)[level]
+                for i in range(level + 1):
+                    col = (token + i * 2) % 5
+                    row = (token + i) % 2
+                    add("rect", (-240 + col * 120, -175 + row * 140, size, size))
                 for i in range((1,2,3)[level]):
                     offset = ((token*83+i*125) % 470)-235
                     coords = (-300, -110+offset*.45, 300, -110+offset*.45, 12) if horizontal else (offset,-240,offset,45,12)
@@ -154,7 +193,7 @@ class WrathPattern:
                 game.counter_hits += 1
                 game.sound_events.append("counter")
             else:
-                game.hurt()
+                game.hurt(2 if self.key == "mirror_lances" and self.level == 2 else 1)
         self.hazards = [h for h in self.hazards if h.token not in self.countered]
 
 

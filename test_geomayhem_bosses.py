@@ -5,6 +5,17 @@ from geomayhem import Geomayhem
 from geomayhem_bosses import INTRO_DURATION, MOVES, boss_attack, boss_pressure
 
 class BossUpgradeTests(unittest.TestCase):
+    def test_regent_attacks_twenty_five_percent_more_often_in_every_phase(self):
+        for phase, cast, volley in [(1, 1.65, .65), (2, 1.43, .58), (3, 1.21, .51)]:
+            pressure = boss_pressure(20, phase)
+            self.assertAlmostEqual(pressure['cast_interval'], cast / 1.25)
+            self.assertAlmostEqual(pressure['volley_interval'], volley / 1.25)
+        for level in range(1, 20):
+            progress = (level-1)/19
+            late = max(0, (level-10)/10)**1.4
+            self.assertAlmostEqual(boss_pressure(level)['cast_interval'], 4.4-1.7*progress-1.05*late)
+            self.assertAlmostEqual(boss_pressure(level)['volley_interval'], 2-.85*progress-.5*late)
+
     def boss(self, level, anomaly='armored'):
         game=Geomayhem(level,rng=random.Random(1))
         game.anomaly=anomaly;game.wave=20;game.break_left=0;game._spawn()

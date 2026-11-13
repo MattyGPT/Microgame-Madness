@@ -109,7 +109,7 @@ def build():
     finally:
         sys.path.pop(0)
     html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
-    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "boss-showcase.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "boss-showcase.html", "playtest-progress.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
