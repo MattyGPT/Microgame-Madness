@@ -6,8 +6,7 @@ const Achievements = (() => {
   const points = { bronze: 10, silver: 30, gold: 90, crystal: 270, diamond: 810, rainbow: 2430, empyrorite: 7290, black: 666 };
   const games = ["hangman", "keyboard", "dodge", "boss", "pumpkin"];
   const sovereignDifficulties = ["cruel", "nightmare", "impossible"];
-  const wrathModes = ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers',
-    'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'];
+  const wrathModes = ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order', 'starfall_verdict', 'pendulum_court', 'crown_chess', 'mirror_lances', 'briar_pursuit', 'eclipse_waltz', 'resonant_bells', 'royal_loom'];
   const catalog = [];
   function add(id, title, tier, group, description, stat, target = 1, options = {}) {
     catalog.push({ id, title, tier, group, description, stat, target, ...options });
@@ -144,14 +143,16 @@ const Achievements = (() => {
     ["Royal Roulette", "diamond", "Random Order"],
   ].entries()) add(`wrath_${wrathModes[index]}`, title, tier, "The King's Wrath",
     `Win a ${label} practice fight.`, `wrath_${wrathModes[index]}`);
-  add("wrath_curriculum", "The Royal Curriculum", "diamond", "The King's Wrath", "Win each of the seven individual practice attacks.", "wrathLessons", 7);
+  for (const [key, title] of [["starfall_verdict", "Starfall Verdict"], ["pendulum_court", "Pendulum Court"], ["crown_chess", "Crown Chess"], ["mirror_lances", "Mirror Lances"], ["briar_pursuit", "Briar Pursuit"], ["eclipse_waltz", "Eclipse Waltz"], ["resonant_bells", "Resonant Bells"], ["royal_loom", "Royal Loom"]])
+    add(`wrath_${key}`, `${title} Master`, "gold", "The King's Wrath", `Win a ${title} fight on any difficulty.`, `wrath_${key}`);
+  add("wrath_curriculum", "The Royal Curriculum", "diamond", "The King's Wrath", "Win each of the seven classic individual practice attacks.", "wrathLessons", 7);
   add("wrath_win_5", "Practice Paying Off", "gold", "The King's Wrath", "Win 5 practice fights, in any modes.", "wrathWins", 5);
   add("wrath_win_25", "Resident of the Throne Room", "rainbow", "The King's Wrath", "Win 25 practice fights, in any modes.", "wrathWins", 25);
   add("wrath_flawless", "Unscathed Rehearsal", "diamond", "The King's Wrath", "Win a practice fight without taking damage. Healing cannot undo a hit.", "wrathFlawlessWins");
-  add("wrath_full_deck", "Full Deck", "crystal", "The King's Wrath", "Survive all seven attacks in one Random Order fight.", "wrathRandomSetsBest");
-  add("wrath_three_sets", "Shuffled Survivor", "rainbow", "The King's Wrath", "Survive 21 attacks in one Random Order fight: three complete shuffled sets.", "wrathRandomSetsBest", 3);
-  add("wrath_perfect_shuffle", "Chaos, Perfected", "rainbow", "The King's Wrath", "Survive a full set of seven Random Order attacks, then win without taking any damage throughout the fight.", "wrathPerfectShuffle");
-  add("wrath_counter_25", "The King's Rebuttal", "crystal", "The King's Wrath", "Successfully counter 25 magenta fingers in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 25);
+  add("wrath_full_deck", "Full Deck", "crystal", "The King's Wrath", "Survive all fifteen attacks in one Random Order fight.", "wrathRandomSetsBest");
+  add("wrath_three_sets", "Shuffled Survivor", "rainbow", "The King's Wrath", "Survive 45 attacks in one Random Order fight: three complete shuffled sets.", "wrathRandomSetsBest", 3);
+  add("wrath_perfect_shuffle", "Chaos, Perfected", "rainbow", "The King's Wrath", "Survive a full set of fifteen Random Order attacks, then win without taking any damage throughout the fight.", "wrathPerfectShuffle");
+  add("wrath_counter_25", "The King's Rebuttal", "crystal", "The King's Wrath", "Successfully counter 25 magenta fingers or bell echoes in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 25);
   add("dodge_merciless_300", "Beyond the Last Mercy", "empyrorite", "Turtle Dodge", "Survive 300 seconds in one Merciless Turtle Dodge game.", "mercilessBest", 300);
   add("boss_clean_streak_20", "Sovereign of the Arena", "empyrorite", "Boss Crush", "Win 20 consecutive Boss Crush fights on Cruel or harder without damage. Mean fights are ignored. Damage, losses, and abandoned qualifying fights reset the streak.", "bossSovereignStreak", 20);
   add("determination", "Determination", "crystal", "Arcade", "Lose 50 minigame rounds in total.", "totalLosses", 50);
@@ -172,7 +173,7 @@ const Achievements = (() => {
   add("cube_pet_10", "Getting Acquainted", "bronze", "Arcade", "Pet Cubie 10 times.", "cubePets", 10);
   add("boss_win_2", "Back for Seconds", "bronze", "Boss Crush", "Win 2 Boss Crush games.", "bossWins", 2);
   add("pumpkin_win_2", "Second Harvest", "bronze", "Pumpkin King", "Defeat the Pumpkin King 2 times in any mode.", "pumpkinWins", 2);
-  add("wrath_counter_1", "A Royal Reply", "bronze", "The King's Wrath", "Successfully counter a magenta finger in King's Wrath.", "wrathCounterHits");
+  add("wrath_counter_1", "A Royal Reply", "bronze", "The King's Wrath", "Successfully counter a magenta finger or bell echo in King's Wrath.", "wrathCounterHits");
   add("dodge_merciless_15", "A Little Less Mercy", "bronze", "Turtle Dodge", "Survive 15 seconds in one Merciless game.", "mercilessBest", 15);
   add("hangman_win_3", "Third Word's the Charm", "bronze", "Hangman", "Win 3 Hangman games.", "hangmanWins", 3);
   add("hangman_hard_3", "Taking the Hard Way", "bronze", "Hangman", "Win 3 hard Hangman games.", "hardWins", 3);
@@ -187,7 +188,7 @@ const Achievements = (() => {
   add("dodge_close_10", "Thread the Shell", "gold", "Turtle Dodge", "Make 10 close calls in one Turtle Dodge game without touching the nearby blocks.", "closeCalls", 10);
   add("hangman_perfect_10", "Ten out of Ten", "crystal", "Hangman", "Win 10 Hangman games without a wrong guess.", "perfectWins", 10);
   add("hangman_hard_perfect_15", "Precision Dictionary", "diamond", "Hangman", "Win 15 hard Hangman games without a wrong guess.", "hardPerfectWins", 15);
-  add("wrath_counter_100", "Return to Sender", "rainbow", "The King's Wrath", "Successfully counter 100 magenta fingers in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 100);
+  add("wrath_counter_100", "Return to Sender", "rainbow", "The King's Wrath", "Successfully counter 100 magenta fingers or bell echoes in King's Wrath. Counters accumulate across fights.", "wrathCounterHits", 100);
   add("core_flawless_3", "Perfect Gravity", "empyrorite", "Singularity Core", "Destroy Singularity Core 3 times without taking any damage. Each victory must be flawless.", "coreFlawlessWins", 3);
   // Unicode Wingdings equivalents of RUNRUNRUNRUNRUN, matching the Gaster symbols above.
   add("gaster_remix", "Signal Recognized", "black", "Arcade",
@@ -228,7 +229,7 @@ const Achievements = (() => {
   });
   add("cube_pet_5", "High Five, Cubie!", "bronze", "Arcade", "Pet Cubie 5 times.", "cubePets", 5);
   add("dodge_5", "Finding Your Feet", "bronze", "Turtle Dodge", "Survive 5 seconds in one Turtle Dodge game.", "dodgeBest", 5);
-  add("wrath_counter_3", "Three Royal Replies", "bronze", "The King's Wrath", "Successfully counter 3 magenta fingers across King's Wrath fights.", "wrathCounterHits", 3);
+  add("wrath_counter_3", "Three Royal Replies", "bronze", "The King's Wrath", "Successfully counter 3 magenta fingers or bell echoes across King's Wrath fights.", "wrathCounterHits", 3);
   add("hangman_hard_2", "Double Difficulty", "bronze", "Hangman", "Win 2 hard Hangman games.", "hardWins", 2);
   add("hangman_win_4", "Four Words Forward", "bronze", "Hangman", "Win 4 Hangman games.", "hangmanWins", 4);
   add("hangman_win_7", "Lucky Letters", "silver", "Hangman", "Win 7 Hangman games.", "hangmanWins", 7);
@@ -240,11 +241,11 @@ const Achievements = (() => {
   add("cube_pet_50", "Fifty Little Squeaks", "silver", "Arcade", "Pet Cubie 50 times.", "cubePets", 50);
   add("boss_win_3", "Triple Trouble", "silver", "Boss Crush", "Win 3 Boss Crush games.", "bossWins", 3);
   add("wrath_win_3", "Third Rehearsal", "silver", "The King's Wrath", "Win 3 King's Wrath practice fights, in any modes.", "wrathWins", 3);
-  add("wrath_counter_10", "Talk to the Hand", "silver", "The King's Wrath", "Successfully counter 10 magenta fingers across King's Wrath fights.", "wrathCounterHits", 10);
+  add("wrath_counter_10", "Talk to the Hand", "silver", "The King's Wrath", "Successfully counter 10 magenta fingers or bell echoes across King's Wrath fights.", "wrathCounterHits", 10);
   add("name_codexisthebest", "Code to the Rainbow", "rainbow", "Arcade", "Enter CODEXISTHEBEST as your arcade name to unlock Codex Cubie.", "name_codexisthebest");
   add("pumpkin_merciful", "Mercy for the King", "rainbow", "Pumpkin King", "Survive 5 minutes in one Pumpkin King fight without firing a single shot, in any mode.", "pumpkinMercifulBest", 300);
   add("pumpkin_speedrunner", "Beat the Clock", "diamond", "Pumpkin King", "Defeat the Pumpkin King in 70 seconds or less, in any mode.", "pumpkinSpeedrun");
-  add("magenta_counter_100", "The Golden Hand", "rainbow", "Pumpkin King", "Counter 100 magenta fingers across Pumpkin King and King's Wrath fights.", "magentaCounterHits", 100);
+  add("magenta_counter_100", "The Golden Hand", "rainbow", "Pumpkin King", "Counter 100 magenta fingers or bell echoes across Pumpkin King and King's Wrath fights.", "magentaCounterHits", 100);
   add("arcade_deaths_10", "Back with a Hiss", "silver", "Arcade", "Die 10 times across Turtle Dodge, Boss Crush, Pumpkin King, King's Wrath, or Singularity Core (including Core practice).", "arcadeDeaths", 10);
   add("dodge_square_deaths_50", "Square One Again", "gold", "Turtle Dodge", "Die to the square O block 50 times across Easy, Normal, Hard, or Merciless. This is the normally yellow piece; Merciless recolors it red.", "dodgeSquareDeaths", 50);
   for (const [seconds, title, tier] of [
@@ -462,11 +463,11 @@ const Achievements = (() => {
       const healing = healingMode ? count(s.healing_collected) : 0;
       const newHealing = Math.max(0, healing - round.healingCollected);
       const family = core || corePractice ? 'core' : s.mode === 'pumpkin' || wrath ? 'pumpkin' : null;
-      const survivalCounts = Array.isArray(s.attack_survivals) && s.attack_survivals.length === (family === 'core' ? 15 : 7)
+      const survivalCounts = Array.isArray(s.attack_survivals) && (s.attack_survivals.length === (family === 'core' || wrath ? 15 : 7) || wrath && s.attack_survivals.length === 7)
         ? s.attack_survivals.map(count) : [];
       const newSurvivals = family && survivalCounts.some((value, index) => value > (round.survivals[index] || 0));
       const protocols = Math.min(15, count(s.attacks_completed));
-      const randomSets = wrath && s.difficulty.split("__")[0] === "random_order" ? Math.floor(count(s.attacks_completed) / 7) : 0;
+      const randomSets = wrath && s.difficulty.split("__")[0] === "random_order" ? Math.floor(count(s.attacks_completed) / (s.attack_survivals?.length === 7 ? 7 : 15)) : 0;
       const counters = (wrath || s.mode === "pumpkin") ? Math.max(0, count(s.counter_hits) - round.counterHits) : 0;
       const mercifulTime = s.mode === "pumpkin" && s.shots_fired === 0 && s.lives > 0
         && Number.isFinite(s.fight_elapsed) && s.fight_elapsed >= 0 ? Math.floor(s.fight_elapsed) : 0;

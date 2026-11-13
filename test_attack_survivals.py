@@ -15,11 +15,15 @@ class AttackSurvivalTests(unittest.TestCase):
         # Test completion timing independently of the already-tested collisions.
         if isinstance(game, PumpkinKing):
             game.touches_king = lambda: False
+            game.hurt = lambda *args, **kwargs: None
         return game
 
     def test_every_pumpkin_attack_counts_at_its_end_in_both_modes(self):
         for key, index in WRATH_ATTACKS.items():
             for mode in ('pumpkin', 'wrath'):
+                if mode == 'pumpkin' and index >= 7:
+                    continue
+                count = 15 if mode == 'wrath' else 7
                 with self.subTest(mode=mode, attack=key):
                     game = self.protect(KingsWrath(key, random.Random(4)) if mode == 'wrath'
                                         else PumpkinKing(random.Random(4)))
@@ -28,9 +32,9 @@ class AttackSurvivalTests(unittest.TestCase):
                     duration = game.stage.duration + sum(stage.duration for stage in game.queue)
                     duration -= ATTACK_BREAK if mode == 'pumpkin' else WRATH_BREAK_TIME
                     game.update(duration - .01, set())
-                    self.assertEqual(game.attack_survivals, [0] * 7)
+                    self.assertEqual(game.attack_survivals, [0] * count)
                     game.update(.01, set())
-                    self.assertEqual(game.attack_survivals, [int(i == index) for i in range(7)])
+                    self.assertEqual(game.attack_survivals, [int(i == index) for i in range(count)])
                     game.update(.2, set())
                     self.assertEqual(sum(game.attack_survivals), 1)
 
@@ -54,12 +58,12 @@ class AttackSurvivalTests(unittest.TestCase):
 
     def test_random_wrath_records_the_finished_attack_before_selecting_the_next(self):
         game = self.protect(KingsWrath('random_order', random.Random(4)))
-        for _ in range(7):
+        for _ in range(15):
             index = game.attack_index
             duration = game.stage.duration + sum(stage.duration for stage in game.queue)
             game.update(duration, set())
             self.assertEqual(game.attack_survivals[index], 1)
-        self.assertEqual(game.attack_survivals, [1] * 7)
+        self.assertEqual(game.attack_survivals, [1] * 15)
 
     def test_intro_death_early_victory_and_finale_do_not_count(self):
         pumpkin = self.protect(PumpkinKing(random.Random(4)))

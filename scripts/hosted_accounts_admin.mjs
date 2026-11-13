@@ -74,7 +74,7 @@ export async function deploy(slug) {
   body.set('metadata',JSON.stringify({name:slug,entrypoint_path:entry,verify_jwt:false}));
   // Only explicit source files; never bundle environment, archives, tests, or credentials.
   const files = [entry,`supabase/functions/${slug}/handler.mjs`,'supabase/functions/_shared/identity.mjs'];
-  if(slug==='accounts') files.push('web/achievements.js','web/customs.js','web/shop.js','web/trails.js','shared/account-rules.js');
+  if(slug==='accounts') files.push('web/achievements.js','web/customs-expansion.js','web/customs.js','web/shop.js','web/trails.js','web/turtle-customs.js','shared/account-rules.js');
   for(const name of files) body.append('file',new Blob([await readFile(name)],{type:'application/typescript'}),name);
   const result = await management(`/v1/projects/${projectRef}/functions/deploy?slug=${slug}`,{method:'POST',body});
   console.log(`Deployed ${slug} version ${result.version}, ${result.status}`);

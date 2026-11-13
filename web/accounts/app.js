@@ -258,7 +258,7 @@ const AccountApp = (() => {
       if (!this.initialized || !this.controller) return;
       const generation = this.controller.generation;
       const desired = { player: profile.player, cubieCustom: profile.cubieCustom || 'classic',
-        turtleTrail: profile.turtleTrail || null };
+        turtleCustom: profile.turtleCustom || null, turtleTrail: profile.turtleTrail || null };
       const task = this.chain.then(async () => {
         this.checkIdentity(generation);
         const current = this.controller.state().profile;

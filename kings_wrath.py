@@ -1,8 +1,9 @@
-"""Count down into a repeated or shuffled set of Pumpkin King patterns."""
+"""Repeat or shuffle seven classic patterns and eight exclusive royal attacks."""
 
 import math
 from collections import deque
 from boss_crush import Projectile, hits_player
+from wrath_attacks import NEW_ATTACKS, WrathPattern
 
 from pumpkin_king import (ATTACK_NAMES, BABY_MODE, PumpkinKing, Stage,
                           SCARE_PERIOD, SCARE_WARNING, SCARE_QUADRANTS,
@@ -24,6 +25,9 @@ WRATH_ATTACKS = {
     "haunted_quadrants": 6,
 }
 
+WRATH_ATTACKS.update({key: index for index, key in enumerate(NEW_ATTACKS, 7)})
+WRATH_ATTACK_NAMES = (*ATTACK_NAMES, *(data[0] for data in NEW_ATTACKS.values()))
+
 
 class KingsWrath(PumpkinKing):
     def __init__(self, attack, rng=None):
@@ -34,15 +38,17 @@ class KingsWrath(PumpkinKing):
             raise ValueError("Unknown King's Wrath difficulty")
         self.countdown_started = False
         self.ghosts = []
+        self.wrath_pattern = None
         self.projectile_speed = {"easy": .7, "normal": 1, "hard": 1.25}[self.variant]
         self.ring_speed = {"easy": .7, "normal": 1, "hard": 1.38}[self.variant]
-        self.scare_speed = {"easy": .5, "normal": 1, "hard": 1.35 * .95}[self.variant]
+        self.scare_speed = {"easy": .5, "normal": 1, "hard": 1.08}[self.variant]
         if attack not in WRATH_ATTACKS and attack != RANDOM_ORDER:
             raise ValueError("Unknown King's Wrath attack")
         self.practice_attack = WRATH_ATTACKS.get(attack)
         self.attack_order = []
         self.attacks_completed = 0
         super().__init__(rng=rng, difficulty=BABY_MODE)
+        self.attack_survivals = [0] * len(WRATH_ATTACKS)
         self.spawn_position = self.x, self.y
         self.difficulty = original_attack
         self.begin_attack(self._choose_attack())
@@ -53,14 +59,27 @@ class KingsWrath(PumpkinKing):
         if not self.attack_order:
             self.attack_order = list(WRATH_ATTACKS.values())
             self.rng.shuffle(self.attack_order)
-            # Play all seven before reshuffling, without repeating at the join.
+            # Play the entire deck before reshuffling, without repeating at the join.
             if self.attack_order[-1] == self.attack_index:
                 self.attack_order[0], self.attack_order[-1] = self.attack_order[-1], self.attack_order[0]
         return self.attack_order.pop()
 
     def begin_attack(self, index):
         pending_sounds = len(self.sound_events)
-        super().begin_attack(index)
+        self.wrath_pattern = None
+        if index >= 7:
+            self.intro_done = True
+            self.attack_index = index
+            self.bullets.clear()
+            self.rings.clear()
+            self.shots.clear()
+            key = list(NEW_ATTACKS)[index-7]
+            self.wrath_pattern = WrathPattern(key, self.variant, self.rng)
+            self.stage = Stage("wrath_exclusive", self.wrath_pattern.duration)
+            self.stage_age = 0.0
+            self.queue = deque()
+        else:
+            super().begin_attack(index)
         self.x, self.y = self.spawn_position
         # Replace the full fight's break with a fixed, safe half-second reset.
         if self.queue and self.queue[-1].name == "break":
@@ -240,6 +259,9 @@ class KingsWrath(PumpkinKing):
 
     def update_healing(self, step):
         super().update_healing(step)
+        if self.stage.name == "wrath_exclusive" and self.wrath_pattern and self.alive and not self.won:
+            self.wrath_pattern.update(step, self.x, self.y)
+            self.wrath_pattern.collide(self)
         for ghost in self.ghosts:
             ghost.x += ghost.vx * step
             if ghost.x > 290:
@@ -262,6 +284,8 @@ class KingsWrath(PumpkinKing):
             self.bullets.clear()
             self.rings.clear()
             self.ghosts.clear()
+            if self.wrath_pattern:
+                self.wrath_pattern.hazards.clear()
             self.shots.clear()
             self.counter_time = 0.0
         else:
@@ -293,7 +317,7 @@ class KingsWrath(PumpkinKing):
         if self.stage.name == "wrath_ready" and not self.won:
             seconds = math.ceil(max(0, self.stage.duration-self.stage_age)-1e-9)
             if self.practice_attack is None:
-                return f"GET READY — {seconds} · NEXT: {ATTACK_NAMES[self.attack_index]}"
+                return f"GET READY — {seconds} · NEXT: {WRATH_ATTACK_NAMES[self.attack_index]}"
             return f"GET READY — {seconds} · POSITION YOUR FINGERS"
         if self.stage.name == "scare_ready" and self.variant == "hard":
             return f"GET IN POSITION — TOP LEFT + BOTTOM RIGHT FIRST · {max(0, self.stage.duration-self.stage_age):.1f}s"
@@ -307,4 +331,7 @@ class KingsWrath(PumpkinKing):
         if self.stage.name == "scares" and self.variant == "hard":
             names = ("TOP LEFT + BOTTOM RIGHT", "TOP RIGHT + BOTTOM LEFT")
             return f"{names[self.scare_beat % 2]} — {'WARNING! MOVE CLEAR' if self.scare_warning else 'TWIN TERRORS!'}"
+        if self.wrath_pattern:
+            title, hint, _ = NEW_ATTACKS[self.wrath_pattern.key]
+            return f"{title} — {hint}"
         return super().pattern_label

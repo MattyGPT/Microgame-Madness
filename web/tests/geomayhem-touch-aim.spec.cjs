@@ -1,0 +1,28 @@
+const {test,expect,openGame}=require('./fixtures/game.cjs');
+test('mobile fire stick aims while moving and releases independently',async({page,isMobile})=>{
+  test.skip(!isMobile,'Touch control');
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await openGame(page);await page.locator('[data-game="geomayhem"]').click();await page.locator('[data-difficulty="level_1"]').click();
+  const fire=page.locator('#touch-fire');await fire.scrollIntoViewIfNeeded();
+  const f=await fire.boundingBox(),s=await page.locator('#touch-joystick').boundingBox();
+  const shoot={id:2,x:f.x+f.width/2,y:f.y+f.height/2};
+  const move={id:1,x:s.x+s.width/2,y:s.y+s.height/2};
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[move]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[move,shoot]});
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...move,x:move.x+30},{...shoot,y:shoot.y-35}]});
+  await expect.poll(()=>page.evaluate(()=>geomayhemShootDirection[1])).toBeGreaterThan(.95);
+  await expect.poll(()=>page.evaluate(()=>snapshot.player.x)).toBeGreaterThan(5);
+  expect(await page.evaluate(()=>Math.abs(geomayhemAim[0]-snapshot.player.x)<6)).toBe(true);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[{...move,x:move.x+30}]});
+  expect(await page.evaluate(()=>geomayhemShootPointer!==null)).toBe(true);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...shoot,x:shoot.x-35}]});
+  await expect.poll(()=>page.evaluate(()=>geomayhemShootDirection[0])).toBeLessThan(-.95);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  expect(await page.evaluate(()=>geomayhemShootPointer)).toBeNull();
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[shoot]});
+  await page.evaluate(()=>pause());
+  expect(await page.evaluate(()=>geomayhemShootPointer)).toBeNull();
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+  expect(errors).toEqual([]);
+});

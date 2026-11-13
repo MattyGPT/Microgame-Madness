@@ -29,7 +29,7 @@ test('rules share actual catalog and keep reducer inputs immutable', () => {
   assert.equal(JSON.stringify(command), commandJSON);
   assert.equal(next.state.achievements.unlocked.welcome, new Date(now).toISOString());
   assert.equal(next.result.profilePoints, 10);
-  assert.equal(Rules.catalog.length, Customs.catalog.length + Trails.catalog.length);
+  assert.equal(Rules.catalog.length, Customs.catalog.length + Trails.catalog.length + require("../turtle-customs.js").catalog.length);
   assert.equal(next.state.privacy.leaderboard, true);
 });
 
@@ -334,5 +334,21 @@ test('Endurance checkpoints and finishes never grant Key Rush achievements', () 
     assert.equal(result.state.achievements.stats.typingBest, 0);
     assert.equal(result.state.achievements.stats.play_keyboard, 0);
     assert.equal(Object.keys(result.state.achievements.unlocked).some(id => id === 'play_keyboard' || id.startsWith('typing_')), false);
+  }
+});
+
+test('new Wrath victories retain all fifteen counters and grant the matching medal once', () => {
+  for (const [index, attack] of ['starfall_verdict','pendulum_court','crown_chess','mirror_lances','briar_pursuit','eclipse_waltz','resonant_bells','royal_loom'].entries()) {
+    for (const suffix of ['', '__easy', '__hard']) {
+      const difficulty=attack+suffix;
+      const counts=Array(15).fill(0);counts[index+7]=2;
+      const result=complete(start(Rules.initial(),'wrath',difficulty), 'round-one', {
+        attack_survivals:counts, attacks_completed:2, damage_taken:0, healing_collected:0,
+      });
+      assert.equal(result.state.runs['round-one'].snapshot.attack_survivals.length,15);
+      assert.ok(result.state.achievements.unlocked[`wrath_${attack}`]);
+      assert.equal(result.state.achievements.stats.pumpkinWins,0);
+      assert.equal(complete(result.state,'round-one').result.duplicate,true);
+    }
   }
 });

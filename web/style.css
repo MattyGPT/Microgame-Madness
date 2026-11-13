@@ -1633,13 +1633,25 @@ select:disabled {
   text-align: center;
 }
 #hangman-picture {
-  font: bold 18px/1.2 monospace;
-  text-align: left;
-  width: 120px;
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
   margin: 0 auto 18px;
   color: var(--accent);
-  height: 130px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
+.hangman-frame { stroke: #82928b; stroke-width: 3; }
+.hangman-figure [data-hangman-part] { opacity: 0; transition: opacity 180ms ease-out; }
+.hangman-figure .drawn { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .hangman-figure [data-hangman-part] { transition: none; }
+}
+html.account-reduced-motion .hangman-figure [data-hangman-part] { transition: none; }
 .word {
   font: 600 clamp(17px, 3vw, 29px) monospace;
   letter-spacing: 2px;
@@ -4724,11 +4736,105 @@ html.account-reduced-motion .guide-scan-beam { animation: none; opacity: 0; }
   border-color: color-mix(in srgb, var(--wrath-tint) 40%, var(--line));
   background: radial-gradient(ellipse at 90% 0, color-mix(in srgb, var(--wrath-tint) 12%, transparent), transparent 65%), var(--panel);
 }
-.difficulty-choice[data-wrath-level="easy"] { border-radius: 22px; }
+.difficulty-choice[data-wrath-level="easy"] {
+  border-radius: 28px;
+  background: radial-gradient(ellipse at top, color-mix(in srgb, var(--wrath-tint) 23%, transparent), transparent 85%), var(--panel);
+  box-shadow: inset 0 0 22px color-mix(in srgb, var(--wrath-tint) 12%, transparent);
+}
+.difficulty-choice[data-wrath-level="easy"] .wrath-difficulty-art {
+  padding: 6px; border-radius: 50%;
+  background: color-mix(in srgb, var(--wrath-tint) 12%, transparent);
+}
 .difficulty-choice[data-wrath-level="hard"] {
   border-radius: 3px;
-  box-shadow: inset 0 3px var(--wrath-tint);
+  box-shadow: inset 0 3px var(--wrath-tint), inset 0 -3px #57182c;
   background: repeating-linear-gradient(135deg, transparent 0 16px, #ffffff03 16px 18px), var(--panel);
 }
 .wrath-difficulty-art { display: block; width: 66px; height: 66px; margin: 0 0 14px; color: var(--wrath-tint); }
 .difficulty-choice[data-wrath-level="hard"] .wrath-difficulty-art { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--wrath-tint) 30%, transparent)); }
+
+/* Keep touch movement usable in portrait, landscape, and fullscreen. */
+.game-main { position: relative; }
+.joystick-home { width: 128px; height: 128px; flex: 0 0 auto; }
+.touch-joystick { width: 128px; height: 128px; }
+.joystick-thumb { width: 50px; height: 50px; left: calc(50% - 25px); top: calc(50% - 25px); }
+.touch-joystick.floating { position: absolute; z-index: 30; pointer-events: none; opacity: .85; }
+#touch-controls { touch-action: none; }
+body.game-fullscreen-open { overflow: hidden; }
+.game-main:fullscreen, .game-main.game-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  box-sizing: border-box;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: #101719;
+  overflow: auto;
+  z-index: 1000;
+  transform: none;
+}
+.game-main:fullscreen::backdrop { background: #101719; }
+.game-footer > div { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-height: 500px) {
+  .joystick-home, .touch-joystick { width: 112px; height: 112px; }
+}
+
+#game-canvas { touch-action: pinch-zoom; }
+
+/* A prominent way out of immersive play on both mouse and touch screens. */
+#fullscreen[aria-pressed="true"] {
+  min-height: 52px;
+  padding: 12px 22px;
+  border: 4px solid transparent;
+  border-radius: 14px;
+  background: linear-gradient(#191524, #191524) padding-box,
+    linear-gradient(110deg, #ff547c, #ffb94d, #f3ff66, #5dffc1, #64b5ff, #c47aff, #ff547c) border-box;
+  background-size: 100% 100%, 250% 100%;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: .03em;
+  text-shadow: 0 0 8px #ffffff66;
+  box-shadow: -5px 0 18px #ff547c66, 0 4px 18px #5dffc144, 5px 0 18px #947aff88;
+  animation: fullscreen-rainbow 5s linear infinite;
+}
+#fullscreen[aria-pressed="true"]:hover { filter: brightness(1.2); }
+#fullscreen:focus-visible { outline: 3px solid white; outline-offset: 4px; }
+@keyframes fullscreen-rainbow {
+  from { background-position: 0 0, 0% 50%; }
+  to { background-position: 0 0, 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fullscreen[aria-pressed="true"] { animation: none; }
+}
+#touch-fire.aim-stick { position:relative; width:112px; min-height:112px; border-radius:50%; touch-action:none; user-select:none; padding:12px 8px 36px; }
+#touch-fire.aim-stick::after { content:""; position:absolute; left:calc(50% - 9px); top:calc(65% - 9px); width:18px; height:18px; border:2px solid #d9fff1; background:#71f5d255; border-radius:50%; transform:translate(var(--aim-x,0px),var(--aim-y,0px)); pointer-events:none; }
+#touch-fire.aim-stick.pressed { border-color:#71f5d2; box-shadow:0 0 14px #71f5d233; }
+
+/* Geomayhem boss introductions and temporary theater. */
+.boss-cinema{position:absolute;inset:0;z-index:45;background:#080d1c;display:flex;flex-direction:column;justify-content:center}.boss-cinema[hidden]{display:none}.boss-cinema canvas{width:100%;height:auto;max-height:100%;object-fit:contain}.boss-cinema button{position:absolute;right:14px;bottom:14px;z-index:2}.boss-cinema p{position:absolute;left:14px;top:0;color:#d5e7fa;font:12px system-ui}.boss-theater-link{display:block;padding:20px;margin:14px 0;border:1px solid #61729b;border-radius:12px;background:linear-gradient(110deg,#1b2340,#263b44);color:#e5eeff;text-decoration:none}.boss-theater-link strong{font-size:20px}.boss-theater-link span{display:block;font-size:12px;color:#acbed6}
+
+.difficulty-choice[data-wrath-exclusive] { border-color: var(--wrath-tint); }
+.difficulty-choice[data-wrath-exclusive] .wrath-difficulty-art { color: var(--wrath-tint); }
+
+/* Shop atelier: tiered detail, with quiet motion and frozen offscreen cards. */
+.atelier-sway { animation:atelier-sway 4.8s ease-in-out infinite alternate; }
+.atelier-bob { animation:atelier-bob 3.8s ease-in-out infinite alternate; }
+.atelier-pulse { animation:atelier-pulse 4s ease-in-out infinite; }
+.atelier-shine { animation:atelier-shine 5s ease-in-out infinite; }
+.atelier-orbit { animation:atelier-orbit 22s linear infinite; }
+.atelier-iridescent { animation:atelier-iridescent 8s ease-in-out infinite alternate; }
+.atelier-level-6.atelier-orbit { animation-duration:30s; }
+@keyframes atelier-sway { from { transform:rotate(-2deg); } to { transform:rotate(2deg); } }
+@keyframes atelier-bob { to { transform:translateY(-2px); } }
+@keyframes atelier-pulse { 50% { opacity:.68; } }
+@keyframes atelier-shine { 0%,100% { opacity:.25; } 45%,60% { opacity:1; } }
+@keyframes atelier-orbit { to { transform:rotate(360deg); } }
+@keyframes atelier-iridescent { to { filter:hue-rotate(65deg); } }
+.shop-art-paused .cubie-custom-art, .shop-art-paused .cubie-custom-art * { animation-play-state:paused!important; }
+@media (prefers-reduced-motion:reduce) {
+  [class*="atelier-"] { animation:none!important; }
+}
+html.account-reduced-motion [class*="atelier-"] { animation:none!important; }

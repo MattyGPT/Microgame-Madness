@@ -1,5 +1,7 @@
 """Procedural Pumpkin King animation, pooled canvas graphics, and synthesized audio."""
 
+from wrath_attacks import NEW_ATTACKS, draw_wrath_pattern, draw_wrath_floor
+
 import colorsys
 import math
 import random
@@ -23,6 +25,7 @@ WRATH_PALETTES = (
     ("#c8bfff", "#ff7b41"), ("#ffe0a0", "#ff4c59"),
     ("#b4f1df", "#c078ff"),
 )
+WRATH_PALETTES += tuple((data[2][0], data[2][2]) for data in NEW_ATTACKS.values())
 STAR_RIMS = ("#61eaff", "#ba7cff", "#ff83d7")
 
 # Shared by the original shell face and the Impossible Boss Crush face.
@@ -42,6 +45,7 @@ LAUGH_STYLES = {
     "impossible": (.72, 42, 10, 0),
     "pumpkin": (.58, 44, 17, 0),
     "wrath": (.86, 46, 14, 2),
+    "wrath_hard": (.36, 53, 23, 3),
 }
 
 
@@ -55,7 +59,7 @@ def defeat_laugh_mouth(x, y, style, age):
     """Open laughs and carved grins with each boss's own jaw shape."""
     _, width, depth, tilt = LAUGH_STYLES[style]
     opening = depth * (.55 + .45 * defeat_laugh_pulse(style, age))
-    carved = style in ("impossible", "pumpkin", "wrath")
+    carved = style in ("impossible", "pumpkin", "wrath", "wrath_hard")
     points = []
     for i in range(13):
         u = (i - 6) / 6
@@ -206,7 +210,7 @@ class KingView:
                 if runs[-1] and bone.y-runs[-1][-1].y > 30:
                     runs.append([])
                 runs[-1].append(bone)
-            color = ({"easy": "#e1efcc", "hard": "#d9b3a0"}.get(variant, COLORS.get(rule, "#ffffff")))
+            color = ({"easy": "#e1efcc", "hard": "#b92345"}.get(variant, COLORS.get(rule, "#ffffff")))
             for run in runs:
                 lower = run[0].y-run[0].height/2
                 upper = run[-1].y+run[-1].height/2
@@ -227,7 +231,17 @@ class KingView:
                     self.oval(x+side*5-1, cap_y+2, 6, 5, mix(color, "#ffffff", .6))
                 for index in range(int(abs(cap_y-edge)/42)):
                     py = edge+direction*(15+index*42)
-                    self.ribbon(((x-3, py-5), (x+1, py), (x-1, py+5)), 2 if variant == "hard" else 1.2, "#e34035" if variant == "hard" else "#8f8292")
+                    if variant == "easy":
+                        self.oval(x, py, 8, 10, "#fff6d8")
+                        self.oval(x-2, py+1, 2, 2, "#5d6952")
+                        self.oval(x+2, py+1, 2, 2, "#5d6952")
+                        self.ribbon(((x-2,py-2),(x,py-3),(x+2,py-2)), 1, "#5d6952")
+                    else:
+                        if variant == "hard":
+                            self.poly(((x-6,py+10),(x+6,py+5),(x+6,py-10),
+                                       (x-6,py-5)), "#751b38")
+                            self.ribbon(((x-5,py-8),(x+3,py-2),(x-2,py+3),(x+4,py+9)), 3, "#591b32")
+                        self.ribbon(((x-5,py-8),(x+3,py-2),(x-2,py+3),(x+4,py+9)), 1.4 if variant == "hard" else 1.2, "#ff9c81" if variant == "hard" else "#8f8292")
                 # Spent sections keep their shape beneath a ragged red stain.
                 for bone in run:
                     if not getattr(bone, "spent", False):
@@ -267,7 +281,11 @@ class KingView:
             for i in range(8):
                 x, y = side*294, -214+i*59
                 if variant == "easy":
-                    self.oval(x, y, 5, 8, mix(BACKGROUND, accent, .55))
+                    for petal in range(5):
+                        angle = petal*math.tau/5
+                        self.oval(x+math.cos(angle)*4, y+math.sin(angle)*4,
+                                  5, 5, mix(BACKGROUND, accent, .45))
+                    self.oval(x, y, 3, 3, "#fff1c9")
                 else:
                     self.poly(((x-side*4,y+10),(x+side*3,y+4),(x-side*2,y),
                                (x+side*3,y-10),(x-side*6,y-3)), mix(BACKGROUND, accent, .7))
@@ -385,19 +403,27 @@ class KingView:
             self.rounded_rect(x, y, w, h, w/2, "#ffb5df")
             self.oval(x, y+h*.25, w*.7, w*.7, "#ffe8f6")
             self.rect(x, y-h*.25, w*.7, 2, "#ed64be")
+            for side in (-1, 1):
+                self.oval(x+side*w*.17,y+h*.05,2,3,"#632f5e")
+            self.ribbon(((x-w*.2,y-h*.07),(x,y-h*.12),(x+w*.2,y-h*.07)),1,"#632f5e")
         elif isinstance(bullet, Finger):
             self._finger_claw(x, y, h, -1 if bullet.vx > 0 else 1, t,
                               magenta=True, width=w)
             if variant == "hard":
-                self.ribbon(((x-w*.25, y+h*.3), (x+w*.2, y), (x-w*.2, y-h*.4)), 2, "#ff405c")
+                self.ribbon(((x-w*.25, y+h*.3), (x+w*.2, y), (x-w*.2, y-h*.4)), 3, "#6b193d")
+                pulse = .5+.25*math.sin(t*5+y*.03)
+                self.ribbon(((x-w*.25, y+h*.3), (x+w*.2, y), (x-w*.2, y-h*.4)), 1.2, mix("#ff405c","#fff0e1",pulse))
         elif variant == "hard":
             # Sharp, horned shards retain the exact rule color and hitbox bounds.
             self.poly(((x-w/2,y+h/2), (x,y+h*.25), (x+w/2,y+h/2),
                        (x+w*.38,y-h*.2), (x,y-h/2), (x-w*.38,y-h*.2)), color)
+            self.poly(((x,y+h*.2),(x+w*.3,y+h*.35),(x+w*.25,y-h*.15),(x,y-h*.4)),mix(color,"#3b1839",.45))
+            self.ribbon(((x-w*.35,y+h*.35),(x-w*.23,y-h*.1),(x,y-h*.35)),1,mix(color,"#ffffff",.5))
             for side in (-1, 1):
                 self.ribbon(((x+side*w*.12,y+h*.08),(x+side*w*.32,y+h*.2)), 1.5, "#301524")
         elif variant == "easy":
             self.oval(x, y, w, h, color)
+            self.oval(x-w*.18,y+h*.28,w*.28,h*.15,mix(color,"#ffffff",.7))
             for side in (-1, 1):
                 self.oval(x+side*w*.2, y+h*.1, w*.12, h*.15, "#272139")
             self.ribbon(((x-w*.2,y-h*.15),(x,y-h*.25),(x+w*.2,y-h*.15)), 1, "#272139")
@@ -418,14 +444,26 @@ class KingView:
         for index, (x, y, w, h, rule) in enumerate(ring.pieces()):
             if not (-310 < x < 310 and -250 < y < 250):
                 continue
-            color = COLORS[rule]
-            self.rect(x, y, w, h, color if index % 2 else mix(color, "#263149", .18))
+            color = "#e13b57" if variant == "hard" and rule == "normal" else COLORS[rule]
+            if variant == "easy":
+                self.rounded_rect(x, y, w, h, min(w,h)*.35, color)
+                self.oval(x-w*.15, y+h*.15, w*.25, h*.2, mix(color,"#ffffff",.65))
+            elif variant == "hard":
+                self.rect(x,y,w,h,color)
+                self.poly(((x-w*.4,y+h*.4),(x,y+h*.1),(x+w*.4,y+h*.4),
+                           (x+w*.2,y-h*.35),(x,y-h*.1),(x-w*.2,y-h*.35)), mix(color,"#27152f",.55))
+                shimmer = .4+.2*math.sin(t*3-index*.3)
+                self.ribbon(((x-w*.4,y+h*.4),(x,y+h*.1),(x+w*.4,y+h*.4)),
+                            1, mix(color,"#ffe6d6",shimmer))
+                self.poly(((x-w*.15,y-h*.2),(x,y+h*.05),(x+w*.15,y-h*.2)),color)
+            else:
+                self.rect(x, y, w, h, color if index % 2 else mix(color, "#263149", .18))
             if index % 8 == 0:
                 if variant == "easy":
                     self.oval(x, y, 5, 5, "#e4fff8")
                 elif variant == "hard":
                     self.poly(((x-5,y+5),(x,y+2),(x+5,y+5),(x+3,y-5),(x-3,y-5)), "#351d4d")
-                    self.oval(x, y, 2, 3, "#ffffff")
+                    self.oval(x, y, 2, 3, "#ffb39b" if rule == "normal" else color)
                 else:
                     self.poly(((x-3, y), (x, y+4), (x+3, y), (x, y-4)), "#fff8e9")
 
@@ -538,7 +576,26 @@ class KingView:
 
     def _claws(self, game, side):
         sign = -1 if side == "left" else 1
-        for x, y, _, height in game.hand_rectangles(side):
+        for x, y, width, height in game.hand_rectangles(side):
+            variant = getattr(game, "variant", "normal")
+            if variant == "easy":
+                self.rounded_rect(x, y, width, height, width/2, "#ffb5df" if game.stage.name == "fingers" else "#fff0c4")
+                for stripe in range(max(1, int(height/12))):
+                    py = y-height/2+6+stripe*12
+                    self.ribbon(((x-width*.3,py-2),(x+width*.3,py+2)),
+                                3, "#ef78b0" if game.stage.name == "fingers" else "#e87985")
+                self.ribbon(((x-width*.32,y-height*.35),(x-width*.32,y+height*.3)),1,"#d58a9e")
+                self.oval(x-width*.15, y+height*.3, width*.22, width*.7, "#fffaf0")
+                glint_y = y+math.sin(game.elapsed*1.5+x*.02)*height*.25
+                self.oval(x+width*.13,glint_y,width*.18,5,"#ffffff")
+                continue
+            if variant == "hard":
+                color = "#ff42de" if game.stage.name == "fingers" else "#a986ac"
+                self.poly(((x-width/2,y+height/2),(x+width/2,y+height*.3),
+                           (x+width*.3,y-height*.3),(x,y-height/2),
+                           (x-width*.35,y-height*.2)), "#352239")
+                self.ribbon(((x,y+height*.35),(x+width*.2,y),(x,y-height*.45)), 2, color)
+                continue
             self._finger_claw(x, y, height, sign, game.elapsed,
                               magenta=game.stage.name == "fingers")
 
@@ -550,6 +607,58 @@ class KingView:
             rgb = colorsys.hsv_to_rgb(hue, .9, 1)
             return '#'+''.join(f'{int(channel*255):02x}' for channel in rgb)
         if not segments:
+            return
+        variant = getattr(game, "variant", "normal")
+        if variant != "normal":
+            easy = variant == "easy"
+            for x, y, width, height, progress in segments:
+                if easy:
+                    # Alternating marshmallow, chocolate, and taffy sections.
+                    candy = int(progress*9)%3
+                    base = ("#fff1df", "#784637", "#f3a8c8")[candy]
+                    self.rounded_rect(x, y, width+1, height, min(width/2, 8), base)
+                    # Warm lower shading and a moving sugar-glaze highlight.
+                    self.ribbon(((x-width*.3,y-height*.34),(x+width*.3,y-height*.34)),
+                                2, mix(base,"#79454b",.28))
+                    shine = .45+.2*math.sin(t*1.6-progress*9)
+                    self.oval(x-width*.16,y+height*.28,width*.45,height*.16,
+                              mix(base,"#ffffff",shine))
+                    if candy == 1:
+                        self.rounded_rect(x, y, width*.7, height*.72, 2, "#a86b4c")
+                        self.rect(x, y-height*.28, width*.65, 2, "#593529")
+                        self.ribbon(((x-width*.27,y+height*.27),(x+width*.27,y+height*.27)),1,"#d49b74")
+                    elif candy == 2:
+                        self.ribbon(((x-width*.25,y-height*.35),(x+width*.25,y+height*.35)), 3, "#fff0ad")
+                    else:
+                        self.oval(x-width*.12, y+height*.2, width*.5, height*.35, "#ffffff")
+                else:
+                    self.rect(x, y, width+1, height, "#21192c")
+                    self.poly(((x-width/2,y+height/2),(x+width/2,y+height*.25),
+                               (x+width/2,y-height/2),(x-width/2,y-height*.25)), "#533044")
+                    self.poly(((x-width*.4,y+height*.4),(x+width*.35,y+height*.2),
+                               (x+width*.2,y-height*.3),(x,y-height*.1)), "#714455")
+                    pulse = .4+.25*math.sin(t*2-progress*12)
+                    self.ribbon(((x-width*.4,y+height*.4),(x+width*.35,y+height*.2)),
+                                1.3,mix("#a44a64","#ffc5a9",pulse))
+            for index, (x,y,width,height,progress) in enumerate(segments):
+                if index % 4 == 0:
+                    if easy:
+                        radius = min(12, height*.27)
+                        self.oval(x, y-1, radius*2+2, radius*2+2, "#c18191")
+                        self.oval(x, y, radius*2, radius*2, "#fff9ec")
+                        for wedge in range(5):
+                            angle = wedge*math.tau/5 + math.sin(t*.8+progress*4)*.35
+                            points = [(x,y)]
+                            points += [(x+math.cos(angle+a)*radius*.9,
+                                        y+math.sin(angle+a)*radius*.9)
+                                       for a in (0,.18,.36,.5)]
+                            self.poly(points, "#e96d87")
+                        self.oval(x, y, 4, 4, "#fff9ec")
+                        self.oval(x-radius*.3,y+radius*.4,radius*.55,radius*.25,"#ffffff")
+                    else:
+                        self.ribbon(((x-width*.4,y+height*.35),(x,y),
+                                     (x-width*.2,y-height*.3)), 2, mix("#ba3653","#ffaf89",.5+.3*math.sin(t*3-progress*8)))
+            self._claws(game, side)
             return
         self._spectral_flames(game, side, segments)
         # The rainbow outer ribbon keeps its original dimensions and colors.
@@ -661,6 +770,11 @@ class KingView:
             # A thin tooth line, never a floating white bar across the face.
             self.ribbon(((x-9, y-.4), (x, y-1), (x+9, y-.4)),
                         .8 if style == "nightmare" else 1.2, "#e5d8c0")
+        elif style == "wrath_hard":
+            for offset in (-20, -12, -4, 4, 12, 20):
+                self.poly(((x+offset-2.5,y-1),(x+offset+2.5,y-1),
+                           (x+offset,y-6-pulse*3)), "#fff0d5")
+            self.oval(x+2,y-13-pulse*7,15,4,"#87243f")
         elif style in ("pumpkin", "wrath"):
             for side in (-1, 1):
                 px = x + side * (12 if style == "pumpkin" else 15)
@@ -670,6 +784,8 @@ class KingView:
     def _face(self, x, y, scale, shell, glow, t, game=None):
         defeated = game is not None and not game.alive and not game.won
         style = "wrath" if hasattr(game, "practice_attack") else "pumpkin"
+        if style == "wrath" and getattr(game, "variant", None) == "hard":
+            style = "wrath_hard"
         age = getattr(game, "defeat_laugh_age", 0)
         pulse = defeat_laugh_pulse(style, age) if defeated else 0
         if defeated:
@@ -698,6 +814,12 @@ class KingView:
                 wobble = spread+math.sin(t*3.3+index*2.1)*1.5
                 points.append((x+px*(1+wobble/50), y+py*(1+wobble/43)))
             self.soft_poly(points, color)
+        if variant == "hard":
+            for side in (-1, 1):
+                self.poly(((x+side*35,y+29),(x+side*48,y+63),
+                           (x+side*23,y+38)), "#7c243b")
+                self.poly(((x+side*35,y+35),(x+side*45,y+57),
+                           (x+side*29,y+39)), accent)
         self.soft_poly([(x+px, y+py) for px, py in silhouette], "#8b301e")
         self.soft_poly(((x-46, y+37), (x+46, y+37), (x, y-38)), "#ff8a21")
         self.soft_poly(((x-39, y+33), (x+36, y+33), (x, y-31)), "#ffab31")
@@ -705,17 +827,67 @@ class KingView:
             end_y = y-32+abs(offset)*1.3
             self.ribbon(((x+offset, y+33), (x+offset*.75, y+11), (x+offset*.28, end_y)),
                         1.5, "#e87920")
-        self._fire_crown(x, y, t)
+        if variant == "easy":
+            # A rounded candy crown replaces the flames in gentle practice.
+            self.rounded_rect(x, y+44, 54, 10, 5, "#84513d")
+            self.ribbon(((x-24,y+46),(x+24,y+46)), 2, "#ffe3ac")
+            for offset, candy in ((-20,"#f59bc3"),(0,"#a7dfb7"),(20,"#bda7ee")):
+                bob = math.sin(t*2+offset*.08)*1.5
+                self.rounded_rect(x+offset,y+54+bob,14,19,6,mix(candy,"#784657",.3))
+                self.rounded_rect(x+offset-1,y+55+bob,11,16,5,candy)
+                self.oval(x+offset-3,y+58+bob,4,6,"#fff5e9")
+                self.oval(x+offset+3,y+51+bob,3,3,mix(candy,"#ffffff",.3))
+                for dx, dy in ((-4,0),(3,-3),(4,4)):
+                    self.oval(x+offset+dx,y+53+dy+bob,1.5,1.5,"#fff5e9")
+            self.soft_poly(((x-46,y+37),(x+46,y+37),(x,y-38)), "#ffda63")
+            self.poly(((x-32,y+14),(x+32,y+14),(x+13,y-17),(x-13,y-17)), "#ffa052")
+            self.soft_poly(((x-13,y-17),(x+13,y-17),(x,y-38)), "#fff9e8")
+            # Layered candy shell: shaded edge, poured-sugar seam, glossy face.
+            self.ribbon(((x+42,y+33),(x+29,y+12),(x+12,y-16),(x,y-35)),2,"#d79b64")
+            self.ribbon(((x-40,y+32),(x-29,y+15)),2.5,"#fff0b5")
+            self.ribbon(((x-28,y+11),(x-15,y-11)),2,"#ffc88e")
+            self.ribbon(((x-10,y-20),(x-2,y-32)),1.5,"#ffffff")
+            self.ribbon(((x-29,y+14),(x,y+13),(x+29,y+14)),1,"#ffbe73")
+            for grain in range(12):
+                px = x-32+(grain%6)*12
+                py = y+26-(grain//6)*5
+                self.oval(px,py,1,1,"#ffec9e")
+            gloss = .5+.2*math.sin(t*1.4)
+            self.oval(x-22,y+28,17,3,mix("#ffda63","#ffffff",gloss))
+        elif variant == "hard":
+            self.poly(((x-46,y+37),(x+46,y+37),(x,y-38)), "#261b35")
+            self.poly(((x-36,y+31),(x+34,y+31),(x,y-28)), "#41263e")
+            self.poly(((x-30,y+40),(x-33,y+67),(x-15,y+51),
+                       (x,y+76),(x+15,y+51),(x+33,y+67),(x+30,y+40)), "#271526")
+            self.ribbon(((x-30,y+43),(x-30,y+61),(x-14,y+48),
+                         (x,y+69),(x+14,y+48),(x+30,y+61),(x+30,y+43)), 2, accent)
+            self.poly(((x,y+62),(x+5,y+53),(x,y+46),(x-5,y+53)), "#ff587c")
+            self.poly(((x,y+62),(x,y+52),(x-5,y+53)),"#ffb6a6")
+            self.oval(x,y+53,2,3,mix("#ff587c","#fff5df",.6+.3*math.sin(t*3)))
+            self.poly(((x-35,y+30),(x-25,y+12),(x-5,y-24),(x-20,y+23)),"#553448")
+            self.ribbon(((x+36,y+28),(x+22,y+3),(x+2,y-30)),1.5,"#97506a")
+        else:
+            self._fire_crown(x, y, t)
+        if variant == "hard":
+            for side in (-1, 1):
+                self.ribbon(((x+side*39,y+32),(x+side*29,y+22),
+                             (x+side*34,y+13),(x+side*25,y-3)), 2, "#722436")
+                self.poly(((x+side*38,y+29),(x+side*8,y+21),
+                           (x+side*13,y+17)), "#541628")
         # Keep the whole Color Memory sequence readable, including its gaps:
         # neither idle blinking nor hit reactions may close the eyes.
-        if getattr(game, "variant", None) == "easy" and game.alive and not roar:
+        if variant == "easy" and game.alive:
             # Upright cat face: two round eyes above a symmetrical double-curve mouth.
             for side in (-1, 1):
                 self.oval(x+side*20, y+17, 13, 16, glow)
-                self.oval(x+side*20-2, y+20, 3, 4, "#fff8de")
+                gaze = max(-1.5,min(1.5,(game.x-x)/130))
+                self.oval(x+side*20-2+gaze, y+20, 3, 4, "#fff8de")
+                self.oval(x+side*20+2, y+14, 1.5, 1.5, "#ffda9f")
                 self.oval(x+side*29, y+2, 11, 5, "#ff8491")
-                self.ribbon([(x+side*(j/12*16), y-6-7*math.sin(j/12*math.pi))
+                self.ribbon([(x+side*(j/12*16), y-6-(7+math.sin(t*2)*.7)*math.sin(j/12*math.pi))
                              for j in range(13)], 3, "#38201c")
+            if roar:
+                self.oval(x, y-8, 15, 19, "#38201c")
             return
         gaze = max(-2, min(2, (game.x-x)/100))
         color_memory = game.attack_index == 0
@@ -733,6 +905,11 @@ class KingView:
                 self.oval(x+side*20+gaze, y+15, 2, 4, "#ff5c48")
         self._outlined_feature(((x-4, y+7), (x+4, y+7), (x, y-1)), "#38201c")
         if not game.alive and not game.won:
+            if style == "wrath_hard":
+                for side in (-1, 1):
+                    self.oval(x+side*21,y+16,15,12+3*pulse,"#f4dccb")
+                    self.oval(x+side*21+math.sin(age*4)*1.5,y+16,4,8,"#401526")
+                    self.oval(x+side*20,y+18,1.5,2,"#ffffff")
             self._defeat_laugh(x, y-7, style, age)
             return
         if roar:
@@ -750,6 +927,10 @@ class KingView:
         if not hit:
             for side in (-1, 1):
                 self.soft_poly(((x+side*15, y-6), (x+side*10, y-9), (x+side*11, y-15)), "#ffe9a6")
+        if variant == "hard" and not hit:
+            for tooth in (-18, -6, 6, 18):
+                self.poly(((x+tooth-3,y-8),(x+tooth+3,y-8),
+                           (x+tooth,y-19)), "#fff0c9")
         if game.hp < game.config.hp*.25:
             for side in (-1, 1):
                 self.ribbon(((x+side*33, y+29), (x+side*11, y+23)), 2.5, "#9e2433")
@@ -931,6 +1112,8 @@ class KingView:
                     self.oval(cx, cy, 52*scale, 62*scale, "#d8fff2")
                     for sign in (-1, 1):
                         self.oval(cx+sign*10*scale, cy+6*scale, 5*scale, 8*scale, "#24443f")
+                    for sign in (-1, 1):
+                        self.oval(cx+sign*17*scale, cy-2*scale, 9*scale, 5*scale, "#ffb8ce")
                     self.ribbon(((cx-10*scale,cy-6*scale),(cx,cy-12*scale),(cx+10*scale,cy-6*scale)), 2, "#24443f")
                 else:
                     self._laughing_face(cx, cy, scale, "#ffb9e7" if variant == "hard" else "#e7d9ff", game.elapsed*1.4, offset*.07)
@@ -941,18 +1124,25 @@ class KingView:
                 for side in (-1, 1):
                     self._star(cx+side*35*scale, cy+45*scale, 4, "#96e9f2", game.elapsed*7+side)
 
-    def _mouth_fire(self, x, y, width, height, t, mouth_x, mouth_y):
+    def _mouth_fire(self, x, y, width, height, t, mouth_x, mouth_y, variant="normal"):
         bottom, top = y-height/2, y+height/2
         top = mouth_y
         height = top-bottom
         # The jet starts inside the open mouth and spreads into a cone.
         taper_length = 105
-        for layer, color in enumerate(("#692b20", "#b93619", "#ed5318", "#ff9626", "#ffd35c", "#fff2bc")):
+        palette = {"easy": ("#88506d", "#c67991", "#efa5ba", "#ffc6ce", "#ffe1c0", "#fff5dd"),
+                   "hard": ("#25142e", "#581d49", "#992d65", "#e7476d", "#ff8c81", "#ffe1c6")}.get(variant,
+                   ("#692b20", "#b93619", "#ed5318", "#ff9626", "#ffd35c", "#fff2bc"))
+        for layer, color in enumerate(palette):
             left, right = [], []
             for step in range(49):
                 p = step/48
                 py = top-p*height
                 wave = math.sin(p*23-t*16)+.45*math.sin(p*47-t*23)
+                if variant == "easy":
+                    wave = .4*math.sin(p*12-t*6)
+                elif variant == "hard":
+                    wave = 1 if math.sin(p*44-t*16) > 0 else -1
                 spread = min(1, p*height/taper_length)
                 center = mouth_x+(x-mouth_x)*spread+math.sin(p*17-t*12)*p*5
                 radius = (width/2-layer*6.5)*spread
@@ -975,11 +1165,19 @@ class KingView:
                           top-p*height) for p in (step/32 for step in range(33))],
                         1.5, "#fff8d1")
 
-    def _slam_impact(self, x, y, width, height, progress):
+    def _slam_impact(self, x, y, width, height, progress, variant="normal"):
         left, right = x-width/2, x+width/2
         floor = y-height/2
         fade = (1-progress)**.7
-        self.rect(x, y, width, height, mix(BACKGROUND, "#754027", .45+.3*fade))
+        if variant == "easy":
+            self.rect(x,y,width,height,mix(BACKGROUND,"#d894aa",.4+.2*fade))
+            for i in range(12):
+                px = left+width*(i+.5)/12
+                py = floor+12+(i%3)*16+math.sin(progress*math.pi)*30
+                self.oval(px,py,min(16,width/14),10,mix(BACKGROUND,"#ffe4ba",fade))
+            self.rect(x,floor+3,width-4,5,mix(BACKGROUND,"#fff0cd",fade))
+            return
+        self.rect(x, y, width, height, mix(BACKGROUND, "#64243e" if variant == "hard" else "#754027", .45+.3*fade))
         self.rect(x, floor+3, width-4, 5, mix(BACKGROUND, "#fff0a4", fade))
         for side in (-1, 1):
             self.rect(x+side*(width/2-2), y, 2, height, mix(BACKGROUND, "#ffbb68", fade*.7))
@@ -1035,10 +1233,14 @@ class KingView:
         game.sound_events.clear()
         rule = game.screen_rule
         variant = getattr(game, "variant", "normal")
+        exclusive = getattr(game, "wrath_pattern", None)
         theme_bg = mix(BACKGROUND, WRATH_PALETTES[game.attack_index][variant == "hard"], .07) if variant != "normal" else BACKGROUND
+        if exclusive:
+            theme_bg = mix(BACKGROUND, NEW_ATTACKS[exclusive.key][2][exclusive.level], .1)
         bg = "#681f2b" if getattr(game, "eyes_only_color", False) else {"blue": "#123e69", "orange": "#713b17"}.get(rule, theme_bg)
         background = self.rect(0, 0, 600, 480, bg)
         self.canvas.tag_lower(background)
+        draw_wrath_floor(self, game)
         self._wrath_theme(game)
         name = game.stage.name
         progress = min(1, game.stage_age/game.stage.duration)
@@ -1056,7 +1258,7 @@ class KingView:
                 self._face(body_x, body_y, 1, True, glow, game.elapsed, game)
             else:
                 hit_eyes = game.hit_flash > 0 and game.attack_index != 0
-                glow = COLORS.get(game.eye_rule, "#fff351" if hit_eyes else "#38201c")
+                glow = COLORS.get(game.eye_rule, "#fff351" if hit_eyes else "#ff587c" if variant == "hard" else "#38201c")
                 self._face(body_x, body_y, 1.65, False, glow, game.elapsed, game)
                 if name == "shatter" and not game.intro_done:
                     for i in range(22):
@@ -1090,9 +1292,10 @@ class KingView:
                         self.text(px, py, "!", "#ffe066", 34)
         for x, y, width, height in game.hazard_rectangles():
             if name == "fire":
-                self._mouth_fire(x, y, width, height, game.elapsed, game.boss_x, game.boss_y-9)
+                self._mouth_fire(x, y, width, height, game.elapsed, game.boss_x, game.boss_y-9, variant)
             else:
-                self._slam_impact(x, y, width, height, progress)
+                self._slam_impact(x, y, width, height, progress, variant)
+        draw_wrath_pattern(self, game)
         self.draw_bone_walls(game.bullets, variant)
         for bullet in game.bullets:
             if getattr(bullet, "bone", False):
@@ -1106,8 +1309,15 @@ class KingView:
                 self.oval(x, y+3, 20, 24, "#ffffff")
                 self.poly(((x-10, y), (x-10, y-12), (x-5, y-8), (x, y-12),
                            (x+5, y-8), (x+10, y-12), (x+10, y)), "#ffffff")
-                self.oval(x-4, y+4, 3, 5, "#171c30")
-                self.oval(x+4, y+4, 3, 5, "#171c30")
+                if variant == "hard":
+                    for sign in (-1, 1):
+                        self.poly(((x+sign*8,y+8),(x+sign*2,y+4),
+                                   (x+sign*5,y+1)), "#50233f")
+                    self.poly(((x-5,y-3),(x-2,y-5),(x,y-3),(x+2,y-5),
+                               (x+5,y-3),(x,y-9)), "#50233f")
+                else:
+                    self.oval(x-4, y+4, 3, 5, "#171c30")
+                    self.oval(x+4, y+4, 3, 5, "#171c30")
         for shot in game.shots:
             self.rect(shot.x, shot.y, 4, 12, "#67e8f9")
         for pickup in game.healing_pickups:

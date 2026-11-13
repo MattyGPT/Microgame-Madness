@@ -37,7 +37,7 @@ test("packaged Python runs in WebAssembly without desktop dependencies", async (
     ["pumpkin", "come_on"],
     ["singularity", "gravitron"],
     ...practice.attacks.map(attack => ["core_practice", attack.id]),
-    ...['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order']
+    ...['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'starfall_verdict', 'pendulum_court', 'crown_chess', 'mirror_lances', 'briar_pursuit', 'eclipse_waltz', 'resonant_bells', 'royal_loom', 'random_order']
       .map(attack => ['wrath', attack]),
   ]) {
     let state = JSON.parse(

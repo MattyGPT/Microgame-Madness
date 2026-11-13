@@ -3,7 +3,7 @@ import random
 import unittest
 
 from boss_crush import Projectile
-from kings_wrath import KingsWrath, RANDOM_ORDER, WRATH_ATTACKS, WRATH_READY_TIME
+from kings_wrath import KingsWrath, RANDOM_ORDER, WRATH_ATTACKS, WRATH_READY_TIME, WRATH_ATTACK_NAMES
 from pumpkin_king import ATTACK_NAMES, BABY_MODE, PumpkinKing
 
 
@@ -27,32 +27,32 @@ class KingsWrathTests(unittest.TestCase):
         self.assertTrue(game.won)
         self.assertEqual(game.attacks_completed, 1)
 
-    def test_random_order_plays_all_seven_before_reshuffling_without_adjacent_repeats(self):
+    def test_random_order_plays_all_fifteen_before_reshuffling_without_adjacent_repeats(self):
         game = KingsWrath(RANDOM_ORDER, rng=random.Random(12))
         order = [game.attack_index]
         self.assertEqual((game.lives, game.max_lives, game.hp), (15, 15, 1400))
         self.assertEqual(game.difficulty, RANDOM_ORDER)
-        for _ in range(6000):
+        for _ in range(18000):
             game.invulnerable = 1000
             game.update(.05, set())
             self.assertTrue(game.alive)
             if game.attack_index != order[-1]:
                 self.assertNotEqual(game.stage.name, "wrath_ready")
                 order.append(game.attack_index)
-            if len(order) == 21:
+            if len(order) == 45:
                 break
         else:
             self.fail("Random Order did not reach three shuffled sets")
-        for offset in range(0, len(order), 7):
-            self.assertEqual(sorted(order[offset:offset+7]), list(range(7)))
-        self.assertNotEqual(order[:7], list(range(7)))
-        self.assertNotEqual(order[:7], order[7:14])
+        for offset in range(0, len(order), 15):
+            self.assertEqual(sorted(order[offset:offset+15]), list(range(15)))
+        self.assertNotEqual(order[:15], list(range(15)))
+        self.assertNotEqual(order[:15], order[15:30])
         self.assertTrue(all(a != b for a, b in zip(order, order[1:])))
 
     def test_random_order_preserves_health_and_freezes_during_its_countdown(self):
         game = KingsWrath(RANDOM_ORDER, rng=random.Random(12))
         self.assertIn("GET READY — 3", game.pattern_label)
-        self.assertIn(ATTACK_NAMES[game.attack_index], game.pattern_label)
+        self.assertIn(WRATH_ATTACK_NAMES[game.attack_index], game.pattern_label)
         game.lives, game.hp = 9, 700
         original = game.x, game.y, game.lives, game.hp, game.heal_in
         game.update(WRATH_READY_TIME-.001, {"Right", "f", "e"})
@@ -87,7 +87,7 @@ class KingsWrathTests(unittest.TestCase):
                 self.assertEqual(game.stage.name, "wrath_ready")
                 self.assertIn("GET READY — 3", game.pattern_label)
                 game.update(WRATH_READY_TIME, set())
-                self.assertEqual(game.stage.name, stages[index])
+                self.assertEqual(game.stage.name, stages[index] if index < 7 else "wrath_exclusive")
                 self.assertEqual(game.attack_index, index)
                 self.assertEqual(game.difficulty, attack)
                 self.assertTrue(game.intro_done and game.transformed)
@@ -117,6 +117,8 @@ class KingsWrathTests(unittest.TestCase):
 
     def test_practice_matches_the_original_attack_movement_damage_and_projectiles(self):
         for attack, index in WRATH_ATTACKS.items():
+            if index >= 7:
+                continue  # These attacks deliberately do not exist in Pumpkin King.
             with self.subTest(attack=attack):
                 practice = KingsWrath(attack, rng=random.Random(12))
                 practice.update(WRATH_READY_TIME, set())
@@ -291,7 +293,7 @@ class WrathVariantTests(unittest.TestCase):
         self.assertGreater(game.damage_taken, 0)
 
     def test_spook_speeds_and_opposite_pair(self):
-        for level, speed in (("easy", .5), ("hard", 1.35 * .95)):
+        for level, speed in (("easy", .5), ("hard", 1.08)):
             game = KingsWrath("haunted_quadrants__" + level)
             self.assertEqual(game.scare_speed, speed)
             game.update(5, set())

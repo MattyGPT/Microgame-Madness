@@ -3,7 +3,13 @@ const { test, expect, openGame } = require('./fixtures/game.cjs');
 // Keep unrelated score assertions independent of the randomly selected song.
 test.use({ deterministicMusic: true });
 
-test("The King's Wrath has a yellow crown and loads all eight practice modes", async ({ page }, testInfo) => {
+test("The King's Wrath has a yellow crown and loads all sixteen practice choices", async ({ page }, testInfo) => {
+  test.setTimeout(180000);
+  await page.route('**/app.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'const pyodide = await loadPyodide(', 'const pyodide = window.wrathRuntime = await loadPyodide(') });
+  });
   await openGame(page);
   await expect(page.locator('[data-game]:visible')).toHaveCount(11);
   const card = page.locator('[data-game="wrath"]');
@@ -19,13 +25,13 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
   for (const target of [crown, card.locator('.card-title')]) {
     await target.click();
     await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
-    await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+    await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
     await page.locator('[data-game="hangman"]').click();
   }
   await card.press('Enter');
   await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
   await expect(page.locator('#difficulty-title')).toHaveText('Choose an attack to load');
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   await expect(page.locator('#welcome-art svg')).toBeVisible();
   await page.locator('#welcome').screenshot({ path: testInfo.outputPath('wrath-attack-picker.png') });
   const attacks = {
@@ -50,7 +56,8 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
     expect(state.label).not.toContain('AWAKENING');
     for (const seconds of [2, 1, 0]) {
       await page.evaluate(() => {
-        for (let frame = 0; frame < 20; frame++) snapshot = send('tick', { dt: .05, keys: [] });
+        wrathRuntime.runPython('from bridge import session\nsession.game.update(1, set())');
+        snapshot = send('tick', { dt: 0, keys: [] });
         render();
       });
       expect(await page.evaluate(() => snapshot.label)).toContain(seconds ? `GET READY — ${seconds}` : label);
@@ -60,7 +67,7 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
       await expect(page.locator('#touch-counter')).toBeVisible();
     }
     await page.locator('#exit').click();
-    await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+    await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   }
   await page.locator('[data-difficulty="haunted_quadrants"]').click();
   await page.locator('[data-difficulty="haunted_quadrants"]').click();
@@ -73,12 +80,14 @@ test("The King's Wrath has a yellow crown and loads all eight practice modes", a
     // Keep the real bridge and renderer; advance only the practice run.
     snapshot = send('start', { mode: 'wrath', difficulty: 'haunted_quadrants' });
     active = false;
-    for (let frame = 0; frame < 200; frame++) snapshot = send('tick', { dt: .05, keys: [] });
+    wrathRuntime.runPython('from bridge import session\nsession.game.update(10, set())');
+    snapshot = send('tick', { dt: 0, keys: [] });
     render();
   });
   expect(await page.evaluate(() => snapshot.label)).toContain('BREATHE');
   expect(await page.evaluate(() => snapshot.over)).toBe(false);
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-repeat-countdown.png') });
+  await page.locator('#exit').click();
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator('#difficulty-title')).toHaveText('Choose a difficulty to play');
   await expect(page.locator('#difficulty-choices button')).toHaveCount(4);
@@ -101,7 +110,7 @@ test("The King's Wrath Random Order shuffles all attacks and keeps the preparati
   });
   await openGame(page);
   await page.locator('[data-game="wrath"]').click();
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   await page.locator('[data-difficulty="random_order"]').click();
   await page.locator('[data-difficulty="random_order"]').click();
   await page.evaluate(() => { active = false; });
@@ -114,7 +123,7 @@ test("The King's Wrath Random Order shuffles all attacks and keeps the preparati
     // model to each boundary here to check browser countdowns and the award,
     // without thousands of canvas snapshots and JSON/WASM round trips.
     wrathRuntime.runPython('from bridge import session');
-    for (let attack = 0; attack < 7; attack++) {
+    for (let attack = 0; attack < 15; attack++) {
       wrathRuntime.runPython(`
 game = session.game
 remaining = game.stage.duration - game.stage_age + sum(stage.duration for stage in game.queue)
@@ -128,11 +137,11 @@ game.update(remaining, set())
     return { order, difficulty: snapshot.difficulty, over: snapshot.over,
       completed: snapshot.attacks_completed, fullDeck: Boolean(saved.achievements.unlocked.wrath_full_deck) };
   });
-  expect(result.order).toHaveLength(8);
+  expect(result.order).toHaveLength(16);
   expect(result.order.every(Number.isInteger)).toBe(true);
-  expect(new Set(result.order.slice(0, 7)).size).toBe(7);
-  expect(result.order[7]).not.toBe(result.order[6]);
-  expect(result).toMatchObject({ difficulty: 'random_order', over: false, completed: 7, fullDeck: true });
+  expect(new Set(result.order.slice(0, 15)).size).toBe(15);
+  expect(result.order[15]).not.toBe(result.order[14]);
+  expect(result).toMatchObject({ difficulty: 'random_order', over: false, completed: 15, fullDeck: true });
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-random-order.png') });
   await page.locator('#exit').click();
   await expect(page.locator('[data-difficulty="random_order"]')).toBeVisible();
@@ -193,7 +202,7 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
   expect(profile.achievements.unlocked.pumpkin_full_health).toBeUndefined();
   expect(profile.achievements.unlocked.pumpkin_flawless).toBeUndefined();
   await page.locator('#overlay-action').click();
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   await page.locator('#global-tab').click();
   await expect(page.locator('#leaderboard-game')).toHaveValue('wrath');
   await expect(page.locator('#leaderboard-multipliers')).toHaveText('Easy ×0.5 · Normal ×1 · Hard ×2.');
@@ -206,6 +215,11 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
 
 
 test('Wrath offers named difficulty cards, descriptions, reward rates, and all variants start', async ({ page }, testInfo) => {
+  await page.route('**/app.js*', async route => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(
+      'const pyodide = await loadPyodide(', 'const pyodide = window.wrathRuntime = await loadPyodide(') });
+  });
   await openGame(page);
   await page.locator('[data-game="wrath"]').click();
   for (const attack of ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order']) {
@@ -225,7 +239,8 @@ test('Wrath offers named difficulty cards, descriptions, reward rates, and all v
   expect(await page.evaluate(() => snapshot.difficulty)).toBe('color_memory__easy');
   await page.evaluate(() => {
     active = false;
-    for (let i=0; i<61; i++) snapshot = send('tick', {dt:.05, keys:[]});
+    wrathRuntime.runPython('from bridge import session\nsession.game.update(3.05, set())');
+    snapshot = send('tick', {dt:0, keys:[]});
     render();
   });
   await page.locator('#game-canvas').screenshot({path: testInfo.outputPath('cute-face.png')});
@@ -233,7 +248,8 @@ test('Wrath offers named difficulty cards, descriptions, reward rates, and all v
     for (const level of ['easy', 'hard']) {
       const state = await page.evaluate(({attack, level}) => {
         snapshot = send('start', {mode:'wrath', difficulty:`${attack}__${level}`});
-        for (let i=0; i<65; i++) snapshot = send('tick', {dt:.05, keys:[]});
+        wrathRuntime.runPython('from bridge import session\nsession.game.update(3.25, set())');
+        snapshot = send('tick', {dt:0, keys:[]});
         render();
         return {difficulty:snapshot.difficulty, over:snapshot.over};
       }, {attack, level});

@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "dist"
 PYTHON_SOURCES = (
     "hangman_model.py", "keyboard_model.py", "dodge_model.py", "chaos_dodge.py", "boss_crush.py",
-    "pumpkin_king.py", "pumpkin_king_view.py", "kings_wrath.py",
+    "pumpkin_king.py", "pumpkin_king_view.py", "kings_wrath.py", "wrath_attacks.py",
     "singularity_core.py", "singularity_core_view.py", "singularity_practice.py",
     "arcade_effects.py",
-    "geomayhem.py", "geomayhem_weapons.py", "geomayhem_view.py", "geomayhem_arenas.py",
+    "geomayhem.py", "geomayhem_bosses.py", "geomayhem_weapons.py", "geomayhem_view.py", "geomayhem_arenas.py",
 )
 
 
@@ -109,7 +109,7 @@ def build():
     finally:
         sys.path.pop(0)
     html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
-    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
+    for name in ("style.css", "app.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "boss-showcase.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')

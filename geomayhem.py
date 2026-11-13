@@ -5,6 +5,7 @@ import random
 
 from geomayhem_weapons import ARMORY, ITEM_WEAPONS, WEAPONS
 from geomayhem_arenas import ARENAS, contains, queue_pattern
+from geomayhem_bosses import INTRO_DURATION, boss_attack, boss_pressure
 
 LEVELS = (
     ("Mint Circuit", "#71f5d2"), ("Amber Foundry", "#ffba69"),
@@ -128,6 +129,12 @@ class Geomayhem:
         self.spawned = 0
         self.aim = None
         self.death_message = ""
+        self.boss_arena_radius = None
+        self.boss_intro_left = 0.0
+        self.boss_intro_seen = False
+        self.boss_reinforcement_in = 1.5
+        self.boss_cast = 0
+        self.boss_move = ""
 
     @property
     def stars(self):
@@ -267,7 +274,16 @@ class Geomayhem:
         choices.extend(self.rng.sample(pool, min(choice_count - len(choices), len(pool))))
         self.offers = choices
 
-    def _spawn(self):
+    def _arena_position(self, x, y, padding):
+        x=max(self.left+padding,min(self.right-padding,x))
+        y=max(self.bottom+padding,min(self.top-padding,y))
+        if self.boss_arena_radius:
+            distance=math.hypot(x,y)
+            limit=self.boss_arena_radius-padding
+            if distance>limit: x,y=x*limit/distance,y*limit/distance
+        return x,y
+
+    def _spawn(self, *, reinforcement=False):
         self.serial += 1
         side = self.rng.randrange(4)
         x = self.rng.uniform(self.left + 25, self.right - 25)
@@ -280,16 +296,31 @@ class Geomayhem:
         if math.hypot(x - self.x, y - self.y) < 110:
             x = self.left + 50 if self.x >= 0 else self.right - 50
             y = self.bottom + 45 if self.y >= 0 else self.top - 45
-        kind = ("boss" if self.wave == 20 else "elite") if self.spawned == 0 and self.wave % 5 == 0 else self.rng.choice(
+        kind = ("boss" if self.wave == 20 else "elite") if not reinforcement and self.spawned == 0 and self.wave % 5 == 0 else self.rng.choice(
             ["chaser", "chaser", "runner"] + (["tank"] if self.wave >= 4 else []) + (["shooter"] if self.wave >= 7 else [])
             + (["flanker"] if self.wave >= 6 else []) + (["flanker", "shooter"] if self.level >= 6 and self.wave >= 4 else []))
         hp, speed, radius = {"chaser": (9, 42, 11), "runner": (6, 75, 8), "tank": (25, 28, 17),
                              "shooter": (12, 30, 12), "flanker": (14, 95, 10),
                              "elite": (80, 36, 24), "boss": (350, 32, 34)}[kind]
         hp *= 1 + (self.level - 1) * .18 + (self.wave - 1) * .035
+        if kind == "boss":
+            self.boss_arena_radius=280
+            self.left,self.right,self.bottom,self.top=-280,280,-280,280
+            self.x,self.y=self._arena_position(self.x,self.y,15)
+            self.gems=[g for g in self.gems if math.hypot(g[0],g[1])<265]
+            self.zones=[]
+            self.hazards=[]
+            hp *= 3
+            if not self.boss_intro_seen:
+                self.boss_intro_left = INTRO_DURATION
+                self.boss_intro_seen = True
         speed *= 1 + (self.level - 1) * .025
         hp *= {"swarm": .85, "armored": 1.2, "frenzy": .9}[self.anomaly]
         speed *= {"swarm": 1, "armored": .9, "frenzy": 1.15}[self.anomaly]
+        if self.boss_arena_radius:
+            angle=self.rng.uniform(0,math.tau)
+            x,y=math.cos(angle)*(280-radius-3),math.sin(angle)*(280-radius-3)
+            if math.hypot(x-self.x,y-self.y)<110: x,y=-x,-y
         self.enemies.append(Enemy(self.serial, x, y, hp, speed, radius, kind, hp))
         self.spawned += 1
 
@@ -312,31 +343,33 @@ class Geomayhem:
         """Visible windups lock in a charge direction; enemies cannot turn mid-charge."""
         if enemy.frozen or enemy.hp <= 0:
             return False
+        dash_speed = boss_pressure(self.level)["dash_speed"] if enemy.kind == "boss" else 340
         if enemy.windup > 0:
             enemy.windup = max(0, enemy.windup-dt)
             if enemy.windup == 0:
                 dx, dy = enemy.dash_target[0]-enemy.x, enemy.dash_target[1]-enemy.y
                 distance = max(1, math.hypot(dx,dy))
                 enemy.dash_vector = dx/distance, dy/distance
-                enemy.dash_left = min(.85, distance/340)
+                enemy.dash_left = min(.85, distance/dash_speed)
             return True
         if enemy.dash_left > 0:
             enemy.dash_left = max(0, enemy.dash_left-dt)
-            enemy.x = max(self.left+enemy.radius, min(self.right-enemy.radius, enemy.x+enemy.dash_vector[0]*340*dt))
-            enemy.y = max(self.bottom+enemy.radius, min(self.top-enemy.radius, enemy.y+enemy.dash_vector[1]*340*dt))
+            enemy.x = max(self.left+enemy.radius, min(self.right-enemy.radius, enemy.x+enemy.dash_vector[0]*dash_speed*dt))
+            enemy.y = max(self.bottom+enemy.radius, min(self.top-enemy.radius, enemy.y+enemy.dash_vector[1]*dash_speed*dt))
+            enemy.x,enemy.y=self._arena_position(enemy.x,enemy.y,enemy.radius)
             return True
         enemy.skill_in -= dt
         boss_cast = enemy.kind == "boss" and enemy.skill_in <= 0
         if boss_cast:
             phase = 3 if self.level in (10,20) and enemy.hp < enemy.max_hp*.25 else 2 if enemy.hp < enemy.max_hp*.5 else 1
-            queue_pattern(self, boss=True, phase=phase)
-            enemy.skill_in = 5.0 - phase*.6
+            boss_attack(self, enemy, phase)
+            enemy.skill_in = boss_pressure(self.level, phase)["cast_interval"]
         charge = (enemy.kind in ("runner", "flanker") and self.wave >= 4) or (enemy.kind=="boss" and self.level in (7,16))
         if charge and (boss_cast if enemy.kind=="boss" else enemy.skill_in <= 0):
             enemy.dash_target = (max(self.left+20,min(self.right-20,self.x+self.velocity[0]*.4)),
                                  max(self.bottom+20,min(self.top-20,self.y+self.velocity[1]*.4)))
-            enemy.windup = .8 if enemy.kind=="boss" else .7
-            enemy.skill_in = 5.2 if enemy.kind=="boss" else 4.2 + (enemy.id%3)*.4
+            enemy.windup = boss_pressure(self.level, phase)["warning"] if enemy.kind=="boss" else .7
+            if enemy.kind != "boss": enemy.skill_in = 4.2 + (enemy.id%3)*.4
             return True
         return False
 
@@ -505,6 +538,9 @@ class Geomayhem:
         if self.offers or not self.alive or self.won:
             return
         dt = max(0, min(dt, .05))
+        if self.boss_intro_left > 0:
+            self.boss_intro_left = max(0, self.boss_intro_left-dt)
+            return
         self.elapsed += dt
         self.aim = aim
         self.invulnerable = max(0, self.invulnerable - dt)
@@ -522,6 +558,7 @@ class Geomayhem:
             self.face = dx / length, dy / length
             self.x = max(self.left + 15, min(self.right - 15, self.x + self.face[0] * movement_speed * dt))
             self.y = max(self.bottom + 15, min(self.top - 15, self.y + self.face[1] * movement_speed * dt))
+        self.x,self.y=self._arena_position(self.x,self.y,15)
         self.velocity = ((self.x-old_x)/dt, (self.y-old_y)/dt) if dt else (0,0)
         self._update_zones(dt)
         if not self.alive:
@@ -535,9 +572,24 @@ class Geomayhem:
             self.break_left = max(0, self.break_left - dt)
         else:
             self.spawn_in -= dt
-            if self.spawned < self.quota and len(self.enemies) < MAX_ENEMIES and self.spawn_in <= 0:
+            if self.spawned < self.quota and not (self.wave == 20 and self.boss_intro_seen) and len(self.enemies) < MAX_ENEMIES and self.spawn_in <= 0:
                 self._spawn()
+                if self.boss_intro_left > 0:
+                    return
                 self.spawn_in = max(.18, .75 - self.wave * .018 - self.level * .02)
+        boss = next((e for e in self.enemies if e.kind == "boss" and e.hp > 0), None)
+        if boss:
+            self.boss_reinforcement_in -= dt
+            if self.boss_reinforcement_in <= 0:
+                phase = 3 if self.level in (10,20) and boss.hp < boss.max_hp*.25 else 2 if boss.hp < boss.max_hp*.5 else 1
+                cap = min(MAX_ENEMIES-1, 4+self.level//2+phase)
+                escorts = sum(e.kind != "boss" and e.hp > 0 for e in self.enemies)
+                for _ in range(min(1+self.level//8, max(0,cap-escorts))):
+                    self._spawn(reinforcement=True)
+                self.boss_reinforcement_in = max(1.1, 3.8-self.level*.11-(phase-1)*.25)
+        elif self.wave == 20 and self.boss_intro_seen:
+            # The boss's defeat ends the supply of escorts; clear survivors to win.
+            self.spawned = max(self.spawned, self.quota)
         for enemy in self.enemies:
             if enemy.burn > 0:
                 enemy.hp -= dt * 3
@@ -560,24 +612,27 @@ class Geomayhem:
                 enemy.y += math.sin(heading) * speed * dt
                 enemy.x = max(self.left+enemy.radius,min(self.right-enemy.radius,enemy.x))
                 enemy.y = max(self.bottom+enemy.radius,min(self.top-enemy.radius,enemy.y))
+            enemy.x,enemy.y=self._arena_position(enemy.x,enemy.y,enemy.radius)
             distance = math.hypot(self.x-enemy.x,self.y-enemy.y)
             if distance < enemy.radius + 13:
-                self._damage(24 if enemy.kind in ("elite", "boss") else 15)
+                self._damage(30 if enemy.kind == "boss" else 24 if enemy.kind == "elite" else 15)
             if enemy.kind in ("shooter", "elite", "boss") and not enemy.frozen:
                 enemy.attack_in -= dt
                 if enemy.attack_in <= 0:
-                    enemy.attack_in = 2.6 if enemy.kind != "boss" else 2.0
+                    boss_phase = 3 if enemy.kind=="boss" and self.level in (10,20) and enemy.hp<enemy.max_hp*.25 else 2 if enemy.hp<enemy.max_hp*.5 else 1
+                    pressure = boss_pressure(self.level, boss_phase)
+                    enemy.attack_in = 2.6 if enemy.kind != "boss" else pressure["volley_interval"]
                     a = math.atan2(self.y + self.velocity[1]*.5 - enemy.y, self.x + self.velocity[0]*.5 - enemy.x)
                     phase2 = enemy.kind=="boss" and enemy.hp < enemy.max_hp*.5
                     offsets = (-.3, 0, .3) if enemy.kind == "boss" or self.level >= 6 else (0,)
                     if enemy.kind=="boss" and self.level in (4,5,9,10,11,15,18,20):
-                        count = 14 if phase2 else 10
+                        count = (14 if phase2 else 10) + (self.level-1)//5
                         offsets = tuple(i*math.tau/count+self.elapsed*.2-a for i in range(count))
                     elif phase2:
                         offsets = (-.5,-.25,0,.25,.5)
                     for offset in offsets:
                         if len(self.hazards) < 70:
-                            velocity = 155+self.level*4
+                            velocity = pressure["projectile_speed"] if enemy.kind=="boss" else 155+self.level*4
                             self.hazards.append([enemy.x, enemy.y, math.cos(a + offset) * velocity, math.sin(a + offset) * velocity, 5.0])
         if not self.alive:
             return
@@ -641,7 +696,7 @@ class Geomayhem:
                 "score": self.score, "lives": round(self.lives, 1), "max_lives": self.max_lives,
                 "hp": None, "max_hp": None, "elapsed": int(self.elapsed), "fight_elapsed": self.elapsed,
                 "can_pause": self.alive and not self.won and not self.offers,
-                "bounds": [self.left, self.right, self.bottom, self.top], "sounds": [],
+                "bounds": [self.left, self.right, self.bottom, self.top], "boss_arena_radius": self.boss_arena_radius, "sounds": [],
                 "commands": draw_geomayhem(self, compact=compact, include_background=include_background and not compact), "player": {"x": self.x, "y": self.y, "visible": self.alive},
                 "level": self.level, "total_levels": len(LEVELS), "level_name": LEVELS[self.level - 1][0], "wave": self.wave,
                 "cleared": self.cleared, "rank": self.rank, "xp": self.xp, "xp_needed": self.xp_needed,
@@ -653,7 +708,8 @@ class Geomayhem:
                 "geo_relic_count": len(self.relics),
                 "pending_levelups": self.pending_levelups,
                 "arena": {"hazard": ARENAS[self.level-1][3], "boss": ARENAS[self.level-1][4]},
-                "boss": {"name": ARENAS[self.level-1][4], "hp": round(boss.hp), "max_hp": round(boss.max_hp),
+                "boss_intro": {"level": self.level, "time": INTRO_DURATION-self.boss_intro_left, "duration": INTRO_DURATION} if self.boss_intro_left>0 else None,
+                "boss": {"move": self.boss_move, "name": ARENAS[self.level-1][4], "hp": round(boss.hp), "max_hp": round(boss.max_hp),
                          "phase": 3 if self.level in (10,20) and boss.hp<boss.max_hp*.25 else 2 if boss.hp<boss.max_hp*.5 else 1} if boss else None,
                 "threats": [{"x": e.x, "y": e.y} for e in self.enemies if e.hp>0],
                 "loadout": [ARMORY[key].info(stars) for key, stars in self.loadout.items()],

@@ -19,10 +19,13 @@
       defer
     ></script>
     <script src="./achievements.js" defer></script>
+    <script src="./customs-expansion.js" defer></script>
     <script src="./customs.js" defer></script>
     <script src="./jackpot-slots.js" defer></script>
     <script src="./shop.js" defer></script>
     <script src="./trails.js" defer></script>
+    <script src="./turtle-customs.js" defer></script>
+    <script src="./regent-art.js" defer></script><script src="./geomayhem-bosses.js" defer></script><script src="./boss-film.js" defer></script><script src="./boss-audio.js" defer></script><script src="./boss-arena.js" defer></script>
     <script src="./music.js" defer></script>
     <script src="./effects.js" defer></script>
     <script src="./leaderboards.js" defer></script>
@@ -41,7 +44,7 @@
   </head>
   <body>
     <div id="now-playing" class="now-playing" role="status" aria-live="polite" hidden></div>
-    <div id="achievement-toast" class="achievement-toasts" role="status" aria-live="polite" aria-atomic="false" aria-relevant="additions" hidden></div>
+    <div id="achievement-toast" data-fullscreen-overlay class="achievement-toasts" role="status" aria-live="polite" aria-atomic="false" aria-relevant="additions" hidden></div>
     <header class="topbar">
       <a class="brand" href="./"
         ><span class="brand-icon" aria-hidden="true">m<span>m</span></span
@@ -1870,6 +1873,7 @@ A
           <span class="card-title">Cubie Shop <span>↗</span></span>
           <span class="card-description">Play. Earn. Find a new you.</span>
         </button>
+        <a class="boss-theater-link" href="./boss-showcase.html"><strong>◇ Geomayhem Boss Theater ↗</strong><span>TEMPORARY MICROGAME · Preview all 20 cutscenes, boss animations, phases, and real attacks. No progress saved.</span></a>
         <button class="game-card geomayhem-card" data-game="geomayhem" aria-pressed="false" style="--accent: #71f5d2"><span class="arcade-card-scene geo2-arena" aria-hidden="true"><svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs><radialGradient id="geo2-space"><stop stop-color="#163f49"/><stop offset=".6" stop-color="#162238"/><stop offset="1" stop-color="#111923"/></radialGradient><linearGradient id="geo2-neon"><stop stop-color="#71f5d2"/><stop offset=".5" stop-color="#6bbdff"/><stop offset="1" stop-color="#c194ff"/></linearGradient><linearGradient id="geo2-dark" x2="0" y2="1"><stop offset=".5" stop-color="#101923" stop-opacity="0"/><stop offset="1" stop-color="#101923" stop-opacity=".95"/></linearGradient></defs>
  <path d="M0 0H300V220H0Z" fill="url(#geo2-space)"/>
@@ -2051,18 +2055,24 @@ A
             </section>
             <section id="shop-room" aria-label="Cubie Shop" hidden>
               <div class="shop-heading"><div><p class="eyebrow">CUBIE CASH</p><h3>Little outfits. Big personality.</h3></div><strong id="shop-balance" aria-live="polite"></strong></div>
-              <p>Earn Cash by playing, then collect Cubie Customs and Turtle Trails. Your purchases stay in this browser profile.</p>
+              <p>Earn Cash by playing, then collect Cubie Customs, Turtle Customs, and Turtle Trails. Your purchases stay in this browser profile.</p>
               <p id="shop-progress"></p><p id="shop-status" role="status" aria-live="polite"></p>
               <details><summary>How to earn Cubie Cash</summary><p>Score × game multiplier × difficulty bonus = converted score. Every 100 converted score earns 1 Cubie Cash. Partial Cash carries over between rounds. Finished rounds earn Cash once, even if you lose; Key Rush also pays when you exit. Temporary Core practice does not award Cash.</p><div id="shop-rates"></div></details>
               <label class="catalog-search" for="shop-search">Search shop
-                <input id="shop-search" type="search" placeholder="Name, tier, or description…" aria-controls="shop-grid trail-grid" autocomplete="off" />
+                <input id="shop-search" type="search" placeholder="Name, tier, or description…" aria-controls="shop-grid trail-grid turtle-custom-grid" autocomplete="off" />
               </label>
               <p id="shop-search-status" class="search-status" role="status"></p>
               <div class="shop-categories" role="group" aria-label="Shop category">
                 <button type="button" id="shop-customs-tab" aria-controls="shop-grid" aria-pressed="true">Cubie Customs · 48</button>
+                <button type="button" id="shop-turtles-tab" aria-controls="turtle-custom-room" aria-pressed="false">Turtle Customs · 57</button>
                 <button type="button" id="shop-trails-tab" aria-controls="trail-room" aria-pressed="false">Turtle Trails · 48</button>
               </div>
               <div id="shop-grid"></div>
+              <section id="turtle-custom-room" aria-label="Turtle Customs" hidden>
+                <div class="trail-heading"><div><h4>A shell for every adventure.</h4><p id="turtle-custom-equipped">Equipped: Classic turtle</p></div><button type="button" id="turtle-custom-remove">Classic turtle</button></div>
+                <p class="trail-note">57 Turtle Customs. Bronze → Silver → Gold → Crystal → Diamond → Rainbow → Empyrorite. Higher rarities bring richer shell details, shading, gems, glow, and animated orbits. Wear them in Turtle Dodge, Boss Crush, Pumpkin King, and The King's Wrath, alongside any trail. Cosmetics do not change your hitbox or abilities. Reduced motion keeps the artwork still.</p>
+                <div id="turtle-custom-grid"></div>
+              </section>
               <section id="trail-room" aria-label="Turtle Trails" hidden>
                 <div class="trail-heading"><div><h4>A little color in your wake.</h4><p id="trail-equipped">Equipped: No trail</p></div><button type="button" id="trail-remove">No trail</button></div>
                 <p class="trail-note">48 trails, priced from low to high. Trails fade in under half a second as you move in Turtle Dodge, Boss Crush, Pumpkin King, and The King's Wrath. Hidden during Singularity Core and practice. Reduced motion turns trail effects off.</p>
@@ -2088,7 +2098,19 @@ A
               <div id="customs-grid"></div>
             </section>
             <div id="hangman-game" class="hangman-game" hidden>
-              <pre id="hangman-picture" aria-hidden="true"></pre>
+              <svg id="hangman-picture" viewBox="0 0 200 190" aria-hidden="true" focusable="false">
+                <g class="hangman-frame">
+                  <path d="M25 176H175 M151 176V18H85V37 M151 48L121 18" />
+                </g>
+                <g class="hangman-figure">
+                  <circle data-hangman-part="1" cx="85" cy="55" r="18" />
+                  <path data-hangman-part="2" d="M85 73V122" />
+                  <path data-hangman-part="3" d="M85 84L58 105" />
+                  <path data-hangman-part="4" d="M85 84L112 105" />
+                  <path data-hangman-part="5" d="M85 122L62 155" />
+                  <path data-hangman-part="6" d="M85 122L108 155" />
+                </g>
+              </svg>
               <p id="word" class="word" aria-label="Word"></p>
               <p id="guess-feedback" role="status"></p>
               <div
@@ -2138,6 +2160,7 @@ A
               aria-label="Arcade game. Arrow keys move, F shoots, E counters."
               hidden
             ></canvas>
+            <section id="boss-cinema" class="boss-cinema" aria-label="Boss introduction" hidden><canvas id="boss-cinema-canvas" width="960" height="600" aria-label="Boss entrance cinematic"></canvas><p id="boss-cinema-label" role="status"></p><button id="boss-cinema-skip" type="button">Skip introduction →</button></section>
             <ul id="chaos-status-badges" aria-label="Active Chaos effects" hidden></ul>
             <section id="geomayhem-upgrade" class="overlay geomayhem-upgrade" aria-labelledby="geomayhem-upgrade-title" hidden>
               <p id="geomayhem-upgrade-status" class="eyebrow">LEVEL UP · ACTION PAUSED</p>
@@ -2157,6 +2180,7 @@ A
           <div class="game-footer">
             <span id="game-instruction">Your keyboard works here, too.</span>
             <div>
+              <button id="fullscreen" class="quiet-button" type="button" aria-pressed="false" title="Toggle fullscreen">Fullscreen</button>
               <button id="pause" class="quiet-button" hidden>Pause · D</button
               ><button id="exit" class="quiet-button" hidden>
                 End round · Esc
@@ -2164,9 +2188,9 @@ A
             </div>
           </div>
           <div id="touch-controls" class="touch-controls" hidden>
-            <div id="touch-joystick" class="touch-joystick" role="group" aria-label="Movement joystick: drag to move">
+            <div class="joystick-home"><div id="touch-joystick" class="touch-joystick" role="group" aria-label="Movement joystick: drag to move">
               <span class="joystick-thumb" aria-hidden="true"></span>
-            </div>
+            </div></div>
             <div>
               <button data-key="f" id="touch-fire">Fire</button
               ><button data-key="e" id="touch-counter">Counter</button>
@@ -2274,22 +2298,22 @@ A
       <p id="cubie-hint-copy">I heard that entering <strong>GRAVITRON</strong> somewhere on this website unlocks a secret! But… I don't know where you're supposed to put it. Maybe you can figure it out?</p>
       <button id="cubie-hint-okay" type="button" autofocus>Okay</button>
     </dialog>
-    <div id="chaos-status-screen-effects" aria-hidden="true"></div>
-    <div id="chaos-electric" class="chaos-screen-effect" aria-hidden="true" hidden>
+    <div id="chaos-status-screen-effects" data-fullscreen-overlay aria-hidden="true"></div>
+    <div id="chaos-electric" data-fullscreen-overlay class="chaos-screen-effect" aria-hidden="true" hidden>
       <svg viewBox="0 0 1000 700" preserveAspectRatio="none"><path d="M40 0 70 90 35 130 80 240 45 320 75 440 30 520 60 700 M950 0 920 100 965 170 930 270 960 360 920 480 960 570 940 700 M200 20 290 45 370 15 470 50 M580 670 680 640 750 675 860 650"/></svg>
     </div>
-    <div id="chaos-frost" class="chaos-screen-effect" aria-hidden="true" hidden>
+    <div id="chaos-frost" data-fullscreen-overlay class="chaos-screen-effect" aria-hidden="true" hidden>
       <span style="--snow-x:5%;--snow-delay:-2s">❄</span><span style="--snow-x:16%;--snow-delay:-7s">❄</span>
       <span style="--snow-x:28%;--snow-delay:-4s">❄</span><span style="--snow-x:40%;--snow-delay:-8s">❄</span>
       <span style="--snow-x:52%;--snow-delay:-1s">❄</span><span style="--snow-x:64%;--snow-delay:-6s">❄</span>
       <span style="--snow-x:76%;--snow-delay:-3s">❄</span><span style="--snow-x:88%;--snow-delay:-5s">❄</span>
       <span style="--snow-x:97%;--snow-delay:-9s">❄</span>
     </div>
-    <div id="damage-flash" aria-hidden="true"></div>
-    <div id="healing-flash" aria-hidden="true"></div>
-    <div id="achievement-celebrations" aria-hidden="true"></div>
-    <div id="name-surprise" aria-hidden="true" hidden></div>
-    <div id="rift-screen-glitch" aria-hidden="true"></div>
-    <div id="gaster-blackout" aria-hidden="true" hidden></div>
+    <div id="damage-flash" data-fullscreen-overlay aria-hidden="true"></div>
+    <div id="healing-flash" data-fullscreen-overlay aria-hidden="true"></div>
+    <div id="achievement-celebrations" data-fullscreen-overlay aria-hidden="true"></div>
+    <div id="name-surprise" data-fullscreen-overlay aria-hidden="true" hidden></div>
+    <div id="rift-screen-glitch" data-fullscreen-overlay aria-hidden="true"></div>
+    <div id="gaster-blackout" data-fullscreen-overlay aria-hidden="true" hidden></div>
   </body>
 </html>

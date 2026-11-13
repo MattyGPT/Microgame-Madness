@@ -8,7 +8,8 @@ const AccountRules = (() => {
   const shop = isNode ? require('../web/shop.js') : globalThis.CubieShop;
   const customs = isNode ? require('../web/customs.js') : globalThis.CubieCustoms;
   const trails = isNode ? require('../web/trails.js') : globalThis.TurtleTrails;
-  const catalog = [...customs.catalog, ...trails.catalog];
+  const turtles = isNode ? require('../web/turtle-customs.js') : globalThis.TurtleCustoms;
+  const catalog = [...customs.catalog, ...trails.catalog, ...turtles.catalog];
   const modes = Object.fromEntries(Object.entries(shop.rates).map(([mode, rate]) => [mode, Object.keys(rate.modes)]));
   modes.core_practice = achievements.attackRewards.filter(a => a.family === 'core').map(a => a.key);
   modes.geomayhem = Array.from({length:10}, (_,i) => `level_${i+1}`);
@@ -25,7 +26,7 @@ const AccountRules = (() => {
   const cumulative = ['damage_taken', 'attacks_completed', 'counter_hits', 'shots_fired', 'fight_elapsed',
     'healing_collected', 'near_misses', 'elapsed', 'mistakes', 'geo_kills', 'geo_waves', 'geo_rank'];
   const secretNames = new Set(['dingdong','cube','cubie','boo','starlight','rocknroy','pixel','1up','codexisthebest','high score','gravitron']);
-  const settingsKeys = new Set(['player','cubieCustom','turtleTrail','soundOn','reducedMotion','leaderboard','publicProfile']);
+  const settingsKeys = new Set(['player','cubieCustom','turtleTrail','turtleCustom','soundOn','reducedMotion','leaderboard','publicProfile']);
 
   function fail(code, message) { const error = new Error(message); error.code = code; throw error; }
   function requireValue(condition, message) { if (!condition) fail('invalid', message); }
@@ -37,7 +38,7 @@ const AccountRules = (() => {
   }
   function initial() {
     return { schema: 1, player: 'Player', scores: {}, achievements: new achievements.Tracker().data,
-      shop: { units: 0, owned: [] }, cubieCustom: 'classic', turtleTrail: null,
+      shop: { units: 0, owned: [] }, cubieCustom: 'classic', turtleTrail: null, turtleCustom: null,
       unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false, testerTon618: false,
       preferences: { soundOn: true, reducedMotion: false }, privacy: { leaderboard: true, publicProfile: true },
       preferenceRevisions: {}, streams: {}, runs: {}, timeIntervals: [], baselineClosed: false };
@@ -58,6 +59,7 @@ const AccountRules = (() => {
     clean.minigamesCompleted = integer(value.minigamesCompleted) ? Math.min(20, value.minigamesCompleted) : 0;
     clean.cubieHintShown = value.cubieHintShown === true;
     clean.cubieCustom = customs.selected(value.cubieCustom, clean.achievements.unlocked, clean.shop.owned, clean.testerTon618).id;
+    clean.turtleCustom = turtles.selected(value.turtleCustom, clean.shop.owned)?.id || null;
     clean.turtleTrail = trails.selected(value.turtleTrail, clean.shop.owned)?.id || null;
     if (object(value.preferences)) for (const key of ['soundOn', 'reducedMotion'])
       if (typeof value.preferences[key] === 'boolean') clean.preferences[key] = value.preferences[key];
@@ -118,8 +120,8 @@ const AccountRules = (() => {
       clean.death_cause = raw.death_cause;
     }
     if (raw.attack_survivals !== undefined) {
-      const length = ['singularity','core_practice'].includes(run.mode) ? 15 : ['pumpkin','wrath'].includes(run.mode) ? 7 : 0;
-      requireValue(Array.isArray(raw.attack_survivals) && raw.attack_survivals.length === length
+      const length = ['singularity','core_practice','wrath'].includes(run.mode) ? 15 : run.mode === 'pumpkin' ? 7 : 0;
+      requireValue(Array.isArray(raw.attack_survivals) && (raw.attack_survivals.length === length || run.mode === 'wrath' && raw.attack_survivals.length === 7)
         && raw.attack_survivals.every(n => integer(n)), 'Invalid attack survival counts.');
       clean.attack_survivals = raw.attack_survivals.slice();
     }
@@ -136,7 +138,7 @@ const AccountRules = (() => {
     for (const key of cumulative) if (clean[key] !== undefined && run.snapshot?.[key] !== undefined)
       requireValue(clean[key] >= run.snapshot[key], `The ${key} counter cannot move backward.`);
     if (clean.attack_survivals && run.snapshot?.attack_survivals)
-      requireValue(clean.attack_survivals.every((n, i) => n >= run.snapshot.attack_survivals[i]), 'Attack survival counts cannot move backward.');
+      requireValue(clean.attack_survivals.length >= run.snapshot.attack_survivals.length && clean.attack_survivals.every((n, i) => n >= (run.snapshot.attack_survivals[i] || 0)), 'Attack survival counts cannot move backward.');
     return { ...run.snapshot, ...clean };
   }
   function trackerFor(state, stream) {
@@ -307,6 +309,9 @@ const AccountRules = (() => {
           if (!item || !customs.unlocked(item, state.achievements.unlocked, state.shop.owned, state.testerTon618))
             fail('not_owned', 'This Custom is not unlocked.');
           state.cubieCustom = value;
+        } else if (key === 'turtleCustom') {
+          if (value !== null && !turtles.selected(value, state.shop.owned)) fail('not_owned', 'This Turtle Custom is not owned.');
+          state.turtleCustom = value;
         } else if (key === 'turtleTrail') {
           if (value !== null && !trails.selected(value, state.shop.owned)) fail('not_owned', 'This trail is not owned.');
           state.turtleTrail = value;

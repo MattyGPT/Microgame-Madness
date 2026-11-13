@@ -7,6 +7,8 @@ const CubieCustoms = (() => {
   const achievementModel = typeof module !== "undefined" && module.exports
     ? require("./achievements.js") : Achievements;
   const achievementCatalog = achievementModel.catalog;
+  const expansion = typeof module !== "undefined" && module.exports
+    ? require("./customs-expansion.js") : CubieExpansion;
   const tierLabels = {
     bronze: "Bronze", silver: "Silver", gold: "Gold", crystal: "Crystal",
     diamond: "Diamond", rainbow: "Rainbow", empyrorite: "Empyrorite", black: "Black",
@@ -598,6 +600,10 @@ const CubieCustoms = (() => {
   );
   for (const [id, name, price, tier, color, flavor, detail, layers = {}] of shopCustoms)
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
+  add("shop_toasted_marshmallow", "Toasted Marshmallow Cubie", null, "#fff0d7",
+    '<path d="M25 39Q37 23 60 30Q81 22 95 39V48Q87 57 80 45Q73 60 64 46Q52 59 45 45Q34 54 25 46Z" fill="#704435"/><ellipse cx="35" cy="81" rx="8" ry="4" fill="#eea5a0"/><ellipse cx="85" cy="81" rx="8" ry="4" fill="#eea5a0"/>',
+    '<rect x="20" y="28" width="80" height="80" rx="23"/>',
+    { price: 310, tier: "silver", faceColor: "#603b32", flavor: "Toasty on the outside. A complete softie inside." });
   add("shop_puzzle_cube", "Puzzle Cube Cubie", null, "#548eea",
     '<path d="M20 54h80M20 81h80M47 28v80M73 28v80" stroke="#172027" stroke-width="3"/>', square,
     { price: 2000, tier: "rainbow", flavor: "One more turn. Almost there. Forever." });
@@ -663,6 +669,7 @@ const CubieCustoms = (() => {
     '<circle cx="60" cy="67" r="39" fill="none" stroke="#c3a5ff" stroke-width="2"/>',
     '<circle cx="60" cy="67" r="39"/>',
     { faceColor: "#d4faff", flavor: "One tiny heartbeat. One enormous smile." });
+  catalog.push(...expansion.catalog);
   // Code grants are permanent; the achievement remains an independent unlock.
   const testerCodeActive = false;
   const redeemTesterCode = name => testerCodeActive && typeof name === "string"
@@ -957,6 +964,13 @@ const CubieCustoms = (() => {
     return {back:defs+back, detail:`<g data-geomayhem-tier="${item.tier}">${shell}<path d="M26 47v-8q0-5 6-5h43" fill="none" stroke="#fff" stroke-width="${rank>=3?1.5:1}" opacity=".6"/>${polish}${detail}${sparkles}</g>`, sideOffset:rank>=3?9:11, shadowOffset:rank>=3?15:20, sideColor:sideColor(item.color),shadowColor:'#27323e'};
   }
   function animatedArt(item, uid) {
+    if (item.expansion) return expansion.art(item, uid);
+    if (item.id === 'shop_toasted_marshmallow') return {
+      sideColor:'#b78059', faceColor:'#603b32',
+      detail:`<defs><radialGradient id="${uid}-mallow" cx=".38" cy=".3" r=".85"><stop stop-color="#fffdf0"/><stop offset=".65" stop-color="#fff0d7"/><stop offset="1" stop-color="#c89061"/></radialGradient></defs><rect x="20" y="28" width="80" height="80" rx="23" fill="url(#${uid}-mallow)"/>` + item.detail +
+        '<path d="M32 37Q43 30 56 34M66 34Q79 29 88 38" fill="none" stroke="#aa7760" stroke-width="2.5" stroke-linecap="round"/><path d="M27 53Q24 61 27 69" fill="none" stroke="#fffdf5" stroke-width="3" stroke-linecap="round"/><path d="M31 98Q60 110 89 98" fill="none" stroke="#d5a16f" stroke-width="1.4"/><g fill="#bd865d" opacity=".65"><circle cx="30" cy="91" r="1.2"/><circle cx="37" cy="98" r="1"/><circle cx="83" cy="98" r="1.2"/><circle cx="91" cy="89" r="1"/></g>',
+    };
+
     if (item.id.startsWith("geo_")) return geomayhemCubieArt(item, uid);
     if (item.id.startsWith("chaos_")) return chaosCubieArt(item, uid);
     const id = name => `${name}-${uid}`;
@@ -1896,7 +1910,40 @@ const CubieCustoms = (() => {
       (item.id === 'shop_koi' ? '</g>' : '') +
       '</g></svg>';
   }
-  return { catalog, tierLabels, unlocked, selected, svg, testerCodeActive, redeemTesterCode, wildCardSymbols, nextWildCardSymbol };
+  // Flat, static arena art: reuse every Custom's silhouette and identifying trim,
+  // Keep effects bounded to the arena sprite and rasterize its static detail once.
+  function gameSvg(item) {
+    const [x,y,w,h]=bodyBounds[item.id] || [20,28,80,80];
+    const scale=28/Math.max(w,h);
+    const fit=`translate(22 22) scale(${scale}) translate(${-x-w/2} ${-y-h/2})`;
+    const tier=Math.max(0,tierOrder.indexOf(item.tier)), uid=`arena-${++artId}`;
+    let body=item.body, detail=item.detail || '', back=item.back || '';
+    if(item.expansion) {
+      const art=expansion.art(item, uid, true);
+      detail=art.detail; back=art.back;
+    } else if(tier>=3 || item.id==='shop_toasted_marshmallow') {
+      const art=polishAttackArt(item,animatedArt(item,++artId),artId);
+      detail=art?.detail || detail;back=art?.back ?? back;
+    }
+    // CSS 3D shop Customs get small, portable vector equivalents.
+    if(item.id==='shop_puzzle_cube') {
+      body=square;back='';
+      const colors=['#f77c66','#84c9ee','#ffe58a','#9ee5a2','#f5f3df','#b79df0'];
+      detail=Array.from({length:9},(_,n)=>`<rect x="${23+n%3*25}" y="${31+Math.floor(n/3)*25}" width="23" height="23" rx="2" fill="${colors[n%6]}" stroke="#26313d"/>`).join('');
+    } else if(item.id==='shop_disco') {
+      body='<circle cx="60" cy="68" r="40"/>';back='';
+      detail='<path d="M24 52h72M21 72h78M29 92h62M43 31v74M63 28v80M83 36v64" fill="none" stroke="#f0e8ff" stroke-width="3"/>';
+    }
+    if(!detail&&!back) {
+      const art=animatedArt(item,++artId);
+      detail=art?.detail || '';back=art?.back || '';
+    }
+    const rim=['#c1d8a4','#deebf7','#ffe1a0','#c9eeff','#e4faff','#f0caff','#a9ffe0','#d3c8ff'][tier];
+    const defs=`<defs><clipPath id="${uid}-clip">${body}</clipPath><linearGradient id="${uid}-shade" x2=".7" y2="1"><stop stop-color="#ffffff" stop-opacity=".25"/><stop offset=".4" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#102039" stop-opacity=".4"/></linearGradient><linearGradient id="${uid}-shine" x2="1" y2=".8"><stop stop-color="${rim}" stop-opacity=".75"/><stop offset=".45" stop-color="#ffffff" stop-opacity=".12"/><stop offset="1" stop-color="${rim}" stop-opacity=".5"/></linearGradient></defs>`;
+    const trim=tier>=2?`<g clip-path="url(#${uid}-clip)"><path d="M${x+5} ${y+h-8}V${y+8}Q${x+5} ${y+5} ${x+10} ${y+5}H${x+w-9}" fill="none" stroke="${rim}" stroke-width="${tier>=4?2:1.3}" stroke-linecap="round" opacity=".8"/></g>`:'';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="176" height="176" viewBox="0 0 44 44"><g transform="${fit}" stroke-linejoin="round">${defs}${back}${item.underBody||''}<g fill="#102136" opacity=".65" transform="translate(2 3)">${body}</g><g fill="${item.color}" stroke="${rim}" stroke-width="1.1">${body}</g><g fill="url(#${uid}-shade)">${body}</g>${detail}${trim}<g fill="none" stroke="url(#${uid}-shine)" stroke-width="${tier>=3?1.8:1}">${body}</g></g></svg>`;
+  }
+  return { catalog, tierLabels, unlocked, selected, svg, gameSvg, testerCodeActive, redeemTesterCode, wildCardSymbols, nextWildCardSymbol };
 })();
 if (typeof module !== "undefined") module.exports = CubieCustoms;
 

@@ -40,6 +40,9 @@ class DrawCanvas:
     def create_text(self, *coords, **options):
         return self.create("text", coords, options)
 
+    def create_line(self, *coords, **options):
+        return self.create("line", coords, options)
+
     def create_oval(self, *coords, **options):
         return self.create("oval", coords, options)
 
@@ -139,7 +142,9 @@ class BrowserGame:
         elif self.game is None:
             raise ValueError("Start a game first")
         elif self.mode == "geomayhem":
-            if action == "upgrade" and not self.paused:
+            if action == "boss_intro_skip":
+                self.game.boss_intro_left = 0
+            elif action == "upgrade" and not self.paused:
                 self.game.choose(request.get("choice"))
             elif action == "reroll" and not self.paused:
                 self.game.reroll()
@@ -181,7 +186,10 @@ class BrowserGame:
     def snapshot(self):
         game = self.game
         if self.mode == "geomayhem":
-            result = game.snapshot(self.paused, compact=True, include_background=self.geomayhem_background_pending)
+            backdrop_key=(game.level,game.left,game.right,game.bottom,game.top)
+            changed=getattr(self,"geomayhem_backdrop_key",None)!=backdrop_key
+            result = game.snapshot(self.paused, compact=True, include_background=self.geomayhem_background_pending or changed)
+            self.geomayhem_backdrop_key=backdrop_key
             self.geomayhem_background_pending = False
             return result
         result = {"mode": self.mode, "difficulty": self.difficulty, "paused": self.paused,

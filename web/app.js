@@ -20,7 +20,7 @@ const modes = {
   },
   shop: {
     title: "Cubie Shop", category: "10 / CUBIE CASH", art: "C",
-    heading: "Little outfits. Big personality.", copy: "Play games to earn Cubie Cash and collect Customs and Turtle Trails.",
+    heading: "Little outfits. Big personality.", copy: "Play games to earn Cubie Cash and collect Cubie Customs, Turtle Customs, and Turtle Trails.",
     accent: "#80b9ff", controls: "100 converted score = 1 Cubie Cash · Harder modes earn more",
     localOnly: true, temporary: true, difficulties: {},
   },
@@ -144,7 +144,7 @@ const modes = {
     category: "06 / ATTACK PRACTICE",
     art: "",
     heading: "Choose your attack. Or shuffle them all.",
-    copy: "Start with 15 HP and one three-second countdown at the start. Repeat one pattern or face all seven in Random Order. Every cycle has a half-second break and resets your turtle to its starting position. Body and arm contact still kills instantly.",
+    copy: "Start with 15 HP and one three-second countdown at the start. Repeat one pattern or face all fifteen in Random Order. Every cycle has a half-second break and resets your turtle to its starting position. Body and arm contact still kills instantly.",
     accent: "#ffe066",
     controls: "Arrows move · F shoots · E counters · D pauses · Esc picks another attack",
     choiceLabel: "Choose an attack to load",
@@ -156,7 +156,7 @@ const modes = {
       chaos: ["Chaos", "Dodge the King's mixed projectile patterns."],
       royal_slams: ["Royal Slams", "Avoid the raised hands, then escape the mouth fire."],
       haunted_quadrants: ["Haunted Quadrants", "Two seconds to get in position. Dodge slower clockwise scares. Half a heart per hit."],
-      random_order: ["Random Order", "All seven attacks in a shuffled order. One countdown at the start. Reshuffles after every seven attacks."],
+      random_order: ["Random Order", "All fifteen attacks in a shuffled order. One countdown at the start. Reshuffles after every fifteen attacks."],
     },
   },
   singularity: {
@@ -188,7 +188,159 @@ const modes = {
     difficulties: {},
   },
 };
+const wrathExclusive = {
+  "starfall_verdict": {
+    "title": "Starfall Verdict",
+    "hint": "Leave the star marks before the meteors land.",
+    "variants": [
+      "Wishing Stars",
+      "Meteor Sentence"
+    ],
+    "descriptions": [
+      "Single small star marks, long warnings, and generous time between impacts.",
+      "Three meteors strike together with wider impact zones and shorter warnings."
+    ],
+    "palette": [
+      "#ffe9ab",
+      "#ffbf55",
+      "#ff5c86"
+    ],
+    "path": "M36 8L43 27L64 28L48 41L54 62L36 49L18 62L24 41L8 28L29 27ZM50 8L64 18"
+  },
+  "pendulum_court": {
+    "title": "Pendulum Court",
+    "hint": "Dodge the swinging clock hands; dashed hands are warnings.",
+    "variants": [
+      "Nursery Clock",
+      "Midnight Guillotines"
+    ],
+    "descriptions": [
+      "One slow clock hand swings from the left tower.",
+      "Two thick clock hands swing from opposite towers together."
+    ],
+    "palette": [
+      "#bce9ef",
+      "#64d9e8",
+      "#ff8761"
+    ],
+    "path": "M36 8A24 24 0 1 0 36 56A24 24 0 1 0 36 8M36 17V32L49 40M36 56V66M27 66H45"
+  },
+  "crown_chess": {
+    "title": "Crown Chess",
+    "hint": "Leave the marked chess squares before they light up.",
+    "variants": [
+      "Pawn Lesson",
+      "Queen's Checkmate"
+    ],
+    "descriptions": [
+      "Only one in four squares lights up, with a long warning.",
+      "Half the board ignites in alternating checkerboard patterns; move before each strike."
+    ],
+    "palette": [
+      "#e8ddff",
+      "#ba9cff",
+      "#f45ba8"
+    ],
+    "path": "M16 18V30H25V18H32V30H40V18H47V30H56V18M16 18V39L24 47V56H48V47L56 39M17 62H55"
+  },
+  "mirror_lances": {
+    "title": "Mirror Lances",
+    "hint": "Pass through the openings in the advancing mirror walls.",
+    "variants": [
+      "Looking Glass",
+      "Shattered Reflections"
+    ],
+    "descriptions": [
+      "Single vertical mirror walls with broad openings.",
+      "Paired mirror walls advance from opposite sides, alternating axes with narrower shared openings."
+    ],
+    "palette": [
+      "#b9f5f0",
+      "#6ce6eb",
+      "#6a97ff"
+    ],
+    "path": "M20 8L36 36L20 64L4 36ZM52 8L68 36L52 64L36 36M16 26L23 34M48 26L55 34"
+  },
+  "briar_pursuit": {
+    "title": "Briar Pursuit",
+    "hint": "Keep moving; seeds bloom into thorns behind you.",
+    "variants": [
+      "Garden Stroll",
+      "Thorn Coronation"
+    ],
+    "descriptions": [
+      "Small seeds bloom slowly and fade quickly.",
+      "Paired seeds leave a denser thorn trail that persists longer; do not double back."
+    ],
+    "palette": [
+      "#ceefae",
+      "#8bd470",
+      "#e96f9b"
+    ],
+    "path": "M36 64V24M36 42Q9 45 13 21Q34 20 36 42M36 31Q59 33 59 10Q38 9 36 31M26 53L36 47L46 53"
+  },
+  "eclipse_waltz": {
+    "title": "Eclipse Waltz",
+    "hint": "Stay inside the moving moonlight. The dark floor hurts.",
+    "variants": [
+      "Moonlit Steps",
+      "Black Sun Ballet"
+    ],
+    "descriptions": [
+      "A large moonlit circle traces a small, slow orbit.",
+      "A smaller pulsing circle moves on a wider, faster orbit; stay fully inside the moonlight."
+    ],
+    "palette": [
+      "#d4ddff",
+      "#b49aff",
+      "#f17cdd"
+    ],
+    "path": "M51 9A27 27 0 1 0 60 51A25 25 0 0 1 51 9ZM8 12H18M13 7V17M55 60H65M60 55V65"
+  },
+  "resonant_bells": {
+    "title": "Resonant Bells",
+    "hint": "Dodge the expanding sound rings, or tap E as they reach you.",
+    "variants": [
+      "Lullaby Chimes",
+      "Cathedral Alarm"
+    ],
+    "descriptions": [
+      "One central bell sends slow single sound rings; E can silence a ring on contact.",
+      "Three bells alternate faster paired echoes; a well-timed E silences both echoes from that bell."
+    ],
+    "palette": [
+      "#ffe6ad",
+      "#ffc76e",
+      "#ff8360"
+    ],
+    "path": "M15 51L22 43V28A14 14 0 0 1 50 28V43L57 51ZM29 58Q36 67 43 58M8 20L3 15M64 20L69 15"
+  },
+  "royal_loom": {
+    "title": "Royal Loom",
+    "hint": "Dashed threads warn of lasers. Weave between the lit threads.",
+    "variants": [
+      "Silken Threads",
+      "Razor Tapestry"
+    ],
+    "descriptions": [
+      "One thread fires at a time with a long warning.",
+      "Three parallel threads and one crossing thread fire together after shorter warnings."
+    ],
+    "palette": [
+      "#c5eeff",
+      "#74b9ff",
+      "#ff71df"
+    ],
+    "path": "M10 16H62M10 36H62M10 56H62M16 10V62M36 10V62M56 10V62M6 6L66 66"
+  }
+};
+const wrathRandomChoice = modes.wrath.difficulties.random_order;
+delete modes.wrath.difficulties.random_order;
+for (const [key, attack] of Object.entries(wrathExclusive))
+  modes.wrath.difficulties[key] = [attack.title, `Wrath exclusive · ${attack.hint}`];
+modes.wrath.difficulties.random_order = wrathRandomChoice;
 const wrathVariants = {
+  ...Object.fromEntries(Object.entries(wrathExclusive).map(([key, attack]) => [key, attack.variants])),
   color_memory: ["Do Your Cute Face", "Chromatic Nightmare"],
   bone_gauntlet: ["Brittle Bones", "Bone Barrage"],
   rotating_rings: ["Gentle Rings", "Terror Rings"],
@@ -202,13 +354,13 @@ for (const [attack, names] of Object.entries(wrathVariants)) {
   const descriptions = {
     color_memory: ["Three color flashes, no bullets, an upright cute face, and 30% longer memory and recall breaks.", "Six eye-color flashes at 30% faster speed; 15% shorter recall breaks, with bullets moving and spawning 25% faster. The dodge phases turn red—read his eyes for the color rule."],
     bone_gauntlet: ["Wider openings between the top and bottom bones. Bones move and spawn 30% slower; the attack is 20% shorter.", "Narrower openings between the top and bottom bones. Bones spawn 50% faster and move 12.5% faster than Normal; the attack lasts 20% longer."],
-    rotating_rings: ["Rings fall, spin, and spawn 30% slower; the attack is 20% shorter.", "40% longer; rings fall, spin, and spawn 38% faster. Complete rings with no openings. Exactly six white ghosts cross the arena. Use the colored sections to pass safely."],
+    rotating_rings: ["Rings fall, spin, and spawn 30% slower; the attack is 20% shorter.", "40% longer; rings fall, spin, and spawn 38% faster. Complete rings with no openings; crimson sections always hurt. Exactly six white ghosts cross the arena. Use the colored sections to pass safely."],
     magenta_fingers: ["15% larger counter radius, 15% longer counter window, 15% shorter cooldown; fingers move and spawn 15% slower.", "Fingers move and spawn 25% faster; the attack lasts 20% longer. Standard counters."],
     chaos: ["Projectiles move and spawn 30% slower; the attack is 20% shorter.", "40% more projectiles per volley (seven instead of five). Projectiles move and spawn 25% faster; the attack lasts 20% longer."],
     royal_slams: ["25% slower, extra recovery between slams, 20% narrower slam/fire areas, and lots of warning marks. Damage is unchanged.", "Blind Rage: 20% faster, 11 randomized slams, random roar/fire bursts, plus Center Crush, Split Strike, and Low Sweep. No ground warnings—read the hand gestures. Your turtle moves 20% faster."],
-    haunted_quadrants: ["Spooks move 50% slower. One active quadrant at a time.", "Two opposite spooks move 28.25% faster than Normal. Danger reaches the center—move into a safe quadrant during the warning."],
-    random_order: ["Shuffle all seven Easy variants, with each attack's easier rules.", "Shuffle all seven Hard variants, including Terror Rings, Twin Terrors, and Blind Rage."],
-  }[attack];
+    haunted_quadrants: ["Spooks move 50% slower. One active quadrant at a time.", "Two opposite spooks move at 1.08× Normal speed (8% faster). Danger reaches the center—move into a safe quadrant during the warning."],
+    random_order: ["Shuffle all fifteen Easy variants, with each attack's easier rules.", "Shuffle all fifteen Hard variants, including Terror Rings, Twin Terrors, and Blind Rage."],
+  }[attack] || wrathExclusive[attack].descriptions;
   for (const [index, level] of ["easy", "hard"].entries())
     modes.wrath.difficulties[`${attack}__${level}`] = [`${names[index]} (${level === "easy" ? "Easy" : "Hard"})`, descriptions[index]];
 }
@@ -228,7 +380,7 @@ function wrathDifficultyArt(attack, level) {
   svg.setAttribute('class', 'wrath-difficulty-art');
   svg.setAttribute('aria-hidden', 'true');
   const path = document.createElementNS(svg.namespaceURI, 'path');
-  path.setAttribute('d', paths[attack]);
+  path.setAttribute('d', paths[attack] || wrathExclusive[attack].path);
   path.setAttribute('fill', 'none');
   path.setAttribute('stroke', 'currentColor');
   path.setAttribute('stroke-width', level === 'hard' ? '3' : '2.5');
@@ -258,7 +410,7 @@ function chooseWrathDifficulty(attack) {
       chaos: ['#c8bfff','#c088ee','#ff7b41'], royal_slams: ['#ffe0a0','#f6c45c','#ff4c59'],
       haunted_quadrants: ['#b4f1df','#b8a3f4','#c078ff'], random_order: ['#b4f1df','#ffe066','#ff507c'],
     };
-    button.style.setProperty('--wrath-tint', palettes[attack][['easy','normal','hard'].indexOf(level)]);
+    button.style.setProperty('--wrath-tint', (palettes[attack] || wrathExclusive[attack].palette)[['easy','normal','hard'].indexOf(level)]);
     const title = document.createElement("strong");
     title.textContent = level === "normal" ? `${label} (Normal)` : label;
     const detail = document.createElement("span");
@@ -278,6 +430,9 @@ function chooseWrathDifficulty(attack) {
 let geomayhemArmory = [];
 let geomayhemArenas = [];
 let geomayhemFiring = false;
+let geomayhemShootPointer = null;
+let geomayhemShootOrigin = null;
+let geomayhemShootDirection = [0,1];
 const geomayhemMovementKeys = new Map();
 let geomayhemAim = null;
 let geomayhemPointer = null;
@@ -360,14 +515,31 @@ function renderGeomayhemWeapon() {
   }));
 }
 $("geomayhem-weapon").addEventListener("change", renderGeomayhemWeapon);
+let bossCinemaWasOpen=false;
+$("boss-cinema-skip").onclick=()=>{if(selected!=="geomayhem"||!snapshot?.boss_intro)return;clearKeys();snapshot=send("boss_intro_skip");render();$("arena").focus({preventScroll:true});};
 function renderGeomayhem(s) {
+  const intro=!!s.boss_intro;
+  $("boss-cinema").hidden=!intro;
+  if(intro) {
+    if(!bossCinemaWasOpen){clearKeys();$("boss-cinema-skip").focus({preventScroll:true});}
+    $("boss-cinema-label").textContent=`${s.boss.name} · Introduction · Combat paused`;
+    const cinemaContext=$("boss-cinema-canvas").getContext("2d");
+    GeomayhemBosses.cinematic(cinemaContext,s.level,s.boss_intro.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
+    if(s.boss_intro.time>10.8) {
+      cinemaContext.save();cinemaContext.translate(115,425);cinemaContext.scale(1.8,1.8);
+      drawGeomayhemCubie(cinemaContext,{coords:[0,0],face:[1,0],time:0});
+      cinemaContext.restore();
+    }
+  } else if(bossCinemaWasOpen) {clearKeys();$("arena").focus({preventScroll:true});}
+  bossCinemaWasOpen=intro;
   setTextIfChanged("geomayhem-run-info", `${s.arena.hazard} · ${s.anomaly.name}. Relics: ${s.relics.map(r => r.name).join(", ") || "none yet"}`);
   $("geomayhem-run-info").title = `${s.anomaly.description} Yellow warnings lock in before red zones activate. Dodge sideways when enemies wind up.`;
   setTextIfChanged("geomayhem-upgrade-status", `LEVEL UP · ${s.pending_levelups} upgrade${s.pending_levelups === 1 ? "" : "s"} remaining · ACTION PAUSED`);
   const bossChanged = $("geomayhem-boss").hidden === !!s.boss;
   $("geomayhem-boss").hidden = !s.boss;
   if (s.boss) {
-    setTextIfChanged("geomayhem-boss-name", `${s.boss.name} · Phase ${s.boss.phase}`);
+    setTextIfChanged("geomayhem-boss-name", `${s.boss.name} · Phase ${s.boss.phase} · ${s.boss.hp.toLocaleString()} / ${s.boss.max_hp.toLocaleString()} HP${s.boss.move ? " · "+s.boss.move : ""}`);
+    $("geomayhem-boss-health").setAttribute("aria-label",`${s.boss.name}: ${s.boss.hp} of ${s.boss.max_hp} health`);
     $("geomayhem-boss-health").max = s.boss.max_hp;
     $("geomayhem-boss-health").value = s.boss.hp;
   }
@@ -442,7 +614,7 @@ function aimGeomayhem(event) {
     (280 - (event.clientY - rect.top) * 560 / rect.height) / camera.scale + camera.y];
 }
 $("game-canvas").addEventListener("pointermove", event => {
-  if (selected === "geomayhem" && event.pointerType === "mouse") aimGeomayhem(event);
+  if (selected === "geomayhem" && geomayhemShootPointer === null && event.pointerType === "mouse") aimGeomayhem(event);
 });
 $("game-canvas").addEventListener("pointerdown", event => {
   if (selected !== "geomayhem" || !active || snapshot?.paused || snapshot?.offers?.length
@@ -645,6 +817,7 @@ try {
     saved.achievements = value.achievements;
     saved.testerTon618 = value.testerTon618 === true;
     saved.shop = value.shop;
+    saved.turtleCustom = typeof value.turtleCustom === "string" ? value.turtleCustom : null;
     saved.turtleTrail = typeof value.turtleTrail === "string" ? value.turtleTrail : null;
     saved.cubieCustom = typeof value.cubieCustom === "string" ? value.cubieCustom : "classic";
     saved.unlocks.singularity = value.unlocks?.singularity === true;
@@ -674,7 +847,7 @@ function newCustomNotifications() {
   }).map(item => ({ ...item, notificationKind: "custom" }));
 }
 
-saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
+saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog, ...TurtleCustoms.catalog]);
 // Seed from the saved closet so reloads never replay old Custom unlocks.
 const announcedCustoms = new Set(CubieCustoms.catalog.filter(item =>
   CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
@@ -883,7 +1056,8 @@ function updateCustomsSearch() {
 function updateShopSearch() {
   const customs = filterCatalogGrid("shop-grid", "shop-search");
   const trails = filterCatalogGrid("trail-grid", "shop-search");
-  const count = shopCategory === "trails" ? trails : customs;
+  const turtles = filterCatalogGrid("turtle-custom-grid", "shop-search");
+  const count = shopCategory === "turtles" ? turtles : shopCategory === "trails" ? trails : customs;
   $("shop-search-status").textContent = count
     ? `${count} ${shopCategory === "trails" ? "trail" : "Custom"}${count === 1 ? "" : "s"} shown`
     : "No matches in this category. Try another search or category.";
@@ -1104,6 +1278,8 @@ $("shop-search").oninput = updateShopSearch;
 let shopCategory = "customs";
 function setShopCategory(category) {
   shopCategory = category;
+  $("turtle-custom-room").hidden = category !== "turtles";
+  $("shop-turtles-tab").setAttribute("aria-pressed", String(category === "turtles"));
   $("shop-grid").hidden = category !== "customs";
   $("trail-room").hidden = category !== "trails";
   $("shop-customs-tab").setAttribute("aria-pressed", String(category === "customs"));
@@ -1111,6 +1287,8 @@ function setShopCategory(category) {
   updateShopSearch();
 }
 $("shop-customs-tab").onclick = () => setShopCategory("customs");
+$("shop-turtles-tab").onclick = () => setShopCategory("turtles");
+$("turtle-custom-remove").onclick = () => { saved.turtleCustom = null; persist(); renderShop(); };
 $("shop-trails-tab").onclick = () => setShopCategory("trails");
 $("trail-remove").onclick = () => {
   saved.turtleTrail = null;
@@ -1163,10 +1341,57 @@ function renderTrails() {
     return card;
   }));
 }
+function renderTurtleCustoms() {
+  const equipped = TurtleCustoms.selected(saved.turtleCustom, saved.shop.owned);
+  $("turtle-custom-equipped").textContent = `Equipped: ${equipped?.name || "Classic turtle"}`;
+  $("turtle-custom-remove").setAttribute("aria-pressed", String(!equipped));
+  $("turtle-custom-grid").replaceChildren(...[...TurtleCustoms.catalog].sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
+    const owned = saved.shop.owned.includes(item.id), wearing = equipped?.id === item.id;
+    const card = document.createElement("article");
+    card.className = "custom-tile trail-tile";
+    card.dataset.trail = item.id;
+    card.dataset.tier = item.tier;
+    card.dataset.equipped = String(wearing);
+    card.style.setProperty("--trail-color", item.color);
+    const art = document.createElement("div");
+    art.className = "trail-preview";
+    art.innerHTML = TurtleCustoms.preview(item);
+    const name = document.createElement("h5"); name.textContent = item.name;
+    const type = document.createElement("span"); type.className = "custom-tier"; type.textContent = `${CubieCustoms.tierLabels[item.tier]} Turtle Custom`;
+    const flavor = document.createElement("p"); flavor.textContent = item.flavor;
+    const price = document.createElement("strong"); price.className = "shop-price";
+    price.textContent = owned ? "Owned" : `${item.price.toLocaleString()} Cubie Cash`;
+    const button = document.createElement("button"); button.className = "custom-equip";
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip Custom" : `Buy · ${item.price.toLocaleString()} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Equip" : "Buy"} ${item.name} Custom`);
+    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
+    button.onclick = async () => {
+      if (saved.shop.owned.includes(item.id)) {
+        saved.turtleCustom = item.id;
+        $("shop-status").textContent = `${item.name} equipped. Your turtle has a new look.`;
+      } else {
+        if (accountApp?.initialized && accountApp.controller) {
+          try { await accountApp.purchase(item.id); }
+          catch (error) { $("shop-status").textContent = error.message; return; }
+        } else if (!CubieShop.buy(saved.shop, item)) return;
+        $("shop-status").textContent = `${item.name} is yours! Choose Equip Custom to use it.`;
+      }
+      persist(); renderShop();
+      $("turtle-custom-grid").querySelector(`[data-trail="${item.id}"] button`)?.focus({ preventScroll: true });
+    };
+    card.append(art, name, type, flavor, price, button);
+    return card;
+  }));
+}
 function cardFocus(id) { $("trail-grid").querySelector(`[data-trail="${id}"] button`)?.focus({ preventScroll: true }); }
+const shopArtVisibility = new IntersectionObserver(entries => {
+  for (const entry of entries) entry.target.classList.toggle("shop-art-paused", !entry.isIntersecting);
+}, { rootMargin: "120px" });
 function renderShop() {
+  shopArtVisibility.disconnect();
   setShopCategory(shopCategory);
   renderTrails();
+  renderTurtleCustoms();
   $("shop-balance").textContent = `${CubieShop.balance(saved.shop).toLocaleString()} Cubie Cash`;
   $("shop-progress").textContent = `${(saved.shop.units % 1000 / 10).toLocaleString()} / 100 converted score toward your next Cash.`;
   $("shop-rates").replaceChildren(...Object.entries(CubieShop.rates).map(([mode, rate]) => {
@@ -1179,7 +1404,7 @@ function renderShop() {
     const owned = saved.shop.owned.includes(item.id);
     const wearing = saved.cubieCustom === item.id;
     const card = document.createElement("article");
-    card.className = "custom-tile";
+    card.className = "custom-tile shop-art-paused";
     card.dataset.custom = item.id;
     card.dataset.tier = item.tier;
     card.dataset.equipped = String(wearing);
@@ -1220,6 +1445,7 @@ function renderShop() {
       $("shop-grid").querySelector(`[data-custom="${item.id}"] button`)?.focus({ preventScroll: true });
     };
     card.append(art, name, tier, flavor, price, button);
+    shopArtVisibility.observe(card);
     return card;
   }));
   updateShopSearch();
@@ -1251,7 +1477,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Customs and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1485,6 +1711,7 @@ function clearKeys() {
   keys.clear();
   geomayhemMovementKeys.clear();
   geomayhemFiring = false;
+  resetGeomayhemShoot();
   resetJoystick();
   document
     .querySelectorAll("[data-key]")
@@ -1508,7 +1735,9 @@ function fitArcade() {
   const viewport = window.visualViewport;
   const viewportHeight = viewport ? Math.round(viewport.height * viewport.scale) : innerHeight;
   $("arena").style.setProperty("--player-health-height", `${$("player-health").offsetHeight}px`);
-  const height = Math.max(1, viewportHeight - chromeHeight);
+  const panelStyle = getComputedStyle(document.querySelector(".game-main"));
+  const panelPadding = parseFloat(panelStyle.paddingTop) + parseFloat(panelStyle.paddingBottom);
+  const height = Math.max(1, viewportHeight - chromeHeight - panelPadding);
   const width = Math.min($("arena").clientWidth - 2, height * 680 / 560);
   geomayhemCanvasWidth = width;
   $("game-canvas").style.width = `${width}px`;
@@ -1675,6 +1904,7 @@ function decorateDodgeDifficulty(button, difficulty) {
   dodgeBorderVisibility.observe(orbit);
 }
 function selectGame(mode) {
+  $("boss-cinema").hidden=true;bossCinemaWasOpen=false;
   coreAftermath = false;
   if (loadFailed && !["customs", "shop"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
@@ -1685,6 +1915,7 @@ function selectGame(mode) {
   turtleTrailField.reset();
   if (active && selected === "keyboard") saveRound();
   active = false;
+  setGameFullscreen(false);
   snapshot = null;
   clearKeys();
   selected = mode;
@@ -1731,6 +1962,11 @@ function selectGame(mode) {
       const detail = document.createElement("span");
       detail.textContent = description;
       button.append(title, detail);
+      if (mode === "wrath" && wrathExclusive[value]) {
+        button.prepend(wrathDifficultyArt(value, "normal"));
+        button.style.setProperty('--wrath-tint', wrathExclusive[value].palette[1]);
+        button.dataset.wrathExclusive = "true";
+      }
       if (mode === "jukebox") styleSongCard(button, value);
       if (mode === "dodge") decorateDodgeDifficulty(button, value);
       button.onclick = () => mode === "wrath" ? chooseWrathDifficulty(value) : startGame(value);
@@ -1838,13 +2074,16 @@ function startGame(difficulty) {
     renderTypingKeys();
   }
   const arcade = ["dodge", "boss", "pumpkin", "wrath", "singularity", "core_practice", "geomayhem"].includes(selected);
+  if (arcade) setGameFullscreen(true);
   $("arena").classList.toggle("arcade", arcade);
   $("game-canvas").hidden = !arcade;
   $("game-canvas").setAttribute("aria-label", `${modes[selected].title}. ${modes[selected].controls}`);
   $("touch-controls").hidden =
     !arcade || !matchMedia("(pointer: coarse)").matches;
   $("touch-fire").hidden = ["dodge", "core_practice"].includes(selected);
-  $("touch-fire").textContent = selected === "singularity" ? "Laser" : "Fire";
+  $("touch-fire").textContent = selected === "singularity" ? "Laser" : selected === "geomayhem" ? "Aim + Fire" : "Fire";
+  $("touch-fire").classList.toggle("aim-stick",selected === "geomayhem");
+  $("touch-fire").setAttribute("aria-label",selected === "geomayhem" ? "Aim and fire: hold and drag in the direction you want to shoot" : "Fire");
   $("touch-counter").hidden = !["pumpkin", "wrath"].includes(selected);
   $("geomayhem-hud").hidden = selected !== "geomayhem";
   setLocked(true);
@@ -2029,7 +2268,10 @@ function render() {
   setTextIfChanged("pause", `${s.paused ? "Resume" : "Pause"} · ${selected === "geomayhem" ? "R" : "D"}`);
   if (selected === "geomayhem") renderGeomayhem(s);
   if (selected === "hangman") {
-    $("hangman-picture").textContent = s.picture;
+    const drawingStage = Math.min(6, Math.floor(s.mistakes * 6 / (s.mistakes + s.remaining)));
+    for (const part of $("hangman-picture").querySelectorAll("[data-hangman-part]")) {
+      part.classList.toggle("drawn", Number(part.dataset.hangmanPart) <= drawingStage);
+    }
     $("word").textContent = s.word;
     $("guess-feedback").textContent =
       s.message || `${s.remaining} wrong guesses left.`;
@@ -2074,6 +2316,7 @@ function render() {
     $("overlay").hidden = true;
   } else if (s.over) {
     active = false;
+    setGameFullscreen(false);
     clearKeys();
     setLocked(false);
     saveRound();
@@ -2152,10 +2395,57 @@ function paintGeomayhemPolygon(context, x, y, radius, sides, fill, outline, angl
   if (outline) { context.strokeStyle=outline; context.lineWidth=width/radius; context.stroke(path); }
   context.restore();
 }
+// Rasterize each equipped Custom once, never parse SVG in the frame loop.
+const geomayhemCubieSprites = new Map();
+function drawGeomayhemCubie(context, command) {
+  const item=CubieCustoms.selected(saved.cubieCustom,achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
+  let sprite=geomayhemCubieSprites.get(item.id);
+  if(!sprite) {
+    sprite=new Image();
+    sprite.src=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(CubieCustoms.gameSvg(item))}`;
+    geomayhemCubieSprites.set(item.id,sprite);
+  }
+  const [x,y]=command.coords;
+  context.save();
+  const tier=Math.max(0,Object.keys(CubieCustoms.tierLabels).indexOf(item.tier));
+  const reduced=trailReducedMotion.matches||!!saved.preferences?.reducedMotion;
+  const time=reduced?0:(command.time||0);
+  const accent=tier>=6?'#a9ffe0':tier===5?'#e6baff':'#c7edff';
+  if(tier>=3) {
+    const aura=context.createRadialGradient(x,y,12,x,y,22);
+    aura.addColorStop(0,'transparent');aura.addColorStop(.7,accent+'20');aura.addColorStop(1,'transparent');
+    context.fillStyle=aura;context.fillRect(x-22,y-22,44,44);
+  }
+  context.imageSmoothingEnabled=true;
+  context.imageSmoothingQuality='high';
+  if(sprite.complete&&sprite.naturalWidth) context.drawImage(sprite,x-22,y-22,44,44);
+  else {context.fillStyle=item.color;context.fillRect(x-14,y-14,28,28);}
+  if(tier>=4) {
+    // A few tiny highlights stay inside the existing player ring.
+    for(let i=0;i<Math.min(3,tier-3);i++) {
+      const a=time*.6+i*Math.PI*2/3,px=x+Math.cos(a)*18,py=y+Math.sin(a)*18;
+      context.globalAlpha=reduced?.65:.45+.3*Math.sin(time*2+i);
+      context.strokeStyle=tier===5?['#ffc6df','#c7ffdf','#cbe2ff'][i]:accent;
+      context.lineWidth=.8;context.beginPath();context.moveTo(px-1.8,py);context.lineTo(px+1.8,py);context.moveTo(px,py-1.8);context.lineTo(px,py+1.8);context.stroke();
+    }
+    context.globalAlpha=command.opacity??1;
+  }
+  // Keep directional eyes and invulnerability feedback readable for every outfit.
+  if(command.invulnerable) {context.strokeStyle='#ffffff';context.lineWidth=2;context.strokeRect(x-15,y-15,30,30);}
+  const [fx,fy]=command.face||[0,0], face=item.faceColor||'#183a31';
+  context.fillStyle='#f4fff0';
+  context.fillRect(x+fx*4-6,y-fy*4-5,6,7);context.fillRect(x+fx*4+4,y-fy*4-5,6,7);
+  context.fillStyle=face;
+  context.fillRect(x+fx*4-5,y-fy*4-4,4,5);context.fillRect(x+fx*4+5,y-fy*4-4,4,5);
+  context.fillRect(x+fx*4-2.5,y-fy*4+4,5,2);
+  context.restore();
+}
 function drawGeomayhemCommand(context, command) {
   const c = command.coords;
   context.globalAlpha = command.opacity ?? 1;
   context.setLineDash(command.dash || []);
+  if (command.kind === "geomayhem_boss") { GeomayhemBosses.drawCommand(context,command,trailReducedMotion.matches||!!saved.preferences?.reducedMotion); return; }
+  if (command.kind === "geomayhem_cubie") { drawGeomayhemCubie(context,command); return; }
   if (command.kind === "geomayhem_polygon") {
     paintGeomayhemPolygon(context,c[0],c[1],command.radius,command.sides,command.fill,command.outline,
       command.angle,command.star,command.width);
@@ -2255,13 +2545,26 @@ function draw(s) {
   ctx.fillRect(left, -top, right - left, top - bottom);
   ctx.save();
   ctx.beginPath();
-  ctx.rect(left, -top, right - left, top - bottom);
+  if(s.boss_arena_radius)ctx.arc(0,0,s.boss_arena_radius,0,Math.PI*2);
+  else ctx.rect(left, -top, right - left, top - bottom);
   ctx.clip();
   if (s.mode === "geomayhem" && geomayhemBackdrop)
     ctx.drawImage(geomayhemBackdrop,left,-top,right-left,top-bottom);
+  if (s.mode === "geomayhem" && s.boss?.hp > 0)
+    BossArena.draw(ctx,{level:s.level,bounds:s.bounds,time:s.fight_elapsed,phase:s.boss.phase,radius:s.boss_arena_radius,
+      reduced:trailReducedMotion.matches||!!saved.preferences?.reducedMotion});
   for (const command of s.commands) {
     if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || saved.preferences?.reducedMotion))
       turtleTrailField.draw(ctx, TurtleTrails.selected(saved.turtleTrail, saved.shop.owned));
+    const turtleCustom = command.role === "player" && TurtleTrails.allowedModes.has(s.mode)
+      ? TurtleCustoms.selected(saved.turtleCustom, saved.shop.owned) : null;
+    if (turtleCustom && s.player?.visible) {
+      TurtleCustoms.draw(ctx, turtleCustom, s.player.x, -s.player.y,
+        s.paused ? 0 : performance.now() / 1000,
+        s.mode === "dodge" && s.difficulty === "chaos" ? chaosTurtleAngle : 0,
+        trailReducedMotion.matches || !!saved.preferences?.reducedMotion);
+      continue;
+    }
     const c = command.coords;
     if (command.kind === "clip_start") {
       ctx.save();
@@ -2314,6 +2617,13 @@ function draw(s) {
     ctx.fillStyle = command.fill || "transparent";
     ctx.strokeStyle = command.outline || "transparent";
     ctx.lineWidth = command.width || 1;
+    if (command.kind === "line") {
+      ctx.strokeStyle = command.fill;
+      ctx.moveTo(c[0], c[1]);
+      for (let i = 2; i < c.length; i += 2) ctx.lineTo(c[i], c[i + 1]);
+      ctx.stroke();
+      continue;
+    }
     if (command.kind === "rectangle")
       ctx.rect(c[0], c[1], c[2] - c[0], c[3] - c[1]);
     else if (command.kind === "polygon") {
@@ -2351,7 +2661,8 @@ function draw(s) {
       ? "#ff4565"
       : "#45534b";
   ctx.lineWidth = 2;
-  if (!s.arena_shattered) ctx.strokeRect(left, -top, right - left, top - bottom);
+  if(s.boss_arena_radius){ctx.beginPath();ctx.arc(0,0,s.boss_arena_radius,0,Math.PI*2);ctx.stroke();}
+  else if (!s.arena_shattered) ctx.strokeRect(left, -top, right - left, top - bottom);
   if (s.hp !== null && !["singularity", "core_practice"].includes(selected)) {
     ctx.fillStyle = "#344039";
     ctx.fillRect(-110, -264, 220, 6);
@@ -2410,6 +2721,7 @@ function fail(error) {
   console.error(error);
   loadFailed = true;
   active = false;
+  setGameFullscreen(false);
   ready = false;
   syncMusic();
   clearKeys();
@@ -2431,12 +2743,13 @@ function frame(now) {
   if (active && !gasterActive && !coreOrigin?.open && !$("cubie-hint").open && selected !== "hangman"
       && !(selected === "geomayhem" && (snapshot?.paused || snapshot?.offers.length))) {
     try {
-      if (selected === "geomayhem" && geomayhemPointer)
+      if (selected === "geomayhem" && geomayhemShootPointer !== null) updateGeomayhemShootAim();
+      else if (selected === "geomayhem" && geomayhemPointer)
         aimGeomayhem({clientX:geomayhemPointer[0],clientY:geomayhemPointer[1]});
       const previousPlayer = snapshot?.player;
       snapshot = send("tick", {
         dt: (now - lastFrame) / 1000,
-        keys: [...new Set([...keys, ...joystickKeys, ...geomayhemMovementKeys.values(), ...(selected === "geomayhem" && geomayhemFiring ? ["f"] : [])])],
+        keys: [...new Set([...keys, ...joystickKeys, ...geomayhemMovementKeys.values(), ...(selected === "geomayhem" && (geomayhemFiring || geomayhemShootPointer !== null) ? ["f"] : [])])],
         ...(selected === "geomayhem" ? { aim: geomayhemAim } : {}),
       });
       if (selected === "dodge" && selectedDifficulty === "chaos" && snapshot.player && previousPlayer && !snapshot.paused) {
@@ -2581,6 +2894,67 @@ $("cube").onclick = () => {
   updateAchievements(achievementTracker.secret("cube"));
   blushCubie();
 };
+const gameMain = document.querySelector(".game-main");
+// Native fullscreen only paints descendants of its target. Keep viewport
+// effects in that subtree, preserving their nodes, animations, and home order.
+const fullscreenOverlays = [...document.querySelectorAll("[data-fullscreen-overlay]")].map(element => {
+  const home = document.createComment(`fullscreen home: ${element.id}`);
+  element.before(home);
+  return { element, home };
+});
+function syncFullscreenOverlays(enabled) {
+  for (const { element, home } of fullscreenOverlays) {
+    if (enabled) {
+      if (element.parentNode !== gameMain) gameMain.append(element);
+    } else if (element.parentNode !== home.parentNode) home.after(element);
+  }
+}
+let fullscreenBusy = false;
+let fullscreenWanted = false;
+function gameIsFullscreen() {
+  return document.fullscreenElement === gameMain || gameMain.classList.contains("game-fullscreen");
+}
+function syncFullscreen() {
+  const enabled = gameIsFullscreen();
+  syncFullscreenOverlays(enabled);
+  document.body.classList.toggle("game-fullscreen-open", enabled);
+  $("fullscreen").textContent = enabled ? "Exit fullscreen" : "Fullscreen";
+  $("fullscreen").setAttribute("aria-pressed", String(enabled));
+  clearKeys();
+  requestAnimationFrame(fitArcade);
+}
+async function setGameFullscreen(enabled) {
+  fullscreenWanted = enabled;
+  if (fullscreenBusy || gameIsFullscreen() === enabled) return;
+  fullscreenBusy = true;
+  try {
+    // A round can finish while the browser is still entering fullscreen.
+    // Apply the latest requested state once the pending transition completes.
+    while (gameIsFullscreen() !== fullscreenWanted) {
+      if (!fullscreenWanted) {
+        if (document.fullscreenElement === gameMain) await document.exitFullscreen();
+        gameMain.classList.remove("game-fullscreen");
+      } else {
+        try {
+          if (!gameMain.requestFullscreen) throw new Error("Fullscreen unavailable");
+          await gameMain.requestFullscreen();
+        } catch {
+          if (fullscreenWanted) gameMain.classList.add("game-fullscreen");
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Could not change fullscreen mode", error);
+  } finally {
+    fullscreenBusy = false;
+    syncFullscreen();
+  }
+}
+function toggleFullscreen() {
+  return setGameFullscreen(!(fullscreenBusy ? fullscreenWanted : gameIsFullscreen()));
+}
+$("fullscreen").onclick = toggleFullscreen;
+document.addEventListener("fullscreenchange", syncFullscreen);
 $("exit").onclick = exitGame;
 $("pause").onclick = pause;
 $("overlay-action").onclick = () => {
@@ -2604,6 +2978,11 @@ window.addEventListener("keydown", (event) => {
   if (input && event.target !== $("typing-input")) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape") {
+    if (gameIsFullscreen()) {
+      event.preventDefault();
+      toggleFullscreen();
+      return;
+    }
     if (selected === "jukebox") {
       $("jukebox-stop").click();
       return;
@@ -2727,7 +3106,9 @@ function resetJoystick() {
   const pointer = joystickPointer;
   joystickPointer = null;
   joystickKeys.clear();
-  stick.classList.remove("pressed");
+  stick.classList.remove("pressed", "floating");
+  stick.style.removeProperty("left");
+  stick.style.removeProperty("top");
   stick.style.removeProperty("--stick-x");
   stick.style.removeProperty("--stick-y");
   if (pointer !== null && stick.hasPointerCapture(pointer)) stick.releasePointerCapture(pointer);
@@ -2740,7 +3121,7 @@ function moveJoystick(event) {
   const dx = event.clientX - rect.left - rect.width / 2;
   const dy = event.clientY - rect.top - rect.height / 2;
   const distance = Math.hypot(dx, dy);
-  const radius = rect.width / 2 - 23;
+  const radius = rect.width / 2 - stick.querySelector(".joystick-thumb").offsetWidth / 2 - 2;
   const scale = distance > radius ? radius / distance : 1;
   stick.style.setProperty("--stick-x", `${dx * scale}px`);
   stick.style.setProperty("--stick-y", `${dy * scale}px`);
@@ -2753,11 +3134,24 @@ function moveJoystick(event) {
     ["Left"], ["Left", "Up"], ["Up"], ["Right", "Up"],
   ][(sector + 8) % 8]) joystickKeys.add(key);
 }
-$("touch-joystick").addEventListener("pointerdown", event => {
-  if (joystickPointer !== null || !active || snapshot?.paused || event.button !== 0) return;
+gameMain.addEventListener("pointerdown", event => {
+  const onStick = event.target.closest("#touch-joystick");
+  const touchSurface = event.target.closest("#game-canvas, #touch-controls");
+  if (!onStick && (event.pointerType === "mouse" || !touchSurface)) return;
+  if (event.target.closest("button") || $("touch-controls").hidden
+      || joystickPointer !== null || !active || snapshot?.paused || snapshot?.offers?.length
+      || event.button !== 0) return;
+  event.preventDefault();
+  const stick = $("touch-joystick");
   joystickPointer = event.pointerId;
-  $("touch-joystick").setPointerCapture(event.pointerId);
-  $("touch-joystick").classList.add("pressed");
+  if (event.pointerType !== "mouse") {
+    const rect = gameMain.getBoundingClientRect();
+    stick.style.left = `${event.clientX - rect.left + gameMain.scrollLeft - stick.offsetWidth / 2}px`;
+    stick.style.top = `${event.clientY - rect.top + gameMain.scrollTop - stick.offsetHeight / 2}px`;
+    stick.classList.add("floating");
+  }
+  stick.setPointerCapture(event.pointerId);
+  stick.classList.add("pressed");
   moveJoystick(event);
 });
 $("touch-joystick").addEventListener("pointermove", moveJoystick);
@@ -2766,8 +3160,50 @@ for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
     if (event.pointerId === joystickPointer) resetJoystick();
   });
 }
+window.addEventListener("resize", resetJoystick);
+function updateGeomayhemShootAim() {
+  if(!snapshot?.player) return;
+  geomayhemAim=[snapshot.player.x+geomayhemShootDirection[0]*200,
+    snapshot.player.y+geomayhemShootDirection[1]*200];
+}
+function resetGeomayhemShoot() {
+  const button=$("touch-fire"),pointer=geomayhemShootPointer;
+  geomayhemShootPointer=null;geomayhemShootOrigin=null;
+  button.classList.remove("pressed");
+  button.style.removeProperty("--aim-x");button.style.removeProperty("--aim-y");
+  if(pointer!==null&&button.hasPointerCapture(pointer)) button.releasePointerCapture(pointer);
+}
+function moveGeomayhemShoot(event) {
+  if(event.pointerId!==geomayhemShootPointer||!geomayhemShootOrigin) return;
+  event.preventDefault();
+  const dx=event.clientX-geomayhemShootOrigin[0],dy=event.clientY-geomayhemShootOrigin[1],distance=Math.hypot(dx,dy);
+  if(distance>=7) geomayhemShootDirection=[dx/distance,-dy/distance];
+  const scale=distance>26?26/distance:1;
+  $("touch-fire").style.setProperty("--aim-x",`${dx*scale}px`);
+  $("touch-fire").style.setProperty("--aim-y",`${dy*scale}px`);
+  updateGeomayhemShootAim();
+}
+$("touch-fire").addEventListener("pointerdown",event=>{
+  if(selected!=="geomayhem"||!active||snapshot?.paused||snapshot?.over||snapshot?.offers?.length
+      ||geomayhemShootPointer!==null||event.button!==0) return;
+  event.preventDefault();
+  geomayhemShootPointer=event.pointerId;
+  geomayhemShootOrigin=[event.clientX,event.clientY];
+  geomayhemPointer=null;
+  $("touch-fire").setPointerCapture(event.pointerId);
+  $("touch-fire").classList.add("pressed");
+  updateGeomayhemShootAim();
+});
+$("touch-fire").addEventListener("pointermove",moveGeomayhemShoot);
+for(const type of ["pointerup","pointercancel","lostpointercapture"]) {
+  $("touch-fire").addEventListener(type,event=>{
+    if(event.pointerId===geomayhemShootPointer) resetGeomayhemShoot();
+  });
+}
+window.addEventListener("resize",resetGeomayhemShoot);
 document.querySelectorAll("[data-key]").forEach((button) => {
   button.addEventListener("pointerdown", (event) => {
+    if(selected === "geomayhem" && button.id === "touch-fire") return;
     event.preventDefault();
     button.setPointerCapture(event.pointerId);
     keys.add(button.dataset.key);
@@ -2801,6 +3237,7 @@ let audioMaster;
 let musicOutput;
 let musicPlayer;
 let sequencePlayer;
+let bossAudioDirector;
 const riftBurstDuration = 1.2;
 let riftBurstTimer;
 let riftBurstAudio;
@@ -2862,6 +3299,13 @@ function syncMusic() {
     playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
+  const bossActive = active && selected === "geomayhem" && snapshot?.boss?.hp > 0 && !snapshot?.over;
+  bossAudioDirector?.sync({level: bossActive ? snapshot.level : null,
+    mode: snapshot?.boss_intro ? 'intro' : 'battle',
+    time: snapshot?.boss_intro?.time ?? snapshot?.fight_elapsed ?? 0,
+    phase: snapshot?.boss?.phase ?? 1, move: snapshot?.boss?.move ?? '',
+    playing: state.playing && bossActive && !snapshot?.offers?.length && !welcoming});
+  if (bossActive) state.playing = false;
   if (pendingRockSong && !welcoming) {
     musicPlayer.playOnce(pendingRockSong, state);
     pendingRockSong = null;
@@ -2915,6 +3359,7 @@ function initializeAudio() {
         musicOutput = musicGain;
         musicPlayer = music;
         sequencePlayer = sequence;
+        bossAudioDirector = new BossAudio.Director(context, master);
       } catch (error) {
         context.close().catch(() => {});
         throw error;
@@ -2992,9 +3437,102 @@ document.addEventListener("click", initializeAudio);
 document.addEventListener("keydown", event => {
   if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) initializeAudio();
 });
+// Original voiced monster laugh with glottal excitation and moving vocal
+// resonances, breath, and irregular phrasing. Cached per audio context.
+let wrathMonsterLaughBuffer;
+function playWrathMonsterLaugh() {
+  if (!wrathMonsterLaughBuffer || wrathMonsterLaughBuffer.sampleRate !== audioContext.sampleRate) {
+    const rate = audioContext.sampleRate, duration = 3.15;
+    const buffer = audioContext.createBuffer(1, Math.ceil(rate * duration), rate);
+    const samples = buffer.getChannelData(0);
+    const starts = [.10, .48, .84, 1.19, 1.49, 1.83, 2.17];
+    const lengths = [.29, .31, .27, .25, .28, .30, .63];
+    const pitches = [128, 119, 132, 112, 107, 116, 94];
+    const strengths = [.78, 1, .88, .73, .94, .81, .68];
+    let seed = 7331;
+    const noise = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 2147483648 - 1;
+    };
+    for (let syllable = 0; syllable < starts.length; syllable++) {
+      let phase = 0, previousPulse = 0, breathLow = 0, jitter = 0;
+      const length = lengths[syllable];
+      const bands = [
+        { center: 720, width: 110, gain: 1, a: 0, b: 0 },
+        { center: 1170, width: 160, gain: .62, a: 0, b: 0 },
+        { center: 2500, width: 250, gain: .17, a: 0, b: 0 },
+      ];
+      for (const band of bands) band.radius = Math.exp(-Math.PI * band.width / rate);
+      for (let j = 0; j < Math.floor(length * rate); j++) {
+        const t = j / rate, u = t / length;
+        // A fresh exhaled H precedes each vowel; the last syllable trails off.
+        const voiced = Math.min(1, Math.max(0, (t - .018) / .03));
+        const envelope = Math.min(1, t / .012) * Math.pow(1 - u, .65)
+          * Math.min(1, (length - t) / .035) * strengths[syllable];
+        const breath = noise();
+        breathLow += .16 * (breath - breathLow);
+        jitter += .004 * (breath - jitter);
+        const pitch = pitches[syllable] * (1.13 - .31 * u)
+          * (1 + .018 * Math.sin(t * 34 + syllable) + jitter * .12);
+        phase = (phase + pitch / rate) % 1;
+        // Smooth vocal-fold opening and faster closure, differentiated into
+        // a glottal excitation. No separate electronic upper oscillator.
+        const pulse = phase < .68 ? Math.sin(Math.PI * phase / .68) ** 2 : 0;
+        const excitation = (pulse - previousPulse) * rate / 1000;
+        previousPulse = pulse;
+        const air = breathLow * (.24 * Math.exp(-t * 24) + .025);
+        const throat = excitation * voiced + air;
+        let voice = 0;
+        for (const band of bands) {
+          if (j % 128 === 0) {
+            // Jaw opens from an aspirated uh to ah, then relaxes again.
+            const opening = .82 + .23 * Math.sin(Math.PI * Math.min(1, u * 1.4));
+            band.coefficient = 2 * band.radius * Math.cos(2 * Math.PI * band.center * opening / rate);
+          }
+          const value = (1 - band.radius) * throat + band.coefficient * band.a - band.radius ** 2 * band.b;
+          band.b = band.a;
+          band.a = value;
+          voice += value * band.gain;
+        }
+        const index = Math.floor(starts[syllable] * rate) + j;
+        samples[index] += (voice + air * .12) * envelope;
+      }
+    }
+    // A short intake of breath makes the laugh feel performed, not sequenced.
+    let inhale = 0;
+    for (let i = 0; i < Math.floor(.11 * rate); i++) {
+      inhale += .12 * (noise() - inhale);
+      samples[i] += inhale * Math.sin(Math.PI * i / (.11 * rate)) * .025;
+    }
+    // Soft, diffuse room reflections instead of a conspicuous repeating echo.
+    const dry = samples.slice();
+    for (const [delay, gain] of [[.041, .10], [.079, .075], [.137, .05], [.211, .035]]) {
+      const offset = Math.floor(delay * rate);
+      let reflection = 0;
+      for (let i = offset; i < samples.length; i++) {
+        reflection += .2 * (dry[i - offset] - reflection);
+        samples[i] += reflection * gain;
+      }
+    }
+    let peak = .001;
+    for (const value of samples) peak = Math.max(peak, Math.abs(value));
+    for (let i = 0; i < samples.length; i++) samples[i] *= .48 / peak;
+    wrathMonsterLaughBuffer = buffer;
+  }
+  const source = audioContext.createBufferSource();
+  source.buffer = wrathMonsterLaughBuffer;
+  source.connect(audioMaster);
+  soundEffects.add(source);
+  source.onended = () => { source.disconnect(); soundEffects.delete(source); };
+  source.start();
+}
 function playSound(event) {
   if (!soundOn || !audioContext || gasterActive) return;
   if (["turtle_death", "core_laser", "core_implode", "core_destroyed"].includes(event)) return;
+  if (event === "boss_laugh" && selected === "wrath" && selectedDifficulty.endsWith("__hard")) {
+    playWrathMonsterLaugh();
+    return;
+  }
   const oscillator = audioContext.createOscillator(),
     gain = audioContext.createGain(),
     now = audioContext.currentTime;
@@ -3185,7 +3723,7 @@ function applyAccountProfile(profile) {
     achievementTracker.data = new Achievements.Tracker(saved.achievements).data;
     achievementTracker.round = null;
     saved.achievements = achievementTracker.data;
-    saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog]);
+    saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTrails.catalog, ...TurtleCustoms.catalog]);
     saved.cubieCustom ||= "classic";
     if (!editingName) $("player").value = saved.player || "Player";
     announcedCustoms.clear();

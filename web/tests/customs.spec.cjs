@@ -210,6 +210,8 @@ test('Gaster remix achievement follows audible playback and equipment, not previ
 });
 
 test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persists', async ({ page }, testInfo) => {
+  // Two runtime loads plus the full expanded shop and closet.
+  test.setTimeout(150000);
   await openGame(page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -221,7 +223,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     expect(order.actual).toEqual(order.expected);
   };
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(68);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(169);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
@@ -262,7 +264,9 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await page.locator('#shop-room summary').click();
   await expect(page.locator('#shop-rates')).toContainText('Hangman: score × 400');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.locator('#shop-room').screenshot({ path: testInfo.outputPath('cubie-shop.png') });
+  // The expanded catalog is taller than a useful single screenshot.
+  await page.locator('#shop-search').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('cubie-shop.png'), animations: 'disabled' });
   expect(errors).toEqual([]);
 });
 

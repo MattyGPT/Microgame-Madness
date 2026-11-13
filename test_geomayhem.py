@@ -139,6 +139,7 @@ class GeomayhemTests(unittest.TestCase):
                 game._spawn()
                 if wave % 5 == 0:
                     self.assertEqual(game.enemies[0].kind, "boss" if wave == 20 else "elite")
+                game.boss_intro_left = 0  # This test fast-forwards the entire encounter.
                 game.enemies.clear()
                 game.spawned = game.quota
                 game.update(.01, set())
@@ -347,8 +348,8 @@ class GeomayhemTests(unittest.TestCase):
                 target.kind = kind
                 game.enemies = [target]
                 game.update(.01, set())
-                self.assertEqual(game.lives, 76)
-                self.assertEqual(game.damage_taken, 24)
+                self.assertEqual(game.lives, 70 if kind == "boss" else 76)
+                self.assertEqual(game.damage_taken, 30 if kind == "boss" else 24)
         game = self.game()
         game.hazards = [[0, 0, 0, 0, 5]]
         game.update(.01, set())

@@ -96,7 +96,7 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
         if enemy.frozen:
             color = "#a6f7ff"
         if compact:
-            commands.append({"kind":"geomayhem_enemy", "coords":[enemy.x,-enemy.y],
+            commands.append({"kind":"geomayhem_boss" if enemy.kind=="boss" else "geomayhem_enemy", "level":game.level,"time":game.elapsed, "phase":3 if enemy.hp<enemy.max_hp*.25 and game.level in (10,20) else 2 if enemy.hp<enemy.max_hp*.5 else 1, "coords":[enemy.x,-enemy.y],
                              "radius":enemy.radius,"sides":sides,"fill":color,
                              "angle":game.elapsed*.3,"star":enemy.kind=="boss","burn":bool(enemy.burn),
                              "health":max(0,enemy.hp)/enemy.max_hp if enemy.hp<enemy.max_hp or enemy.kind in ("boss","elite") else None})
@@ -168,13 +168,19 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
         # Cubie's face shifts toward movement, independently of weapon aim.
         x, y = game.x, game.y
         circle(x, y, 23, "#081712", "#d8ffb4", 2)
-        rect(x, y, 28, 28, "#ffffff" if game.invulnerable else "#b6ef7f", "#eaffca")
-        rect(x, y-10, 26, 5, "#78b75a")
-        fx, fy = game.face[0]*4, game.face[1]*4
-        rect(x+fx-5, y+fy+2, 4, 5, "#183a31")
-        rect(x+fx+5, y+fy+2, 4, 5, "#183a31")
-        rect(x+fx, y+fy-5, 5, 2, "#183a31")
+        if compact:
+            commands.append({"kind": "geomayhem_cubie", "role": "geomayhem-player",
+                             "coords": [x, -y], "face": list(game.face),
+                             "invulnerable": bool(game.invulnerable), "time": game.elapsed})
+        else:
+            rect(x, y, 28, 28, "#ffffff" if game.invulnerable else "#b6ef7f", "#eaffca")
+            rect(x, y-10, 26, 5, "#78b75a")
+            fx, fy = game.face[0]*4, game.face[1]*4
+            rect(x+fx-5, y+fy+2, 4, 5, "#183a31")
+            rect(x+fx+5, y+fy+2, 4, 5, "#183a31")
+            rect(x+fx, y+fy-5, 5, 2, "#183a31")
         if not ARMORY[game.weapon].automatic:
             weapon_art(x+22, y-8, ARMORY[game.weapon], game.stars, game.elapsed, 6)
-        commands[-1]["role"] = "geomayhem-player"
+        if not compact:
+            commands[-1]["role"] = "geomayhem-player"
     return commands

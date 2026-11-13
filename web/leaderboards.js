@@ -6,7 +6,7 @@ const Leaderboards = (() => {
     dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible', 'chaos'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
     pumpkin: ['come_on', 'baby', 'coward', 'phase2'],
-    wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order'].flatMap(attack => [attack, `${attack}__easy`, `${attack}__hard`]),
+    wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'starfall_verdict', 'pendulum_court', 'crown_chess', 'mirror_lances', 'briar_pursuit', 'eclipse_waltz', 'resonant_bells', 'royal_loom', 'random_order'].flatMap(attack => [attack, `${attack}__easy`, `${attack}__hard`]),
   });
   const multipliers = Object.freeze({
     hangman: { easy: 1, medium: 2.5, hard: 4 },

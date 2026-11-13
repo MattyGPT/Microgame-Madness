@@ -1,8 +1,10 @@
 // These are the same rule/catalog modules shipped to the browser; no second reward table.
 import '../../../web/achievements.js';
+import '../../../web/customs-expansion.js';
 import '../../../web/customs.js';
 import '../../../web/shop.js';
 import '../../../web/trails.js';
+import '../../../web/turtle-customs.js';
 import '../../../shared/account-rules.js';
 import { createHandler } from './handler.mjs';
 

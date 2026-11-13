@@ -15,7 +15,7 @@ async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants')))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {

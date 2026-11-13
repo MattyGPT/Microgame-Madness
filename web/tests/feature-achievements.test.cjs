@@ -9,9 +9,9 @@ const wrath = (difficulty, extra) => ({ mode: 'wrath', difficulty, over: false, 
   attacks_completed: 0, counter_hits: 0, damage_taken: 0, lives: 15, max_lives: 15, ...extra });
 
 test('catalog includes Determination, the named Rainbow wins, and the expanded Empyrorite rewards', () => {
-  assert.equal(catalog.length, 262);
-  assert.equal(new Set(catalog.map(item => item.id)).size, 262);
-  assert.equal(catalog.slice(74).length, 188);
+  assert.equal(catalog.length, 270);
+  assert.equal(new Set(catalog.map(item => item.id)).size, 270);
+  assert.equal(catalog.slice(74).length, 196);
   const victory = catalog.find(item => item.id === 'core_win');
   assert.equal(victory.title, 'My Fingers Hurt');
   assert.equal(victory.tier, 'rainbow');
@@ -126,20 +126,20 @@ test('Random Order sets belong to a single run and perfection requires a full se
   }
   assert.equal(tracker.data.unlocked.wrath_full_deck, undefined);
   tracker.start('wrath', 'random_order');
-  for (let completed = 0; completed <= 21; completed++) {
+  for (let completed = 0; completed <= 45; completed++) {
     tracker.observe(wrath('random_order', { attacks_completed: completed }));
-    assert.equal(Boolean(tracker.data.unlocked.wrath_full_deck), completed >= 7);
-    assert.equal(Boolean(tracker.data.unlocked.wrath_three_sets), completed >= 21);
+    assert.equal(Boolean(tracker.data.unlocked.wrath_full_deck), completed >= 15);
+    assert.equal(Boolean(tracker.data.unlocked.wrath_three_sets), completed >= 45);
     assert.equal(tracker.data.unlocked.wrath_perfect_shuffle, undefined);
   }
   for (const extra of [{ won: false }, { won: true, attacks_completed: 6 },
     { won: true, damage_taken: 1, healing_collected: 1 }, { won: true, damage_taken: undefined }]) {
     tracker.start('wrath', 'random_order');
-    tracker.observe(wrath('random_order', { attacks_completed: 7, over: true, ...extra }));
+    tracker.observe(wrath('random_order', { attacks_completed: 15, over: true, ...extra }));
     assert.equal(tracker.data.unlocked.wrath_perfect_shuffle, undefined);
   }
   tracker.start('wrath', 'random_order');
-  assert.ok(ids(tracker.observe(wrath('random_order', { attacks_completed: 7, over: true, won: true })))
+  assert.ok(ids(tracker.observe(wrath('random_order', { attacks_completed: 15, over: true, won: true })))
     .includes('wrath_perfect_shuffle'));
   assert.ok(tracker.data.unlocked.wrath_flawless);
 });
