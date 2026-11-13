@@ -319,7 +319,7 @@ class PackagingTests(unittest.TestCase):
                 client.write_text(client.read_text() + "\n// Next client release.\n")
                 build()
                 second = (output / "index.html").read_text()
-            for name in ("app.js", "geomayhem-progress.js", "style.css", "achievements.js", "customs.js", "shop.js", "music.js", "leaderboards.js", "usage.js", "account-rules.js", "accounts/store.js", "accounts/session.js", "accounts/sync.js", "accounts/app.js", "accounts/profile.css"):
+            for name in ("app.js", "geomayhem-progress.js", "style.css", "achievements.js", "customs-expansion.js", "customs.js", "shop.js", "music.js", "leaderboards.js", "usage.js", "account-rules.js", "accounts/store.js", "accounts/session.js", "accounts/sync.js", "accounts/app.js", "accounts/profile.css"):
                 with self.subTest(asset=name):
                     pattern = rf'"(\./{re.escape(name)}\?v=[a-f0-9]+)"'
                     before = re.search(pattern, first)
@@ -429,7 +429,7 @@ class PackagingTests(unittest.TestCase):
             with patch("scripts.build_web.OUTPUT", output):
                 build()
                 files = {str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
-                expected = {"index.html", "style.css", "app.js", "jackpot-slots.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
+                expected = {"index.html", "style.css", "app.js", "jackpot-slots.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
                 expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
                 expected |= {"account-rules.js", "accounts/profile.css", "turtle-customs.js", "geomayhem-bosses.js", "boss-showcase.html", "boss-showcase.js", "boss-showcase.css", "boss-film.js", "boss-audio.js", "boss-arena.js", "regent-art.js"}
                 expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app", "welcome")}
