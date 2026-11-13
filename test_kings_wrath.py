@@ -342,7 +342,7 @@ class WrathVariantTests(unittest.TestCase):
 
 
 class WrathCycleBreakTests(unittest.TestCase):
-    def test_all_modes_reset_and_pause_exactly_half_a_second_each_cycle(self):
+    def test_all_modes_reset_and_pause_for_their_cycle_break(self):
         for attack in (*WRATH_ATTACKS, RANDOM_ORDER):
             for suffix in ("", "__easy", "__hard"):
                 with self.subTest(attack=attack, suffix=suffix):
@@ -360,7 +360,9 @@ class WrathCycleBreakTests(unittest.TestCase):
                         self.assertEqual((game.x, game.y), game.spawn_position)
                         self.assertFalse(game.bullets or game.rings or game.shots or game.ghosts)
                         state = game.x, game.y, game.hp, game.lives, game.elapsed, game.heal_in
-                        game.update(.499, {"Right", "f", "e"})
+                        break_time = .2 if game.attack_index == WRATH_ATTACKS["pendulum_court"] and game.variant == "hard" else .5
+                        self.assertAlmostEqual(game.stage.duration, break_time)
+                        game.update(break_time-.001, {"Right", "f", "e"})
                         self.assertEqual(game.stage.name, "wrath_break")
                         self.assertEqual((game.x, game.y, game.hp, game.lives, game.elapsed, game.heal_in), state)
                         game.update(.001, set())
