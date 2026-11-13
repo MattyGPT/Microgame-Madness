@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 const { accountService } = require('./fixtures/account-service.cjs');
 test.use({firstVisitSetup:true, deterministicMusic:true});
@@ -111,6 +112,7 @@ test('greeting song is selectable in the jukebox but excluded from arcade shuffl
   await page.locator('#welcome-close').click();
   expect(await page.evaluate(()=>musicPlayer.theme)).toBe('arcade');
   expect(await page.evaluate(()=>musicPlayer.track)).not.toBe('cubie_hello');
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   await expect(page.locator('[data-difficulty="cubie_hello"]')).toContainText('Hello, New Friend!');
   await page.locator('[data-difficulty="cubie_hello"]').click();

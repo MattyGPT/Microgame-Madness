@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 const key = 'microgame-madness.geomayhem.v1:guest';
@@ -9,6 +10,7 @@ test.beforeEach(async ({ page }) => {
       'window.geomayhemRuntime = pyodide; handle = pyodide.globals.get("handle");') });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="geomayhem"]').click();
 });
 const model = (page, code) => page.evaluate(code => window.geomayhemRuntime.runPython(code), `from bridge import session\n${code}`);
@@ -43,6 +45,7 @@ test('fresh campaign locks arenas, saves a clear, buys permanent upgrades and re
   await page.locator('#overlay-action').click();
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await leaveFullscreen(page);
   await page.locator('[data-game="geomayhem"]').click();
   await expect(page.locator('#geomayhem-campaign')).toContainText('78 shards');
   await expect(page.locator('[data-difficulty="level_2"]')).toContainText('Best: 3/20');
@@ -81,6 +84,7 @@ test('a completed ten-arena save continues through arena twenty and survives rel
     runs: 37, workshop: { power: 3 }, best: { 10: 20 } })), key);
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await leaveFullscreen(page);
   await page.locator('[data-game="geomayhem"]').click();
   await expect(page.locator('#geomayhem-campaign')).toContainText('10/20 arenas cleared');
   await expect(page.locator('[data-workshop="power"]')).toContainText('3/3');
@@ -95,6 +99,7 @@ test('a completed ten-arena save continues through arena twenty and survives rel
   }
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
+  await leaveFullscreen(page);
   await page.locator('[data-game="geomayhem"]').click();
   await expect(page.locator('#geomayhem-campaign')).toContainText('20/20 arenas cleared');
   const progress = await saved(page);

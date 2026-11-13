@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.use({deterministicMusic:true});
 test('Chaos guide, health, pause, effects, death and separate score work',async({page},testInfo)=>{
@@ -7,6 +8,7 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.chaosRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   const guideCount = await page.evaluate(()=>JSON.parse(document.getElementById('chaos-bootstrap').textContent).length);
   await expect(page.locator('.block-guide-card')).toHaveCount(guideCount);
@@ -23,6 +25,7 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
   await page.locator('#block-guide-heading').scrollIntoViewIfNeeded();
   await page.screenshot({path:testInfo.outputPath('guide.png')});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await expect(page.locator('#block-guide-room')).toBeHidden();
   await page.locator('[data-difficulty="chaos"]').click();
@@ -55,6 +58,7 @@ test('Chaos guide, health, pause, effects, death and separate score work',async(
   expect(await page.evaluate(()=>snapshot.death_cause)).toBe('doom');
   expect(await page.evaluate(()=>snapshot.lives)).toBe(0);
   expect(await page.evaluate(()=>saved.scores['dodge:chaos']?.length)).toBeGreaterThan(0);
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   await page.locator('[data-difficulty="chaos_carnival"]').click();
   expect(await page.evaluate(()=>musicPlayer.track)).toBe('chaos_carnival');
@@ -79,6 +83,7 @@ test('guide preview changes on 2.5-second ticks and Chaos Cubies equip and persi
   await page.emulateMedia({reducedMotion:'reduce'});
   expect(await page.evaluate(()=>{const before=chaosGuideLastChange;animateChaosGuide(before+5000);return chaosGuideLastChange===before;})).toBe(true);
   await page.emulateMedia({reducedMotion:'no-preference'});
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   expect(await page.evaluate(()=>!!saved.achievements.unlocked.chaos_start)).toBe(true);
@@ -88,6 +93,7 @@ test('guide preview changes on 2.5-second ticks and Chaos Cubies equip and persi
     updateAchievements(achievementTracker.observe(state));
     accountApp.observe(state,true);await accountApp.chain;
   });
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.locator('#customs-search').fill('Pristine Prism');
   const custom=page.locator('.custom-tile[data-custom="chaos_pristine"]');
@@ -108,6 +114,7 @@ test('Chaos follows Impossible and status effects tint, animate, pause and clear
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.effectRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   expect(await page.locator('#difficulty-choices [data-difficulty]').evaluateAll(buttons=>buttons.map(b=>b.dataset.difficulty))).toEqual(['easy','normal','hard','merciless','impossible','chaos']);
   await page.locator('[data-difficulty="chaos"]').click();
@@ -134,6 +141,7 @@ test('Chaos follows Impossible and status effects tint, animate, pause and clear
   await page.evaluate(()=>render());
   await expect(page.locator('#arena')).toHaveCSS('animation-name','none');
   await expect(page.locator('#chaos-frost span').first()).toHaveCSS('animation-name','none');
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   await expect(page.locator('#chaos-frost')).toBeHidden();
   await expect(page.locator('#chaos-electric')).toBeHidden();
@@ -168,6 +176,7 @@ test('Elite Glitch telegraphs a fixed destination that the player can dodge', as
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.glitchRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   await page.evaluate(()=>{
@@ -192,6 +201,7 @@ test('Elite Glitch telegraphs a fixed destination that the player can dodge', as
   expect(location[0]).toBeCloseTo((target[0]+target[2])/2);
   expect(location[1]).toBeCloseTo(-(target[1]+target[3])/2);
   expect(location[2]).toBe(1);
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   await expect(page.locator('[data-block="elite_glitch"]')).toContainText('start of each warning');
 });
@@ -202,6 +212,7 @@ test('pixel status badges reflect active effects, pause, shield loss and expiry'
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.badgeRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   await page.evaluate(()=>{
@@ -242,6 +253,7 @@ test('pixel status badges reflect active effects, pause, shield loss and expiry'
     badgeRuntime.runPython('g.shield=True');snapshot=send('tick',{dt:0});render();
   });
   await expect(root).toBeVisible();
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   await expect(root).toBeHidden();
 });
@@ -252,6 +264,7 @@ test('fire pattern blocks visibly warn, beep, pause and fire all three patterns'
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.fireRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   for (const [kind,count] of [['fire_x',4],['fire_plus',4],['fire_star',8]]) {
@@ -288,6 +301,7 @@ test('fire pattern blocks visibly warn, beep, pause and fire all three patterns'
 test('guide cards animate effects and freeze for reduced motion', async ({page}) => {
   const errors=[]; page.on('pageerror', error=>errors.push(error.message));
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   for (const kind of ['elite_turbo', 'elite_leafy', 'glitch', 'fan', 'thunder', 'blaster']) {
     const canvas = page.locator(`.block-guide-card[data-block="${kind}"] canvas`);
@@ -306,6 +320,7 @@ test('guide cards animate effects and freeze for reduced motion', async ({page})
 
 test('guide spawn percentages use tenths and total exactly one hundred', async ({page}, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="guide"]').click();
   const percentages = await page.locator('.block-exact-chance').allTextContents();
   expect(percentages.every(value=>/^\d+(\.\d)?%$/.test(value))).toBe(true);
@@ -327,6 +342,7 @@ test('arena pickups show timers and Merciless bounds, with refreshed Dodge icon'
   const icon=page.locator('[data-game="dodge"] .card-art');
   await expect(icon.locator('.dodge-icon-hazards')).toBeVisible();
   await icon.screenshot({path:testInfo.outputPath('dodge-icon.png')});
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   await page.evaluate(()=>{
@@ -344,6 +360,7 @@ test('arena pickups show timers and Merciless bounds, with refreshed Dodge icon'
 test('all Chaos statuses have screen effects except damage grace',async({page},testInfo)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   await page.evaluate(()=>{active=false;window.screenTestBase={...snapshot,protection_left:0};for(const [key] of chaosStatusDefinitions)screenTestBase[key]=0;});

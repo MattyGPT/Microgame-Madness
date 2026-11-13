@@ -51,4 +51,20 @@ async function openGame(page) {
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
 }
 
-module.exports = { test, expect, openGame, routeLocalRuntime };
+// Wait for native fullscreen transitions before sending keys or changing layout.
+async function settleFullscreen(page) {
+  await page.waitForFunction(() => typeof fullscreenBusy === 'undefined' || !fullscreenBusy, null, { polling: 50 });
+}
+
+// Collection, settings, and game cards live outside the immersive game view.
+async function leaveFullscreen(page) {
+  await settleFullscreen(page);
+  const button = page.locator('#fullscreen');
+  if (await button.getAttribute('aria-pressed') === 'true') {
+    await button.click();
+    await settleFullscreen(page);
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+  }
+}
+
+module.exports = { test, expect, openGame, routeLocalRuntime, settleFullscreen, leaveFullscreen };

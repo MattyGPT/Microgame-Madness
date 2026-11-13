@@ -1,7 +1,9 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 test('Endurance plays six-character rounds with a fixed timer on keyboard and touch', async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   const choice = page.locator('[data-difficulty="endurance"]');
   await expect(choice).toContainText('50%');

@@ -1,3 +1,4 @@
+const { settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ firstVisitSetup: true });
 
@@ -30,6 +31,7 @@ test('reset requires two yes answers and clears persisted guest progress', async
   await expect(page.locator('#reset-heading')).toHaveText('Are you 100% sure?');
   await expect(page.locator('#reset-description')).toContainText('resets ALL progress');
   await expect.poll(name).toBe('Reset Test');
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect.poll(name).toBe('Reset Test');

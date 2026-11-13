@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -26,6 +27,7 @@ test("The King's Wrath has a yellow crown and loads all sixteen practice choices
     await target.click();
     await expect(page.locator('#game-title')).toHaveText("The King's Wrath");
     await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
+    await leaveFullscreen(page);
     await page.locator('[data-game="hangman"]').click();
   }
   await card.press('Enter');
@@ -88,6 +90,7 @@ test("The King's Wrath has a yellow crown and loads all sixteen practice choices
   expect(await page.evaluate(() => snapshot.over)).toBe(false);
   await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath('wrath-repeat-countdown.png') });
   await page.locator('#exit').click();
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator('#difficulty-title')).toHaveText('Choose a difficulty to play');
   await expect(page.locator('#difficulty-choices button')).toHaveCount(4);
@@ -109,6 +112,7 @@ test("The King's Wrath Random Order shuffles all attacks and keeps the preparati
     await route.fulfill({ response, body });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
   await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   await page.locator('[data-difficulty="random_order"]').click();
@@ -155,7 +159,9 @@ test("The King's Wrath Random Order saves separate records and offers global ran
     await route.fulfill({ response, body });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Shuffle player');
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
   await page.locator('[data-difficulty="random_order"]').click();
   await page.locator('[data-difficulty="random_order"]').click();
@@ -190,7 +196,9 @@ test("The King's Wrath keeps practice records and wins separate from the full fi
   });
   await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Practice player');
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
   await page.locator('[data-difficulty="bone_gauntlet"]').click();
   await page.locator('[data-difficulty="bone_gauntlet"]').click();
@@ -221,6 +229,7 @@ test('Wrath offers named difficulty cards, descriptions, reward rates, and all v
       'const pyodide = await loadPyodide(', 'const pyodide = window.wrathRuntime = await loadPyodide(') });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
   for (const attack of ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'random_order']) {
     await page.locator(`[data-difficulty="${attack}"]`).click();
@@ -264,6 +273,7 @@ test('Wrath difficulty themes and new attack gestures render clearly', async ({p
     await route.fulfill({response, body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.wrathArtRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
   await page.locator('[data-difficulty="chaos"]').click();
   await expect(page.locator('.wrath-difficulty-art')).toHaveCount(3);

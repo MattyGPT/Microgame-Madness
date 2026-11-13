@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect}=require('./fixtures/game.cjs');
 test('pinch zoom preserves every fight canvas and does not force scrolling',async({page,context})=>{
  await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
@@ -10,6 +11,7 @@ test('pinch zoom preserves every fight canvas and does not force scrolling',asyn
   await page.locator('#difficulty-choices [data-difficulty]').first().click();
   if(mode==='wrath') await page.locator('[data-difficulty="color_memory"]').click();
   await expect(page.locator('#game-canvas')).toBeVisible();
+  await leaveFullscreen(page);
   await page.waitForTimeout(120);
   const before=await size();
   await page.evaluate(()=>{
@@ -29,6 +31,7 @@ test('pinch zoom preserves every fight canvas and does not force scrolling',asyn
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});
  }
  // Real layout changes still resize the canvas.
+ await leaveFullscreen(page);
  await page.setViewportSize({width:900,height:450});
  await page.waitForTimeout(150);
  const landscape=await size();

@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 
@@ -10,6 +11,7 @@ test('each arena plays its own looping theme; pause, mute, exit and jukebox pres
   });
   await openGame(page);
   for (let level = 1; level <= 20; level++) {
+    await leaveFullscreen(page);
     await page.locator('[data-game="geomayhem"]').click();
     await page.locator(`[data-difficulty="level_${level}"]`).click();
     expect(await page.evaluate(() => musicPlayer.track)).toBe(`geomayhem_level_${level}`);
@@ -20,12 +22,16 @@ test('each arena plays its own looping theme; pause, mute, exit and jukebox pres
     await page.locator('#overlay-action').click();
     expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(offset);
   }
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   expect(await page.evaluate(() => musicPlayer.track)).toBe('geomayhem_level_20');
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   for (let level = 1; level <= 20; level++) {
     const card = page.locator(`[data-difficulty="geomayhem_level_${level}"]`);

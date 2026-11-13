@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 const fs = require('node:fs/promises');
 const { accountService } = require('./fixtures/account-service.cjs');
@@ -34,6 +35,7 @@ async function deterministicHangman(page) {
   });
 }
 async function winHangman(page) {
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   for (const letter of ['C', 'A', 'T']) await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();

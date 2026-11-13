@@ -1,3 +1,4 @@
+const { settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 test('a blocked autoplay attempt resumes the same context on interaction', async ({ page }) => {
@@ -17,6 +18,7 @@ test('a blocked autoplay attempt resumes the same context on interaction', async
   await page.evaluate(() => arcadeWelcome.open());
   await expect.poll(() => page.evaluate(() => audioContext?.state)).toBe('suspended');
   await page.evaluate(() => { window.initialAudioContext = audioContext; });
+  await settleFullscreen(page);
   await page.keyboard.press('Shift');
   await expect.poll(() => page.evaluate(() => audioContext?.state)).toBe('running');
   expect(await page.evaluate(() => audioContext === window.initialAudioContext)).toBe(true);

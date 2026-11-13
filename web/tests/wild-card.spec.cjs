@@ -1,7 +1,9 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 test('Wild Card changes only while edge-on and hidden, and stays visible with reduced motion', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.evaluate(() => previewCustom(CubieCustoms.catalog.find(c => c.id === 'chaos_wild')));
   const card = page.locator('#customs-preview-art .chaos-wild-card');

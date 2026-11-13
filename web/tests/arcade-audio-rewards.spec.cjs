@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -5,16 +6,21 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Core aftermath loops until a game is selected and resets on reload', async ({ page }) => {
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   await page.evaluate(() => coreOrigin.close());
   expect(await page.evaluate(() => coreAftermath)).toBe(true);
   await expect.poll(() => page.evaluate(() => musicPlayer?.current?.track)).toBe('core_aftermath');
   expect(await page.evaluate(() => musicPlayer.current.source.loop)).toBe(true);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   expect(await page.evaluate(() => coreAftermath)).toBe(false);
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   await page.evaluate(() => coreOrigin.close());
@@ -24,12 +30,16 @@ test('Core aftermath loops until a game is selected and resets on reload', async
 });
 
 test('audible Christmas song unlocks persistent Gold Santa, muted selection does not', async ({ page }) => {
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   await page.locator('[data-difficulty="christmas_99"]').click();
   expect(await page.evaluate(() => !!saved.achievements.unlocked.santa_song)).toBe(false);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => !!saved.achievements.unlocked.santa_song)).toBe(true);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button', { name: 'Wear Santa Cubie', exact: true }).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'santa');

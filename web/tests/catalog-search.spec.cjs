@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   // Legacy fixture is migrated into the authoritative journal on first load.
@@ -10,6 +11,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('shop search filters Customs and trails while preserving buying and sorting', async ({ page }, testInfo) => {
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   const search = page.getByRole('searchbox', { name: 'Search shop' });
   await search.fill('  SPACE   junk  ');
@@ -35,6 +37,7 @@ test('shop search filters Customs and trails while preserving buying and sorting
 });
 
 test('Cubie collection search combines with ownership filters and keeps preview usable', async ({ page }) => {
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const search = page.getByRole('searchbox', { name: 'Search Cubie collection' });
   await search.fill('chocolate');
@@ -54,6 +57,7 @@ test('Cubie collection search combines with ownership filters and keeps preview 
 });
 
 test('achievement search combines with filters without disclosing redacted achievements', async ({ page }) => {
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   const search = page.getByRole('searchbox', { name: 'Search achievements' });
   await search.fill('  SWEET recovery ');

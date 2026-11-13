@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.use({deterministicMusic:true});
 test('eight exclusive attacks offer distinct Easy, Normal and Hard fights',async({page},testInfo)=>{
@@ -8,6 +9,7 @@ test('eight exclusive attacks offer distinct Easy, Normal and Hard fights',async
   await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.wrathRuntime = await loadPyodide(')});
  });
  await openGame(page);
+ await leaveFullscreen(page);
  await page.locator('[data-game="wrath"]').click();
  await expect(page.locator('#difficulty-choices [data-wrath-exclusive]')).toHaveCount(8);
  await expect(page.locator('#difficulty-choices [data-difficulty]')).toHaveCount(16);

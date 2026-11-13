@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -46,6 +47,7 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await card.click();
   await page.getByRole('button', { name: 'Wear Classic Cubie', exact: true }).click();
   await expect(page.locator('#cube')).not.toHaveClass(/custom-equipped/);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await expect(page.locator('#customs-room')).toBeHidden();
   await page.locator('[data-difficulty="easy"]').click();
@@ -70,6 +72,7 @@ test('Custom Cubie rejects locked saved outfits and respects reduced motion', as
 
 test('locked Customs can be previewed with flavor text without equipping', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button', { name: 'Preview Pumpkin Cubie', exact: true }).click();
   await expect(page.locator('#customs-equipped-name')).toHaveText('Pumpkin Cubie');
@@ -79,6 +82,7 @@ test('locked Customs can be previewed with flavor text without equipping', async
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'classic');
   expect(await page.evaluate(() => saved.cubieCustom)).toBe('classic');
   await page.getByRole('button', { name: 'Preview Word Wizard', exact: true }).focus();
+  await settleFullscreen(page);
   await page.keyboard.press('Enter');
   await expect(page.locator('#customs-equipped-name')).toHaveText('Word Wizard');
   await expect(page.locator('#customs-flavor')).toHaveText('Knows every spell except the one that finds missing socks.');
@@ -101,6 +105,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   }, unlocked);
   await openGame(page);
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await expect(page.locator('#customs-count')).toHaveText('124 / 192 Customs unlocked');
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
@@ -132,6 +137,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'gaster');
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button', { name: 'Wear Empyrorite Cubie', exact: true }).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'medal_empyrorite');
@@ -139,6 +145,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
 
 test('every Custom shows its tier on the card and preview with matching outlines', async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const customs = await page.evaluate(() => CubieCustoms.catalog.map(item => ({
     id: item.id, name: item.name, tier: item.tier, label: CubieCustoms.tierLabels[item.tier],
@@ -188,14 +195,17 @@ test('Gaster remix achievement follows audible playback and equipment, not previ
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.evaluate(() => updateAchievements(achievementTracker.completeGaster()));
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   await page.locator('[data-difficulty="gaster_remix"]').click();
   await expect.poll(() => page.evaluate(() => musicPlayer?.current?.track)).toBe('gaster_remix');
   await page.evaluate(() => previewCustom(CubieCustoms.catalog.find(item => item.id === 'gaster')));
   expect(await page.evaluate(() => achievementTracker.data.unlocked.gaster_remix)).toBeUndefined();
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await page.evaluate(() => { saved.cubieCustom = 'gaster'; applyCubieCustom(); persist(); });
   expect(await page.evaluate(() => achievementTracker.data.unlocked.gaster_remix)).toBeUndefined();
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => !!achievementTracker.data.unlocked.gaster_remix)).toBe(true);
   const score = await page.locator('#profile-score').textContent();
@@ -222,12 +232,14 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     }));
     expect(order.actual).toEqual(order.expected);
   };
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(169);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
   await expect(mint.locator('button')).toBeDisabled();
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const locked = page.locator('#customs-grid [data-custom="shop_blue_mint"]');
   await locked.locator('.custom-preview-button').click();
@@ -247,6 +259,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
     await accountApp.chain;
     accountApp.applyCurrent();
   });
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-balance')).toHaveText('600 Cubie Cash');
   await mint.locator('button').click();
@@ -257,6 +270,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'shop_blue_mint');
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   await expect(page.locator('#shop-balance')).toHaveText('450 Cubie Cash');
   await expect(mint.locator('button')).toHaveText('Equipped ✓');
@@ -272,10 +286,12 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
 
 test('CODEXISTHEBEST unlocks rainbow Codex Cubie and equipment survives reload', async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const custom = page.locator('#customs-grid .custom-tile[data-custom="codex"]');
   await expect(custom).toHaveAttribute('data-tier', 'rainbow');
   await expect(custom.locator('.custom-equip')).toBeDisabled();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('CODEXISTHEBEST');
   await expect(custom.locator('.custom-equip')).toBeEnabled();
   await expect(page.locator('#profile-score')).toHaveText('2440');
@@ -300,6 +316,7 @@ test('Hacker Cubie can be purchased for 4000 Cash and keeps its corrupted face w
       localStorage.setItem('microgame-madness.v1', JSON.stringify({ player: 'Player', shop: { units: 4000000, owned: [] } }));
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   const card = page.locator('#shop-grid .custom-tile[data-custom="shop_hacker"]');
   await expect(card).toHaveAttribute('data-tier', 'empyrorite');

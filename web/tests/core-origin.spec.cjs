@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -6,6 +7,7 @@ test.beforeEach(async ({ page }) => {
 
 test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and clean exit', async ({ page }, testInfo) => {
   const errors = []; page.on('pageerror', error => errors.push(error.message));
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   expect(await page.evaluate(() => saved.unlocks.singularity)).toBe(true);
@@ -51,16 +53,21 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
   await expect(page.locator('#core-origin')).toBeHidden();
   expect(await page.evaluate(() => coreOrigin.source)).toBeNull();
   await expect(page.locator('[data-difficulty="gravitron"]')).toBeFocused();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Player');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('gravitron');
   await expect(page.locator('#core-origin')).toBeVisible();
   expect(await page.evaluate(() => coreOrigin.age)).toBeLessThan(3);
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('#core-origin')).toBeHidden();
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#core-origin')).toBeHidden();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Player');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   await page.evaluate(() => { coreOrigin.age = 22.95; coreOrigin.syncSound(); });
@@ -70,7 +77,9 @@ test('GRAVITRON origin plays on unlock and reentry, with synchronized sound and 
 
 test('muted and reduced-motion players get a still reveal without forced sound', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   await expect(page.locator('[data-origin-pause]')).toBeHidden();
@@ -96,6 +105,7 @@ test('soundtrack is finite stereo audio with headroom and a clean ending', async
 });
 
 test('film follows audio through stalled frames, audio suspension, and sound toggles', async ({ page }) => {
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect(page.locator('#core-origin')).toBeVisible();
   const drift = () => page.evaluate(() => Math.abs(coreOrigin.age -

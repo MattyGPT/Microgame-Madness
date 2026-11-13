@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 const Rules = require('../../shared/account-rules.js');
 
@@ -73,6 +74,7 @@ test('guest upgrade, receipt retry, sign-out, and existing sign-in preserve one 
   await expect(page.locator('#login-open')).toHaveText('private_player');
   await page.locator('#account-close').click();
   // Public account names are independent of legacy name-triggered secrets.
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await expect.poll(() => service.state.player).toBe('GRAVITRON');
   expect(service.state.unlocks.singularity).toBe(false);

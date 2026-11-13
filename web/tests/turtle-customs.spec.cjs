@@ -1,9 +1,11 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect}=require('./fixtures/game.cjs');
 test('Turtle Customs purchase, equipment, search, reload and game rendering',async({page},testInfo)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{if(!localStorage.getItem('microgame-madness.v1'))localStorage.setItem('microgame-madness.v1',JSON.stringify({shop:{units:1000000,owned:[]}}));});
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready',{timeout:30000});
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   await page.locator('#shop-turtles-tab').click();
   await expect(page.locator('#turtle-custom-grid article')).toHaveCount(57);

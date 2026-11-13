@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -42,6 +43,7 @@ test('Boss Crush difficulties play increasingly heavy rock themes and return to 
   await page.evaluate(() => testBossMusicRuntime.runPython('from bridge import session\nfrom boss_crush import Projectile'));
   const heard = [];
   for (const difficulty of ['mean', 'cruel', 'nightmare', 'impossible']) {
+    await leaveFullscreen(page);
     await page.locator('[data-game="boss"]').click();
     await page.locator(`[data-difficulty="${difficulty}"]`).click();
     expect(await page.evaluate(() => musicPlayer.theme)).toBe(`boss_${difficulty}`);
@@ -58,6 +60,7 @@ test('Boss Crush difficulties play increasingly heavy rock themes and return to 
       window.bossMusicProbe.getFloatTimeDomainData(samples);
       return Math.max(...samples.map(Math.abs));
     })).toBeGreaterThan(.001);
+    await settleFullscreen(page);
     await page.keyboard.press('f');
     expect(await page.evaluate(() => musicPlayer.current === window.bossMusicVoice)).toBe(true);
     await page.locator('#pause').click();
@@ -65,9 +68,11 @@ test('Boss Crush difficulties play increasingly heavy rock themes and return to 
     const offset = await page.evaluate(() => musicPlayer.offset);
     await page.locator('#overlay-action').click();
     expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(offset);
+    await leaveFullscreen(page);
     await page.locator('#sound').click();
     await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
     const mutedOffset = await page.evaluate(() => musicPlayer.offset);
+    await leaveFullscreen(page);
     await page.locator('#sound').click();
     expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(mutedOffset);
     await page.evaluate(() => {
@@ -127,6 +132,7 @@ test('each Turtle Dodge difficulty has its own looping theme with mute, pause, h
   await page.evaluate(() => testDodgeAudioRuntime.runPython('from bridge import session\nfrom dodge_model import Block'));
   const heard = [];
   for (const mode of ['easy', 'normal', 'hard', 'merciless']) {
+    await leaveFullscreen(page);
     await page.locator('[data-game="dodge"]').click();
     expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
     await page.locator(`[data-difficulty="${mode}"]`).click();
@@ -143,9 +149,11 @@ test('each Turtle Dodge difficulty has its own looping theme with mute, pause, h
       window.dodgeMusicProbe.getFloatTimeDomainData(samples);
       return Math.max(...samples.map(Math.abs));
     })).toBeGreaterThan(.001);
+    await leaveFullscreen(page);
     await page.locator('#sound').click();
     await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
     const mutedOffset = await page.evaluate(() => musicPlayer.offset);
+    await leaveFullscreen(page);
     await page.locator('#sound').click();
     expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(mutedOffset);
     if (mode !== 'merciless') {
@@ -195,6 +203,7 @@ test('Hangman plays its own theme in all difficulties, survives mute and hidden 
   });
   await openGame(page);
   for (const difficulty of ['easy', 'medium', 'hard']) {
+    await leaveFullscreen(page);
     await page.locator('[data-game="hangman"]').click();
     expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
     await page.locator(`[data-difficulty="${difficulty}"]`).click();
@@ -215,9 +224,11 @@ test('Hangman plays its own theme in all difficulties, survives mute and hidden 
       })).toBeGreaterThan(.001);
       await page.getByRole('button', { name: 'Guess Z', exact: true }).click();
       expect(await page.evaluate(() => musicPlayer.current === window.hangmanVoice)).toBe(true);
+      await leaveFullscreen(page);
       await page.locator('#sound').click();
       await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
       const mutedOffset = await page.evaluate(() => musicPlayer.offset);
+      await leaveFullscreen(page);
       await page.locator('#sound').click();
       expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(mutedOffset);
       await page.evaluate(() => {
@@ -260,6 +271,7 @@ test('Key Rush plays its own theme through typing rounds, mute, and hidden tabs,
     await route.fulfill({ response, body: (await response.text()).replace('KeyboardRound(sequence, seconds, now)', 'KeyboardRound(sequence, 600, now)') });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
   await page.locator('[data-difficulty="progressive"]').click();
@@ -285,9 +297,11 @@ test('Key Rush plays its own theme through typing rounds, mute, and hidden tabs,
   else await page.keyboard.type(sequence);
   await expect(page.locator('#score')).toHaveText('1');
   expect(await page.evaluate(() => musicPlayer.current === window.keyrushVoice)).toBe(true);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
   const mutedOffset = await page.evaluate(() => musicPlayer.offset);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(mutedOffset);
   await page.evaluate(() => {
@@ -320,6 +334,7 @@ test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and 
   page.on("pageerror", error => errors.push(error.message));
   await expect(page.locator("#sound")).toHaveAttribute("aria-pressed", "true");
   expect(await page.evaluate(() => typeof audioContext)).toBe("undefined");
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await expect.poll(() => page.evaluate(() => audioContext.state)).toBe("running");
   expect(await page.evaluate(() => musicPlayer.theme)).toBe("arcade");
@@ -343,9 +358,11 @@ test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and 
     expect(await page.evaluate(() => musicPlayer.offset)).toBeGreaterThan(0);
     await page.locator("#overlay-action").click();
     expect(await page.evaluate(() => musicPlayer.current.offset)).toBeGreaterThan(0);
+    await leaveFullscreen(page);
     await page.locator("#sound").click();
     await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
     await expect.poll(level).toBe(0);
+    await leaveFullscreen(page);
     await page.locator("#sound").click();
     await expect.poll(level).toBeGreaterThan(.001);
     expect(await page.evaluate(() => musicPlayer.theme)).toBe("pumpkin");
@@ -354,6 +371,7 @@ test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and 
   }
   // Losing the fight returns to the arcade score, without leaving two loops.
   await page.locator('[data-difficulty="phase2"]').click();
+  await settleFullscreen(page);
   await page.keyboard.down("ArrowUp");
   await expect(page.locator("#overlay")).toBeVisible();
   await page.keyboard.up("ArrowUp");
@@ -370,6 +388,7 @@ test("chiptune audio switches for every Pumpkin mode and obeys pause, mute, and 
     document.dispatchEvent(new Event("visibilitychange"));
   });
   await expect.poll(level).toBeGreaterThan(.001);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe("hangman");

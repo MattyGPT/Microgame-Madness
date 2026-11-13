@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test('all Pumpkin King attacks and five candies render without changing combat', async ({ page }, testInfo) => {
@@ -11,6 +12,7 @@ test('all Pumpkin King attacks and five candies render without changing combat',
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility: hidden !important; }' });
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await page.evaluate(() => {

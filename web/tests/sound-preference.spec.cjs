@@ -1,8 +1,10 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 
 test('enabling sound survives an older profile arriving while the preference saves', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await page.evaluate(() => soundSettingChain);
   await page.reload();
@@ -22,9 +24,11 @@ test('enabling sound survives an older profile arriving while the preference sav
 
 test('a delayed older profile cannot mute sound after the toggle has finished saving', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await page.evaluate(() => soundSettingChain);
   await page.evaluate(() => { window.oldMutedProfile = structuredClone(saved); });
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await page.evaluate(() => soundSettingChain);
   await page.evaluate(() => applyAccountProfile(structuredClone(window.oldMutedProfile)));
@@ -37,6 +41,7 @@ test('a delayed older profile cannot mute sound after the toggle has finished sa
 
 test('local sound choice survives save failure, newer cloud mute, and reload', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await page.evaluate(() => soundSettingChain);
   await page.evaluate(() => {

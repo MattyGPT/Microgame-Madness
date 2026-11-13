@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -5,11 +6,13 @@ test.use({ deterministicMusic: true });
 
 test('Cubie pets persist across reloads and the 100th pet awards crystal once', async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   const cube = page.getByRole('button', { name: 'Pet Cubie' });
   if (testInfo.project.name === 'mobile') await cube.tap({ force: true });
   else await cube.click({ force: true });
   for (let i = 1; i < 49; i++) await cube.press('Enter');
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="cube_pet_100"]');
   await expect(card).toContainText('Locked · 49 / 100');
@@ -21,8 +24,10 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   for (let i = 49; i < 99; i++) await cube.press('Space');
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(card).toContainText('Locked · 99 / 100');
   await expect(page.locator('#profile-score')).toHaveText('160');
@@ -43,6 +48,7 @@ test('Cubie pets persist across reloads and the 100th pet awards crystal once', 
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
   await expect(page.locator('#profile-score')).toHaveText('430');
@@ -54,6 +60,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await openGame(page);
   const cube = page.getByRole('button', { name: 'Pet Cubie' });
   await expect(cube).toBeVisible();
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   await page.evaluate(() => {
     window.squeaks = [];
@@ -77,12 +84,15 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await cube.press('Enter');
   await expect(cube).toHaveClass(/blushing/);
   await expect(page.locator('#profile-score')).toHaveText('100');
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await cube.press('Space');
   expect(await page.evaluate(() => window.squeaks.length)).toBe(3);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#profile-score')).toHaveText('370');
   await page.locator('#name-surprise').waitFor({ state: 'hidden' });
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   for (const [id, tier, title, description] of [
     ['dingdong', 'crystal', 'DINGDONG', 'WHO YOU ARE.'],
@@ -104,6 +114,7 @@ test('secret achievements persist, and the cube blushes and squeaks with mouse, 
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('370');
   await cube.click({ force: true });
+  await leaveFullscreen(page);
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#profile-score')).toHaveText('370');
 });
@@ -136,6 +147,7 @@ test('Cubie has moving sparkles and orbits with reduced-motion support', async (
   await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const selector of ['#cube', '.orbit-one', '.orbit-two', '.orbit-one .orbit-particle', '.orbit-two .orbit-particle', '.spark.s1', '.spark.s2'])
     expect(await page.locator(selector).evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  await leaveFullscreen(page);
   await page.locator('[data-game="boss"]').click();
   await page.locator('[data-difficulty="impossible"]').click();
   await page.evaluate(() => { active = false; });
@@ -156,10 +168,12 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   const dialog = page.locator('#cubie-hint');
   // Abandoning even a scored Key Rush run must not count as completion.
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await page.locator('#difficulty-choices button').first().click();
   await page.locator('#exit').click();
   expect(await page.evaluate(() => saved.minigamesCompleted)).toBe(18);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await expect(dialog).not.toBeVisible();
@@ -178,6 +192,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await expect(dialog).not.toBeVisible();
@@ -191,6 +206,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   await expect(dialog).toContainText('GRAVITRON');
   await expect(dialog).toContainText('finished 20 minigames');
   await expect(page.locator('#cubie-hint-okay')).toBeFocused();
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('cubie-hint.png') });
@@ -203,6 +219,7 @@ test('Cubie hints after twenty completed minigames, ignores exits, and remembers
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await page.evaluate(() => {

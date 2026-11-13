@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame, routeLocalRuntime } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -63,6 +64,7 @@ async function finishHangman(page, name) {
     try { await accountApp.setting({ leaderboard: true }); } catch { /* Offline opt-in is saved locally and retried. */ }
     if (!accountApp.controller.state().profile.privacy.leaderboard) throw new Error('Sharing preference was not saved.');
   });
+  await leaveFullscreen(page);
   await page.locator('#player').fill(name);
   await page.locator('[data-difficulty="easy"]').click();
   for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
@@ -78,6 +80,7 @@ test('unconfigured global rankings leave local scores and achievements usable', 
   const before = await page.evaluate(() => localStorage.getItem('microgame-madness.v1'));
   await page.locator('#global-tab').click();
   await expect(page.locator('#leaderboard-status')).toContainText('aren’t connected yet');
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="welcome"]')).toContainText('Unlocked');
   expect(await page.evaluate(() => localStorage.getItem('microgame-madness.v1'))).toBe(before);

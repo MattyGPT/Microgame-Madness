@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test.use({ deterministicMusic: true });
@@ -30,6 +31,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   });
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="determination"]');
   await card.scrollIntoViewIfNeeded();
@@ -39,6 +41,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   await expect(card).toContainText('+270 points');
   await card.screenshot({ path: testInfo.outputPath('determination-locked.png') });
   async function loseHangman() {
+    await leaveFullscreen(page);
     await page.locator('[data-game="hangman"]').click();
     await page.locator('[data-difficulty="easy"]').click();
     for (const letter of 'BDEFGHIJKLMNOPQRSUVWXYZ') {
@@ -56,6 +59,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   await page.locator('[data-difficulty="easy"]').click();
   await page.locator('#exit').click();
   expect(await page.evaluate(() => saved.achievements.stats.totalLosses)).toBe(49);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Still Trying');
   await loseHangman();
   await expect(page.locator('#profile-score')).toHaveText(String(before + 270));
@@ -64,6 +68,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
   await expect(toast).toContainText('Determination');
   await expect(toast).toContainText('crystal achievement · +270 points');
   await toast.screenshot({ path: testInfo.outputPath('determination-toast.png') });
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveClass(/earned/);
@@ -80,6 +85,7 @@ test('Determination tracks real losses across reloads and awards crystal on the 
 });
 
 test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebration, and persistence', async ({ page }, testInfo) => {
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(page.locator('.achievement-card')).toHaveCount(await page.evaluate(() => Achievements.catalog.length));
   await expect(page.locator('.achievement-legend')).toContainText('Empyrorite +7290');
@@ -128,6 +134,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText(String(before + 7290 * 2));
   expect(await page.evaluate(() => saved.achievements.unlocked.core_flawless)).toBe(date);
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveClass(/earned/);
@@ -137,6 +144,7 @@ test('Empyrorite has emerald crystal cards, a 7290-point reward, matching celebr
 });
 
 test('Empyrorite challenges cover Merciless and Boss Crush while Chaos, Perfected is Rainbow', async ({ page }, testInfo) => {
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(page.locator('.achievement-card[data-tier="empyrorite"]')).toHaveCount(
     await page.evaluate(() => Achievements.catalog.filter(item => item.tier === 'empyrorite').length));
@@ -170,6 +178,7 @@ test('Rainbow retiering keeps the existing Chaos, Perfected date and recalculate
   await expect(page.locator('#profile-score')).toHaveText('2440');
   expect(await page.evaluate(() => saved.achievements.unlocked.wrath_perfect_shuffle)).toBe(date);
   await expect(page.locator('#achievement-toast')).toBeHidden();
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="wrath_perfect_shuffle"]');
   await card.scrollIntoViewIfNeeded();

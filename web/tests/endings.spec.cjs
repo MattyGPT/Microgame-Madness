@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test.beforeEach(async ({ page }) => {
@@ -9,6 +10,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility:hidden!important; }' });
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();
   await page.evaluate(() => endingRuntime.runPython('from bridge import session'));

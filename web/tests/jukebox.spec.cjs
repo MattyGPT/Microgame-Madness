@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 const journeySongs = ['compass_rose', 'jellyfish_jam', 'kite_runner', 'sands_of_time',
   'tape_deck_daydream', 'mushroom_meadow', 'last_train_to_neon', 'snowglobe_shuffle',
@@ -8,6 +9,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('[data-game="jukebox"]').click();
   const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value));
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');
@@ -38,18 +40,22 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   expect(await page.evaluate(() => musicPlayer.current)).toBeNull();
   await page.locator('#jukebox-pause').click();
   expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(offset);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect(page.locator('#jukebox-status')).toContainText('Muted');
   expect(await page.evaluate(() => musicPlayer.current)).toBeNull();
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect(page.locator('#jukebox-status')).toContainText('Now playing');
   await page.locator('#jukebox-controls').screenshot({ path: testInfo.outputPath('jukebox-player.png') });
   await page.locator('#jukebox-stop').click();
   expect(await page.evaluate(() => musicPlayer.current)).toBeNull();
   await page.locator('[data-difficulty="pumpkin"]').click();
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('#jukebox-pause')).toBeDisabled();
   expect(await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value))).toBe(before);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await expect(page.locator('#jukebox-controls')).toBeHidden();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');

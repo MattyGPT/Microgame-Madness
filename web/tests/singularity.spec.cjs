@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test.use({ deterministicMusic: true });
@@ -21,6 +22,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function unlock(page) {
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();
   await expect(page.locator('#game-title')).toHaveText('Singularity Core');
@@ -28,6 +30,7 @@ async function unlock(page) {
 }
 
 async function choosePractice(page) {
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON');
   await page.locator('[data-origin-skip]').click();
   await expect(page.locator('[data-difficulty="practice"]')).toHaveCount(0);
@@ -54,6 +57,7 @@ test('practice final cutscene plays, pauses, and replays without rewards', async
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="final_cutscene"]').click();
   expect(await page.evaluate(() => snapshot.laser_firing)).toBe(true);
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
 });
@@ -96,6 +100,7 @@ test('temporary Core picker records attack survivals without saving scores or fu
     expect(end.completed).toBe(1);
     expect(end.index).toBe(attack.number - 1);
     expect(end.label).toContain('GET READY — 3');
+    await settleFullscreen(page);
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-difficulty]')).toHaveCount(16);
   }
@@ -114,6 +119,7 @@ test('temporary Core picker records attack survivals without saving scores or fu
   await expect(page.locator('#scores-list')).toContainText('records are not saved');
   await page.locator('#overlay-action').click();
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
+  await leaveFullscreen(page);
   await page.locator('[data-game="singularity"]').click();
   await page.locator('[data-difficulty="gravitron"]').click();
   expect(await page.evaluate(() => snapshot.mode)).toBe('singularity');
@@ -134,6 +140,7 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
     testRuntime.runPython('session.game.invulnerable = 1000\nsession.game.update(session.game.ready_time - session.game.stage_age, set())');
   });
   const position = () => page.evaluate(() => testRuntime.runPython('(session.game.x, session.game.y)').toJs());
+  await settleFullscreen(page);
   await page.keyboard.down('ArrowLeft');
   await expect.poll(position).toEqual([-126, -70]);
   await page.keyboard.up('ArrowLeft');
@@ -149,6 +156,7 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
     await page.mouse.up();
     await expect.poll(position).toEqual([0, -70]);
   }
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -162,14 +170,17 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   await expect(page.locator('#player-health-value')).toHaveText('10 / 10');
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('singularity');
   const position = () => page.evaluate(() => testRuntime.runPython('(session.game.x, session.game.y)').toJs());
+  await settleFullscreen(page);
   await page.keyboard.down('ArrowLeft');
   await expect.poll(position).toEqual([-126, -70]);
+  await settleFullscreen(page);
   await page.keyboard.down('ArrowUp');
   await expect.poll(position).toEqual([-126, 56]);
   await page.keyboard.up('ArrowLeft');
   await expect.poll(position).toEqual([0, 56]);
   await page.keyboard.up('ArrowUp');
   await expect.poll(position).toEqual([0, -70]);
+  await settleFullscreen(page);
   await page.keyboard.down('f');
   expect(await page.evaluate(() => snapshot.shielded)).toBe(true);
   expect(await page.evaluate(() => snapshot.hp)).toBe(1);
@@ -189,6 +200,7 @@ test('GRAVITRON unlock persists and keyboard and touch teleport immediately', as
   expect(await page.evaluate(() => snapshot.paused)).toBe(true);
   await page.locator('#overlay-action').click();
   await page.locator('#exit').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Core Tester');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
@@ -309,6 +321,7 @@ test('Echo Protocol safely demonstrates all four positions on the box before its
     expect(live).toEqual({ hp: 9, damage: 1, preview: false, safePositions: 0, liveHazards: 8 });
     await expect(page.locator('#game-instruction')).toContainText('YOUR TURN');
     await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-echo-live-replay.png`) });
+    await settleFullscreen(page);
     await page.keyboard.press('Escape');
   }
 });

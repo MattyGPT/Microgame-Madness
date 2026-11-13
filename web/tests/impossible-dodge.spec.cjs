@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test('Impossible has its own picker, small white arena, scaled blocks, rewards, and scores',async({page},testInfo)=>{
   await page.route('**/app.js*',async route=>{
@@ -5,6 +6,7 @@ test('Impossible has its own picker, small white arena, scaled blocks, rewards, 
     await route.fulfill({response,body:(await response.text()).replace('const pyodide = await loadPyodide(', 'const pyodide = window.impossibleRuntime = await loadPyodide(')});
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.getByRole('button',{name:/Impossible/}).click();
   await expect.poll(()=>page.evaluate(()=>snapshot?.difficulty)).toBe('impossible');
@@ -28,6 +30,7 @@ test('Impossible has its own picker, small white arena, scaled blocks, rewards, 
   });
   expect(result.medals).toHaveLength(5);
   expect(result.scoreKeys).toContain('dodge:impossible');
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button',{name:'Wear White Dwarf Cubie',exact:true}).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','white_dwarf');

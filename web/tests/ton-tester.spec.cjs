@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }, testInfo) => {
   if (testInfo.title.startsWith('previously restored')) {
@@ -11,6 +12,7 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 
 test('retired code cannot grant TON 618, but the achievement still unlocks it', async ({page}) => {
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GRAVITRON618');
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','classic');
   expect(await page.evaluate(() => CubieCustoms.redeemTesterCode('GRAVITRON618'))).toBe(false);

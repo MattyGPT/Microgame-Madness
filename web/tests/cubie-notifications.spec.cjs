@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   // Legacy fixture is migrated into the authoritative journal on first load.
@@ -28,6 +29,7 @@ test('new Customs share the achievement stack once, including purchases, and sta
   await drain();
   await page.evaluate(() => updateAchievements(achievementTracker.secret('codexisthebest')));
   await expect(page.locator('#achievement-toast [data-custom-id]')).toHaveCount(0);
+  await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
   const tile = page.locator('#shop-grid .custom-tile').first();
   const id = await tile.getAttribute('data-custom');

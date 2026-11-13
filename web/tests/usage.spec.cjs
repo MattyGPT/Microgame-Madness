@@ -1,3 +1,4 @@
+const { settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 const config = { url: 'https://usage.test', key: 'sb_publishable_browser_test' };
@@ -40,6 +41,7 @@ test('starting and leaving a game reports the play and its outcome for the same 
   await openGame(page);
   await expect.poll(() => service.reports.length).toBe(1);
   await page.locator('[data-difficulty="easy"]').click();
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   // Gameplay batches; the page-hide flush is what a real visit sends.
   expect(await page.evaluate(async () => {
@@ -62,6 +64,7 @@ test('a do-not-track browser reports nothing and stores no id', async ({ page })
   const service = await mockUsage(page);
   await openGame(page);
   await page.locator('[data-difficulty="easy"]').click();
+  await settleFullscreen(page);
   await page.keyboard.press('Escape');
   await page.evaluate(async () => { await accountApp.usage?.flush?.(); });
   expect(service.reports).toEqual([]);

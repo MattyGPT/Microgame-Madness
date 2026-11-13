@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test.beforeEach(async ({ page }) => {
@@ -44,6 +45,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   });
   expect(await page.evaluate(() => saved.achievements.stats.survive_pumpkin_bone_gauntlet)).toBe(10);
   await clearCelebrations(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const tile = page.locator('.custom-tile[data-custom="attack_pumpkin_bone_gauntlet"]');
   await expect(tile).toContainText('Bone Veteran');
@@ -70,6 +72,7 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   expect(await page.evaluate(() => saved.achievements.stats.survive_core_photon_rain)).toBe(3);
   expect(await page.evaluate(() => saved.achievements.stats.coreWins)).toBe(0);
   await clearCelebrations(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   const tile = page.locator('.custom-tile[data-custom="attack_core_photon_rain"]');
   await expect(tile).toContainText('Survive Photon Rain 3 times.');

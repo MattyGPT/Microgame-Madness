@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 
 test('spectral Pumpkin King and rounded Boss Crush faces animate without changing combat', async ({ page }, testInfo) => {
@@ -11,6 +12,7 @@ test('spectral Pumpkin King and rounded Boss Crush faces animate without changin
   await page.goto('/');
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await page.addStyleTag({ content: '#achievement-toast, #achievement-celebrations { visibility: hidden !important; }' });
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await page.evaluate(() => {
@@ -53,6 +55,7 @@ test('spectral Pumpkin King and rounded Boss Crush faces animate without changin
   expect(reactions[2]).not.toEqual(reactions[0]);
   await page.locator('#exit').click();
   for (const difficulty of ['mean', 'cruel', 'nightmare', 'impossible']) {
+    await leaveFullscreen(page);
     await page.locator('[data-game="boss"]').click();
     await page.locator(`[data-difficulty="${difficulty}"]`).click();
     await page.evaluate(() => { active = false; });

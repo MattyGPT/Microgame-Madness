@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -12,6 +13,7 @@ test('Pumpkin King classic colors and smoother artwork keep blue and orange eye 
       'const pyodide = window.testKingRuntime = await loadPyodide(') });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await page.evaluate(() => {
@@ -56,6 +58,7 @@ test("Pumpkin King offers four HP choices with separate scores", async ({ page }
   });
   await openGame(page);
   await expect(page.locator("#runtime-status")).toContainText("All games ready", { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator("#difficulty-choices button")).toHaveCount(4);
   const coward = page.getByRole("button", { name: /^Coward Mode/ });
@@ -94,12 +97,14 @@ test("Pumpkin King offers four HP choices with separate scores", async ({ page }
 
 test("Pumpkin King contact kills in every mode and restart restores health", async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await expect(page.locator('#welcome-copy')).toContainText('body or arms kills instantly');
   for (const [mode, hp] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
     await page.locator(`[data-difficulty="${mode}"]`).click();
     await expect(page.locator('#player-health-value')).toHaveText(`${hp} / ${hp}`);
     // Move into the actual Python boss, rather than injecting a death snapshot.
+    await settleFullscreen(page);
     await page.keyboard.down('ArrowUp');
     await expect(page.locator('#overlay')).toBeVisible();
     await expect(page.locator('#overlay-title')).toHaveText('One more try?');
@@ -127,6 +132,7 @@ test('Pumpkin King arm-lift smashes and roar fire deal one HP in every mode', as
   });
   for (attack of ['slam', 'fire']) {
     await openGame(page);
+    await leaveFullscreen(page);
     await page.locator('[data-game="pumpkin"]').click();
     for (const [mode, hp] of [['phase2', 5], ['coward', 10], ['baby', 15], ['come_on', 23]]) {
       await page.locator(`[data-difficulty="${mode}"]`).click();
@@ -151,6 +157,7 @@ test(`${mode} Haunted Quadrants gives two seconds to position with laughing face
     await route.fulfill({ response, body });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   await page.evaluate(mode => {
     selectGame(mode); startGame(mode === 'pumpkin' ? 'baby' : 'haunted_quadrants'); active = false;

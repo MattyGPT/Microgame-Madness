@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -20,6 +21,7 @@ test('mascot floats and blinks, and every boss mode flashes only for damage', as
   expect(poses.animated[1]).not.toBe(poses.normal[1]);
   for (const [game, modes] of [['boss', ['mean', 'cruel', 'nightmare', 'impossible']],
     ['pumpkin', ['phase2', 'coward', 'baby', 'come_on']]]) {
+    await leaveFullscreen(page);
     await page.locator(`[data-game="${game}"]`).click();
     for (const mode of modes) {
       await page.locator(`[data-difficulty="${mode}"]`).click();
@@ -55,6 +57,7 @@ test('mascot floats and blinks, and every boss mode flashes only for damage', as
   expect(await face.evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await face.locator('i').first().evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   await expect(page.locator('#damage-flash')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await page.locator('[data-difficulty="easy"]').click();
   await page.getByRole('button', { name: 'Guess Z', exact: true }).click();
@@ -76,6 +79,7 @@ test('actual healing pickups flash green even at full HP in Boss Crush and every
   for (wounded of [false, true]) {
     await openGame(page);
     for (const [mode, difficulty, hp] of [['boss', 'impossible', 5], ['pumpkin', 'phase2', 5], ['pumpkin', 'coward', 10], ['pumpkin', 'baby', 15], ['pumpkin', 'come_on', 23]]) {
+      await leaveFullscreen(page);
       await page.locator(`[data-game="${mode}"]`).click();
       await page.locator(`[data-difficulty="${difficulty}"]`).click();
       await expect.poll(() => page.evaluate(() => snapshot.healing_collected)).toBe(1);

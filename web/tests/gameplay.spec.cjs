@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -16,6 +17,7 @@ test("home fits the viewport and Hangman scores survive reload", async ({
     path: testInfo.outputPath("arcade-home.png"),
     fullPage: true,
   });
+  await leaveFullscreen(page);
   await page.locator("#player").fill("Browser Tester");
   await expect(page.locator("#hangman-game")).toBeHidden();
   await expect(page.locator("#difficulty-choices button")).toHaveCount(4);
@@ -60,6 +62,7 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   await openGame(page);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await expect(page.locator("#keyboard-game")).toBeHidden();
   await expect(page.locator("#difficulty-choices button")).toHaveCount(2);
@@ -72,9 +75,11 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   await expect(page.locator("#score")).toHaveText("1");
   await page.locator("#exit").click();
   for (const mode of ["dodge", "boss", "pumpkin"]) {
+    await leaveFullscreen(page);
     await page.locator(`[data-game="${mode}"]`).click();
     await expect(page.locator("#game-canvas")).toBeHidden();
     await page.locator("#arena").focus();
+    await settleFullscreen(page);
     await page.keyboard.press("Space");
     await expect(page.locator("#game-canvas")).toBeHidden();
     await expect(page.locator("#difficulty-choices")).toBeVisible();
@@ -97,7 +102,9 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
       await expect(page.locator("#touch-controls")).toBeVisible();
       await page.locator("#touch-joystick").tap({ position: { x: 10, y: 52 } });
     } else {
+      await settleFullscreen(page);
       await page.keyboard.press("ArrowLeft");
+      await settleFullscreen(page);
       await page.keyboard.press("f");
     }
     await page.screenshot({
@@ -106,9 +113,11 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
     });
     await page.locator("#exit").click();
   }
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="merciless"]').click();
   await expect(page.locator("#pause")).toBeHidden();
+  await settleFullscreen(page);
   await page.keyboard.press("Escape");
   await expect(page.locator("#game-canvas")).toBeHidden();
   await expect(page.locator("#difficulty-choices")).toBeVisible();
@@ -127,6 +136,7 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
     "The arcade needs a restart.",
   );
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await expect(page.locator("#overlay-action")).toBeVisible();
   await expect(page.locator("#overlay-action")).toHaveText("Reload arcade");
@@ -134,6 +144,7 @@ test("missing runtime shows a recoverable loading error", async ({ page }) => {
 
 test("every boss difficulty shows player HP with the full play area in view", async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.setViewportSize(testInfo.project.name === "mobile"
     ? { width: 393, height: 727 } : { width: 1280, height: 720 });
   for (const [mode, difficulty, hp] of [
@@ -142,6 +153,7 @@ test("every boss difficulty shows player HP with the full play area in view", as
     ["pumpkin", "phase2", 5], ["pumpkin", "coward", 10],
     ["pumpkin", "baby", 15], ["pumpkin", "come_on", 23],
   ]) {
+    await leaveFullscreen(page);
     await page.locator(`[data-game="${mode}"]`).click();
     await page.locator(`[data-difficulty="${difficulty}"]`).click();
     await expect(page.locator("#player-health-value")).toHaveText(`${hp} / ${hp}`);
@@ -159,11 +171,13 @@ test("every boss difficulty shows player HP with the full play area in view", as
 
 test("boss play area fits after resizing and HP display tracks damage and healing", async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="coward"]').click();
   await page.locator("#pause").click();
   for (const size of [{ width: 1366, height: 768 }, { width: 1024, height: 600 },
     { width: 390, height: 640 }, { width: 844, height: 390 }]) {
+    await leaveFullscreen(page);
     await page.setViewportSize(size);
     await expect(page.locator("#arena")).toBeInViewport({ ratio: 1 });
     await expect(page.locator("#exit")).toBeInViewport({ ratio: 1 });
@@ -194,6 +208,7 @@ test('Key Rush touch keyboard handles case and symbols without opening the devic
       'sequence, seconds = make_round(self.completed + 1, self.difficulty)', 'sequence, seconds = ("aA7?", 600)') });
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await page.locator('[data-difficulty="progressive"]').click();
   await expect(page.locator('#typing-touch')).toBeVisible();
@@ -230,6 +245,7 @@ test('mobile joystick supports diagonals, a second finger, and safe release in e
   const touch = (type, touchPoints) => client.send('Input.dispatchTouchEvent', { type, touchPoints });
   await page.evaluate(() => unlockSingularity(false));
   for (const mode of ['dodge', 'boss', 'pumpkin', 'singularity']) {
+    await leaveFullscreen(page);
     await page.locator(`[data-game="${mode}"]`).click();
     await page.locator('#difficulty-choices button').first().click();
     // Freeze combat while exercising real touch input so enemy hits cannot end the test.

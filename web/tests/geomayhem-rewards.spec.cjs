@@ -1,8 +1,10 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{
   await page.route('**/app.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('handle = pyodide.globals.get("handle");','window.rewardRuntime = pyodide; handle = pyodide.globals.get("handle");')});});
   await page.addInitScript(()=>{const key='microgame-madness.geomayhem.v1:guest';if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({cleared:9}));});
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="geomayhem"]').click();
 });
 async function model(page,code){return page.evaluate(code=>rewardRuntime.runPython('from bridge import session\n'+code),code);}
@@ -18,6 +20,7 @@ test('live progress grants Cubies and arena rewards survive profile reloads',asy
   await page.evaluate(()=>accountApp.settle());
   const totals=await page.evaluate(()=>({kills:saved.achievements.stats.geoKills,waves:saved.achievements.stats.geoWaves,wins:saved.achievements.stats.geoWins,cash:saved.shop.units}));
   expect(totals).toEqual({kills:150,waves:20,wins:1,cash:0});
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await page.getByRole('button',{name:'Wear Arena Victor Cubie',exact:true}).click();
   await page.evaluate(()=>accountApp.settle());
@@ -30,6 +33,7 @@ test('a flawless final arena grants both Empyrorite Cubies',async({page})=>{
   await model(page,'session.game.cleared = 20\nsession.game.damage_taken = 0\nsession.game.won = True');
   await expect.poll(()=>page.evaluate(()=>!!achievementTracker.data.unlocked.geo_flawless_10)).toBe(true);
   await page.evaluate(()=>accountApp.settle());
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   await expect(page.getByRole('button',{name:'Wear Mayhem Sovereign Cubie',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Wear Zero Point Seraph Cubie',exact:true}).click();

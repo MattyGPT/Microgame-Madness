@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 
 // Keep unrelated score assertions independent of the randomly selected song.
@@ -5,8 +6,10 @@ test.use({ deterministicMusic: true });
 
 test('DINGDONG turns the screen red for four seconds and resumes the same music', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   await expect.poll(() => page.evaluate(() => musicPlayer?.current !== null && audioContext.currentTime > .1)).toBe(true);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('DINGDON');
   await expect(page.locator('#name-surprise')).toBeHidden();
   await page.evaluate(() => {
@@ -14,6 +17,7 @@ test('DINGDONG turns the screen red for four seconds and resumes the same music'
     new MutationObserver(() => window.nameEffectTimes.push(performance.now()))
       .observe(document.getElementById('name-surprise'), { attributes: true, attributeFilter: ['hidden'] });
   });
+  await leaveFullscreen(page);
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#name-surprise')).toBeVisible();
   await expect(page.locator('#name-surprise')).toHaveCSS('background-color', 'rgba(210, 0, 0, 0.72)');
@@ -36,27 +40,35 @@ test('DINGDONG turns the screen red for four seconds and resumes the same music'
 
 test('DINGDONG can repeat, does not block play, and preserves mute and pause choices', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('dingdong');
   await expect(page.locator('#name-surprise')).toBeVisible();
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   await page.locator('#pause').click();
   await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
   await expect(page.locator('#sound')).toHaveAttribute('aria-pressed', 'false');
   expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   expect(await page.evaluate(() => musicPlayer.current)).toBe(null);
   await page.locator('#overlay-action').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('pumpkin');
   await page.locator('#exit').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Player');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('DINGDONG');
   await expect(page.locator('#name-surprise')).toBeVisible();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect(page.locator('#name-surprise')).toBeHidden({ timeout: 6500 });
   expect(await page.evaluate(() => musicPlayer.current)).toBe(null);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
 });
@@ -66,6 +78,7 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const card = page.locator('[data-achievement="waste_of_time"]');
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/redacted/);
   await expect(card).toHaveAttribute('aria-label', 'Redacted achievement');
@@ -75,8 +88,10 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   await expect(page.locator('.achievement-legend')).not.toContainText(/black/i);
   await card.scrollIntoViewIfNeeded();
   await card.screenshot({ path: testInfo.outputPath('redacted-achievement.png') });
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   const reloaded = page.waitForEvent('load');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('  gAsTeR  ');
   await reloaded;
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
@@ -124,6 +139,7 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   await expect(page.locator('#achievement-toast')).toContainText('WASTE OF TIME');
   await expect(page.locator('#achievement-toast')).toContainText('+666 points');
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
   await expect(card).not.toHaveClass(/redacted/);
@@ -139,6 +155,7 @@ test('Gaster reloads once, waits five seconds, and reveals the redacted award on
   await expect(page.locator('#achievement-toast')).toBeHidden();
   await page.waitForTimeout(5500);
   await expect(page.locator('#gaster-blackout')).toBeHidden();
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(card).toHaveClass(/earned/);
   expect(errors).toEqual([]);
@@ -151,8 +168,10 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
   });
   await openGame(page);
   await page.locator('#welcome-close').click();
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   const reloaded = page.waitForEvent('load');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('gaster');
   await reloaded;
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
@@ -164,6 +183,7 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
       .observe(document.querySelector('#gaster-blackout'), { attributes: true, attributeFilter: ['hidden'] });
   });
   await page.waitForTimeout(await page.evaluate(() => Math.max(0, 4100 - performance.now())));
+  await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await page.locator('[data-difficulty="progressive"]').click();
   await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 2500 });
@@ -187,6 +207,7 @@ test('Gaster recovers from unavailable audio and interrupted sequences cannot un
     window.AudioContext = class { constructor() { throw new Error('Audio disabled'); } };
   });
   const reloaded = page.waitForEvent('load');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('GASTER');
   await reloaded;
   await expect(page.locator('#sound')).toHaveText('Sound on');
@@ -197,8 +218,10 @@ test('Gaster recovers from unavailable audio and interrupted sequences cannot un
   await expect(page.locator('#profile-score')).toHaveText('10');
   await page.waitForTimeout(5500);
   await expect(page.locator('#gaster-blackout')).toBeHidden();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('Player');
   const secondReload = page.waitForEvent('load');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('gaster');
   await secondReload;
   await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 6500 });
@@ -211,6 +234,7 @@ test('ROCKNROY randomly selects all five original songs, returns to arcade, and 
   await openGame(page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   await expect(page.locator('#achievement-toast')).toBeHidden();
   const tracks = await page.evaluate(() => ArcadeMusic.rockTracks.map(track => track.id));
@@ -221,6 +245,7 @@ test('ROCKNROY randomly selects all five original songs, returns to arcade, and 
       window.originalRockRandom = Math.random;
       Math.random = () => (i + .5) / 5;
     }, i);
+    await leaveFullscreen(page);
     await page.locator('#player').fill('  rOcKnRoY  ');
     await page.evaluate(() => { Math.random = window.originalRockRandom; });
     await expect.poll(() => page.evaluate(() => musicPlayer.theme)).toBe(tracks[i]);
@@ -253,6 +278,7 @@ test('ROCKNROY randomly selects all five original songs, returns to arcade, and 
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('2440');
   await expect(page.locator('#achievement-toast')).toBeHidden();
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   const card = page.locator('[data-achievement="name_rocknroy"]');
   await expect(card).toHaveClass(/earned/);
@@ -265,10 +291,13 @@ test('ROCKNROY respects mute, visibility and game pause, and can replace a name 
   await openGame(page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('ROCKNROY');
   await expect(page.locator('#profile-score')).toHaveText('2440');
   expect(await page.evaluate(() => typeof audioContext)).toBe('undefined');
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   const song = await page.evaluate(() => musicPlayer.oneShot);
   expect(song).toMatch(/^rock_/);
@@ -284,16 +313,21 @@ test('ROCKNROY respects mute, visibility and game pause, and can replace a name 
   });
   expect(await page.evaluate(() => musicPlayer.current.offset)).toBe(offset);
   expect(await page.evaluate(() => musicPlayer.oneShot)).toBe(song);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   expect(await page.evaluate(() => musicPlayer.oneShot)).toBe(song);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('BOO');
   await expect(page.locator('#name-surprise')).toBeVisible();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(0);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('ROCKNROY');
   await expect(page.locator('#name-surprise')).toBeHidden();
   await expect.poll(() => page.evaluate(() => musicPlayer.voices.size)).toBe(1);
+  await leaveFullscreen(page);
   await page.locator('[data-game="pumpkin"]').click();
   await page.locator('[data-difficulty="baby"]').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toMatch(/^rock_/);
@@ -315,6 +349,7 @@ test('Game Tester still unlocks when browser audio is unavailable', async ({ pag
     window.AudioContext = class { constructor() { throw new Error('Audio disabled'); } };
   });
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#player').fill('ROCKNROY');
   await expect(page.locator('#profile-score')).toHaveText('2440');
   await expect(page.locator('#sound')).toHaveText('Sound on');
@@ -325,12 +360,14 @@ test('Game Tester still unlocks when browser audio is unavailable', async ({ pag
 
 test('new name secrets replace effects cleanly and award once across reloads', async ({ page }, testInfo) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('#player').click();
   for (const [name, secret, message, score] of [
     ['  cUbIe  ', 'cubie', 'Hi, I’m Cubie!', '100'],
     ['BOO', 'boo', 'BOO!', '190'],
     ['starlight', 'starlight', 'You’re made of starlight.', '460'],
   ]) {
+    await leaveFullscreen(page);
     await page.locator('#player').fill(name);
     await expect(page.locator('#name-surprise')).toHaveAttribute('data-secret', secret);
     await expect(page.locator('#name-surprise')).toContainText(message);
@@ -345,6 +382,7 @@ test('new name secrets replace effects cleanly and award once across reloads', a
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await expect(page.locator('#profile-score')).toHaveText('460');
+  await leaveFullscreen(page);
   await page.locator('#sound').click();
   for (const name of ['CUBIE', 'BOO', 'STARLIGHT']) await page.locator('#player').fill(name);
   await expect(page.locator('#profile-score')).toHaveText('460');
@@ -356,11 +394,14 @@ test("ROCKNROY and The King's Wrath work together and restore the boss theme", a
   await openGame(page);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
+  await leaveFullscreen(page);
   await page.locator('#player').click();
+  await leaveFullscreen(page);
   await page.locator('#player').fill('ROCKNROY');
   await expect(page.locator('#profile-score')).toHaveText('2440');
+  await leaveFullscreen(page);
   await page.locator('[data-game="wrath"]').click();
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   await page.locator('[data-difficulty="color_memory"]').click();
   await page.locator('[data-difficulty="color_memory"]').click();
   await expect(page.locator('#game-canvas')).toBeVisible();
@@ -372,7 +413,7 @@ test("ROCKNROY and The King's Wrath work together and restore the boss theme", a
   expect(await page.evaluate(() => achievementTracker.data.unlocked.name_rocknroy)).toBeTruthy();
   await page.locator('#exit').click();
   expect(await page.evaluate(() => musicPlayer.theme)).toBe('arcade');
-  await expect(page.locator('#difficulty-choices button')).toHaveCount(8);
+  await expect(page.locator('#difficulty-choices button')).toHaveCount(16);
   expect(errors).toEqual([]);
 });
 
@@ -383,6 +424,7 @@ test('three new arcade names unlock through name entry and persist', async ({ pa
     ['1uP', 'name_1up', 'Extra Life Energy'],
     ['High Score', 'name_high_score', 'Name on the Leaderboard'],
   ]) {
+    await leaveFullscreen(page);
     await page.locator('#player').fill(name);
     await expect(page.locator('#name-surprise')).toBeVisible();
     await expect(page.locator('#achievement-toast')).toContainText(title);
@@ -391,9 +433,11 @@ test('three new arcade names unlock through name entry and persist', async ({ pa
   await expect(page.locator('#profile-score')).toHaveText('460');
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
+  await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   for (const id of ['name_pixel', 'name_1up', 'name_high_score'])
     await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');
+  await leaveFullscreen(page);
   await page.locator('#player').fill('PIXEL');
   await expect(page.locator('#profile-score')).toHaveText('460');
   await expect(page.locator('#achievement-toast')).toBeHidden();

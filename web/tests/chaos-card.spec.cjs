@@ -1,6 +1,8 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test('Chaos has 55 orbiting blocks and randomizes on each selection visit', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   const card = page.locator('[data-difficulty="chaos"]');
   await expect(card.locator('.chaos-border-block')).toHaveCount(55);
@@ -27,7 +29,9 @@ test('Chaos has 55 orbiting blocks and randomizes on each selection visit', asyn
   const first = await card.locator('.chaos-border-flight').innerHTML();
   expect(await card.locator('.chaos-border-block').evaluateAll(nodes => nodes.every(n => n.complete && n.naturalWidth > 0))).toBe(true);
   expect(await card.evaluate(n => n.getAnimations({ subtree: true }).length)).toBe(57);
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   expect(await card.locator('.chaos-border-flight').innerHTML()).not.toBe(first);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -38,6 +42,7 @@ test('Chaos has 55 orbiting blocks and randomizes on each selection visit', asyn
 
 test('all Dodge borders use requested counts, increasing speeds and smaller Impossible blocks', async ({ page }) => {
   await openGame(page);
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   const stats = await page.locator('.dodge-border-card').evaluateAll(cards => cards.map(card => {
     const blocks = [...card.querySelectorAll('.chaos-border-block')];
@@ -50,6 +55,7 @@ test('all Dodge borders use requested counts, increasing speeds and smaller Impo
   expect(Math.max(...stats[4].sizes)).toBeLessThan(Math.min(...stats[3].sizes));
   expect(stats[3].border).toBe('rgb(255, 48, 48)');
   expect(stats[4].border).toBe('rgb(255, 255, 255)');
+  await leaveFullscreen(page);
   await page.locator('[data-game="hangman"]').click();
   await expect(page.locator('.chaos-border-block')).toHaveCount(0);
 });
@@ -62,6 +68,7 @@ test('Chaos card includes newly registered catalog blocks without a card-specifi
     const originalPick = ChaosArt.pickBlock;
     ChaosArt.pickBlock = blocks => originalPick(blocks, () => .999999999);
   });
+  await leaveFullscreen(page);
   await page.locator('[data-game="dodge"]').click();
   const blocks = page.locator('[data-difficulty="chaos"] .chaos-border-block');
   await expect(blocks).toHaveCount(55);

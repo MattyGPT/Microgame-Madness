@@ -1,3 +1,4 @@
+const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test('all 20 bosses load with cinematics and three real attack previews',async({page},info)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -28,6 +29,7 @@ test('campaign boss introduction freezes combat, skips, and keeps a named health
   await page.evaluate(()=>setSoundEnabled(true));
   await page.waitForFunction(()=>bossAudioDirector?.session==='1:intro');
   const before=await page.evaluate(()=>window.bossRuntime.runPython('str((session.game.elapsed, session.game.lives, session.game.x))'));
+  await settleFullscreen(page);
   await page.keyboard.down('ArrowRight');await page.waitForTimeout(300);await page.keyboard.up('ArrowRight');
   const after=await page.evaluate(()=>window.bossRuntime.runPython('str((session.game.elapsed, session.game.lives, session.game.x))'));
   // Python proxies are converted to strings for deterministic comparison.
@@ -66,6 +68,7 @@ test('boss audio renders twenty finite stereo effects and stops on pause and mut
   });
   expect(result.duration).toBe(14);expect(result.titles).toBe(20);
   for(const s of result.signatures){expect(s.energy).toBeGreaterThan(1);expect(s.stereo).toBeGreaterThan(.1);expect(s.peak).toBeLessThan(1);}
+  await leaveFullscreen(page);
   await page.locator('#sound').click();await expect(page.locator('#sound')).toHaveAttribute('aria-pressed','true');
   const lifecycle=await page.evaluate(async()=>{
     const context=new AudioContext();await context.resume();const director=new BossAudio.Director(context);
@@ -76,6 +79,7 @@ test('boss audio renders twenty finite stereo effects and stops on pause and mut
     director.stop();await context.close();return {audible,stopped,switched};
   });
   expect(lifecycle).toEqual({audible:true,stopped:true,switched:true});
+  await leaveFullscreen(page);
   await page.locator('#sound').click();await expect(page.locator('#sound')).toHaveAttribute('aria-pressed','false');
 });
 

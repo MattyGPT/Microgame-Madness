@@ -1,3 +1,4 @@
+const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect } = require('./fixtures/game.cjs');
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -8,6 +9,7 @@ test('Empyrorite relics preview while locked and equip after their achievements'
   const ids = ['phantom_emperor','living_grimoire','tempest_seraph','celestial_forge','abyssal_leviathan'];
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
+  await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   for (const id of ids) {
     const tile = page.locator(`#customs-grid [data-custom="${id}"].custom-tile`);
