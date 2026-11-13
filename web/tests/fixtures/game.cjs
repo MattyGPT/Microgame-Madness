@@ -60,6 +60,7 @@ async function settleFullscreen(page) {
 async function leaveFullscreen(page) {
   await settleFullscreen(page);
   const button = page.locator('#fullscreen');
+  if (!await button.count()) return;
   if (await button.getAttribute('aria-pressed') === 'true') {
     await button.click();
     await settleFullscreen(page);

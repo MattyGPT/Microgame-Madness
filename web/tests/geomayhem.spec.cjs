@@ -293,8 +293,9 @@ test('the twenty themed arenas render distinct backgrounds, boss phases and queu
   await page.locator('[data-difficulty="level_20"]').click();
   await model(page, 'session.game.break_left = 100\nsession.game.wave = 20\nsession.game._spawn()\nsession.game.enemies[0].hp *= .2\nsession.game.enemies[0].skill_in = 0');
   await expect(page.locator('#geomayhem-boss-name')).toContainText('Infinity Regent · Phase 3');
+  await page.locator('#boss-cinema-skip').click();
   await expect.poll(() => model(page, 'len(session.game.zones)')).toBeGreaterThan(0);
-  await model(page, 'session.game.enemies.clear()\nsession.game.zones.clear()\nsession.game.xp = 12 + 20 + 27');
+  await model(page, 'session.game.wave = 1\nsession.game.break_left = 100\nsession.game.enemies.clear()\nsession.game.zones.clear()\nsession.game.xp = 12 + 20 + 27');
   await expect(page.locator('#geomayhem-upgrade-status')).toContainText('3 upgrades remaining');
   await page.locator('[data-upgrade="weapon"]').click();
   await expect(page.locator('#geomayhem-upgrade-status')).toContainText('2 upgrades remaining');
