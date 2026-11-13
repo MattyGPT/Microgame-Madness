@@ -57,7 +57,7 @@ test('practice final cutscene plays, pauses, and replays without rewards', async
   await page.locator('#overlay-action').click();
   await page.locator('[data-difficulty="final_cutscene"]').click();
   expect(await page.evaluate(() => snapshot.laser_firing)).toBe(true);
-  await settleFullscreen(page);
+  await leaveFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
 });
@@ -100,7 +100,7 @@ test('temporary Core picker records attack survivals without saving scores or fu
     expect(end.completed).toBe(1);
     expect(end.index).toBe(attack.number - 1);
     expect(end.label).toContain('GET READY — 3');
-    await settleFullscreen(page);
+    await leaveFullscreen(page);
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-difficulty]')).toHaveCount(16);
   }
@@ -156,7 +156,7 @@ test('temporary Core practice pauses the countdown and supports keyboard and tou
     await page.mouse.up();
     await expect.poll(position).toEqual([0, -70]);
   }
-  await settleFullscreen(page);
+  await leaveFullscreen(page);
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-difficulty]')).toHaveCount(16);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -321,7 +321,7 @@ test('Echo Protocol safely demonstrates all four positions on the box before its
     expect(live).toEqual({ hp: 9, damage: 1, preview: false, safePositions: 0, liveHazards: 8 });
     await expect(page.locator('#game-instruction')).toContainText('YOUR TURN');
     await page.locator('#game-canvas').screenshot({ path: testInfo.outputPath(`${mode}-echo-live-replay.png`) });
-    await settleFullscreen(page);
+    await leaveFullscreen(page);
     await page.keyboard.press('Escape');
   }
 });

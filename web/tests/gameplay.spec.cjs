@@ -117,7 +117,7 @@ test("typing, arcade controls, pause, and all graphical modes work", async ({
   await page.locator('[data-game="dodge"]').click();
   await page.locator('[data-difficulty="merciless"]').click();
   await expect(page.locator("#pause")).toBeHidden();
-  await settleFullscreen(page);
+  await leaveFullscreen(page);
   await page.keyboard.press("Escape");
   await expect(page.locator("#game-canvas")).toBeHidden();
   await expect(page.locator("#difficulty-choices")).toBeVisible();

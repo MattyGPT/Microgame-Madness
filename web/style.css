@@ -4778,6 +4778,20 @@ body.game-fullscreen-open { overflow: hidden; }
 .game-footer > div { display: flex; flex-wrap: wrap; gap: 4px; }
 @media (max-height: 500px) {
   .joystick-home, .touch-joystick { width: 112px; height: 112px; }
+  /* Larger touch controls leave a short canvas in landscape. Keep the pause
+     message and action side by side so the action stays within the viewport. */
+  .arena.arcade .overlay {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    padding: 6px 12px;
+  }
+  .arena.arcade .overlay .eyebrow { display: none; }
+  .arena.arcade .overlay h3 { grid-column: 1; margin: 0; font-size: 17px; }
+  .arena.arcade .overlay p { grid-column: 1; margin: 0; font-size: 11px; }
+  .arena.arcade .overlay .primary-button {
+    grid-column: 2; grid-row: 1 / span 2; margin: 0; padding: 8px 14px;
+  }
 }
 
 #game-canvas { touch-action: pinch-zoom; }
