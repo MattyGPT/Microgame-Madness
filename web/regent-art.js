@@ -2,7 +2,7 @@
 // Dedicated final-boss illustration. Decorative wings never alter the combat hitbox.
 const RegentArt=(()=>{
   const TAU=Math.PI*2;
-  function draw(c,x,y,size,time=0,phase=1,reduced=false){
+  function draw(c,x,y,size,time=0,phase=1,reduced=false,options={}){
     const t=reduced?0:time,quality=size>80,ascension=phase-1;
     c.save();c.translate(x,y);c.scale(size/60,size/60);c.lineJoin='round';c.lineCap='round';
     const path=(d,fill,stroke='#fce5aa',width=.65)=>{const p=new Path2D(d);if(fill){c.fillStyle=fill;c.fill(p)}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke(p)}};
@@ -27,7 +27,7 @@ const RegentArt=(()=>{
       c.restore();
     }
     // Nineteen fractured world sigils orbit the final sovereign.
-    for(let n=0;n<19;n++){
+    if(!options.hideOrbiters)for(let n=0;n<19;n++){
       const angle=n*TAU/19+t*.12,r=63+Math.sin(n*3+t*.6)*3;
       c.save();c.translate(Math.cos(angle)*r,Math.sin(angle)*r*.74);c.rotate(angle+Math.PI/2);
       jewel(0,0,n%3===0?3.4:2.1,n*19+t*10);c.restore();
@@ -50,7 +50,7 @@ const RegentArt=(()=>{
       path('M1 13Q20 -10 57 -48',null,gold,2);circle(4,10,4,gold);jewel(4,10,2,210+row*50);
       c.restore();
     };
-    for(let row=phase===3?2:phase===2?1:0;row>=0;row--)for(const side of [-1,1])wing(side,row);
+    if(!options.hideWings)for(let row=phase===3?2:phase===2?1:0;row>=0;row--)for(const side of [-1,1])wing(side,row);
     // Flowing royal mantle, with independently waving hems and stitched constellations.
     for(const side of [-1,1]){
       c.save();c.scale(side,1);const sway=Math.sin(t*1.4+side)*3;
@@ -75,9 +75,9 @@ const RegentArt=(()=>{
     for(const side of [-1,1])for(let n=0;n<3;n++)path(`M${side*(6+n*3)} ${15+n*2}l${side*3} -3`,null,'#ffecb7',.45);
     // An animated infinity heart sits beneath a transparent faceted shield.
     glow(0,1,17,phase===3?'#e5caff88':'#b6efff55');
-    c.save();c.translate(0,1);c.scale(1,.8+Math.sin(t*2)*.035);
+    if(!options.hideInfinity){c.save();c.translate(0,1);c.scale(1,.8+Math.sin(t*2)*.035);
     path('M0 0C-22 -21 -22 21 0 0C22 -21 22 21 0 0Z',null,'#fff2bf',2.5);
-    path('M0 0C-22 -21 -22 21 0 0C22 -21 22 21 0 0Z',null,'#ffffff',.65);c.restore();
+    path('M0 0C-22 -21 -22 21 0 0C22 -21 22 21 0 0Z',null,'#ffffff',.65);c.restore();}
     path('M0 -16L17 0L0 20L-17 0Z','#a9e4ff0d','#ddf4ff66',.5);
     // Sculpted helmet: brow, luminous eye slits, inset cheek plates, five crown jewels.
     path('M-15 -36L0 -42L15 -36L12 -20L0 -15L-12 -20Z',armor,gold,1);

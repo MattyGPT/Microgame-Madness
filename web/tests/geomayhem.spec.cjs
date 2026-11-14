@@ -80,7 +80,7 @@ test('Geomayhem armory, Cubie movement, manual mouse/touch fire and pause', asyn
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await expect(page.locator('#difficulty-choices button')).toHaveCount(20);
-  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(44);
+  await expect(page.locator('#geomayhem-weapon option')).toHaveCount(45);
   await page.locator('#geomayhem-weapon').selectOption('comet');
   await expect(page.locator('#geomayhem-evolution-three')).toContainText('Comet Flare');
   await expect(page.locator('#geomayhem-evolution-five')).toContainText('Comet Apocalypse');

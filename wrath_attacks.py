@@ -21,6 +21,7 @@ class Hazard:
     active: bool
     progress: float = 0
     token: int = -1
+    echo: int = 0
 
     def hits(self, x, y, radius=12):
         if not self.active:
@@ -51,6 +52,14 @@ class WrathPattern:
         self.serial = 0
         self.events = []
         self.countered = set()
+        self.countered_echoes = set()
+        self.eclipse_bullets = []
+        if key == "eclipse_waltz" and self.level == 2:
+            for _ in range(10):
+                angle = rng.uniform(0, math.tau)
+                speed = rng.uniform(65, 105)
+                self.eclipse_bullets.append((rng.uniform(-285, 285), rng.uniform(-225, 25),
+                                             math.cos(angle)*speed, math.sin(angle)*speed))
         self.duration = (10, 12, 14)[self.level]
         self.warning = (1.4, 1.05, .8)[self.level]
         if key == "pendulum_court" and self.level == 2:
@@ -72,6 +81,10 @@ class WrathPattern:
             self.warning /= 1.5
             self.interval /= 1.5
             self.duration /= 1.5
+        if key == "crown_chess" and self.level == 2:
+            self.warning /= 1.3
+            self.interval /= 1.3
+            self.duration /= 1.3
         if key == "royal_loom":
             self.warning /= 1.6
             self.interval /= 1.6
@@ -86,7 +99,7 @@ class WrathPattern:
                 self.events.append((self.serial, self.next_event, x, y, self.rng.uniform(-1, 1)))
                 self.serial += 1
             self.next_event += self.interval
-        self.events = [e for e in self.events if self.age-e[1] < 6]
+        self.events = [e for e in self.events if self.age-e[1] < 6 or (self.key == "resonant_bells" and self.level == 2)]
         live_tokens = {e[0] for e in self.events}
         self.countered.intersection_update(live_tokens)
         self.hazards = self.geometry()
@@ -103,6 +116,13 @@ class WrathPattern:
             if level == 2:
                 radius *= .9
             shapes.append(Hazard("safe", (x, y, radius), self.age > 1.6))
+            for bx, by, vx, vy in self.eclipse_bullets:
+                travel = max(0, self.age - 1.6)
+                def bounce(value, low, high):
+                    span = high-low
+                    return low + span - abs((value-low) % (2*span) - span)
+                shapes.append(Hazard("disc", (bounce(bx+vx*travel, -290, 290),
+                                              bounce(by+vy*travel, -230, 35), 5), self.age > 1.6))
             return shapes
         for token, birth, px, py, seed in self.events:
             age = self.age-birth
@@ -121,7 +141,7 @@ class WrathPattern:
                     add("disc", (max(-260, min(260, px)), max(-200, min(25, fourth_y)), radius))
             elif k == "pendulum_court" and t < 1.7 / (1, 1.15, 1.3 * 1.25)[level]:
                 for side in ((-1,) if level == 0 else ((-1, 1, 0) if level == 2 else ((-1,) if token % 2 == 0 else (1,)))):
-                    ax, ay = side*(189 if level == 2 else 210), -5 if level >= 1 else 35
+                    ax, ay = side*(174 if level == 2 else 210), -5 if level >= 1 else 35
                     swing_time = max(0, t) * (1, 1.15, 1.3 * 1.25)[level]
                     direction = side or (-1 if token % 2 == 0 else 1)
                     angle = -math.pi/2-direction*(.95-math.pi*swing_time/(2.8,2.2,1.8)[level])
@@ -135,7 +155,7 @@ class WrathPattern:
                         ax = direction * 90 * math.cos(math.pi * swing_time / 1.7)
                         reach = 240
                     add("line", (ax, ay, ax+reach*math.cos(angle), ay+reach*math.sin(angle), (10,14,18)[level]))
-            elif k == "crown_chess" and t < .65 / 1.5:
+            elif k == "crown_chess" and t < .65 / 1.5 / (1.3 if level == 2 else 1):
                 divisor = (4, 3, 2)[level]
                 for row in range(3):
                     for col in range(6):
@@ -162,12 +182,17 @@ class WrathPattern:
                 add("disc", (px, py, radius))
                 if level == 2:
                     add("disc", (max(-270,min(270,px+(-65 if token%2 else 65))), py, 21))
-            elif k == "resonant_bells" and t < 3.5 and token not in self.countered:
+            elif k == "resonant_bells" and (t < 3.5 or level == 2) and token not in self.countered:
                 centers = ((0,-55),) if level == 0 else ((-185,-65),(185,-65),(0,-170))
                 cx,cy = centers[token % len(centers)]
-                add("ring", (cx,cy, 22+max(0,t)*(85,110,135)[level], (8,10,13)[level]))
-                if level == 2 and t > .55:
-                    add("ring", (cx,cy,22+(t-.55)*135,10))
+                ring_age = t % 3.5 if level == 2 and active else t
+                for echo in range(2 if level == 2 else 1):
+                    if (token, echo) in self.countered_echoes:
+                        continue
+                    echo_age = ring_age - echo*.55
+                    shapes.append(Hazard("ring", (cx, cy, 22+max(0,echo_age)*(85,110,135)[level],
+                                                  10 if echo else (8,10,13)[level]),
+                                         active and echo_age >= 0, progress, token, echo))
             elif k == "royal_loom" and t < .75 / 1.6:
                 horizontal = token % 2 == 0
                 size = (90, 105, 120)[level]
@@ -186,15 +211,19 @@ class WrathPattern:
 
     def collide(self, game):
         for hazard in self.hazards:
-            if hazard.token in self.countered or not hazard.hits(game.x, game.y):
+            if hazard.token in self.countered or (hazard.token, hazard.echo) in self.countered_echoes or not hazard.hits(game.x, game.y):
                 continue
             if self.key == "resonant_bells" and game.counter_time > 0:
-                self.countered.add(hazard.token)
+                self.countered_echoes.add((hazard.token, hazard.echo))
+                if self.level < 2 or all((hazard.token, echo) in self.countered_echoes for echo in (0, 1)):
+                    self.countered.add(hazard.token)
                 game.counter_hits += 1
                 game.sound_events.append("counter")
+                if self.level == 2:
+                    game.counter_time = 0
             else:
                 game.hurt(2 if self.key == "mirror_lances" and self.level == 2 else 1)
-        self.hazards = [h for h in self.hazards if h.token not in self.countered]
+        self.hazards = [h for h in self.hazards if h.token not in self.countered and (h.token, h.echo) not in self.countered_echoes]
 
 
 def draw_wrath_pattern(view, game):
@@ -262,6 +291,11 @@ def draw_wrath_pattern(view, game):
     emblem(0,211,22)
     if game.stage.name != "wrath_exclusive":
         return
+    if key == "resonant_bells" and level == 2:
+        for token, *_ in pattern.events:
+            if token not in pattern.countered:
+                x, y = ((-185,-65),(185,-65),(0,-170))[token % 3]
+                emblem(x,y,12)
     for h in pattern.hazards:
         tint = color if h.active else "#a0abbc"
         width = 3 if h.active else 1.5
@@ -273,7 +307,9 @@ def draw_wrath_pattern(view, game):
                 view.text(x,y,"MOONLIGHT",pale,11)
             elif h.shape=="ring":
                 circle(x,y,r,extra[0] if h.active else 2,tint,not h.active)
-                emblem(x,y,12)
+                if level < 2: emblem(x,y,12)
+            elif key == "eclipse_waltz":
+                circle(x,y,r,1,pale,False,color if h.active else "")
             else:
                 circle(x,y,r,width,tint,not h.active, "#442b3a" if h.active else "")
                 if h.active:
@@ -309,6 +345,8 @@ def draw_wrath_floor(view, game):
     if not pattern or pattern.key != "eclipse_waltz" or game.stage.name != "wrath_exclusive" or game.won:
         return
     for hazard in pattern.hazards:
+        if hazard.shape != "safe":
+            continue
         x, y, radius = hazard.coords
         for cy in range(-234, 240, 12):
             span = math.sqrt(max(0, radius*radius-(cy-y)**2)) if abs(cy-y) < radius else 0

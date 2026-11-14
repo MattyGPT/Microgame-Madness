@@ -7,12 +7,12 @@ const {compactSnapshot}=require('../accounts/app.js');
 const state=(level=1,extra={})=>({mode:'geomayhem',difficulty:`level_${level}`,geo_level:level,
   geo_kills:0,geo_waves:0,geo_rank:1,geo_weapon_count:1,geo_max_stars:1,geo_five_star_count:0,geo_relic_count:0,
   score:0,over:false,won:false,damage_taken:0,...extra});
-test('28 milestones and 16 Cubies span all seven tiers with unique rendered art',()=>{
+test('29 milestones and 16 campaign Cubies span all seven tiers with unique rendered art',()=>{
   const medals=catalog.filter(a=>a.group==='Geomayhem');
   const cubies=Customs.catalog.filter(c=>c.id.startsWith('geo_'));
-  assert.equal(medals.length,28);assert.equal(cubies.length,16);
+  assert.equal(medals.length,29);assert.equal(cubies.length,16);
   for(const tier of ['bronze','silver','gold','crystal','diamond','rainbow','empyrorite']){
-    assert.equal(medals.filter(a=>a.tier===tier).length,4);
+    assert.equal(medals.filter(a=>a.tier===tier).length,tier === 'rainbow' ? 5 : 4);
     assert.equal(cubies.filter(c=>c.tier===tier).length,tier === 'bronze' ? 4 : 2);
   }
   for(const c of cubies) assert.match(Customs.svg(c),new RegExp(`data-geomayhem-tier="${c.tier}"`));

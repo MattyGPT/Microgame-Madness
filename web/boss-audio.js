@@ -47,6 +47,16 @@ const BossAudio=(()=>{
     [196,16,[0,2,3,8,10,14],[4,12],'brass',[0,-1,6,-3]],
   ];
   profiles.forEach((p,i)=>{const [bpm,steps,kick,snare,lead,harmony]=arrangements[i];Object.assign(p,{bpm,steps,kick,snare,lead,harmony});});
+  const regentMovements=[
+    {name:'The Obsidian Crown',mode:'minor',roots:[38,34,41,33],chord:[0,3,7,10],motif:[0,7,12,15,14,7,10,13]},
+    {name:'Nineteen Broken Worlds',mode:'phrygian',roots:[38,39,34,33],chord:[0,3,7,13],motif:[0,1,7,12,13,7,6,1]},
+    {name:'A Crown of Dawn',mode:'major',roots:[38,45,47,43],chord:[0,4,7,11],motif:[0,4,7,12,16,14,12,7]},
+    {name:'Wings Above the World',mode:'lydian',roots:[43,45,38,45],chord:[0,4,7,14],motif:[12,16,18,19,23,19,18,16]},
+    {name:'The Throne Descends',mode:'minor',roots:[38,37,34,33],chord:[0,3,7,10],motif:[0,12,1,13,7,19,6,18]},
+    {name:'The Unbroken Oath',mode:'dorian',roots:[38,43,45,38],chord:[0,3,7,9],motif:[0,3,7,9,12,15,14,9]},
+    {name:'Beyond Infinity',mode:'major',roots:[38,45,43,38],chord:[0,4,7,12],motif:[12,16,19,24,23,19,16,14]},
+    {name:'The Last Coronation',mode:'suspended',roots:[38,41,43,33],chord:[0,5,7,14],motif:[0,7,12,17,19,14,12,7]},
+  ];
   const hz=n=>440*2**((n-69)/12),TAU=Math.PI*2;
   function random(seed){let n=seed>>>0;return()=>{n=(1664525*n+1013904223)>>>0;return n/4294967296*2-1}}
   function effect(context,level,kind='impact'){
@@ -115,45 +125,59 @@ const BossAudio=(()=>{
       partials.forEach((ratio,i)=>{const o=c.createOscillator();o.type=voice==='pulse'?'square':voice==='blade'?'sawtooth':'sine';o.frequency.setValueAtTime(freq*ratio,at);o.detune.value=(i%2?1:-1)*3;const v=c.createGain();v.gain.value=1/(1+i*2);o.connect(v);v.connect(g);this.sources.add(o);o.onended=()=>{this.sources.delete(o);o.disconnect();v.disconnect();if(!--pending){g.disconnect();stereo.disconnect()}};o.start(at);o.stop(at+duration+.02)});
     }
     sound(level,kind,at=this.context.currentTime,volume=.55){
-      const key=`${level}:${kind}`;if(!this.cache.has(key)){if(this.cache.size>=12)this.cache.delete(this.cache.keys().next().value);this.cache.set(key,['kick','snare','hat','taiko','crash'].includes(kind)?drum(this.context,level,kind):effect(this.context,level,kind));}
+      const key=`${level}:${kind}`;if(!this.cache.has(key)){if(this.cache.size>=12)this.cache.delete(this.cache.keys().next().value);this.cache.set(key,kind.startsWith('death_')&&globalThis.BossDefeat?BossDefeat.soundBuffer(this.context,level,kind.slice(6)):['kick','snare','hat','taiko','crash'].includes(kind)?drum(this.context,level,kind):effect(this.context,level,kind));}
       const s=this.context.createBufferSource(),g=this.context.createGain();s.buffer=this.cache.get(key);g.gain.value=volume;s.connect(g);g.connect(this.bus);this.track(s,g);s.start(at);this.events++;
     }
     regentStep(n,phase,intro,time,at,beatLength){
-      const step=n%16,bar=Math.floor(n/16),section=Math.floor(bar/8)%4;
-      const roots=[[38,37,34,33],[38,44,41,37],[41,38,44,37],[38,37,44,33]];
-      const motifs=[[0,7,12,15,14,7,10,13],[0,1,7,12,13,7,6,1],[12,15,19,18,14,12,10,7],[0,12,1,13,7,19,6,18]];
-      const root=roots[section][bar%4],build=intro?Math.min(1,.45+time/8):1;
-      // Four movements: proclamation, siege, soaring crown theme, and final assault.
-      const kicks=[[0,3,6,8,10,14],[0,2,3,6,8,10,11,14],[0,3,8,11,14],[0,2,4,6,8,10,12,14]][section];
-      if(kicks.includes(step))this.sound(20,'kick',at,.95*build);
-      if(step===4||step===12)this.sound(20,'snare',at,.8*build);
-      this.sound(20,'hat',at,(step%2?.15:.29)*build);
-      if(step%4===0)this.sound(20,'taiko',at,.6*build);
-      if(step===0&&bar%2===0)this.sound(20,'crash',at,.4*build);
-      if(step>=12&&(bar%4===3||phase===3)){
-        this.sound(20,step%2?'taiko':'snare',at,.48*build);
-        if(phase===3)this.sound(20,'kick',at+beatLength*.125,.52*build);
-      }
+      const step=n%16,bar=Math.floor(n/16),section=Math.floor(bar/8)%regentMovements.length,m=regentMovements[section];
+      const root=m.roots[bar%4],build=intro?Math.min(1,.35+time/11):1,bright=['major','lydian'].includes(m.mode),sparse=section===3||section===5;
+      // Eight movements (~78 seconds): minor tension, major release, then a transformed reprise.
+      const kicks=sparse?[0,6,8,14]:section===4?[0,2,3,6,8,10,11,14]:[0,3,6,8,10,14];
+      if(kicks.includes(step))this.sound(20,'kick',at,.76*build);
+      if(step===4||step===12)this.sound(20,'snare',at,.63*build);
+      if(!sparse||step%2===0)this.sound(20,'hat',at,(step%2?.11:.22)*build);
+      if(step%4===0)this.sound(20,'taiko',at,.42*build);
+      if(step===0&&bar%4===0)this.sound(20,'crash',at,.32*build);
+      if(step>=12&&bar%8===7)this.sound(20,step%2?'taiko':'snare',at,.38*build);
       if(step%2===0){
-        this.tone(root+(step%4===2?12:0),at,beatLength*.43,.11*build,'blade');
-        const note=root+24+motifs[section][step/2];
-        this.tone(note,at,beatLength*(section===2?.8:.36),.05*build,section===2?'brass':'pulse',-.25);
-        this.tone(note-12,at,beatLength*.3,.035*build,'strings',.35);
+        this.tone(root+(step%4===2?12:0),at,beatLength*.45,.075*build,'blade',0);
+        const note=root+24+m.motif[step/2];
+        this.tone(note,at,beatLength*(bright?1.05:.48),.042*build,bright?'brass':'pulse',-.22);
+        this.tone(note-12,at+beatLength*.04,beatLength*.65,.025*build,'strings',.3);
       }
-      if(step%4===0)[0,3,7,12].forEach((v,i)=>this.tone(root+12+v,at,beatLength*.7,.025*build,'brass',(i-1.5)*.3));
-      if(step===0||step===8){
-        this.tone(root-12,at,beatLength*1.8,.09*build,'brass');
-        [0,7,12].forEach((v,i)=>this.tone(root+24+v,at,beatLength*1.85,.022*build,'choir',(i-1)*.55));
+      // Sustained background harmony, stereo string ostinato, and answering high bells.
+      if(step===0){
+        m.chord.forEach((v,i)=>{this.tone(root+12+v,at,beatLength*4.1,.019*build,'strings',(i-1.5)*.4);this.tone(root+24+v,at+.04,beatLength*3.8,.012*build,'choir',(1.5-i)*.4);});
+        this.tone(root-12,at,beatLength*3.7,.07*build,'brass');
       }
-      if(phase>=2&&step%2===1)this.tone(root+36+[0,1,7,13][step%4],at,beatLength*.18,.027*build,'pluck',.4);
-      if(step===0&&bar%8===7)this.sound(20,'rise',at,.3);
+      const arp=m.chord[(step+bar)%m.chord.length];
+      this.tone(root+24+arp+(step%4===3?12:0),at,beatLength*.38,.014*build,'pluck',Math.sin(n*.3)*.6);
+      if(step%4===2)this.tone(root+36+m.motif[(7-Math.floor(step/2)+bar)%8],at,beatLength*.85,.014*build,'bell',.45);
+      if(step%4===0)m.chord.slice(0,3).forEach((v,i)=>this.tone(root+12+v,at,beatLength*.7,.016*build,'brass',(i-1)*.25));
+      if(phase>=2&&step%2===1)this.tone(root+36+m.chord[step%4],at,beatLength*.23,.014*build,'pluck',-.45);
+      if(step===0&&bar%8===7)this.sound(20,'rise',at,.22);
     }
-    stop(){for(const s of this.sources){try{s.stop()}catch{}}this.sources.clear();this.wet.gain.cancelScheduledValues(this.context.currentTime);this.wet.gain.setValueAtTime(0,this.context.currentTime);this.session=null;this.nextBeat=0;this.lastCue=-1;this.lastMove=null;}
+    defeat(level,time,now){
+      for(const [cue,kind] of BossDefeat.audioCues(level))if(time>=cue&&this.lastTimeBefore<cue)this.sound(level,'death_'+kind,now,kind==='ray'?.75:kind==='impact'?.65:.46);
+      // A separate score follows the picture, including the minor-to-major final resolution.
+      const beat=Math.floor(time/1.2);
+      if(beat!==this.lastDefeatBeat){
+        this.lastDefeatBeat=beat;
+        const major=level===20?time>=13:time>=5,root=level===20?38:profiles[level-1].root;
+        const chord=level===20&&time>=19&&time<25?[0,1,6,13]:major?[0,4,7,12]:[0,3,7,10];
+        chord.forEach((v,i)=>this.tone(root+12+v,now,1.9,level===20?.022:.014,major?'choir':'strings',(i-1.5)*.4));
+        this.tone(root-12,now,1.5,.045,'brass');
+        if(level===20&&time>=13)chord.forEach((v,i)=>this.tone(root+36+v,now+i*.09,.65,.012,'bell',(i-1.5)*.3));
+      }
+      this.lastTimeBefore=time;
+    }
+    stop(){for(const s of this.sources){try{s.stop()}catch{}}this.sources.clear();this.wet.gain.cancelScheduledValues(this.context.currentTime);this.wet.gain.setValueAtTime(0,this.context.currentTime);this.session=null;this.nextBeat=0;this.lastCue=-1;this.lastMove=null;this.lastDefeatBeat=-1;}
     sync({level,mode='intro',time=0,phase=1,move='',playing=true,speed=1}={}){
       if(!playing||!level||this.context.state!=='running'){if(this.session)this.stop();return;}
       const key=`${level}:${mode}`,p=profiles[level-1],now=this.context.currentTime;
       if(this.session!==key||time<this.lastTime-.15){this.stop();this.session=key;this.lastTimeBefore=time-.01;this.wet.gain.setValueAtTime(0,now);this.wet.gain.linearRampToValueAtTime(.22,now+1.5);this.nextBeat=now;this.beat=0;this.lastCue=Math.floor(time/.5)-1;this.lastMove=move;}
       this.lastTime=time;
+      if(mode==='defeat'&&globalThis.BossDefeat){this.defeat(level,time,now);return;}
       // Schedule only a short window, so pause/skip/mute are immediate.
       const beatLength=60/(p.bpm+(phase-1)*7)/Math.max(.5,Math.min(2,speed));
       if(this.nextBeat<now-.25)this.nextBeat=now;
@@ -187,7 +211,7 @@ const BossAudio=(()=>{
       this.lastTimeBefore=time;
     }
   }
-  return {profiles,effect,drum,Director};
+  return {profiles,effect,drum,Director,regentMovements};
 })();
 if(typeof module!=='undefined')module.exports=BossAudio;
 if(typeof globalThis!=='undefined')globalThis.BossAudio=BossAudio;

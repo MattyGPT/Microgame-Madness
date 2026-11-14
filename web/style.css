@@ -4852,3 +4852,68 @@ body.game-fullscreen-open { overflow: hidden; }
   [class*="atelier-"] { animation:none!important; }
 }
 html.account-reduced-motion [class*="atelier-"] { animation:none!important; }
+
+#galactic-forge { width: min(620px, calc(100vw - 36px)); box-sizing: border-box; padding: 24px; color: #eee7ff; background: #0d1023; border: 2px solid #b69aff; border-radius: 20px; text-align: center; box-shadow: 0 0 70px #9c63ff55; }
+#galactic-forge::backdrop { background: #030511e8; }
+#galactic-forge svg { display: block; width: 100%; max-height: 230px; }
+#galactic-forge p { line-height: 1.5; }
+#forge-hammer { transform-origin: 440px 46px; transform: translateY(45px) rotate(25deg); }
+.forge-track { position: relative; height: 32px; background: #29243e; border: 1px solid #74618d; border-radius: 6px; margin: 24px 0; overflow: hidden; }
+.forge-target { position: absolute; height: 100%; background: #6fffe3; left: 42%; width: 16%; }
+.forge-marker { position: absolute; height: 100%; width: 4px; background: white; box-shadow: 0 0 8px white; left: 0; transform: translateX(-50%); }
+#forge-slam { display: block; width: 100%; min-height: 64px; background: #b69aff; color: #140b28; font-weight: 900; font-size: 22px; touch-action: manipulation; }
+#forge-leave { margin-top: 12px; }
+
+#name-surprise[data-secret="forge"] { inset: auto 16px 24px; max-width: 600px; margin-inline: auto; background: #211b39f5; border: 1px solid #b69aff; border-radius: 16px; font-size: clamp(16px, 3vw, 23px); }
+
+/* Galactic Smith: a synchronized hammer strike, impact ring, and cooling sparks. */
+.smith-orbit { transform-origin: 60px 63px; animation: smith-orbit 24s linear infinite; }
+.smith-hammer { transform-origin: 0 12px; animation: smith-hammer 3.6s cubic-bezier(.4,0,.2,1) infinite; }
+.smith-core { animation: smith-core 3.6s ease-in-out infinite; }
+.smith-star { animation: smith-star 3s ease-in-out infinite; }
+.smith-shock { animation: smith-shock 3.6s ease-out infinite; opacity: 0; }
+.smith-spark { animation: smith-spark 3.6s ease-out infinite; opacity: 0; }
+@keyframes smith-orbit { to { transform: rotate(360deg); } }
+@keyframes smith-hammer {
+  0%, 16%, 100% { transform: translateY(0) rotate(-12deg); }
+  42%, 51% { transform: translateY(-9px) rotate(-38deg); }
+  57% { transform: translateY(40px) rotate(0deg); }
+  62% { transform: translateY(32px) rotate(5deg); }
+  78% { transform: translateY(0) rotate(-12deg); }
+}
+@keyframes smith-core { 0%, 48%, 100% { filter: drop-shadow(0 0 1px #a1baff); } 58% { filter: drop-shadow(0 0 4px #b0ffed); } }
+@keyframes smith-star { 0%, 100% { opacity: .35; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes smith-shock { 0%, 55%, 80%, 100% { opacity: 0; transform: scale(.3); } 57% { opacity: .9; transform: scale(.3); } 76% { opacity: 0; transform: scale(1.8); } }
+@keyframes smith-spark { 0%, 55%, 86%, 100% { opacity: 0; transform: translateY(0); } 58% { opacity: 1; transform: translateY(-3px); } 82% { opacity: 0; transform: translateY(calc(-1 * var(--spark-distance))); } }
+html.account-reduced-motion [class^="smith-"] { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { [class^="smith-"] { animation: none !important; } }
+
+#galactic-forge { width:min(700px,calc(100vw - 24px)); padding:24px 28px; background:linear-gradient(150deg,#20203b,#0b1022 60%); border-color:#9694ca; box-shadow:0 0 90px #8e6bff30,inset 0 1px #e5ddff20; max-height:calc(100dvh - 24px); overflow-y:auto; }
+.forge-eyebrow { color:#a9b8df; font-size:10px; letter-spacing:2.5px; }
+#galactic-forge h2 { margin:10px 0; font-size:clamp(25px,4vw,36px); letter-spacing:-1px; }
+#galactic-forge .forge-instructions { color:#b9c3dc; font-size:13px; line-height:1.7; margin:0 0 18px; }
+#galactic-forge kbd { font:inherit; color:#ebf4ff; padding:1px 4px; border:1px solid #626781; border-radius:4px; }
+.forge-scene { position:relative; border:1px solid #747dae55; border-radius:18px; overflow:hidden; box-shadow:inset 0 0 30px #0008; }
+#galactic-forge svg { max-height:280px; }
+.forge-scene-caption { display:flex; justify-content:space-between; padding:10px 14px; color:#c0caf1; background:#090f20; font-size:9px; letter-spacing:1.5px; border-top:1px solid #a7a6ed25; }
+.forge-rounds { display:flex; gap:6px; margin:18px 0 10px; }
+.forge-rounds span { flex:1; padding:7px 0; font-size:10px; color:#72809e; background:#10172c; border:1px solid #49516f; border-radius:5px; }
+.forge-rounds .forged { color:#d1fff1; border-color:#8cebd4; background:linear-gradient(#3b706b,#203841); box-shadow:0 0 12px #91ffe925; }
+#galactic-forge #forge-progress { margin:10px 0; color:#e1dcff; font-size:13px; }
+.forge-track { height:38px; margin:10px 0 8px; border-color:#6d7798; background:repeating-linear-gradient(90deg,transparent 0 9.8%,#8a9bca20 9.8% 10%),linear-gradient(#0b1021,#1e2940); box-shadow:inset 0 2px 12px #0009; }
+.forge-target { background:linear-gradient(#c6fff0,#5de4d0); box-shadow:0 0 18px #65ffdf88; border-inline:1px solid #e6fff7; box-sizing:border-box; }
+.forge-marker { width:3px; box-shadow:0 0 9px #fff,0 0 20px #d1d5ff; }
+.forge-track-labels { display:flex; justify-content:space-between; gap:10px; color:#8fa9c5; font-size:9px; letter-spacing:1px; margin-bottom:18px; }
+#forge-pass { color:#b6f6e6; text-align:right; }
+#forge-slam { border:1px solid #ded6ff; border-radius:10px; background:linear-gradient(125deg,#bfa8ff,#9dc6ee); box-shadow:0 4px 0 #4f4879,0 0 25px #8d91ed25; letter-spacing:2px; min-height:54px; font-size:18px; }
+#forge-slam:active { transform:translateY(2px); box-shadow:0 1px 0 #4f4879; }
+.forge-footer { display:flex; justify-content:space-between; margin-top:14px; }
+#forge-leave { margin-top:0; }
+.forge-star { animation:forge-twinkle 3s ease-in-out infinite alternate; }
+.forge-fragment { animation:forge-drift 5s ease-in-out infinite alternate; }
+#forge-impact { transform-origin:300px 177px; }
+@keyframes forge-twinkle { to { opacity:.25; } }
+@keyframes forge-drift { to { translate:0 -7px; } }
+@media(max-width:480px) { #galactic-forge { padding:18px 14px; } .forge-rounds { gap:3px; } .forge-scene-caption { letter-spacing:.5px; font-size:8px; } }
+@media(prefers-reduced-motion:reduce) { #galactic-forge * { animation:none!important; } }
+html.account-reduced-motion #galactic-forge * { animation:none!important; }

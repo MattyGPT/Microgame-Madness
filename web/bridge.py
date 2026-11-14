@@ -144,6 +144,9 @@ class BrowserGame:
         elif self.mode == "geomayhem":
             if action == "boss_intro_skip":
                 self.game.boss_intro_left = 0
+            elif action == "boss_defeat_skip":
+                if self.game.finish_boss_defeat():
+                    self.paused = False
             elif action == "upgrade" and not self.paused:
                 self.game.choose(request.get("choice"))
             elif action == "reroll" and not self.paused:
@@ -156,6 +159,10 @@ class BrowserGame:
                         and all(isinstance(v, (int, float)) and abs(v) <= 2000 for v in aim)):
                     aim = None
                 self.game.update(float(request.get("dt", 0)), set(request.get("keys", [])), aim)
+                # Campaign checkpoint retries remain the same run: no defeat rewards
+                # or fresh expedition, and Theater retains its manual retry controls.
+                if self.game.retry_boss():
+                    self.geomayhem_background_pending = True
         elif action == "guess" and self.mode == "hangman":
             result = self.game.guess(request["key"])
             self.message = {"correct": "Nice guess!", "wrong": "Not this time.",

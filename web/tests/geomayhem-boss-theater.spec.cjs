@@ -84,7 +84,7 @@ test('boss audio renders twenty finite stereo effects and stops on pause and mut
 });
 
 test('theater uses real arena commands and animated shared boss scenery',async({page},info)=>{
-  await page.route('**/boss-showcase.js',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('arenaBackground=state.background||[];', 'arenaBackground=state.background||[];window.theaterBackground=arenaBackground;')});});
+  await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('arenaBackground=state.background||[];', 'arenaBackground=state.background||[];window.theaterBackground=arenaBackground;')});});
   await page.goto('/boss-showcase.html');
   await expect(page.locator('body')).toHaveAttribute('data-ready','true',{timeout:30000});
   for(const index of [0,9,19]){
@@ -102,4 +102,45 @@ test('theater uses real arena commands and animated shared boss scenery',async({
   expect(results).toEqual({unique:20,animated:true,still:true});
   await page.locator('#pause').click();
   await page.locator('#theater').screenshot({path:info.outputPath('real-boss-arena.png')});
+});
+
+test('theater loadout fights move, shoot, take damage, finish and retry',async({page},info)=>{
+  await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('buildLoadout();choose(level);','window.theaterRuntime=runtime;buildLoadout();choose(level);')})});
+  await page.goto('/boss-showcase.html');
+  await expect(page.locator('body')).toHaveAttribute('data-ready','true',{timeout:30000});
+  await page.selectOption('#weapon-0','geomutilator');
+  await page.selectOption('#weapon-1','drone_a');
+  await page.selectOption('#stars-1','3');
+  await page.selectOption('#upgrades-heart','5');
+  await page.selectOption('#upgrades-boots','2');
+  await page.selectOption('#workshop-power','3');
+  await page.locator('#relics input[value="winter"]').check();
+  await page.click('#fight');
+  const read=code=>page.evaluate(code=>window.theaterRuntime.runPython(code),code);
+  expect(await read("str(preview.loadout)")).toBe("{'geomutilator': 5, 'drone_a': 3}");
+  expect(await read('preview.max_lives')).toBe(200);
+  expect(await read('preview.speed')).toBe(207);
+  expect(await read('preview.damage_multiplier')).toBe(1.15);
+  const bossHP=await read('preview.enemies[0].hp');
+  await page.keyboard.down('d');await page.keyboard.down('f');await page.waitForTimeout(300);await page.keyboard.up('d');await page.keyboard.up('f');
+  expect(await read('preview.x')).toBeGreaterThan(0);
+  expect(await read('preview.shots_fired')).toBeGreaterThan(0);
+  await expect.poll(()=>read('preview.enemies[0].hp')).toBeLessThan(bossHP);
+  await page.locator('#theater').screenshot({path:info.outputPath('playable-fight.png')});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await read('preview.invulnerable=0\npreview.forge_shield=0\npreview._damage(25)');
+  await expect(page.locator('#player-health')).toContainText('175');
+  await read('preview.enemies.clear()');
+  await expect(page.locator('#defeat-skip')).toBeVisible();
+  await page.locator('#defeat-skip').click();
+  await expect(page.locator('#status')).toContainText('Victory!');
+  await expect(page.locator('#boss-health')).toHaveAttribute('value','0');
+  await page.click('#fight');
+  expect(await read('preview.won')).toBe(false);
+  await read('preview.invulnerable=0\npreview._damage(10000)');
+  await expect(page.locator('#status')).toContainText('Defeated');
+  await page.click('#fight');
+  expect(await read('preview.alive')).toBe(true);
+  await page.selectOption('#weapon-1','geomutilator');await page.click('#fight');
+  await expect(page.locator('#loadout-error')).toContainText('unique weapons');
 });

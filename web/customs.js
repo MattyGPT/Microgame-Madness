@@ -122,6 +122,7 @@ const CubieCustoms = (() => {
   ];
   for (const [id, name, achievement, color, flavor, detail] of chaosCubies)
     add(id, name, achievement, color, detail, square, { flavor });
+  add("galactic_smith", "Galactic Smith Cubie", "galactic_forge", "#b69aff", `<path d="M24 30L34 9 60 19 86 9 96 30Z" fill="#d6c8ff"/><path d="M28 83h64v25H28Z" fill="#302350"/><path d="M78 50l22-22M86 19l20 20 9-9-20-20Z" stroke="#90f9ff" stroke-width="6" fill="#b69aff"/><path d="M37 91h46l-9 8H46Z" fill="#90f9ff"/>`, square, {flavor: "Ten perfect strikes. A galaxy forged into steel."});
   for (const [id,name,achievement,color,flavor] of geomayhemCustoms)
     add(id,name,achievement,color,`<path d="M24 34h72" stroke="${color}"/>`,square,{flavor});
   add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
@@ -972,6 +973,46 @@ const CubieCustoms = (() => {
     return {back:defs+back, detail:`<g data-geomayhem-tier="${item.tier}">${shell}<path d="M26 47v-8q0-5 6-5h43" fill="none" stroke="#fff" stroke-width="${rank>=3?1.5:1}" opacity=".6"/>${polish}${detail}${sparkles}</g>`, sideOffset:rank>=3?9:11, shadowOffset:rank>=3?15:20, sideColor:sideColor(item.color),shadowColor:'#27323e'};
   }
   function animatedArt(item, uid) {
+    if (item.id === 'galactic_smith') {
+      const id = name => `smith-${uid}-${name}`;
+      const paint = name => `url(#${id(name)})`;
+      const rainbow = ['#ff8dce','#ffa970','#fff39d','#8bffd3','#81dcff','#bca0ff','#ff8dce'];
+      const defs = `<defs>
+        <linearGradient id="${id('spectrum')}" x1="0" y1="0" x2="1" y2="1">${rainbow.map((c,i)=>`<stop offset="${i/6}" stop-color="${c}"/>`).join('')}</linearGradient>
+        <linearGradient id="${id('steel')}" x2=".8" y2="1"><stop stop-color="#e2eaff"/><stop offset=".24" stop-color="#9a90d1"/><stop offset=".49" stop-color="#363052"/><stop offset=".7" stop-color="#747ca9"/><stop offset="1" stop-color="#201e3d"/></linearGradient>
+        <linearGradient id="${id('shell')}" x2=".7" y2="1"><stop stop-color="#dfdbff"/><stop offset=".46" stop-color="#a4a1dc"/><stop offset="1" stop-color="#5c609a"/></linearGradient>
+        <radialGradient id="${id('nebula')}"><stop stop-color="#ba8eff" stop-opacity=".45"/><stop offset=".6" stop-color="#7245be" stop-opacity=".16"/><stop offset="1" stop-color="#7245be" stop-opacity="0"/></radialGradient>
+      </defs>`;
+      return {sideColor:'#4a416e',shadowColor:'#19152e',faceColor:'#25223e',
+        back: defs + `<ellipse cx="60" cy="63" rx="74" ry="73" fill="${paint('nebula')}"/>
+          <g class="smith-orbit"><ellipse cx="60" cy="63" rx="64" ry="51" fill="none" stroke="${paint('spectrum')}" stroke-width=".65" stroke-dasharray="24 5 2 5" opacity=".65"/>
+          <path d="M-4 63l3-5 3 5-3 5ZM121 63l3-5 3 5-3 5Z" fill="#d9fdff"/></g>
+          <ellipse cx="60" cy="64" rx="60" ry="47" transform="rotate(-32 60 64)" fill="none" stroke="#aca8ff" stroke-width=".6" opacity=".45"/>
+          ${Array.from({length:12},(_,i)=>{const a=i*Math.PI/6,x=60+Math.cos(a)*65,y=63+Math.sin(a)*59;return `<g transform="translate(${x} ${y})"><path class="smith-star" style="animation-delay:${-i*.37}s" d="M0-2.8 .7-.7 2.8 0 .7 .7 0 2.8-.7 .7-2.8 0-.7-.7Z" fill="${rainbow[i%6]}"/></g>`;}).join('')}`,
+        detail: `<g fill="${paint('shell')}">${item.body}</g>
+          <path d="M23 47V40q0-9 10-9h53M25 79v15q0 10 10 10h45" fill="none" stroke="#f3ecff" stroke-width="1" opacity=".7"/>
+          <path d="M23 39 29 24 42 28 60 14 78 28 91 24 97 39 85 46 72 36H48L35 46Z" fill="${paint('steel')}" stroke="#c4ccff" stroke-width="1.2"/>
+          <path d="M29 34 42 36 60 22 78 36 91 34" fill="none" stroke="${paint('spectrum')}" stroke-width="2.6"/>
+          <path class="smith-core" d="M60 15 67 24 60 33 53 24Z" fill="${paint('spectrum')}" stroke="#f5f4ff" stroke-width=".9"/>
+          <path d="M20 45 28 42 32 55 25 62 18 56ZM100 45 92 42 88 55 95 62 102 56Z" fill="${paint('steel')}" stroke="#c3c2ed" stroke-width="1"/>
+          <path d="M25 83 38 79 49 85H71L82 79 95 83 92 104 79 110H41L28 104Z" fill="${paint('steel')}" stroke="#b0b8e9" stroke-width="1.2"/>
+          <path d="M30 88 42 85 50 91H70L78 85 90 88M31 101l12 4h34l12-4" fill="none" stroke="${paint('spectrum')}" stroke-width="1.7"/>
+          <circle class="smith-core" cx="60" cy="97" r="7" fill="#211e3c" stroke="${paint('spectrum')}" stroke-width="1.8"/>
+          <path d="M56 94h8l-2 3v3h-4v-3Z" fill="#cbfbff"/>
+          <path d="M35 89v8m5-7v9m40-9v9m5-10v8" stroke="#d4dcff" stroke-width=".7" opacity=".7"/>
+          <g transform="translate(110 54)"><g class="smith-hammer">
+            <path d="M0-14V14" stroke="#201c33" stroke-width="6"/><path d="M0-14V14" stroke="${paint('steel')}" stroke-width="4"/>
+            <path d="M-2 0h4m-4 4h4m-4 4h4" stroke="#ffdb98" stroke-width="1"/>
+            <path d="M-15-30 10-30 16-24 16-13-10-13-15-19Z" fill="${paint('steel')}" stroke="#d3edff" stroke-width="1.2"/>
+            <path d="M-15-30-10-24H16M-10-24v11" fill="none" stroke="#f4eaff" stroke-width=".8"/>
+            <path d="M-6-21h15" stroke="${paint('spectrum')}" stroke-width="3"/><path d="M1-25 4-21 1-17-2-21Z" fill="#edffff"/>
+          </g></g>
+          <path d="M96 82h31l-6 7h-8v8l7 4H99l7-4v-8h-5Z" fill="${paint('steel')}" stroke="#bddeff" stroke-width="1"/>
+          <path d="M97 82h29" stroke="${paint('spectrum')}" stroke-width="2"/>
+          <g transform="translate(111 81)"><ellipse class="smith-shock" rx="15" ry="5" fill="none" stroke="#b5ffef" stroke-width="1.4"/>
+          ${Array.from({length:7},(_,i)=>`<g transform="rotate(${i*27-81})"><path class="smith-spark" style="--spark-distance:${14+i%3*5}px" d="M0-2V-5" stroke="${rainbow[i]}" stroke-width="1.3" stroke-linecap="round"/></g>`).join('')}</g>`};
+    }
+
     if (item.expansion) return expansion.art(item, uid);
     if (item.id === 'shop_boba') return {
       sideColor:'#997159',faceColor:'#573e4b',

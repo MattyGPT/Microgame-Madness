@@ -105,6 +105,7 @@ const Achievements = (() => {
     { secret: true, wingdings: true });
   // New achievements for the secret boss, practice game, and highest-tier challenges.
   add("santa_song", "A Very Cubie Christmas", "gold", "Arcade", "Listen to Snowfall at the Arcade to unlock Santa Cubie.", "christmasHeard");
+  add("galactic_forge", "Geometry Has Met Its Match", "rainbow", "Geomayhem", "Land ten consecutive Galactic Forge slams. Unlocks Geomutilator and Galactic Smith Cubie.", "galacticForge", 1, { secret: true });
   add("name_gravitron", "Access Granted", "bronze", "Singularity Core", "Unlock Singularity Core with GRAVITRON.", "name_gravitron");
   add("play_singularity", "Into the Event Horizon", "silver", "Singularity Core", "Start a Singularity Core fight.", "play_singularity");
   for (const [index, [title, tier, protocol]] of [
@@ -402,6 +403,9 @@ const Achievements = (() => {
       if (!audible || track !== "gaster_remix" || custom !== "gaster"
         || !this.data.unlocked.waste_of_time) return { earned: [], changed: false };
       return this.update(stats => { stats.gasterRemixHeard = 1; });
+    }
+    completeForge() {
+      return this.update(stats => { stats.galacticForge = 1; });
     }
     completeGaster() {
       return this.update(stats => { stats.gasterCompleted = 1; });

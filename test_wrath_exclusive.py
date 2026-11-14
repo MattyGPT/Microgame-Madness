@@ -44,6 +44,10 @@ class ExclusiveWrathTests(unittest.TestCase):
                 ('easy', 1.4, 2.8, 10), ('normal', 1.05, 2.4, 12),
                 ('hard', .8, 2, 14)):
             with self.subTest(variant=variant):
+                rate = 1.3 if variant == "hard" else 1
+                warning /= rate
+                interval /= rate
+                duration /= rate
                 p = WrathPattern('crown_chess', variant, random.Random(4))
                 self.assertAlmostEqual(p.warning, warning / 1.5)
                 self.assertAlmostEqual(p.interval, interval / 1.5)
@@ -53,7 +57,7 @@ class ExclusiveWrathTests(unittest.TestCase):
                 self.assertFalse(any(h.active for h in p.hazards))
                 p.update(.02, 0, -150)
                 self.assertTrue(all(h.active for h in p.hazards))
-                p.update(.65 / 1.5, 0, -150)
+                p.update(.65 / 1.5 / rate, 0, -150)
                 self.assertFalse(p.hazards)
                 p.update(p.interval + .01 - p.age, 0, -150)
                 self.assertTrue(p.hazards)
@@ -192,7 +196,7 @@ class ExclusiveWrathTests(unittest.TestCase):
         self.assertEqual(p.interval, .75)
         self.assertAlmostEqual(p.duration, 14 / 1.25)
         p.update(.1, 0, -180)
-        self.assertEqual([h.coords[0] for h in p.hazards], [-189, 189, -90])
+        self.assertEqual([h.coords[0] for h in p.hazards], [-174, 174, -90])
         p.update(p.interval - .01 - p.age, 0, -180)
         self.assertEqual(p.serial, 1)
         p.update(.02, 0, -180)
@@ -231,9 +235,51 @@ class ExclusiveWrathTests(unittest.TestCase):
         p.collide(game)
         self.assertEqual(game.counter_hits,1)
         self.assertEqual(game.damage_taken,0)
-        self.assertFalse(any(h.token==ring.token for h in p.hazards))
+        self.assertNotIn(ring.token, p.countered)
+        self.assertTrue(any(h.token == ring.token and h.echo == 1 for h in p.hazards))
         p.collide(game)
         self.assertEqual(game.counter_hits,1)
+        p.update(.4, game.x, game.y)
+        self.assertTrue(any(h.token == 1 for h in p.hazards))
+        echo = next(h for h in p.hazards if h.token == ring.token and h.echo == 1)
+        game.x, game.y = echo.coords[0]+echo.coords[2], echo.coords[1]
+        game.counter_time = .1
+        p.collide(game)
+        self.assertEqual(game.counter_hits,2)
+        self.assertIn(ring.token, p.countered)
+        self.assertFalse(any(h.token == ring.token for h in p.hazards))
+
+    def test_black_sun_has_ten_moving_bullets_and_other_variants_do_not(self):
+        for variant in ('easy', 'normal', 'hard'):
+            p = WrathPattern('eclipse_waltz', variant, random.Random(4))
+            previous = None
+            for _ in range(20):
+                p.update(.5, 0, -150)
+                bullets = [h for h in p.hazards if h.shape == 'disc']
+                self.assertEqual(len(bullets), 10 if variant == 'hard' else 0)
+                if p.age > 2 and bullets:
+                    positions = [h.coords for h in bullets]
+                    if previous is not None:
+                        self.assertNotEqual(positions, previous)
+                    previous = positions
+                    for h in bullets:
+                        self.assertTrue(h.hits(*h.coords[:2]))
+                        self.assertLessEqual(abs(h.coords[0]), 290)
+                        self.assertTrue(-230 <= h.coords[1] <= 35)
+
+    def test_unfinished_cathedral_bells_persist_and_overlap(self):
+        p = WrathPattern('resonant_bells', 'hard', random.Random(4))
+        p.update(7, 0, -150)
+        self.assertTrue(any(h.token == 0 for h in p.hazards))
+        self.assertGreater(len({h.token for h in p.hazards}), 2)
+
+    def test_royal_loom_lowers_king_and_next_attack_restores_him(self):
+        for suffix in ('__easy', '', '__hard'):
+            g = KingsWrath('royal_loom' + suffix, random.Random(4))
+            self.assertEqual(g.boss_y, 50)
+            self.assertEqual(g.body_rectangle[1], 50)
+            g.begin_attack(WRATH_ATTACKS['crown_chess'])
+            self.assertEqual(g.boss_y, 130)
 
     def test_mirror_wall_speeds_and_damage_by_variant(self):
         for suffix, speed, damage in (('__easy', 170, 1), ('', 200 * 1.15, 1),

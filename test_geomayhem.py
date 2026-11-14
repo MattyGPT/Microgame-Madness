@@ -14,6 +14,18 @@ def enemy(x=80, y=0, hp=1000, identity=1):
 
 
 class GeomayhemTests(unittest.TestCase):
+    def test_later_weapons_hit_targets_at_extended_range(self):
+        for weapon, distance in [('bomb', 280), ('blade_bot', 280), ('heart', 220)]:
+            with self.subTest(weapon=weapon):
+                game = Geomayhem(1, weapon, random.Random(42))
+                game.stars = 5
+                target = enemy(x=distance)
+                game.enemies = [target]
+                game.fire()
+                for _ in range(50):
+                    game._update_shots(.025)
+                self.assertLess(target.hp, target.max_hp)
+
     def game(self, level=1, weapon="needle"):
         game = Geomayhem(level, weapon, random.Random(42))
         game.break_left = 100
@@ -231,10 +243,10 @@ class GeomayhemTests(unittest.TestCase):
         game.update(.05, {"f"}, (200, 0))
         self.assertEqual(game.shots_fired, 1)
 
-    def test_44_weapons_all_damage_enemies_at_each_evolution_and_change_art(self):
-        self.assertEqual(len(ARMORY), 44)
+    def test_45_weapons_all_damage_enemies_at_each_evolution_and_change_art(self):
+        self.assertEqual(len(ARMORY), 45)
         signatures = {(w.kind, w.trait, w.third, w.fifth) for w in WEAPONS}
-        self.assertEqual(len(signatures), 44)
+        self.assertEqual(len(signatures), 45)
         for weapon in WEAPONS:
             art = []
             self.assertEqual(len({weapon.trait, weapon.third, weapon.fifth}), 3)

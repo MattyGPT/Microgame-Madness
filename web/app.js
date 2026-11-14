@@ -5,6 +5,8 @@ const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
 const jukeboxCard = jukeboxNote?.closest('.game-card');
 const guideCard = document.querySelector('[data-game="guide"]');
 const modes = {
+  nanolab: {title:"Nano Lab", category:"14 / TEMPORARY TEST ROOM", art:"⚗", heading:"Try every pocket challenge.", copy:"All 60 nanogames, no campaign rewards.", accent:"#cfadff", controls:"Choose a nanogame to test · No currency or campaign changes", localOnly:true, temporary:true, difficulties:{}},
+  coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "20 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
   guide: {
     title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
     heading: "Know what is falling.", copy: "Meet the blocks in Turtle Dodge Chaos.",
@@ -288,7 +290,7 @@ const wrathExclusive = {
     ],
     "descriptions": [
       "A large moonlit circle traces a small, slow orbit.",
-      "A smaller pulsing circle moves on a wider, faster orbit; stay fully inside the moonlight."
+      "Stay inside a smaller pulsing circle while dodging ten small bullets flying in random directions."
     ],
     "palette": [
       "#d4ddff",
@@ -306,7 +308,7 @@ const wrathExclusive = {
     ],
     "descriptions": [
       "One central bell sends slow single sound rings; E can silence a ring on contact.",
-      "Three bells alternate faster paired echoes; a well-timed E silences both echoes from that bell."
+      "Counter both ring waves separately to silence each bell. Unfinished bells keep ringing while new bells spawn."
     ],
     "palette": [
       "#ffe6ad",
@@ -451,6 +453,8 @@ function geomayhemStore() {
   }
   return geomayhemStores.get(owner);
 }
+function geomutilatorUnlocked() { return !!achievementTracker.data.unlocked.galactic_forge; }
+function starterAllowed(weapon, index, progress) { return weapon.id === "geomutilator" ? geomutilatorUnlocked() : GeomayhemProgress.starterRequirement(index) <= progress.cleared; }
 function renderGeomayhemHub() {
   const store = geomayhemStore(), progress = store.read();
   $("geomayhem-campaign").textContent = `${progress.cleared}/${GeomayhemProgress.arenaCount} arenas cleared · ${progress.shards} shards · ${progress.runs} expeditions. `
@@ -460,11 +464,11 @@ function renderGeomayhemHub() {
     const required = GeomayhemProgress.starterRequirement(index);
     const option = document.createElement("option");
     option.value = weapon.id;
-    option.disabled = required > progress.cleared;
-    option.textContent = `${weapon.name} · ${option.disabled ? `Clear arena ${required} to start with this` : weapon.automatic ? "Auto companion" : weapon.kind}`;
+    option.disabled = !starterAllowed(weapon, index, progress);
+    option.textContent = `${weapon.name} · ${option.disabled ? weapon.id === "geomutilator" ? "Secret · Complete the Galactic Forge" : `Clear arena ${required} to start with this` : weapon.automatic ? "Auto companion" : weapon.kind}`;
     return option;
   }));
-  if (geomayhemArmory.some((w, i) => w.id === selectedWeapon && GeomayhemProgress.starterRequirement(i) <= progress.cleared))
+  if (geomayhemArmory.some((w, i) => w.id === selectedWeapon && starterAllowed(w, i, progress)))
     $("geomayhem-weapon").value = selectedWeapon;
   renderGeomayhemWeapon();
   $("geomayhem-workshop").replaceChildren(...Object.entries(GeomayhemProgress.upgrades).map(([key, upgrade]) => {
@@ -502,7 +506,7 @@ function renderGeomayhemWeapon() {
   $("geomayhem-weapon-description").textContent = weapon.description;
   $("geomayhem-evolution-three").textContent = `★★★ ${weapon.third}`;
   $("geomayhem-evolution-five").textContent = `★★★★★ ${weapon.fifth}`;
-  const shapes = { bolt: "▲", fan: "◆", ring: "✳", beam: "▰", orbit: "✹", mine: "⬟", boomerang: "❯", nova: "◎", drone: "✣" };
+  const shapes = { saw: "✹", bolt: "▲", fan: "◆", ring: "✳", beam: "▰", orbit: "✹", mine: "⬟", boomerang: "❯", nova: "◎", drone: "✣" };
   $("geomayhem-weapon-preview").replaceChildren(...[1, 3, 5].map(stars => {
     const form = document.createElement("span");
     form.className = `geomayhem-weapon-icon tier-${stars}`;
@@ -516,16 +520,20 @@ function renderGeomayhemWeapon() {
 }
 $("geomayhem-weapon").addEventListener("change", renderGeomayhemWeapon);
 let bossCinemaWasOpen=false;
-$("boss-cinema-skip").onclick=()=>{if(selected!=="geomayhem"||!snapshot?.boss_intro)return;clearKeys();snapshot=send("boss_intro_skip");render();$("arena").focus({preventScroll:true});};
+$("boss-cinema-skip").onclick=()=>{if(selected!=="geomayhem"||!(snapshot?.boss_intro||snapshot?.boss_defeat))return;clearKeys();snapshot=send(snapshot.boss_defeat?"boss_defeat_skip":"boss_intro_skip");render();$("arena").focus({preventScroll:true});};
 function renderGeomayhem(s) {
-  const intro=!!s.boss_intro;
+  const defeat=s.boss_defeat;
+  const intro=!!(s.boss_intro||defeat);
   $("boss-cinema").hidden=!intro;
   if(intro) {
     if(!bossCinemaWasOpen){clearKeys();$("boss-cinema-skip").focus({preventScroll:true});}
-    $("boss-cinema-label").textContent=`${s.boss.name} · Introduction · Combat paused`;
+    $("boss-cinema-label").textContent=`${s.arena.boss} · ${defeat?"Defeated":"Introduction"} · Combat paused`;
+    $("boss-cinema").setAttribute("aria-label",defeat?"Boss defeat cinematic":"Boss introduction");
+    $("boss-cinema-skip").textContent=defeat?"Continue →":"Skip introduction →";
     const cinemaContext=$("boss-cinema-canvas").getContext("2d");
-    GeomayhemBosses.cinematic(cinemaContext,s.level,s.boss_intro.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
-    if(s.boss_intro.time>10.8) {
+    if(defeat)BossDefeat.draw(cinemaContext,s.level,defeat.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
+    else GeomayhemBosses.cinematic(cinemaContext,s.level,s.boss_intro.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
+    if(s.boss_intro?.time>10.8) {
       cinemaContext.save();cinemaContext.translate(115,425);cinemaContext.scale(1.8,1.8);
       drawGeomayhemCubie(cinemaContext,{coords:[0,0],face:[1,0],time:0});
       cinemaContext.restore();
@@ -898,8 +906,8 @@ function syncSingularityCard() {
   const unlocked = !!saved.unlocks.singularity;
   document.querySelector('[data-game="singularity"]').hidden = !unlocked;
   $("singularity-rift").hidden = unlocked;
-  $("game-count").textContent = unlocked ? "12" : "11";
-  $("game-total").textContent = `${unlocked ? 8 : 7} GAMES + JUKEBOX + CLOSET + SHOP + GUIDE / ENDLESS REMATCHES`;
+  $("game-count").textContent = unlocked ? "14" : "13";
+  $("game-total").textContent = `${unlocked ? 9 : 8} GAMES + JUKEBOX + CLOSET + SHOP + GUIDE + NANO LAB / ENDLESS REMATCHES`;
 }
 function unlockSingularity(navigate = true) {
   saved.unlocks.singularity = true;
@@ -1388,6 +1396,8 @@ const shopArtVisibility = new IntersectionObserver(entries => {
   for (const entry of entries) entry.target.classList.toggle("shop-art-paused", !entry.isIntersecting);
 }, { rootMargin: "120px" });
 function renderShop() {
+  const shopCustoms = CubieCustoms.catalog.filter(item => item.price);
+  $("shop-customs-tab").textContent = `Cubie Customs · ${shopCustoms.length}`;
   shopArtVisibility.disconnect();
   setShopCategory(shopCategory);
   renderTrails();
@@ -1400,7 +1410,7 @@ function renderShop() {
       .map(([difficulty, bonus]) => `${modes[mode].difficulties[difficulty][0]} ×${bonus}`).join(" · ");
     return p;
   }));
-  $("shop-grid").replaceChildren(...CubieCustoms.catalog.filter(item => item.price).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
+  $("shop-grid").replaceChildren(...shopCustoms.sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
     const owned = saved.shop.owned.includes(item.id);
     const wearing = saved.cubieCustom === item.id;
     const card = document.createElement("article");
@@ -1477,7 +1487,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "coindrop" ? "Coin Drop saves its campaign and upgrades in this browser for your arcade profile. Collect Cubie Dots, rare Ruby Shards, and minicoin scrap." : selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1906,7 +1916,7 @@ function decorateDodgeDifficulty(button, difficulty) {
 function selectGame(mode) {
   $("boss-cinema").hidden=true;bossCinemaWasOpen=false;
   coreAftermath = false;
-  if (loadFailed && !["customs", "shop"].includes(mode)) return;
+  if (loadFailed && !["customs", "shop", "coindrop", "nanolab"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   if (active && selected === "geomayhem") saveRound();
   accountApp?.finish(snapshot, active && selected === "keyboard" ? "exit" : "interrupted");
@@ -1924,6 +1934,9 @@ function selectGame(mode) {
   $("jukebox-controls").hidden = mode !== "jukebox";
   $("customs-room").hidden = mode !== "customs";
   $("shop-room").hidden = mode !== "shop";
+  $("coin-drop-room").hidden = !["coindrop", "nanolab"].includes(mode);
+  coinDropGame.setLabMode(mode === "nanolab");
+  coinDropGame.setVisible(["coindrop", "nanolab"].includes(mode));
   $("block-guide-room").hidden = mode !== "guide";
   $("geomayhem-loadout").hidden = mode !== "geomayhem";
   $("geomayhem-hud").hidden = true;
@@ -1982,7 +1995,7 @@ function selectGame(mode) {
     "exit",
     "touch-controls",
   ].forEach((id) => ($(id).hidden = true));
-  $("welcome").hidden = ["customs", "shop", "guide"].includes(mode);
+  $("welcome").hidden = ["customs", "shop", "guide", "coindrop", "nanolab"].includes(mode);
   if (mode === "shop") renderShop();
   if (mode === "customs") renderCustoms();
   setTextIfChanged("metric", "—");
@@ -2022,8 +2035,8 @@ function startGame(difficulty) {
     const store = geomayhemStore(), progress = store.read();
     const index = geomayhemArmory.findIndex(w => w.id === $("geomayhem-weapon").value);
     if (!GeomayhemProgress.unlocked(progress, Number(difficulty.split("_")[1]))
-        || index < 0 || GeomayhemProgress.starterRequirement(index) > progress.cleared) return;
-    campaign = { cleared: progress.cleared, unlocked_level: Math.min(GeomayhemProgress.arenaCount, progress.cleared + 1), workshop: progress.workshop };
+        || index < 0 || !starterAllowed(geomayhemArmory[index], index, progress)) return;
+    campaign = { geomutilator: geomutilatorUnlocked(), cleared: progress.cleared, unlocked_level: Math.min(GeomayhemProgress.arenaCount, progress.cleared + 1), workshop: progress.workshop };
     geomayhemRun = { id: crypto.randomUUID(), store };
     geomayhemResult = null;
   }
@@ -2416,6 +2429,23 @@ function drawGeomayhemCubie(context, command) {
     aura.addColorStop(0,'transparent');aura.addColorStop(.7,accent+'20');aura.addColorStop(1,'transparent');
     context.fillStyle=aura;context.fillRect(x-22,y-22,44,44);
   }
+  if(item.id === 'galactic_smith') {
+    const colors=['#ffaddc','#ffe0a0','#a1ffe1','#a1dbff','#c4afff'];
+    for(let i=0;i<5;i++) {
+      const angle=time*.8+i*Math.PI*2/5;
+      const px=x+Math.cos(angle)*21,py=y+Math.sin(angle)*18;
+      context.strokeStyle=colors[i];context.lineWidth=1;
+      context.beginPath();context.arc(x,y,21,angle,angle+.35);context.stroke();
+      context.fillStyle=colors[i];context.beginPath();context.arc(px,py,reduced?1:1+.3*Math.sin(time*3+i),0,Math.PI*2);context.fill();
+    }
+    const pulse=(time%3.6)/3.6;
+    if(!reduced && pulse>.57 && pulse<.8) {
+      context.globalAlpha=(.8-pulse)*2;
+      context.strokeStyle='#b5ffef';context.lineWidth=.8;
+      context.beginPath();context.ellipse(x+17,y+5,3+(pulse-.57)*32,2+(pulse-.57)*12,0,0,Math.PI*2);context.stroke();
+      context.globalAlpha=command.opacity??1;
+    }
+  }
   context.imageSmoothingEnabled=true;
   context.imageSmoothingQuality='high';
   if(sprite.complete&&sprite.naturalWidth) context.drawImage(sprite,x-22,y-22,44,44);
@@ -2485,13 +2515,13 @@ function drawGeomayhemCommand(context, command) {
   }
   if (command.kind === "geomayhem_weapon") {
     const {stars,angle,size,fill:color,weapon_kind:kind} = command;
-    const sides = {bolt:3,fan:4,ring:8,beam:4,orbit:6,mine:5,boomerang:3,nova:10,drone:6}[kind];
+    const sides = {saw:12,bolt:3,fan:4,ring:8,beam:4,orbit:6,mine:5,boomerang:3,nova:10,drone:6}[kind];
     if (stars >= 5) {
       paintGeomayhemPolygon(context,c[0],c[1],size+8,8,"",color,angle,true);
       context.beginPath(); context.arc(c[0],c[1],size+3,0,Math.PI*2);
       context.strokeStyle="#ffffff";context.lineWidth=1;context.stroke();
     } else if (stars >= 3) paintGeomayhemPolygon(context,c[0],c[1],size+4,6,"",color,-angle);
-    paintGeomayhemPolygon(context,c[0],c[1],size,sides,color,stars>=3?"#efffff":"#183042",angle,["ring","orbit","nova"].includes(kind));
+    paintGeomayhemPolygon(context,c[0],c[1],size,sides,color,stars>=3?"#efffff":"#183042",angle,["saw","ring","orbit","nova"].includes(kind));
     if (stars >= 3) paintGeomayhemPolygon(context,c[0],c[1],size*.42,4,"#ffffff","",angle);
     return;
   }
@@ -2791,6 +2821,7 @@ for (const letter of "abcdefghijklmnopqrstuvwxyz") {
   button.onclick = () => guess(letter);
   $("alphabet").append(button);
 }
+const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn, blocked: () => !!accountApp?.blocked});
 document
   .querySelectorAll("[data-game]")
   .forEach(
@@ -2804,6 +2835,11 @@ function runArcadeCode(rawName, separate = false) {
   clearTimeout(singularityNameTimer);
   showScores();
   const name = rawName.trim().toLowerCase();
+  if (name === "ihategeometry") {
+    $("arcade-code").value = rawName.trim();
+    if (!active) openGalacticForge();
+    return;
+  }
   if (CubieCustoms.redeemTesterCode(name)) {
     saved.testerTon618 = true;
     showAchievementToasts(newCustomNotifications());
@@ -2871,13 +2907,12 @@ function runArcadeCode(rawName, separate = false) {
   previousSecretName = secret;
 }
 $("player").oninput = () => {
-  if (!accountApp?.signedIn) runArcadeCode($("player").value);
+  if (!accountApp?.signedIn || $("player").value.trim().toLowerCase() === "ihategeometry") runArcadeCode($("player").value);
   else { saved.player = $("player").value.trim() || "Player"; persist(); }
 };
 $("arcade-code-submit").onclick = () => {
   if (active) return;
   runArcadeCode($("arcade-code").value, true);
-  $("arcade-code").value = "";
 };
 $("arcade-code").addEventListener("keydown", event => {
   if (event.key === "Enter") { event.preventDefault(); $("arcade-code-submit").click(); }
@@ -3296,13 +3331,13 @@ function syncMusic() {
       : active && selected === "dodge" && selectedDifficulty === "chaos" ? "chaos_carnival"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
-    playing: soundOn && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
+    playing: soundOn && !["coindrop", "nanolab"].includes(selected) && !document.querySelector("#galactic-forge") && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
-  const bossActive = active && selected === "geomayhem" && snapshot?.boss?.hp > 0 && !snapshot?.over;
+  const bossActive = active && selected === "geomayhem" && (snapshot?.boss?.hp > 0 || snapshot?.boss_defeat) && !snapshot?.over;
   bossAudioDirector?.sync({level: bossActive ? snapshot.level : null,
-    mode: snapshot?.boss_intro ? 'intro' : 'battle',
-    time: snapshot?.boss_intro?.time ?? snapshot?.fight_elapsed ?? 0,
+    mode: snapshot?.boss_defeat ? 'defeat' : snapshot?.boss_intro ? 'intro' : 'battle',
+    time: snapshot?.boss_defeat?.time ?? snapshot?.boss_intro?.time ?? snapshot?.fight_elapsed ?? 0,
     phase: snapshot?.boss?.phase ?? 1, move: snapshot?.boss?.move ?? '',
     playing: state.playing && bossActive && !snapshot?.offers?.length && !welcoming});
   if (bossActive) state.playing = false;
@@ -3826,6 +3861,7 @@ for (const [method, makeEvent] of Object.entries({
   secret: name => ["secret", { name }],
   slotResult: (symbols, custom, visible) => ["slots", { symbols, visible }],
   hearMusic: (track, custom, audible) => ["music", { track, audible }],
+  completeForge: () => ["galactic-forge", {}],
   completeGaster: () => ["gaster", {}],
   spendTime: seconds => { const end = Date.now(); return ["time", { start: end - Math.min(seconds, 60) * 1000, end }]; },
 })) {
@@ -4033,4 +4069,197 @@ for (let i = 0; i < 7; i++) {
     if (event.target === actor) randomizeOceanCreature(actor);
   });
   oceanScene.append(actor);
+}
+
+// Each attempt belongs to its dialog; closing it discards all ten-strike progress.
+function openGalacticForge() {
+  if (document.querySelector('#galactic-forge')) return;
+  clearTimeout(nameSurpriseTimer);
+  $('name-surprise').hidden = true;
+  const dialog = document.createElement('dialog');
+  dialog.id = 'galactic-forge';
+  dialog.setAttribute('aria-labelledby', 'forge-title');
+  dialog.innerHTML = `    <div class="forge-eyebrow">SECRET ARMORY / CELESTIAL FOUNDRY</div>
+    <h2 id="forge-title">The Galactic Forge</h2>
+    <p class="forge-instructions">Land <b>10 perfect slams</b>. Click, tap, or press <kbd>J</kbd>, <kbd>Space</kbd>, or <kbd>Enter</kbd> in the cyan zone.<br>The white marker must touch the cyan zone. Each round gets <b>one wrap back to the left</b>. A bad slam or missing both passes ends your attempt.</p>
+    <div class="forge-scene">
+    <svg viewBox="0 0 600 280" role="img" aria-label="A celestial hammer forging a glowing saw on a galactic anvil, surrounded by orbiting stars">
+      <defs>
+        <radialGradient id="forge-glow"><stop stop-color="#8052bd"/><stop offset=".5" stop-color="#27214f"/><stop offset="1" stop-color="#080e23"/></radialGradient>
+        <linearGradient id="forge-steel" x2=".6" y2="1"><stop stop-color="#eaf7ff"/><stop offset=".22" stop-color="#b2a8e0"/><stop offset=".44" stop-color="#514f7d"/><stop offset=".66" stop-color="#8c98c3"/><stop offset="1" stop-color="#282947"/></linearGradient>
+        <linearGradient id="forge-spectrum"><stop stop-color="#ffaddf"/><stop offset=".4" stop-color="#c3aaff"/><stop offset=".75" stop-color="#97eeff"/><stop offset="1" stop-color="#acffe2"/></linearGradient>
+        <radialGradient id="forge-energy"><stop stop-color="#edffff"/><stop offset=".2" stop-color="#a5f9ff" stop-opacity=".8"/><stop offset="1" stop-color="#6598ff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect width="600" height="280" rx="18" fill="url(#forge-glow)"/>
+      <g class="forge-celestial" fill="none" stroke="#b5b1ff" opacity=".3"><ellipse cx="300" cy="141" rx="213" ry="102"/><ellipse cx="300" cy="141" rx="180" ry="123" stroke-dasharray="2 12"/><path d="M30 141h65m410 0h65M300 7v15"/></g>
+      ${Array.from({length:32},(_,i)=>`<circle class="forge-star" style="animation-delay:-${i*.23}s" cx="${18+(i*137)%564}" cy="${12+(i*73)%250}" r="${i%4===0?1.5:.7}" fill="${i%2?'#c2e9ff':'#e8d4ff'}"/>`).join('')}
+      <circle cx="92" cy="62" r="22" fill="#27294d" stroke="#8b8cce" stroke-width=".7"/><path d="M81 43q-20 25 10 40" fill="none" stroke="#c1d0ff" opacity=".5"/>
+      <g class="forge-fragment" fill="url(#forge-steel)" stroke="#9fb7ee" stroke-width=".7"><path d="m130 163 12-8 8 17-14 9Z"/><path d="m475 74 12-14 8 21-14 10Z"/></g>
+      <ellipse cx="300" cy="252" rx="154" ry="20" fill="#050b1b"/><ellipse cx="300" cy="245" rx="138" ry="17" fill="none" stroke="url(#forge-spectrum)" stroke-width="1.4"/>
+      <ellipse cx="300" cy="246" rx="105" ry="10" fill="none" stroke="#839de4" stroke-dasharray="12 5"/>
+      <ellipse id="forge-impact-glow" cx="300" cy="181" rx="104" ry="65" fill="url(#forge-energy)" opacity=".18"/>
+      <path d="M200 177h211l-34 29h-53v19l29 14H245l29-14v-19h-46Z" fill="url(#forge-steel)" stroke="#b4c5ed" stroke-width="1.5"/>
+      <path d="M200 177l29 12h148l34-12M229 189v17m48 0h46M249 233h100" fill="none" stroke="#d6e8ff" stroke-width="1"/>
+      <path d="M235 194h126M281 216h34" stroke="url(#forge-spectrum)" stroke-width="3"/>
+      <g class="forge-saw" transform="translate(300 175)"><path d="M0-13 5-8 13-10 12-3 19 0 12 4 13 10 5 8 0 13-5 8-13 10-12 3-19 0-12-4-13-10-5-8Z" fill="#d1fbff" stroke="#fff"/><ellipse rx="6" ry="4" fill="#576a9d"/></g>
+      <g id="forge-hammer">
+        <g id="forge-hammer-handle"><path d="M318 46h131" stroke="#17182c" stroke-width="15" stroke-linecap="round"/><path d="M318 46h131" stroke="url(#forge-steel)" stroke-width="10" stroke-linecap="round"/><path d="M395 41v10m8-10v10m8-10v10m8-10v10m8-10v10m8-10v10" stroke="#a3b9f4" stroke-width="2"/></g>
+        <path id="forge-hammer-head" d="M276 8h40l12 12v68h-40l-12-12Z" fill="url(#forge-steel)" stroke="#c6ddff" stroke-width="1.5"/>
+        <path d="m276 8 12 12h40M288 20v68" fill="none" stroke="#eefaff" stroke-width="1.2"/>
+        <path d="M297 28v49M319 28v49" stroke="url(#forge-spectrum)" stroke-width="2"/>
+        <path d="m308 34 8 17-8 17-8-17Z" fill="#9feaff" stroke="#f2fcff"/><path d="m308 40 4 11-4 11-4-11Z" fill="#7471ae"/>
+      </g>
+      <g id="forge-impact" transform="translate(300 177)" opacity="0"><ellipse rx="60" ry="15" fill="none" stroke="#c1ffff" stroke-width="2"/>${Array.from({length:12},(_,i)=>`<path d="M${Math.cos(i*Math.PI/6)*22} ${Math.sin(i*Math.PI/6)*12}l${Math.cos(i*Math.PI/6)*30} ${Math.sin(i*Math.PI/6)*23}" stroke="${i%2?'#ffcfa5':'#b6faff'}" stroke-width="2"/>`).join('')}</g>
+    </svg>
+    <div class="forge-scene-caption"><span>GEOMUTILATOR</span><span id="forge-heat">CORE TEMPERATURE · 0%</span></div>
+    </div>
+    <div class="forge-rounds" aria-label="Ten required strikes">${Array.from({length:10},(_,i)=>`<span>${String(i+1).padStart(2,'0')}</span>`).join('')}</div>
+    <p id="forge-progress" role="status">Strike 1 / 10 · Ready to forge</p>
+    <div class="forge-track"><span class="forge-target"></span><span class="forge-marker"></span></div>
+    <div class="forge-track-labels"><span>SLAM IN CYAN</span><span id="forge-pass">PASS 1 / 2 · ONE WRAP AVAILABLE</span></div>
+    <button id="forge-slam" type="button">Begin forging</button>
+    <div class="forge-footer"><button id="forge-leave" type="button" class="quiet-button">Leave forge</button><button id="forge-sound" type="button" class="quiet-button">${soundOn?'Sound on':'Sound off'}</button></div>
+`;
+  document.body.append(dialog);
+  const target = dialog.querySelector('.forge-target'), marker = dialog.querySelector('.forge-marker');
+  const hammer = dialog.querySelector('#forge-hammer'), progress = dialog.querySelector('#forge-progress');
+  const button = dialog.querySelector('#forge-slam');
+  let strikes = 0, started = 0, center = .5, width = .16, duration = 1600, frame = 0, running = false, disposed = false, wrapped = false;
+  initializeAudio();
+  syncMusic();
+  const forgeAudio = createForgeAudio();
+  function finish(won) {
+    if (disposed) return;
+    disposed = true;
+    cancelAnimationFrame(frame);
+    forgeAudio.stop();
+    forgeAudio.effect(won ? "win" : "fail");
+    dialog.close(); dialog.remove();
+    syncMusic();
+    if (won) {
+      updateAchievements(achievementTracker.completeForge());
+      saved.cubieCustom = 'galactic_smith'; applyCubieCustom(); persist();
+      if (selected === 'geomayhem') renderGeomayhemHub();
+    }
+    const notice = $('name-surprise');
+    clearTimeout(nameSurpriseTimer);
+    notice.dataset.secret = 'forge';
+    notice.hidden = false;
+    notice.textContent = won ? 'Forged! Geomutilator, Galactic Smith Cubie, and Geometry Has Met Its Match unlocked!' : 'Forge failed. Your code is saved — press Try code for a fresh attempt.';
+    nameSurpriseTimer = setTimeout(() => { notice.hidden = true; }, 7000);
+  }
+  function next() {
+    center = .3 + Math.random() * .4;
+    duration = 1600 - strikes * 85;
+    // Add 50 milliseconds to each round’s original timing window.
+    width = .16 - strikes * .01 + 50 / duration;
+    started = performance.now();
+    wrapped = false;
+    marker.style.left = "0%";
+    dialog.querySelector("#forge-pass").textContent = "PASS 1 / 2 · ONE WRAP AVAILABLE";
+    target.style.left = `${(center-width/2)*100}%`;
+    target.style.width = `${width*100}%`;
+    progress.textContent = `Strike ${strikes+1} / 10 · ${Math.round(width*duration)} ms window · One mistake ends the attempt.`;
+  }
+  function position(now) {
+    const elapsed = (now-started)/duration;
+    if (elapsed >= 2) { finish(false); return null; }
+    if (elapsed >= 1 && !wrapped) {
+      wrapped = true;
+      dialog.querySelector('#forge-pass').textContent = 'PASS 2 / 2 · FINAL CHANCE';
+      forgeAudio.effect('wrap');
+    }
+    return elapsed >= 1 ? elapsed-1 : elapsed;
+  }
+  function animate(now) {
+    if (disposed) return;
+    if (running) {
+      const p = position(now);
+      if (p === null) return;
+      marker.style.left = `${p*100}%`;
+      if (!trailReducedMotion.matches && !saved.preferences?.reducedMotion)
+        hammer.style.transform = `translateY(${p*10+40}px) rotate(${25+(p-.5)*8}deg)`;
+    }
+    frame = requestAnimationFrame(animate);
+  }
+  function slam() {
+    if (!running) { running = true; button.textContent = 'SLAM'; next(); return; }
+    const p = position(performance.now());
+    if (p === null) return;
+    forgeAudio.effect('slam');
+    // Judge the last painted marker, not a newer clock position between frames.
+    // Use rendered rectangles so borders, fractional pixels, and mobile scaling match.
+    const markerRect = marker.getBoundingClientRect(), targetRect = target.getBoundingClientRect();
+    if (!forgeTimingHit((markerRect.left + markerRect.right)/2,
+        (targetRect.left + targetRect.right)/2, targetRect.width, markerRect.width/2)) {
+      finish(false); return;
+    }
+    strikes++;
+    forgeAudio.effect('hit', strikes);
+    dialog.querySelectorAll('.forge-rounds span')[strikes-1].classList.add('forged');
+    dialog.querySelector('#forge-heat').textContent = `CORE TEMPERATURE · ${strikes*10}%`;
+    if (!trailReducedMotion.matches && !saved.preferences?.reducedMotion) {
+      // Swing down from the upper-left ready pose and level the head at contact.
+      // Its bottom is y=88; +89 lands on the y=177 anvil with the handle clear.
+      const readyPose = hammer.style.transform || 'translateY(45px) rotate(25deg)';
+      hammer.getAnimations().forEach(animation => animation.cancel());
+      hammer.animate([{transform:readyPose,offset:0},{transform:'translateY(89px) rotate(0deg)',filter:'brightness(1.6)',offset:.25},{transform:'translateY(89px) rotate(0deg)',offset:.38},{transform:readyPose,filter:'brightness(1)',offset:1}],{duration:320,easing:'cubic-bezier(.3,0,.3,1)'});
+      dialog.querySelector('#forge-impact').animate([{opacity:1,scale:'.4'},{opacity:0,scale:'1.5'}],{duration:400,delay:80});
+      dialog.querySelector('#forge-impact-glow').animate([{opacity:.9},{opacity:.18}],{duration:350,delay:80});
+    }
+    if (strikes === 10) finish(true); else next();
+  }
+  button.addEventListener('pointerdown', event => { event.preventDefault(); slam(); });
+  button.addEventListener('click', event => { if (event.detail === 0) slam(); });
+  dialog.addEventListener('keydown', event => {
+    if (event.code !== 'KeyJ' && ['forge-leave', 'forge-sound'].includes(event.target.id)) return;
+    if (event.code === 'KeyJ' || event.code === 'Space' || event.code === 'Enter') { event.preventDefault(); event.stopPropagation(); if (!event.repeat) slam(); }
+  });
+  dialog.querySelector('#forge-sound').onclick = () => { $('sound').click(); dialog.querySelector('#forge-sound').textContent = soundOn ? 'Sound on' : 'Sound off'; };
+  dialog.querySelector('#forge-leave').onclick = () => finish(false);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+  dialog.showModal(); button.focus(); frame = requestAnimationFrame(animate);
+}
+
+function createForgeAudio() {
+  let beat = 0, stopped = false;
+  const musicVoices = new Set();
+  function tone(hz, length, volume, type='sine', delay=0, endHz=hz, music=false) {
+    if (!soundOn || document.hidden || !audioContext || audioContext.state !== 'running') return;
+    const context=audioContext, start=context.currentTime+delay;
+    const oscillator=context.createOscillator(), gain=context.createGain();
+    oscillator.type=type;oscillator.frequency.setValueAtTime(hz,start);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(20,endHz),start+length);
+    gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(volume,start+.012);
+    gain.gain.exponentialRampToValueAtTime(.0001,start+length);
+    oscillator.connect(gain);gain.connect(audioMaster);
+    if(music) musicVoices.add(oscillator);
+    oscillator.onended=()=>{musicVoices.delete(oscillator);oscillator.disconnect();gain.disconnect();};
+    oscillator.start(start);oscillator.stop(start+length+.02);
+  }
+  // Original 16-step celestial arpeggio with a slow bass progression.
+  const notes=[220,329.63,440,493.88,659.25,493.88,440,329.63,261.63,392,523.25,659.25,783.99,659.25,523.25,392];
+  const timer=setInterval(()=>{
+    if(stopped) return;
+    tone(notes[beat%16],.48,.028,'sine',0,notes[beat%16],true);
+    if(beat%4===0) tone(beat%16<8?55:65.41,1.1,.035,'triangle',0,beat%16<8?55:65.41,true);
+    if(beat%2===0) tone(95,.13,.025,'sine',0,38,true);
+    beat++;
+  },280);
+  return {
+    stop(){stopped=true;clearInterval(timer);for(const voice of musicVoices) {try{voice.stop();}catch{}}musicVoices.clear();},
+    effect(kind, strike=0){
+      if(kind==='slam') {tone(140,.22,.12,'triangle',0,35);tone(1750,.075,.045,'sawtooth',0,310);}
+      if(kind==='hit') {tone(660+strike*35,.5,.065);tone(990+strike*52,.36,.035,'sine',.035);}
+      if(kind==='wrap') {tone(330,.16,.055,'sine',0,660);tone(880,.2,.035,'sine',.1);}
+      if(kind==='fail') {tone(196,.35,.07,'triangle',0,65);tone(146.83,.5,.055,'sine',.12,49);}
+      if(kind==='win') [261.63,329.63,392,523.25,659.25,783.99,1046.5].forEach((hz,i)=>tone(hz,.65,.06,'sine',i*.085));
+    }
+  };
+}
+
+// Closed intervals: touching either edge of the visible target is a hit.
+function forgeTimingHit(position, center, width, markerHalfWidth) {
+  return position + markerHalfWidth >= center - width/2 - 1e-9
+    && position - markerHalfWidth <= center + width/2 + 1e-9;
 }
