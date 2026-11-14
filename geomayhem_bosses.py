@@ -2,6 +2,8 @@
 import math
 
 INTRO_DURATION = 14.0
+DEFEAT_DURATION = 8.0
+REGENT_DEFEAT_DURATION = 28.0
 MOVES = (
     ('Circuit Lock', 'Pulse Grid', 'Node Crossfire'),
     ('Hammerfall', 'Furnace Bloom', 'Molten Cascade'),
@@ -26,8 +28,22 @@ MOVES = (
 )
 
 
+
+# Encounter-specific cadence keeps multi-hit patterns and simple casts comparable.
+# Shared by campaign and Theater; no retry-dependent scaling or forced losses.
+BOSS_TEMPO = (1.8225, 2.295, 2.2275, 1.62, 2.2275, 2.7, 1.9575, 2.43, 2.0925, 2.025,
+              1.9575, 2.295, 2.7, 2.025, 2.295, 1.4175, 1.4175, 1.485, 1.08, .4)
+
+
+def boss_health(level):
+    """Neutral-anomaly boss HP, shared by all encounter entry points."""
+    if level <= 15:
+        return (13000 + 750 * (level - 1)) / 1.2 * 1.25
+    return 350 * (1 + (level - 1) * .18 + 19 * .035) * (31.5 if level == 20 else 16.875)
+
+
 def boss_pressure(level, phase=1):
-    """Continuous escalation with a steeper final-act ramp and readable windups."""
+    """Phase escalation with encounter-specific cadence and readable windups."""
     progress = (max(1, min(20, level))-1)/19
     late = max(0, (level-10)/10)**1.4
     rage = max(0, min(2, phase-1))
@@ -39,9 +55,16 @@ def boss_pressure(level, phase=1):
                 dash_speed=340+140*progress+80*late,
                 echoes=int(level>=11)+int(level>=16)+int(level>=19))
     if level == 20:
-        # A 25% higher attack rate means dividing cooldowns by 1.25.
-        pressure['cast_interval'] /= 1.25
-        pressure['volley_interval'] /= 1.25
+        # Retain compact Regent choreography; the cadence profile below adds recovery windows.
+        pressure['cast_interval'] /= 1.25 * 1.5
+        pressure['volley_interval'] /= 1.25 * 1.5
+        # Regent's moving bullets travel 38% slower than their previous speed.
+        pressure['projectile_speed'] *= 1.5 * .62
+        pressure['warning'] /= 1.5
+        pressure['stagger'] /= 1.5
+    tempo = BOSS_TEMPO[max(1, min(20, level))-1]
+    pressure["cast_interval"] /= tempo
+    pressure["volley_interval"] /= tempo
     return pressure
 
 
@@ -55,8 +78,8 @@ def boss_attack(game, enemy, phase):
     pressure = boss_pressure(game.level, phase)
     zones = []
     def add(shape, delay=0, **geometry):
-        zones.append(dict(shape=shape, warning=pressure["warning"]+delay*pressure["stagger"], active=.65,
-                          damage=18, source='boss', slow=game.level==4, **geometry))
+        zones.append(dict(shape=shape, warning=pressure["warning"]+delay*pressure["stagger"], active=.65/(1.5 if game.level == 20 else 1),
+                          damage=28 if game.level == 20 else 24, source='boss', slow=game.level==4, **geometry))
     def circle(cx,cy,r=48,delay=0): add('circle',delay,x=cx,y=cy,r=r)
     def ring(cx,cy,r=120,delay=0): add('ring',delay,x=cx,y=cy,r=r,width=20)
     def beam(cx,cy,ex,ey,w=25,delay=0): add('beam',delay,x=cx,y=cy,ex=ex,ey=ey,width=w)
@@ -183,8 +206,8 @@ def boss_attack(game, enemy, phase):
     for n in range(min(pressure['echoes'] + (phase-1 if game.level>=11 else 0), 5)):
         if not original: break
         echo = dict(original[(cast+n*2) % len(original)])
-        echo['warning'] += .75 + n*.22
-        echo['active'] = .45
+        echo['warning'] += (.75 + n*.22)/(1.5 if game.level == 20 else 1)
+        echo['active'] = .45/(1.5 if game.level == 20 else 1)
         zones.append(echo)
     # Bound overlapping choreography while retaining every visible warning.
     game.zones.extend(zones[:max(0,28-len(game.zones))])

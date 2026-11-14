@@ -1,11 +1,12 @@
 """Display-independent Geomayhem: 20 arenas, 20 waves and four-slot builds."""
 from dataclasses import dataclass, field
 import math
+from copy import deepcopy
 import random
 
 from geomayhem_weapons import ARMORY, ITEM_WEAPONS, WEAPONS
 from geomayhem_arenas import ARENAS, contains, queue_pattern
-from geomayhem_bosses import INTRO_DURATION, boss_attack, boss_pressure
+from geomayhem_bosses import INTRO_DURATION, boss_attack, boss_pressure, boss_health, DEFEAT_DURATION, REGENT_DEFEAT_DURATION
 
 LEVELS = (
     ("Mint Circuit", "#71f5d2"), ("Amber Foundry", "#ffba69"),
@@ -85,6 +86,10 @@ class Geomayhem:
             raise ValueError(f"Choose a level from 1 to {len(LEVELS)}")
         if weapon not in ARMORY:
             raise ValueError("Unknown Geomayhem weapon")
+        self.geomutilator_unlocked = campaign is None or (isinstance(campaign, dict) and campaign.get("geomutilator") is True)
+        if weapon == "geomutilator" and not self.geomutilator_unlocked:
+            raise ValueError("Complete the Galactic Forge to unlock Geomutilator")
+        self.forge_shield = 0.0
         workshop = {}
         if campaign is not None:
             if not isinstance(campaign, dict):
@@ -95,7 +100,7 @@ class Geomayhem:
             cleared = campaign.get("cleared", 0)
             if type(cleared) is not int or not 0 <= cleared <= len(LEVELS) or unlocked != min(len(LEVELS), cleared + 1):
                 raise ValueError("Invalid campaign progress")
-            if list(ARMORY).index(weapon) // 5 > cleared:
+            if weapon != "geomutilator" and list(ARMORY).index(weapon) // 5 > cleared:
                 raise ValueError("Clear more arenas to unlock this starting weapon")
             workshop = campaign.get("workshop", {})
             if not isinstance(workshop, dict) or any(type(v) is not int or not 0 <= v <= 3 for v in workshop.values()):
@@ -132,9 +137,12 @@ class Geomayhem:
         self.boss_arena_radius = None
         self.boss_intro_left = 0.0
         self.boss_intro_seen = False
-        self.boss_reinforcement_in = 1.5
+        self.boss_defeat_seen = False
+        self.boss_defeat_left = 0.0
+        self.boss_reinforcement_in = 1.5 / (.75 if level < 20 else 1)
         self.boss_cast = 0
         self.boss_move = ""
+        self.boss_checkpoint = None
 
     @property
     def stars(self):
@@ -213,7 +221,7 @@ class Geomayhem:
         return True
 
     def _equip(self, weapon_id):
-        if weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
+        if (weapon_id == "geomutilator" and not self.geomutilator_unlocked) or weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
             return False
         self.loadout[weapon_id] = 1
         self.cooldowns[weapon_id] = 0.0
@@ -248,7 +256,7 @@ class Geomayhem:
             choices.append({"id": "weapon" if weapon_id == self.weapon else f"upgrade:{weapon_id}",
                             "name": f"{weapon.name} · {next_star} stars", "description": detail})
         if len(self.loadout) < MAX_WEAPONS:
-            available = [key for key in ARMORY if key not in self.loadout]
+            available = [key for key in ARMORY if key not in self.loadout and (key != "geomutilator" or self.geomutilator_unlocked)]
             # Every open-slot draft offers two paths: a random companion and a handheld.
             for group in ([key for key in available if key in ITEM_WEAPONS],
                           [key for key in available if key not in ITEM_WEAPONS]):
@@ -310,7 +318,7 @@ class Geomayhem:
             self.gems=[g for g in self.gems if math.hypot(g[0],g[1])<265]
             self.zones=[]
             self.hazards=[]
-            hp *= 3
+            hp = boss_health(self.level)
             if not self.boss_intro_seen:
                 self.boss_intro_left = INTRO_DURATION
                 self.boss_intro_seen = True
@@ -323,6 +331,26 @@ class Geomayhem:
             if math.hypot(x-self.x,y-self.y)<110: x,y=-x,-y
         self.enemies.append(Enemy(self.serial, x, y, hp, speed, radius, kind, hp))
         self.spawned += 1
+        if kind == "boss" and self.boss_checkpoint is None:
+            self.boss_checkpoint = deepcopy({key: value for key, value in self.__dict__.items()
+                                             if key != "boss_checkpoint"})
+
+    def retry_boss(self):
+        """Restore the boss-entry build and encounter without replaying earlier waves."""
+        if self.alive or self.won or self.boss_checkpoint is None:
+            return False
+        self.__dict__.update(deepcopy(self.boss_checkpoint))
+        self.alive = True
+        self.lives = self.max_lives
+        self.death_message = ""
+        self.boss_intro_left = INTRO_DURATION
+        self.break_left = 0
+        self.offers = []
+        self.shots, self.hazards, self.zones, self.effects, self.gems = [], [], [], [], []
+        self.cooldowns = {weapon: 0.0 for weapon in self.loadout}
+        self.aim = None
+        self.velocity = (0.0, 0.0)
+        return True
 
     def _update_zones(self, dt):
         if self.break_left <= 0 and self.wave >= 3:
@@ -393,7 +421,10 @@ class Geomayhem:
             self.lives = min(self.max_lives, self.lives + .35)
 
     def _hit(self, enemy, shot):
+        was_alive = enemy.hp > 0
         self._hurt(enemy, shot.damage, shot.traits)
+        if was_alive and enemy.hp <= 0 and shot.weapon == "geomutilator" and shot.kind == "saw" and shot.stars >= 3:
+            self.forge_shield = 1.5
         color = ARMORY[shot.weapon].color
         self._effect("hit", enemy.x, enemy.y, 14, color, stars=shot.stars)
         if "blast" in shot.traits:
@@ -445,6 +476,16 @@ class Geomayhem:
         self.shots_fired += 1
         self.cooldowns[weapon_id] = weapon.interval / (1 + (stars - 1) * .12)
         count = weapon.count + (1 if "echo" in self.relics else 0)
+        if weapon.id == "geomutilator" and stars >= 5:
+            for offset in (-.45, -.15, .15, .45):
+                a = angle + offset
+                end = origin_x + math.cos(a)*750, origin_y + math.sin(a)*750
+                self._effect("line", origin_x, origin_y, 5, weapon.color, end, stars)
+                beam = Shot(origin_x, origin_y, 0, 0, damage, weapon.id, stars, traits.copy(), "beam", angle=a)
+                for enemy in self.enemies[:]:
+                    dx, dy = enemy.x-origin_x, enemy.y-origin_y
+                    if 0 <= dx*math.cos(a)+dy*math.sin(a) <= 750 and abs(dx*math.sin(a)-dy*math.cos(a)) < enemy.radius+5:
+                        self._hit(enemy, beam)
         for i in range(count):
             a = angle + (i - (count - 1) / 2) * .17
             if weapon.kind in ("ring", "orbit"):
@@ -461,14 +502,14 @@ class Geomayhem:
                     if 0 <= along <= 750 and cross < enemy.radius + 5:
                         self._hit(enemy, shot)
             elif weapon.kind == "nova":
-                radius = 95 + stars * 12
+                radius = 140 + stars * 20
                 self._effect("ring", origin_x, origin_y, radius, weapon.color, stars=stars)
                 for enemy in self.enemies[:]:
                     if math.hypot(enemy.x - origin_x, enemy.y - origin_y) <= radius + enemy.radius:
                         self._hit(enemy, shot)
             else:
                 if weapon.kind == "mine":
-                    distance = min(170, math.hypot(target[0] - origin_x, target[1] - origin_y))
+                    distance = min(300, math.hypot(target[0] - origin_x, target[1] - origin_y))
                     shot.x += math.cos(a) * distance
                     shot.y += math.sin(a) * distance
                     shot.vx = shot.vy = 0
@@ -489,7 +530,7 @@ class Geomayhem:
                 shot.x, shot.y = self.x + math.cos(a) * radius, self.y + math.sin(a) * radius
             elif shot.kind != "mine":
                 target = None
-                if "return" in shot.traits and shot.age > .55:
+                if "return" in shot.traits and shot.age > (1.05 if shot.kind == "boomerang" else .55):
                     target = (self.x, self.y)
                 elif "homing" in shot.traits:
                     enemy = min((e for e in self.enemies if e.hp > 0 and e.id not in shot.hits),
@@ -513,7 +554,7 @@ class Geomayhem:
             for enemy in self.enemies[:]:
                 if enemy.hp <= 0 or enemy.id in shot.hits:
                     continue
-                reach = 45 if shot.kind == "mine" else 7
+                reach = 45 if shot.kind == "mine" else 28 if shot.weapon == "geomutilator" and shot.kind == "saw" else 7
                 if math.hypot(enemy.x - shot.x, enemy.y - shot.y) < enemy.radius + reach:
                     self._hit(enemy, shot)
                     shot.hits.add(enemy.id)
@@ -527,6 +568,8 @@ class Geomayhem:
     def _damage(self, amount):
         if self.invulnerable or not self.alive:
             return
+        if self.forge_shield > 0:
+            amount *= .75
         self.lives = max(0, self.lives - amount)
         self.damage_taken += amount
         self.invulnerable = .8
@@ -534,13 +577,46 @@ class Geomayhem:
             self.alive = False
             self.death_message = f"Wave {self.wave}/20 · {self.kills} shapes defeated. Pick a new build and try again."
 
+    def start_boss_defeat(self):
+        if self.boss_defeat_seen or not self.alive:
+            return False
+        self.boss_defeat_seen = True
+        for enemy in self.enemies:
+            if enemy.hp <= 0:
+                self.kills += 1
+                self.score += 10 + (50 if enemy.kind in ("elite", "boss") else 0)
+        self.boss_defeat_left = REGENT_DEFEAT_DURATION if self.level == 20 else DEFEAT_DURATION
+        self.offers = []
+        self.shots.clear()
+        self.hazards.clear()
+        self.zones.clear()
+        return True
+
+    def finish_boss_defeat(self):
+        if not self.boss_defeat_seen or self.won:
+            return False
+        self.boss_defeat_left = 0
+        self.won = True
+        self.cleared = WAVES
+        self.score += 100 * self.level
+        self.enemies.clear()
+        self.gems.clear()
+        self.offers = []
+        return True
+
     def update(self, dt, keys, aim=None):
         if self.offers or not self.alive or self.won:
             return
         dt = max(0, min(dt, .05))
+        if self.boss_defeat_left > 0:
+            self.boss_defeat_left = max(0, self.boss_defeat_left-dt)
+            if self.boss_defeat_left == 0:
+                self.finish_boss_defeat()
+            return
         if self.boss_intro_left > 0:
             self.boss_intro_left = max(0, self.boss_intro_left-dt)
             return
+        self.forge_shield = max(0, self.forge_shield - dt)
         self.elapsed += dt
         self.aim = aim
         self.invulnerable = max(0, self.invulnerable - dt)
@@ -586,7 +662,7 @@ class Geomayhem:
                 escorts = sum(e.kind != "boss" and e.hp > 0 for e in self.enemies)
                 for _ in range(min(1+self.level//8, max(0,cap-escorts))):
                     self._spawn(reinforcement=True)
-                self.boss_reinforcement_in = max(1.1, 3.8-self.level*.11-(phase-1)*.25)
+                self.boss_reinforcement_in = max(1.1, 3.8-self.level*.11-(phase-1)*.25) / (.75 if self.level < 20 else 1)
         elif self.wave == 20 and self.boss_intro_seen:
             # The boss's defeat ends the supply of escorts; clear survivors to win.
             self.spawned = max(self.spawned, self.quota)
@@ -637,6 +713,9 @@ class Geomayhem:
         if not self.alive:
             return
         self._update_shots(dt)
+        if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
+            self.start_boss_defeat()
+            return
         for hazard in self.hazards:
             hazard[0] += hazard[2] * dt
             hazard[1] += hazard[3] * dt
@@ -708,6 +787,7 @@ class Geomayhem:
                 "geo_relic_count": len(self.relics),
                 "pending_levelups": self.pending_levelups,
                 "arena": {"hazard": ARENAS[self.level-1][3], "boss": ARENAS[self.level-1][4]},
+                "boss_defeat": {"level": self.level, "time": (REGENT_DEFEAT_DURATION if self.level == 20 else DEFEAT_DURATION)-self.boss_defeat_left, "duration": REGENT_DEFEAT_DURATION if self.level == 20 else DEFEAT_DURATION} if self.boss_defeat_left > 0 else None,
                 "boss_intro": {"level": self.level, "time": INTRO_DURATION-self.boss_intro_left, "duration": INTRO_DURATION} if self.boss_intro_left>0 else None,
                 "boss": {"move": self.boss_move, "name": ARENAS[self.level-1][4], "hp": round(boss.hp), "max_hp": round(boss.max_hp),
                          "phase": 3 if self.level in (10,20) and boss.hp<boss.max_hp*.25 else 2 if boss.hp<boss.max_hp*.5 else 1} if boss else None,

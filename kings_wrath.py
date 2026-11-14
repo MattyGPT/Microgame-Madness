@@ -65,6 +65,7 @@ class KingsWrath(PumpkinKing):
         return self.attack_order.pop()
 
     def begin_attack(self, index):
+        self.boss_y = 50.0 if index == WRATH_ATTACKS["royal_loom"] else 130.0
         pending_sounds = len(self.sound_events)
         self.wrath_pattern = None
         if index >= 7:

@@ -39,14 +39,14 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
             commands.append({"kind": "geomayhem_weapon", "coords": [x, -y], "weapon_kind": weapon.kind,
                              "fill": weapon.color, "stars": stars, "angle": angle, "size": size})
             return
-        sides = {"bolt": 3, "fan": 4, "ring": 8, "beam": 4, "orbit": 6, "mine": 5, "boomerang": 3, "nova": 10, "drone": 6}[weapon.kind]
+        sides = {"saw": 12, "bolt": 3, "fan": 4, "ring": 8, "beam": 4, "orbit": 6, "mine": 5, "boomerang": 3, "nova": 10, "drone": 6}[weapon.kind]
         if stars >= 5:
             polygon(x, y, size + 8, 8, "", weapon.color, angle, star=True)
             circle(x, y, size + 3, outline="#ffffff", width=1)
         elif stars >= 3:
             polygon(x, y, size + 4, 6, "", weapon.color, -angle)
         polygon(x, y, size, sides, weapon.color, "#efffff" if stars >= 3 else "#183042", angle,
-                star=weapon.kind in ("ring", "orbit", "nova"))
+                star=weapon.kind in ("saw", "ring", "orbit", "nova"))
         if stars >= 3:
             polygon(x, y, size * .42, 4, "#ffffff", angle=angle)
 
@@ -117,6 +117,7 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
     for shot in game.shots:
         start = len(commands)
         weapon_art(shot.x, shot.y, ARMORY[shot.weapon], shot.stars, shot.angle+shot.age*5,
+                   24 if shot.weapon == "geomutilator" and shot.kind == "saw" else
                    10 if shot.kind in ("mine", "orbit", "boomerang") else 6)
         for command in commands[start:]:
             command["opacity"] = .38 if math.hypot(shot.x-game.x,shot.y-game.y)<85 else .68
@@ -167,6 +168,9 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
                              else "".join(word[0] for word in weapon.name.split())})
         # Cubie's face shifts toward movement, independently of weapon aim.
         x, y = game.x, game.y
+        if game.forge_shield > 0:
+            circle(x, y, 34, outline="#c4a1ff", width=3)
+            commands.append({"kind": "text", "coords": [x, -y-44], "fill": "#e8daff", "font": ["Arial", 11], "text": f"SHIELD −25% · {game.forge_shield:.1f}s"})
         circle(x, y, 23, "#081712", "#d8ffb4", 2)
         if compact:
             commands.append({"kind": "geomayhem_cubie", "role": "geomayhem-player",

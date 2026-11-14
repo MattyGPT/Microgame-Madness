@@ -284,7 +284,8 @@ const AccountRules = (() => {
           && payload.symbols.every(n => Number.isInteger(n) && n >= 0 && n < 5)
           && typeof payload.visible === 'boolean', 'Invalid slot result.');
         tracker.slotResult(payload.symbols, state.cubieCustom, payload.visible);
-      } else if (payload.event === 'gaster') tracker.completeGaster();
+      } else if (payload.event === 'galactic-forge') tracker.completeForge();
+      else if (payload.event === 'gaster') tracker.completeGaster();
       else if (payload.event === 'time') {
         requireValue(Number.isSafeInteger(payload.end) && payload.end <= Date.parse(now)+300000, 'Time interval is ahead of the current clock.');
         if (tracker.data.stats.websiteSeconds < 36000) tracker.spendTime(timeCredit(state, payload.start, payload.end));
