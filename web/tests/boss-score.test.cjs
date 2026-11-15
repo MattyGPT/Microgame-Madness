@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const {Director,profiles}=require('../boss-audio.js');
 function movement(section,phase){
   const events=[];
-  const recorder={sound:(...args)=>events.push(['sound',...args]),tone:(...args)=>events.push(['tone',...args])};
+  const recorder=Object.assign(Object.create(Director.prototype),{sound:(...args)=>events.push(['sound',...args]),tone:(...args)=>events.push(['tone',...args])});
   for(let step=0;step<16;step++)Director.prototype.regentStep.call(recorder,section*128+step,phase,false,0,step*.075,.3);
   return events;
 }
