@@ -116,3 +116,13 @@ test('bar clicks use the visible marker even between animation frames',async({pa
   await expect(page.locator('#galactic-forge')).toHaveCount(0);
   await expect(page.locator('#name-surprise')).toContainText('Forge failed');
 });
+
+test('five-star Theater Geomutilator draws four bright beams',async({page},info)=>{
+ await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('buildLoadout();choose(level);','window.beamRuntime=runtime;buildLoadout();choose(level);').replace('function primitive(command){','function primitive(command){if(command.effect==="forge_beam")window.drawnForgeBeams=(window.drawnForgeBeams||0)+1;')});});
+ await page.goto('/boss-showcase.html');await page.waitForFunction(()=>document.body.dataset.ready==='true');
+ await page.locator('#equip-geomutilator').click();await page.locator('#fight').click();
+ await page.evaluate(()=>beamRuntime.runPython('preview.aim=(240,0)\npreview.fire()'));
+ await page.waitForFunction(()=>window.drawnForgeBeams>=4);
+ await page.locator('#pause').click();
+ await page.locator('#theater').screenshot({path:info.outputPath('geomutilator-four-beams.png')});
+});

@@ -125,10 +125,10 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
         if compact:
             commands.append({"kind":"geomayhem_effect", "coords":[effect["x"],-effect["y"]],
                              "effect":effect["kind"], "radius":effect["radius"], "fill":effect["color"],
-                             "end":effect["end"],"stars":effect["stars"],"life":effect["life"],"opacity":.32})
+                             "end":effect["end"],"stars":effect["stars"],"life":effect["life"],"opacity":.85 if effect["kind"] == "forge_beam" else .32})
             continue
         start = len(commands)
-        if effect["kind"] == "line":
+        if effect["kind"] in ("line", "forge_beam"):
             line(effect["x"], effect["y"], *effect["end"], effect["radius"], effect["color"])
             if effect["stars"] >= 3:
                 line(effect["x"], effect["y"], *effect["end"], 2, "#ffffff")
@@ -144,7 +144,7 @@ def draw_geomayhem(game, *, compact=False, include_background=True, background_o
                 polygon(effect["x"], effect["y"], r*.8, 6, "", "#ffffff")
             if effect["stars"] >= 5:
                 polygon(effect["x"], effect["y"], r*1.1, 10, "", effect["color"], star=True)
-        for command in commands[start:]: command["opacity"] = .32
+        for command in commands[start:]: command["opacity"] = .85 if effect["kind"] == "forge_beam" else .32
     # Hostiles render above friendly effects so danger stays readable.
     friendly = commands[friendly_start:]
     del commands[friendly_start:]
