@@ -148,7 +148,7 @@ if(moving()&&pointerActive){
 if(round===6){
   spawn-=dt;if(spawn<=0){spawn+=.38;volley++;
     // Interleaved ribbons have no missing rows: weave between the moving strands.
-    for(let row=0;row<7;row++){const y=370+row*58;
+    for(let row=0;row<7;row++){const y=370+row*64;
       for(const side of [-1,1])bullets.push({x:550+side*300,y,vx:-side*510,vy:0,baseY:y,weave:{phase:Math.random()*TAU,rate:1.8+Math.random()*2.6,amplitude:6+Math.random()*3,tiltPhase:Math.random()*TAU,tiltRate:1.4+Math.random()*2,curl:.012+Math.random()*.012,curlPhase:Math.random()*TAU},green:false,rainbow:true,beam:(volley+row)%2===0,hue:(row*39+volley*37)%360,trail:[]});
     }
   }

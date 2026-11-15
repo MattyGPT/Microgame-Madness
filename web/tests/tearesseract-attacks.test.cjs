@@ -93,7 +93,7 @@ test('prism crosscurrent fills every row with paired, moving rainbow ribbons',()
   assert.ok(bullets.every(b=>b.rainbow&&b.vy===0));
   assert.equal(bullets.filter(b=>b.vx>0).length,bullets.filter(b=>b.vx<0).length);
   assert.equal(new Set(bullets.map(b=>b.baseY)).size,7);
-  assert.ok(bullets.every(b=>(b.baseY-370)%58===0));
+  assert.ok(bullets.every(b=>(b.baseY-370)%64===0));
   for(let i=0;i<180;i++)game.step(1/120);
   assert.ok(game.read().bullets.some(b=>b.beam));
   assert.ok(game.read().bullets.some(b=>Math.abs(b.y-b.baseY)>3));

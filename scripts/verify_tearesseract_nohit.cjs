@@ -11,8 +11,11 @@ function element(id) {
   });
   return elements.get(id);
 }
+let randomState = Number(process.env.NO_HIT_SEED || 1) >>> 0;
+const seededMath = Object.create(Math);
+seededMath.random = () => ((randomState = (Math.imul(randomState,1664525)+1013904223) >>> 0) / 4294967296);
 const context = {
-  Math, document: { querySelector: element, addEventListener() {}, createElement() { return {}; } },
+  Math: seededMath, document: { querySelector: element, addEventListener() {}, createElement() { return {}; } },
   window: { addEventListener() {} }, requestAnimationFrame() {},
 };
 vm.createContext(context);
@@ -56,7 +59,7 @@ for (let round = 0; round < 20; round++) {
     }
     if (round===6) {
       // Track the small moving space between two adjacent ribbons.
-      const target = 515+Math.sin(state.t*2.3)*6;
+      const target = 530+Math.sin(state.t*2.3)*6;
       aim = target>=state.p.y ? Math.PI/2 : -Math.PI/2;
       radius = Math.abs(target-state.p.y)+24;
     }
