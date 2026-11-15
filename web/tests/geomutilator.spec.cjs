@@ -1,4 +1,5 @@
 const { test, expect, openGame, leaveFullscreen } = require('./fixtures/game.cjs');
+test.use({bossTheaterFixture:true});
 test('both code entries, failure, ten slams and persistent forge rewards', async ({ page }) => {
   await openGame(page);
   await leaveFullscreen(page);
@@ -118,7 +119,7 @@ test('bar clicks use the visible marker even between animation frames',async({pa
 });
 
 test('five-star Theater Geomutilator draws four bright beams',async({page},info)=>{
- await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('buildLoadout();choose(level);','window.beamRuntime=runtime;buildLoadout();choose(level);').replace('function primitive(command){','function primitive(command){if(command.effect==="forge_beam")window.drawnForgeBeams=(window.drawnForgeBeams||0)+1;')});});
+ await page.route('**/boss-showcase.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('buildLoadout();choose(level);','window.beamRuntime=runtime;buildLoadout();choose(level);').replace('function primitive(command){','function primitive(command){if(command.effect==="forge_beam")window.drawnForgeBeams=(window.drawnForgeBeams||0)+1;')});});
  await page.goto('/boss-showcase.html');await page.waitForFunction(()=>document.body.dataset.ready==='true');
  await page.locator('#equip-geomutilator').click();await page.locator('#fight').click();
  await page.evaluate(()=>beamRuntime.runPython('preview.aim=(240,0)\npreview.fire()'));

@@ -21,12 +21,21 @@ async function routeLocalRuntime(target) {
 // and runtime; persistence tests can explicitly reload that same page.
 const test = base.extend({
   deterministicMusic: [false, { option: true }],
+  bossTheaterFixture: [false, { option: true }],
   firstVisitSetup: [false, { option: true }],
-  page: async ({ page, deterministicMusic, firstVisitSetup }, use) => {
+  page: async ({ page, deterministicMusic, firstVisitSetup, bossTheaterFixture }, use) => {
     if (!firstVisitSetup) await page.addInitScript(() => {
       try { localStorage.setItem('microgame-madness.welcome.v1', 'complete'); } catch {}
     });
     await routeLocalRuntime(page);
+    // The retired theater remains a test harness for shared boss rendering/audio.
+    // It is deliberately excluded from the public build.
+    if (bossTheaterFixture) for (const ext of ['html', 'js', 'css']) {
+      await page.route(`**/boss-showcase.${ext}*`, route => route.fulfill({
+        path: path.resolve(__dirname, `../../boss-showcase.${ext}`),
+        contentType: {html:'text/html',js:'application/javascript',css:'text/css'}[ext],
+      }));
+    }
     // Test built assets without contacting a production leaderboard.
     // Leaderboard specs can override this route with their own mock service.
     await page.route('**/leaderboard-config.json', route => route.fulfill({

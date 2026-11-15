@@ -1,5 +1,6 @@
 const { leaveFullscreen, settleFullscreen } = require('./fixtures/game.cjs');
 const {test,expect,openGame}=require('./fixtures/game.cjs');
+test.use({bossTheaterFixture:true});
 test('all 20 bosses load with cinematics and three real attack previews',async({page},info)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/boss-showcase.html');
@@ -22,7 +23,7 @@ test('all 20 bosses load with cinematics and three real attack previews',async({
   expect(errors).toEqual([]);
 });
 test('campaign boss introduction freezes combat, skips, and keeps a named health bar',async({page})=>{
-  await page.route('**/app.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('handle = pyodide.globals.get("handle");','window.bossRuntime=pyodide; handle = pyodide.globals.get("handle");')})});
+  await page.route('**/app.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('handle = pyodide.globals.get("handle");','window.bossRuntime=pyodide; handle = pyodide.globals.get("handle");')})});
   await openGame(page);
   await page.evaluate(()=>{selectGame('geomayhem');startGame('level_1');window.bossRuntime.runPython('from bridge import session\nsession.game.wave=20\nsession.game.break_left=0\nsession.game.spawned=0\nsession.game._spawn()');});
   await expect(page.locator('#boss-cinema')).toBeVisible();
@@ -84,7 +85,7 @@ test('boss audio renders twenty finite stereo effects and stops on pause and mut
 });
 
 test('theater uses real arena commands and animated shared boss scenery',async({page},info)=>{
-  await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('arenaBackground=state.background||[];', 'arenaBackground=state.background||[];window.theaterBackground=arenaBackground;')});});
+  await page.route('**/boss-showcase.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('arenaBackground=state.background||[];', 'arenaBackground=state.background||[];window.theaterBackground=arenaBackground;')});});
   await page.goto('/boss-showcase.html');
   await expect(page.locator('body')).toHaveAttribute('data-ready','true',{timeout:30000});
   for(const index of [0,9,19]){
@@ -105,7 +106,7 @@ test('theater uses real arena commands and animated shared boss scenery',async({
 });
 
 test('theater loadout fights move, shoot, take damage, finish and retry',async({page},info)=>{
-  await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('buildLoadout();choose(level);','window.theaterRuntime=runtime;buildLoadout();choose(level);')})});
+  await page.route('**/boss-showcase.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('buildLoadout();choose(level);','window.theaterRuntime=runtime;buildLoadout();choose(level);')})});
   await page.goto('/boss-showcase.html');
   await expect(page.locator('body')).toHaveAttribute('data-ready','true',{timeout:30000});
   await page.selectOption('#weapon-0','geomutilator');

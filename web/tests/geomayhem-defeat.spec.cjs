@@ -1,4 +1,5 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
+test.use({bossTheaterFixture:true});
 test('all defeat films render; Regent has a staged world-ending finale and accessible stills',async({page},info)=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('/boss-showcase.html');await page.waitForFunction(()=>document.body.dataset.ready==='true');
@@ -19,7 +20,7 @@ test('all defeat films render; Regent has a staged world-ending finale and acces
  expect(errors).toEqual([]);
 });
 test('theater victory freezes player, plays defeat sound, and can finish or skip',async({page})=>{
- await page.route('**/boss-showcase.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('buildLoadout();choose(level);','window.deathRuntime=runtime;buildLoadout();choose(level);')});});
+ await page.route('**/boss-showcase.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('buildLoadout();choose(level);','window.deathRuntime=runtime;buildLoadout();choose(level);')});});
  await page.goto('/boss-showcase.html');await page.waitForFunction(()=>document.body.dataset.ready==='true');
  await page.locator('#sound').click();await page.locator('#fight').click();
  await page.evaluate(()=>deathRuntime.runPython('preview.enemies[0].hp=0'));
@@ -33,7 +34,7 @@ test('theater victory freezes player, plays defeat sound, and can finish or skip
  await page.clock.install();await page.clock.runFor(9000);await expect(page.locator('#status')).toContainText('Victory!');
 });
 test('campaign Regent defeat freezes combat, switches audio and awards a single victory after skip',async({page})=>{
- await page.route('**/app.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('handle = pyodide.globals.get("handle");','window.deathRuntime=pyodide; handle = pyodide.globals.get("handle");')});});
+ await page.route('**/app.js*',async route=>{const source=require('node:fs').readFileSync(require.resolve('../boss-showcase.js'),'utf8');await route.fulfill({contentType:'application/javascript',body:source.replace('handle = pyodide.globals.get("handle");','window.deathRuntime=pyodide; handle = pyodide.globals.get("handle");')});});
  await openGame(page);
  await page.evaluate(()=>{selectGame('geomayhem');startGame('level_1');deathRuntime.runPython('from bridge import session\nfrom geomayhem import Geomayhem\nsession.game=Geomayhem(20)\nsession.game.wave=20\nsession.game.break_left=0\nsession.game._spawn()\nsession.game.boss_intro_left=0\nsession.game.enemies[0].hp=0');});
  await expect(page.locator('#boss-cinema')).toBeVisible();await expect(page.locator('#boss-cinema-label')).toContainText('Defeated');
