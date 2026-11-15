@@ -12,7 +12,7 @@ test("The King's Wrath has a yellow crown and loads all sixteen practice choices
       'const pyodide = await loadPyodide(', 'const pyodide = window.wrathRuntime = await loadPyodide(') });
   });
   await openGame(page);
-  await expect(page.locator('[data-game]:visible')).toHaveCount(11);
+  await expect(page.locator('[data-game]:visible')).toHaveCount(13);
   const card = page.locator('[data-game="wrath"]');
   await expect(card).toContainText("The King's Wrath");
   const crown = card.locator('.wrath-art svg > path').first();

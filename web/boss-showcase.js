@@ -181,6 +181,19 @@ def demo_cast(index):
       if(command.stars>=3)primitive({...command,kind:'geomayhem_polygon',sides:command.stars===5?8:6,radius:command.size+(command.stars===5?8:4),fill:'',outline:command.fill,star:command.stars===5});
       primitive({...command,kind:'geomayhem_polygon',sides,radius:command.size,outline:'#efffff',star:['saw','ring','orbit','nova'].includes(command.weapon_kind)});
     }
+    else if(command.kind==='geomayhem_effect'){
+      const {radius,stars,fill:color,life,end}=command;
+      ctx.strokeStyle=color;ctx.lineWidth=2;
+      if(command.effect==='line'||command.effect==='forge_beam'){
+        ctx.beginPath();ctx.moveTo(c[0],c[1]);ctx.lineTo(end[0],-end[1]);ctx.lineWidth=radius;ctx.stroke();
+        if(stars>=3){ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();}
+        if(stars>=5)for(const t of [.15,.4,.7])primitive({kind:'geomayhem_polygon',coords:[c[0]+(end[0]-c[0])*t,c[1]+(-end[1]-c[1])*t],radius:14,sides:4,angle:0,star:true,fill:'',outline:color,opacity:command.opacity});
+      }else{
+        const r=radius*(1.3-life);ctx.beginPath();ctx.arc(c[0],c[1],r,0,Math.PI*2);ctx.stroke();
+        if(stars>=3)primitive({kind:'geomayhem_polygon',coords:c,radius:r*.8,sides:6,angle:0,fill:'',outline:'#ffffff',opacity:command.opacity});
+        if(stars>=5)primitive({kind:'geomayhem_polygon',coords:c,radius:r*1.1,sides:10,angle:0,star:true,fill:'',outline:color,opacity:command.opacity});
+      }
+    }
     else if(command.kind==='geomayhem_enemy'){primitive({...command,kind:'geomayhem_polygon',outline:'#fff0dc',width:2});ctx.fillStyle='#152033';ctx.fillRect(c[0]-6,c[1]-4,3,4);ctx.fillRect(c[0]+3,c[1]-4,3,4);}
     else if(command.kind==='geomayhem_boss')GeomayhemBosses.drawCommand(ctx,command,reduced.checked);
     else if(command.kind==='geomayhem_cubie'){ctx.fillStyle='#baffc6';ctx.fillRect(c[0]-10,c[1]-10,20,20)}

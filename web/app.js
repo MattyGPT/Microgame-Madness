@@ -2498,7 +2498,7 @@ function drawGeomayhemCommand(context, command) {
   }
   if (command.kind === "geomayhem_effect") {
     const {radius,stars,fill:color,life,end}=command;
-    if (command.effect === "line") {
+    if (command.effect === "line" || command.effect === "forge_beam") {
       context.beginPath();context.moveTo(c[0],c[1]);context.lineTo(end[0],-end[1]);
       context.strokeStyle=color;context.lineWidth=radius;context.stroke();
       if (stars >= 3) {context.strokeStyle="#ffffff";context.lineWidth=2;context.stroke();}

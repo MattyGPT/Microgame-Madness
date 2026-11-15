@@ -31,10 +31,10 @@ class GeomayhemTests(unittest.TestCase):
         game.break_left = 100
         return game
 
-    def test_opening_drafts_offer_varied_companions_and_handheld_paths(self):
+    def test_unlocked_drafts_offer_varied_companions_and_handheld_paths(self):
         companions = set()
         for seed in range(80):
-            game = Geomayhem(rng=random.Random(seed))
+            game = Geomayhem(20, rng=random.Random(seed))
             game.xp = game.xp_needed
             game.update(0, set())
             options = [ARMORY[o["id"].split(":")[1]] for o in game.offers if o["id"].startswith("acquire:")]
@@ -369,7 +369,7 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(game.damage_taken, 12)
 
     def test_levelups_add_companions_and_other_weapons_without_replacing_the_starter(self):
-        game = self.game()
+        game = self.game(level=20)
         for _ in range(2):
             game.xp = game.xp_needed
             game.update(.01, set())
@@ -478,7 +478,7 @@ class GeomayhemTests(unittest.TestCase):
     def test_new_items_are_available_in_levelups_and_four_companions_have_distinct_positions(self):
         seen = set()
         for seed in range(300):
-            game = self.game()
+            game = self.game(level=20)
             game.rng = random.Random(seed)
             game._equip("drone_a")
             game._equip("drone_b")
@@ -487,14 +487,14 @@ class GeomayhemTests(unittest.TestCase):
             game.update(0, set())
             seen.update(o["id"].split(":", 1)[1] for o in game.offers if o["id"].startswith("acquire:"))
         self.assertTrue((set(ITEM_WEAPONS) - {"drone_a", "drone_b"}) <= seen)
-        game = self.game(weapon="drone_a")
+        game = self.game(level=20, weapon="drone_a")
         for key in ("drone_b", "frost_orb", "tesla_coil"):
             self.assertTrue(game._equip(key))
         self.assertEqual(len({game.companion_position(key) for key in game.loadout}), 4)
         self.assertFalse(game._equip("solar_shield"))
 
     def test_starting_with_a_drone_offers_a_different_companion(self):
-        game = self.game(weapon="drone_b")
+        game = self.game(level=20, weapon="drone_b")
         game.xp = game.xp_needed
         game.update(.01, set())
         choice = next(o["id"] for o in game.offers if o["id"].startswith("acquire:"))

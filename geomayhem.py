@@ -105,6 +105,8 @@ class Geomayhem:
             workshop = campaign.get("workshop", {})
             if not isinstance(workshop, dict) or any(type(v) is not int or not 0 <= v <= 3 for v in workshop.values()):
                 raise ValueError("Invalid workshop upgrades")
+        self.weapon_unlock_tier = campaign.get("cleared", 0) if campaign is not None else level - 1
+        self.campaign_loadout = campaign is not None
         self.rng = rng or random.Random()
         self.level, self.wave, self.cleared = level, 1, 0
         self.accent = LEVELS[level - 1][1]
@@ -220,7 +222,13 @@ class Geomayhem:
         self._offer_upgrade()
         return True
 
+    def weapon_available(self, weapon_id):
+        return (self.geomutilator_unlocked if weapon_id == "geomutilator" else
+                weapon_id in ARMORY and list(ARMORY).index(weapon_id) // 5 <= self.weapon_unlock_tier)
+
     def _equip(self, weapon_id):
+        if self.campaign_loadout and not self.weapon_available(weapon_id):
+            return False
         if (weapon_id == "geomutilator" and not self.geomutilator_unlocked) or weapon_id not in ARMORY or weapon_id in self.loadout or len(self.loadout) >= MAX_WEAPONS:
             return False
         self.loadout[weapon_id] = 1
@@ -256,8 +264,8 @@ class Geomayhem:
             choices.append({"id": "weapon" if weapon_id == self.weapon else f"upgrade:{weapon_id}",
                             "name": f"{weapon.name} · {next_star} stars", "description": detail})
         if len(self.loadout) < MAX_WEAPONS:
-            available = [key for key in ARMORY if key not in self.loadout and (key != "geomutilator" or self.geomutilator_unlocked)]
-            # Every open-slot draft offers two paths: a random companion and a handheld.
+            available = [key for key in ARMORY if key not in self.loadout and self.weapon_available(key)]
+            # Offer a companion and a handheld when each has an unlocked choice.
             for group in ([key for key in available if key in ITEM_WEAPONS],
                           [key for key in available if key not in ITEM_WEAPONS]):
                 if not group:
@@ -403,7 +411,7 @@ class Geomayhem:
 
     def _effect(self, kind, x, y, radius, color, end=None, stars=1):
         self.effects.append({"kind": kind, "x": x, "y": y, "radius": radius,
-                             "color": color, "life": .22, "end": end, "stars": stars})
+                             "color": color, "life": .32 if kind == "forge_beam" else .22, "end": end, "stars": stars})
         self.effects = self.effects[-70:]
 
     def _hurt(self, enemy, amount, traits):
@@ -480,7 +488,7 @@ class Geomayhem:
             for offset in (-.45, -.15, .15, .45):
                 a = angle + offset
                 end = origin_x + math.cos(a)*750, origin_y + math.sin(a)*750
-                self._effect("line", origin_x, origin_y, 5, weapon.color, end, stars)
+                self._effect("forge_beam", origin_x, origin_y, 10, weapon.color, end, stars)
                 beam = Shot(origin_x, origin_y, 0, 0, damage, weapon.id, stars, traits.copy(), "beam", angle=a)
                 for enemy in self.enemies[:]:
                     dx, dy = enemy.x-origin_x, enemy.y-origin_y
