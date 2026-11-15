@@ -432,6 +432,7 @@ class PackagingTests(unittest.TestCase):
                 expected = {"index.html", "style.css", "app.js", "jackpot-slots.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
                 expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
                 expected |= {"account-rules.js", "accounts/profile.css", "turtle-customs.js", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "coin-drop.js", "coin-drop.css", "coin-drop-lessons.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-nano-music.js", "boss-audio.js", "boss-arena.js", "regent-art.js"}
+                expected |= {"jukebox-archive.js", "tearesseract-icon.js", "tearesseract.js", "tearesseract-death.js", "tearesseract.html"}
                 expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app", "welcome")}
                 expected |= {f"accounts/tours/{game}.{ext}" for game in ("hangman", "keyboard", "dodge", "boss", "pumpkin", "wrath", "geomayhem") for ext in ("webm", "webp")}
                 expected |= {f"ops/usage.{ext}" for ext in ("html", "css", "js")}
