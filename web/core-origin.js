@@ -326,5 +326,7 @@
       if (this.focusBefore?.isConnected) this.focusBefore.focus({ preventScroll: true });
     }
   }
-  window.CoreOrigin = { Film, draw, soundtrack, duration, chapter, cues };
+  const api={ Film, draw, soundtrack, duration, chapter, cues };
+  if(typeof window!=='undefined')window.CoreOrigin=api;
+  if(typeof module!=='undefined')module.exports=api;
 })();

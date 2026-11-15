@@ -4828,7 +4828,7 @@ body.game-fullscreen-open { overflow: hidden; }
 #touch-fire.aim-stick.pressed { border-color:#71f5d2; box-shadow:0 0 14px #71f5d233; }
 
 /* Geomayhem boss introductions and temporary theater. */
-.boss-cinema{position:absolute;inset:0;z-index:45;background:#080d1c;display:flex;flex-direction:column;justify-content:center}.boss-cinema[hidden]{display:none}.boss-cinema canvas{width:100%;height:auto;max-height:100%;object-fit:contain}.boss-cinema button{position:absolute;right:14px;bottom:14px;z-index:2}.boss-cinema p{position:absolute;left:14px;top:0;color:#d5e7fa;font:12px system-ui}.boss-theater-link{display:block;padding:20px;margin:14px 0;border:1px solid #61729b;border-radius:12px;background:linear-gradient(110deg,#1b2340,#263b44);color:#e5eeff;text-decoration:none}.boss-theater-link strong{font-size:20px}.boss-theater-link span{display:block;font-size:12px;color:#acbed6}
+.boss-cinema{position:absolute;inset:0;z-index:45;background:#080d1c;display:flex;flex-direction:column;justify-content:center}.boss-cinema[hidden]{display:none}.boss-cinema canvas{width:100%;height:auto;max-height:100%;object-fit:contain}.boss-cinema button{position:absolute;right:14px;bottom:14px;z-index:2}.boss-cinema p{position:absolute;left:14px;top:0;color:#d5e7fa;font:12px system-ui}
 
 .difficulty-choice[data-wrath-exclusive] { border-color: var(--wrath-tint); }
 .difficulty-choice[data-wrath-exclusive] .wrath-difficulty-art { color: var(--wrath-tint); }
@@ -4917,3 +4917,53 @@ html.account-reduced-motion [class^="smith-"] { animation: none !important; }
 @media(max-width:480px) { #galactic-forge { padding:18px 14px; } .forge-rounds { gap:3px; } .forge-scene-caption { letter-spacing:.5px; font-size:8px; } }
 @media(prefers-reduced-motion:reduce) { #galactic-forge * { animation:none!important; } }
 html.account-reduced-motion #galactic-forge * { animation:none!important; }
+
+/* The icon projects rotating 4D geometry; JavaScript respects reduced motion. */
+.tearesseract-card .card-art svg { overflow:visible; filter:drop-shadow(0 0 5px #42d9be88); }
+.tearesseract-card:hover .card-art svg { filter:drop-shadow(0 0 8px #76ffe1aa); }
+
+
+/* Infinity Regent: a gold foil sleeve with independently animated rainbow outlines. */
+@property --regent-angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.difficulty-choice.song-card.regent-song {
+  --regent-angle:0deg;
+  border:5px solid transparent;
+  background:linear-gradient(115deg,#80652d 0%,#b49a53 17%,#c6b076 30%,#a28640 43%,#cbb982 53%,#ad944f 64%,#917532 80%,#bca466 100%) padding-box,
+    conic-gradient(from var(--regent-angle),#ff3868,#ff962e,#ffe84c,#57e88b,#37d8ff,#7861ff,#f36cfa,#ff3868) border-box;
+  background-size:220% 100%,100% 100%;
+  box-shadow:0 5px 16px #80652d30,inset 0 0 0 1px #c7b57a66;
+  animation:regent-card-drift 5s ease-in-out infinite,regent-border-turn 9s linear infinite,regent-gold-flow 8s ease-in-out infinite;
+  transform-origin:center;
+}
+.difficulty-choice.song-card.regent-song::before {inset:0;height:auto;opacity:.24;z-index:0;mask-image:none;background:repeating-linear-gradient(35deg,transparent 0 9px,#fff7bc33 10px,transparent 11px 22px);pointer-events:none;}
+.difficulty-choice.song-card.regent-song::after {content:'';position:absolute;inset:-50%;background:linear-gradient(110deg,transparent 38%,#e4d7b433 48%,#f0e5c744 50%,transparent 62%);transform:translateX(-90%);animation:regent-foil-sweep 5.5s ease-in-out infinite;pointer-events:none;z-index:1;mix-blend-mode:screen;}
+.regent-song > strong,.regent-song > span {position:relative;z-index:2;}
+.song-card.regent-song .regent-word {display:inline-block;color:#352004;-webkit-text-stroke:2.2px var(--regent-ink);paint-order:stroke fill;text-shadow:0 1px #fff1a6b3;animation:regent-rainbow-ink 7s linear infinite;font-weight:750;}
+.song-card.regent-song > span .regent-word {-webkit-text-stroke-width:1.6px;color:#402606;font-weight:700;}
+.song-card.regent-song .song-art {z-index:2;width:62px;height:62px;top:8px;filter:drop-shadow(0 3px 2px #75450a88);animation:regent-crown-float 4s ease-in-out infinite;}
+.regent-song .song-art stop {animation:regent-rainbow-ink 7s linear infinite;}
+.regent-song .song-art #regent-jukebox-gold stop {animation:none;}
+.difficulty-choice.song-card.regent-song:hover:not(:disabled),.difficulty-choice.song-card.regent-song:focus-visible,.difficulty-choice.song-card.regent-song[aria-pressed="true"] {border-color:transparent;box-shadow:0 0 0 2px #c5b178,0 0 18px #a88b4944,inset 0 0 16px #cebb8022;}
+@keyframes regent-card-drift {0%,20%,80%,100%{transform:translateY(0) rotate(-.45deg)}40%,60%{transform:translateY(-4px) rotate(.45deg)}}
+@keyframes regent-border-turn {to{--regent-angle:360deg}}
+@keyframes regent-gold-flow {0%,100%{background-position:0% 50%,0 0}50%{background-position:100% 50%,0 0}}
+@keyframes regent-foil-sweep {0%,35%{transform:translateX(-90%)}80%,100%{transform:translateX(90%)}}
+@keyframes regent-crown-float {0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-3px) rotate(5deg)}}
+@keyframes regent-rainbow-ink {0%,100%{-webkit-text-stroke-color:#ff3868;stop-color:#ff3868}20%{-webkit-text-stroke-color:#ffb632;stop-color:#ffb632}40%{-webkit-text-stroke-color:#27c967;stop-color:#27c967}60%{-webkit-text-stroke-color:#219bff;stop-color:#219bff}80%{-webkit-text-stroke-color:#ae47ee;stop-color:#ae47ee}}
+@media(prefers-reduced-motion:reduce){.regent-song,.regent-song *,.regent-song::before,.regent-song::after{animation:none!important;transform:none!important}.regent-song::after{opacity:0}}
+html.account-reduced-motion .regent-song,html.account-reduced-motion .regent-song *,html.account-reduced-motion .regent-song::before,html.account-reduced-motion .regent-song::after{animation:none!important;transform:none!important}
+html.account-reduced-motion .regent-song::after{opacity:0}
+
+.difficulty-choice.song-card.regent-song:hover,.difficulty-choice.song-card.regent-song:focus-visible{animation-play-state:paused,running,running}
+
+.jukebox-song-item {min-width:0;display:flex;flex-direction:column;gap:12px;}
+.jukebox-song-item > .song-card {width:100%;flex:1;}
+.song-progress {padding:4px 8px 10px;}
+.song-progress[hidden] {display:none;}
+.song-progress input {display:block;width:100%;margin:8px 0;cursor:pointer;accent-color:#71f5b5;height:6px;border-radius:999px;appearance:none;background:linear-gradient(to right,#71f5b5 var(--song-progress,0%),#3b4655 var(--song-progress,0%));}
+.song-progress input::-webkit-slider-thumb {appearance:none;width:15px;height:15px;border-radius:50%;background:#f4fff9;box-shadow:0 0 6px #71f5b566;}
+.song-progress input::-moz-range-thumb {width:15px;height:15px;border:0;border-radius:50%;background:#f4fff9;}
+.song-progress input:focus-visible {outline:2px solid #71f5b5;outline-offset:5px;}
+.song-progress-times {display:flex;justify-content:space-between;color:#bfc8d5;font-size:12px;font-variant-numeric:tabular-nums;}
+
+.song-card .song-length {position:relative;display:block;margin-top:8px;font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:.04em;}

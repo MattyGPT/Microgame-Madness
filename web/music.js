@@ -3,6 +3,7 @@
 // Original scores and credited fan remixes. MIDI pitches, with 0 representing a rest.
 // Pulse lead + triangle bass + arpeggio + noise drums evoke a small chip synth.
 const ArcadeMusic = (() => {
+  const archive=typeof JukeboxArchive!=='undefined'?JukeboxArchive:typeof module!=='undefined'?require('./jukebox-archive.js'):null;
   const semitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
   const intervals = { "": [0, 4, 7], m: [0, 3, 7], "7": [0, 4, 7, 10],
     maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], dim: [0, 3, 6], sus2: [0, 2, 7] };
@@ -959,7 +960,22 @@ const ArcadeMusic = (() => {
     for (let i = 0; i < out.length; i++) out[i] *= scale;
     return out;
   }
+  function trackDuration(id) {
+    if(id === "tearesseract_prelude")return 64*60/112/4;
+    if(id === "gaster_signal")return 6.66;
+    if (id === "tearesseract") return 70 * 4 * 60 / 172;
+    if (id === "singularity") return 48 * 4 * 60 / 78;
+    const arena = geomayhemTracks.find(track => track.id === id);
+    if (arena) return 128 * 60 / arena.bpm;
+    const chamber = chamberTracks.find(track => track.id === id);
+    if (chamber) return chamber.bars * 4 * 60 / chamber.bpm + (chamber.playful ? 0 : 2);
+    const rock = [...rockTracks, ...bossTracks, impossibleRemix].find(track => track.id === id);
+    if (rock) return 128 * 60 / rock.bpm + (rock.loop ? 0 : 1.2);
+    const score = scores[id];
+    return score.roots.length * 4 * 60 / score.bpm;
+  }
   const jukeboxTracks = Object.freeze([
+    {id:"tearesseract", title:"Tearesseract — Containment Is Not Optional", bpm:172, category:"Boss theme"},
     ...Object.entries(scores).map(([id, score]) => ({ id, title: score.title, bpm: score.bpm,
       category: loopThemes.includes(id) ? "Game theme" : "Arcade soundtrack" })),
     { id: "singularity", title: "Singularity Core", bpm: 78, category: "Game theme" },
@@ -968,7 +984,10 @@ const ArcadeMusic = (() => {
     ...geomayhemTracks.map(track => ({ ...track, category: "Geomayhem" })),
     ...rockTracks.map(track => ({ ...track, category: "Rock" })),
     ...chamberTracks.map(track => ({ ...track, category: track.playful ? "Turtle Dodge" : "Instrumental dance" })),
-  ].map(({ id, title, bpm, category }) => Object.freeze({ id, title, bpm, category })));
+    ...(archive?.tracks||[]),
+    {id:'tearesseract_prelude',title:'Tearesseract — Pre-fight Motif',bpm:112,category:'Game theme'},
+    {id:'gaster_signal',title:'Gaster — Signal Encounter',bpm:0,category:'Secret encounter'},
+  ].map(({ id, title, bpm, category, duration = trackDuration(id) }) => Object.freeze({ id, title, bpm, category, duration })));
   function composeRock(track, sampleRate, notes) {
     const beat = 60 / track.bpm, duration = 32 * 4 * beat + (track.loop ? 0 : 1.2);
     const samples = new Float32Array(Math.round(duration * sampleRate));
@@ -1306,7 +1325,309 @@ const ArcadeMusic = (() => {
     samples[0] = samples[samples.length - 1] = 0;
     return samples;
   }
+  // A / B / A / B-drop / C / D / E-short / B-reprise / F-cinematic.
+  // One arrangement shared by the boss and jukebox.
+  function composeTearesseract(rate, notes, prelude = false) {
+    const movements=[
+      {name:'A',phrase:0,bars:8}, {name:'B',phrase:1,bars:8},
+      {name:'A',phrase:0,bars:8}, {name:'B-drop',phrase:1,bars:8},
+      {name:'C',phrase:2,bars:8}, {name:'D',phrase:3,bars:8},
+      {name:'E-short',phrase:4,bars:2}, {name:'B-reprise',phrase:1,bars:8},
+      {name:'F-cinematic',phrase:5,bars:12}
+    ];
+    let end=0;for(const movement of movements){movement.start=end;end+=movement.bars*16;movement.end=end;}
+    const step=60/(prelude?112:172)/4, steps=prelude?64:end,
+      out=new Float32Array(Math.ceil(steps*step*rate));
+    // A two-bar question and answer; onset, pitch above E4, held sixteenths.
+    // The pre-fight loop states the same hook at a slower tempo.
+    const phrases=[
+      [[0,0,5],[6,3,2],[8,7,6],[15,10,1],[16,9,3],[20,7,2],[23,3,3],[28,2,3]],
+      [[0,12,5.5],[6,10,1.8],[8,7,4.8],[13,10,2.6],[16,9,3.5],[20,10,2.5],[23,7,5],[29,5,2.5]],
+      [[0,7,7],[8,14,3],[12,12,3],[16,10,6],[24,9,3],[28,7,3]],
+      [[0,0,3],[4,3,2],[7,7,5],[14,6,1],[16,7,7],[24,3,3],[28,0,3]],
+      [[0,12,9],[12,10,5],[20,7,7]],
+      [[0,0,6],[8,3,6],[16,7,7],[24,12,7]]
+    ];
+
+    const smooth=value=>{const x=Math.max(0,Math.min(1,value));return x*x*(3-2*x);};
+    let seed=719;
+    const hall=new Float32Array(out.length);
+    function voice(pitch,start,len,amp,kind, expression = {}) {
+      let f=440*2**((pitch-69)/12), off=Math.floor(start*rate), filtered=0, guitarPhase=0, cabinet=0;
+      const inDrop=!prelude&&start/step>=384&&start/step<512;
+      // Drop-only emphasis; the existing entrance envelope still ramps these gains.
+      if(inDrop&&['timpani','tom','snare','kick','rim','cymbal','noise'].includes(kind))amp*=2;
+      const afterDrop=!prelude&&((start/step>=512&&start/step<768)||(start/step>=800&&start/step<928));
+      if(afterDrop&&['timpani','tom','snare','kick','rim','cymbal','noise','clap','hat'].includes(kind))amp*=1.75;
+      if(["timpani","tom","snare","kick","rim"].includes(kind)){
+        amp*=1.4;
+        if(!prelude){
+          const onset=start/step,m=movements.find(m=>onset<m.end)||movements.at(-1),index=movements.indexOf(m),next=movements[index+1];
+          const entry=Math.min(1,Math.max(0,(onset-m.start)/8)),exit=Math.min(1,Math.max(0,(m.end-onset)/16));
+          // Ease into new grooves; pull the busy layers back before sparse passages.
+          if(m.name!=='B-drop')amp*=.72+.28*entry;
+          if(next)amp*=(next.name==='E-short'||next.name==='F-cinematic'?.45:.78)+(next.name==='E-short'||next.name==='F-cinematic'?.55:.22)*exit;
+        }
+      }
+      if(!prelude&&!['guitar','guitarlead'].includes(kind)){
+        const onset=start/step;
+        // Fade the outgoing accompaniment under the solo, then bloom into B.
+        if(onset>=376&&onset<384)amp*=.4+.6*smooth((384-onset)/8);
+        if(onset>=384&&onset<400)amp*=.22+.78*smooth((onset-384)/16);
+      }
+      const orchestral=['strings','horn','choir'].includes(kind); // Keep percussion dry and punchy.
+      const attack=expression.naturalHorn?.035:expression.sharp?.002:['kick','snare','tom','rim'].includes(kind)?.0007:kind==='strings'?.012:kind==='horn'?.007:kind==='choir'?.16:kind==='pad'?.045:.003;
+      for(let i=0;i<len*rate&&off+i<out.length;i++) {
+        let t=i/rate, env=Math.min(1,t/attack)*Math.pow(Math.max(0,1-t/len),['pad','strings','horn','choir','guitarlead','bass808'].includes(kind)?.65:2),v;
+        if(expression.naturalHorn){const release=Math.min(.14,len*.25);env=Math.min(1,t/attack)*Math.min(1,Math.max(0,(len-t)/release))*(.87+.13*Math.sin(Math.PI*t/len));}
+        if(expression.hold)env=Math.min(1,t/attack);
+        if(expression.swell)env=Math.sin(Math.PI*Math.min(1,t/len))**2;
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        const random=seed/2147483648-1;
+        if(kind==='bass808'){
+          const glide=(expression.slide||0)*Math.exp(-t*14);
+          guitarPhase+=2*Math.PI*f*2**(glide/12)/rate;
+          const sub=Math.sin(guitarPhase)+.22*Math.sin(guitarPhase*2);
+          v=Math.tanh(sub*2.1)*.78*(.35+.65*Math.min(1,t/.04));
+        }else if(kind==='cowbell'){
+          const phase=2*Math.PI*f*t;
+          const metal=Math.tanh(Math.sin(phase)*3)+.65*Math.tanh(Math.sin(phase*1.483)*3);
+          filtered+=(1-Math.exp(-2*Math.PI*4200/rate))*(metal-filtered);
+          v=filtered*.5*Math.exp(-t*7);
+        }else if(kind==='clap'){
+          filtered+=(1-Math.exp(-2*Math.PI*1300/rate))*(random-filtered);
+          const bursts=Math.exp(-t*95)+(t>.012?Math.exp(-(t-.012)*110):0)+(t>.026?Math.exp(-(t-.026)*28):0);
+          v=(random-filtered)*bursts*.65;
+        }else if(kind==='hat'){
+          filtered+=(1-Math.exp(-2*Math.PI*5800/rate))*(random-filtered);
+          v=(random-filtered)*.8*Math.exp(-t*35);
+        }else if(kind==='swell'){filtered+=.08*(random-filtered);v=filtered*.8+Math.sin(2*Math.PI*f*t)*.15;}else if(kind==='strings'){
+          const phase=2*Math.PI*f*(t+.00035*Math.sin(t*31));
+          v=(Math.sin(phase)+.38*Math.sin(phase*2.002)+.2*Math.sin(phase*3.001)+.1*Math.sin(phase*4.003))*.62;
+        }else if(kind==='horn'&&expression.naturalHorn){
+          // Breath-shaped brass: a tiny pitch scoop, delayed vibrato and a blooming bell.
+          const vibrato=.055*Math.sin(2*Math.PI*5.2*t)*Math.min(1,t/.24);
+          const scoop=-.12*Math.exp(-t*22);
+          guitarPhase+=2*Math.PI*f*2**((vibrato+scoop)/12)/rate;
+          const phase=guitarPhase,bloom=.45+.55*(1-Math.exp(-t*14));
+          filtered+=(1-Math.exp(-2*Math.PI*1100/rate))*(random-filtered);
+          const bell=Math.sin(phase)+.56*bloom*Math.sin(phase*2)+.34*bloom*Math.sin(phase*3)+.19*bloom*Math.sin(phase*4)+.09*bloom*Math.sin(phase*5);
+          v=bell*.55+filtered*.035*(1+Math.exp(-t*30));
+        }else if(kind==='horn'){
+          const phase=2*Math.PI*f*t, bloom=.65+.35*Math.min(1,t/.025);
+          v=(Math.sin(phase)+.58*bloom*Math.sin(phase*2)+.34*bloom*Math.sin(phase*3)+.18*Math.sin(phase*4)+.08*Math.sin(phase*5)+(expression.sharp?.12*Math.sin(phase*6):0))*.65;
+         }else if(kind==='guitar'||kind==='guitarlead'){
+          const lead=kind==='guitarlead', progress=Math.min(1,t/Math.max(.025,len*.45));
+          const bend=(expression.bend||0)*Math.sin(progress*Math.PI/2);
+          const slide=(expression.slide||0)*Math.exp(-t*32);
+          const vibrato=lead?Math.sin(t*2*Math.PI*6.1)*.22*Math.min(1,t/.13):.025*Math.sin(t*29);
+          guitarPhase+=2*Math.PI*f*2**((bend+slide+vibrato)/12)/rate;
+          const phase=guitarPhase;
+          const brightness=Math.exp(-t*(lead?1.3:5));
+          const string=Math.sin(phase)+.55*Math.sin(phase*2)+brightness*(.34*Math.sin(phase*3)+.18*Math.sin(phase*4)+.12*Math.sin(phase*5));
+          const harmonic=expression.squeal?Math.sin(phase*4)*Math.min(1,t/.05)*.65:0;
+          const pick=random*Math.exp(-t*110)*.32;
+          const driven=Math.tanh((string+harmonic+pick)*(lead?3.4:2.6));
+          filtered+=(1-Math.exp(-2*Math.PI*(lead?(expression.sharp?4200:3400):2600)/rate))*(driven-filtered);
+          cabinet+=(1-Math.exp(-2*Math.PI*95/rate))*(filtered-cabinet);
+          v=(filtered-cabinet)*Math.exp(-t*(lead?.35:3.8));
+        }else if(kind==='rim'){
+          v=(Math.sin(2*Math.PI*1720*t)+.55*Math.sin(2*Math.PI*2381*t))*Math.exp(-t*85)+random*.2*Math.exp(-t*110);
+        }else if(kind==='tom'){
+          const phase=2*Math.PI*f*(t+.003*(1-Math.exp(-t*45)));
+          v=Math.sin(phase)*Math.exp(-t*7)+.35*Math.sin(phase*1.59)*Math.exp(-t*14)+.16*Math.sin(phase*2.13)*Math.exp(-t*25)+random*.22*Math.exp(-t*95);
+        }else if(kind==='choir'){
+          const phase=2*Math.PI*f*(t+.0002*Math.sin(t*27));
+          v=(Math.sin(phase)+.23*Math.sin(phase*3)+.13*Math.sin(phase*5)+.09*Math.sin(phase*7))*.65;
+        }else if(kind==='timpani'){
+          const phase=2*Math.PI*f*(t+.002*(1-Math.exp(-t*35)));
+          filtered+=.08*(random-filtered);
+          v=(Math.sin(phase)+.38*Math.sin(phase*1.48)+.17*Math.sin(phase*2.08))*Math.exp(-t*4)+filtered*.25*Math.exp(-t*35);
+        }else if(kind==='snare'){
+          filtered+=(1-Math.exp(-2*Math.PI*1800/rate))*(random-filtered);
+          const wires=(random-filtered)*.78*Math.exp(-t*16);
+          const shell=Math.sin(2*Math.PI*185*t)*.48*Math.exp(-t*26)+Math.sin(2*Math.PI*330*t)*.23*Math.exp(-t*40);
+          v=wires+shell+random*.24*Math.exp(-t*160);
+        }else if(kind==='cymbal'){
+          filtered+=(1-Math.exp(-2*Math.PI*2400/rate))*(random-filtered);
+          const metal=(Math.sin(t*2*Math.PI*3119)+Math.sin(t*2*Math.PI*4373)+Math.sin(t*2*Math.PI*5741))*.085;
+          v=((random-filtered)*.5+metal)*Math.exp(-t*4);
+        }else if(kind==='noise')v=(seed/2147483648-1)*Math.exp(-t*28);
+        else if(kind==='kick')v=Math.sin(2*Math.PI*(43*t+6*(1-Math.exp(-t*28))))*Math.exp(-t*5)+random*.25*Math.exp(-t*190)+Math.sin(2*Math.PI*125*t)*.15*Math.exp(-t*40);
+        else if(kind==='pad')v=(Math.sin(2*Math.PI*f*t)+Math.sin(2*Math.PI*f*1.004*t))/2;
+        else v=Math.tanh(1.5*(Math.sin(2*Math.PI*f*t)+.4*Math.sin(4*Math.PI*f*t)+.2*Math.sin(6*Math.PI*f*1.002*t)));
+        const sample=v*amp*env;out[off+i]+=sample;if(orchestral)hall[off+i]+=sample;
+      }
+    }
+    for(let i=0;i<steps;i++) {
+      const movement=prelude?movements[0]:movements.find(m=>i<m.end), local=i-movement.start,
+        section=movement.phrase, bar=Math.floor(local/16), at=i*step,
+        drop=movement.name==='B-drop', reprise=movement.name==='B-reprise',
+        bridge=section===4, finale=section===5,
+        phonkActive=!prelude&&i>=384&&section!==4&&section!==5,
+        root=(finale?[40,36,43,35,36,40]:[40,40,36,39])[Math.floor(bar/2)%(finale?6:4)];
+      // The guitar overlaps a full-bar gradual entrance into the drop.
+      const intake=drop&&local<8;
+      // The returning A hands off to a two-bar riff, then an exposed guitar pickup.
+      const preDrop=!prelude&&((movement.start===256&&local>=96)||(drop&&local<16));
+      if(preDrop){
+        const riffTime=drop?32+local:local-96;
+        const riff=[[0,40,2],[3,40,1],[6,47,2],[8,43,3],[12,40,2],[15,46,1],
+          [16,40,2],[19,40,1],[22,50,2],[24,47,3],[28,46,2],[31,43,1],
+          [32,40,2],[35,47,1],[37,46,1],[38,40,1]];
+        const pick=riff.find(([onset])=>onset===riffTime);
+        if(pick){for(const [interval,gain] of [[0,.32],[7,.18],[12,.12]])voice(pick[1]+interval,at,step*pick[2]*.92,gain,'guitar');}
+        // Lead answers the chugging power chords, climbing into a bent pinch harmonic.
+        const solo=[[0,64,5,{slide:-5}],[6,67,2,{}],[8,69,5,{bend:2}],
+          [14,67,2,{}],[16,71,4,{slide:-3}],[20,74,2,{}],[22,76,2,{}],
+          [24,74,6,{bend:2}],[30,71,2,{}],[32,76,15.5,{bend:3,squeal:true}]];
+        const lead=solo.find(([onset])=>onset===riffTime);
+        if(lead){voice(lead[1],at,step*lead[2],.37,'guitarlead',lead[3]);
+          voice(lead[1],at+step*1.5,step*lead[2],.085,'guitarlead',lead[3]);}
+
+      }
+      const melodyTime=finale?local%64/2:local%32;
+      const event=phrases[section].find(([onset])=>onset===melodyTime);
+      if(event){const [,pitch,held]=event,
+          duration=step*held*(finale?1.9:.94),
+          melodyPitch=52+pitch+(reprise&&bar>=4?12:0);
+        voice(melodyPitch,at,duration,prelude?.28:drop?.74:bridge?.58:finale?.45:.50,prelude?'strings':'horn',{sharp:drop,naturalHorn:bridge});
+        // The guitar doubles the actual tune, not just the pre-drop solo.
+        // Small slides and delayed vibrato add articulation without obscuring pitch.
+        if(!prelude)voice(melodyPitch+(melodyPitch<64?12:0),at+.006,duration*.98,
+          preDrop?.09:drop?.38:bridge?.10:finale?.22:section===1?.25:.20,'guitarlead',
+          {slide:local%16===0?-.6:0,sharp:drop});
+        notes.push({start:at,duration,pitch:melodyPitch,section:movement.name,guitar:!prelude});
+        if(!prelude&&(section===1||section===3||finale))voice(melodyPitch+12,at+step*.12,duration*.85,finale?.19:.14,'strings');
+        if(reprise)voice(melodyPitch-12,at+step*1.5,duration*.65,.10,'choir');
+        if(!prelude){
+          // A diatonic third follows the tune; a low octave anchors the lead.
+          const minor=[0,2,3,5,7,8,10],pc=((pitch%12)+12)%12;
+          const degree=minor.indexOf(pc), third=degree<0?3:minor[(degree+2)%7]+(degree+2>=7?12:0)-pc;
+          voice(melodyPitch+third,at+.012,duration*.9,preDrop?.07:finale?.18:.15,'strings');
+          voice(melodyPitch-12,at,duration*.8,finale?.15:.11,'horn',{naturalHorn:bridge});
+        }
+      }
+      if(!prelude&&!intake&&!bridge&&!finale&&!preDrop){
+        // Independent answering line enters between the main phrase's accents.
+        const answer=[[5,7,3],[13,3,3],[22,2,4],[27,0,4]].find(([onset])=>onset===local%32);
+        if(answer)voice(64+answer[1]+(section===2?5:0),at,step*answer[2],reprise?.17:.12,'strings');
+      }
+      if(prelude){if(i%16===0)for(const interval of [0,3,7])voice(root+12+interval,at,step*15,.065,'choir');if(i%8===0)voice(root,at,step*5,.12,'pad');continue;}
+      // Crisp background sticks and short snare taps keep the pulse audible.
+      if(!bridge&&(!finale||bar<10)){
+        const sharpLevel=finale?.065:.09;
+        if(local%4===2)voice(78,at,.045,sharpLevel,'rim');
+        if(local%8===7)voice(48,at+step*.45,.075,sharpLevel*.85,'snare');
+      }
+      if(bridge){if(local===0)for(const interval of [0,7,14])voice(52+interval,at,step*30,.13,'choir');if(local>=24&&local%2===0)voice(80,at,.12,.04+(local-24)*.015,'noise');continue;}
+      if(finale){
+        // A prominent bass drum anchors the half-time cinematic finale.
+        if(bar<10&&local%8===0)voice(28,at,.58,.90,'kick');
+        if(local===160)voice(28,at,.95,1.05,'kick');
+        // Half-time choir and brass-like octaves widen into a sustained resolution.
+        if(local%32===0){for(const interval of [0,3,7,14])voice(root+12+interval,at,step*31,.14,'choir');voice(root-12,at,step*28,.20,'strings');voice(28,at,1.2,.65,'timpani');voice(90,at,2,.12,'cymbal');}
+        if(bar>=4&&bar<10&&[6,14].includes(local%16))voice(40,at,.45,.28,'tom');
+        if(bar>=4&&bar<10&&local%8===0){for(let roll=0;roll<3;roll++)voice(60+roll*3,at+step*roll*4/3,.17,.14,'tom');}
+        if(local%16===8&&bar<10)voice(48,at,.3,.36,'snare');
+        if(bar>=4&&bar<10&&local%4===0)voice(root+24+[0,7,12,15][local/4%4],at,step*3,.12,'strings');
+        if(local===160){for(const interval of [0,7,12,15,19])voice(40+interval,at,step*32,.16,'choir',{hold:true});voice(28,at,3,.3,'timpani');}
+        continue;
+      }
+      if(section===1||phonkActive){
+        const beat=local%16;
+        if(phonkActive){
+          // Phonk carries from the drop through C, D and the B reprise; E and F stay orchestral.
+          if(beat%4===0||beat===14)voice(30,at,.25,.58,'kick');
+          if(beat===4||beat===12){voice(48,at,.22,.49,'snare');voice(78,at+.012,.18,.28,'clap');}
+          const sub=[[0,0,5.5],[6,0,1.8],[8,0,5.5],[14,7,1.8]].find(([onset])=>onset===beat);
+          if(sub)voice(root-12+sub[1],at,step*sub[2],.47,'bass808',{slide:beat===14?5:beat===0?-2:0});
+          const bell=[[0,7,2],[3,10,1.5],[6,7,1.5],[8,3,2.5],[11,2,1.5],[14,0,1],[15,3,1]].find(([onset])=>onset===beat);
+          if(bell)voice(76+bell[1],at,step*bell[2],beat===0||beat===8?.16:.12,'cowbell');
+          // One subdivision grid keeps the swung ticks and triplet rolls together.
+          if(beat%2===0)voice(92,at+step*(beat%4===2?.16:0),.065,.14,'hat');
+          if(beat===7||beat===15)for(let roll=0;roll<3;roll++)voice(92,at+step*roll/3,.04,.085+roll*.015,'hat');
+          if(beat===0){for(const interval of [0,3,7])voice(root+12+interval,at,step*15,.075,'choir');voice(90,at,1.1,.10,'cymbal');}
+          if(beat===6||beat===14)voice(55,at,.17,.16,'tom');
+          continue;
+        }
+        // Plain B and its reprise retain their steady rock foundation.
+        if(beat%4===0){voice(30,at,.25,drop?.58:.43,'kick');voice(root-5,at,.5,.32,'timpani');}
+        if(beat===4||beat===12){voice(48,at,.22,drop?.49:.37,'snare');voice(78,at,.055,.10,'rim');}
+        if(beat%2===0){
+          voice(root,at,step*1.8,drop?.23:.17,'bass');
+          voice(90,at,.13,beat%4===0?.10:.07,'cymbal');
+          voice(root+24+[0,7,12,7][beat/2%4],at+step*.5,step*.7,reprise?.045:.025,'arp');
+        }
+        if(beat===2||beat===10)voice(55,at,.19,.16,'tom');
+        if(beat===6||beat===14)voice(62,at,.13,.12,'tom');
+        if(beat===0){for(const interval of [0,3,7,14])voice(root+12+interval,at,step*15,reprise?.12:.08,'choir');}
+        if(drop&&beat%8===0)voice(root-12,at,step*5,.28,'pad');
+        if(beat%4===0)voice(root+12,at,step*2.5,.15,'strings');
+        continue;
+      }
+      // Low drum ostinato, displaced accents and quiet snare doubles drive the background.
+      const drumBeat=local%16;
+      // Every layer resolves to the same bar: straight pulse, 3+3+2 low drums,
+      // triplet high toms and sixteenth snare doubles, with deliberate accents.
+      if(!intake){
+        if([0,6,12].includes(drumBeat))voice(26+(drumBeat===6?5:0),at,.62,.25,'timpani');
+        if(drumBeat%4===0){
+          const accent=drumBeat===0?1:.7;
+          for(let triplet=0;triplet<3;triplet++)voice(62+(triplet%2)*5,at+step*triplet*4/3,.13,(triplet===0?.16:.10)*accent,'tom');
+        }
+        if([1,4,7,9,12,15].includes(drumBeat))voice(78,at+step*.04,.055,drumBeat%4===0?.15:.085,'rim');
+        if((drop||reprise||section===3)&&drumBeat%4===3){voice(48,at+step*.5,.10,.11,'snare');voice(48,at+step*.75,.075,.075,'snare');}
+      }
+      if(!intake){
+        // Interlocking toms and tight ride accents sit above the low drum ostinato.
+        if([2,5,9,13].includes(drumBeat))voice([43,48,40,46][Math.floor(drumBeat/4)],at+step*.08,.24,.23,'tom');
+        if(drumBeat%4===2)voice(90,at,.18,.105,'cymbal');
+        if((drop||reprise)&&drumBeat>=12)voice(48-(drumBeat-12)*3,at+step*.5,.22,.25,'tom');
+        if([0,3,6,8,11,14].includes(drumBeat))voice(root-5+(drumBeat===6||drumBeat===14?7:0),at,drumBeat%8===0?.7:.36,drumBeat%8===0?.48:.28,'timpani');
+        if([3,7,10,15].includes(drumBeat))voice(48,at+step*.12,.12,.12,'snare');
+        if(bar%4===3&&drumBeat>=12)voice(48,at+step*.5,.11,.13+(drumBeat-12)*.035,'snare');
+        if(local%32===0)voice(90,at,1.5,.16,'cymbal');
+        if(local%4===0||local%8===3)voice(root+12+(local%8===3?7:0),at,step*2.5,.15,'strings');
+      }
+      if(intake){if(local%2===0)voice(88,at,.12,.04+local*.012,'noise');continue;}
+      if(local%2===0){voice(root+(local%8===6?12:0),at,step*1.8,drop?.23:.17,'bass');voice(root+24+[0,7,12,15][local%4],at+step*.5,step*.7,reprise?.045:.025,'arp');}
+      if(drop&&local%8===0)voice(root-12,at,step*5,.28,'pad');
+      if((section===1||section===3)&&local%32>=28&&local%2===0)voice(64+[7,3][local%4/2],at,step*1.4,.075,'strings');
+      if(local%16===0)for(const interval of [0,3,7,14])voice(root+12+interval,at,step*15,reprise?.12:.08,'choir');
+      if(local%4===0||((drop||reprise)&&local%16===14))voice(30,at,.25,drop?.58:.43,'kick');
+      if(local%8===4){voice(48,at,.22,drop?.49:.37,'snare');voice(50,at,.1,.12,'pad');}
+      voice(90,at,local%2?.035:.065,local%2?.033:.055,'noise');
+    }
+    if(!prelude){
+      for(let index=1;index<movements.length;index++){
+        const incoming=movements[index],boundary=incoming.start*step;
+        const gentle=['E-short','F-cinematic'].includes(incoming.name);
+        // Common E/B tones overlap the bar line and bind the changing arrangements.
+        for(const pitch of [52,59])voice(pitch,boundary-step*8,step*18,gentle?.10:.065,'choir',{swell:true});
+        voice(76,boundary-step*12,step*16,gentle?.045:.07,'swell',{swell:true});
+        if(incoming.name!=='B-drop'){
+          for(let beat=0;beat<4;beat++)voice(55-beat*5,boundary-step*(4-beat),.24,gentle?.085:.13,'tom');
+          voice(90,boundary,1.1,gentle?.055:.085,'cymbal');
+        }
+      }
+    }
+    // Rhythmic delay and soft saturation retain headroom at the louder mix.
+    // Short hall reflections blend orchestral layers; restrained delay keeps a cybernetic edge.
+    for(const [seconds,gain] of [[.071,.10],[.113,.075],[.181,.05],[.293,.03]]){
+      const offset=Math.floor(seconds*rate);for(let i=offset;i<out.length;i++)out[i]+=hall[i-offset]*gain;
+    }
+    const delay=Math.floor(step*3*rate);
+    for(let i=out.length-1;i>=delay;i--)out[i]+=out[i-delay]*.055;
+    // The boss track ends exactly on the final bar: no fade and no release-tail silence.
+    // The quieter prelude retains its short loop-edge envelope.
+    for(let i=0;i<out.length;i++)out[i]=Math.tanh(out[i]*1.5)*.9*Math.min(1,i/(rate*.01),prelude?(out.length-i)/(rate*.02):1);
+    return out;
+  }
   function compose(track, sampleRate = 22050, notes = []) {
+    if(track === "gaster_signal")return composeGaster(sampleRate);
+    if (track === "tearesseract_prelude") return composeTearesseract(sampleRate, notes, true);
+    if (track === "tearesseract") return composeTearesseract(sampleRate, notes);
     const arena = geomayhemTracks.find(song => song.id === track);
     if (arena) return composeGeomayhem(arena, sampleRate, notes);
     const chamber = chamberTracks.find(song => song.id === track);
@@ -1441,6 +1762,7 @@ const ArcadeMusic = (() => {
       this.context = context;
       this.destination = destination;
       this.buffers = new Map();
+      this.pendingBuffers=new Map();this.loadingTrack=null;this.loadError=null;
       this.melodyNotes = new Map();
       this.voices = new Set();
       this.current = null;
@@ -1472,6 +1794,18 @@ const ArcadeMusic = (() => {
       return this.lastArcadeTrack;
     }
     buffer(theme) {
+      if(archive?.has(theme)&&!this.buffers.has(theme)){
+        if(!this.pendingBuffers.has(theme)){
+          const pending=archive.render(theme).then(buffer=>{
+            this.buffers.set(theme,buffer);this.pendingBuffers.delete(theme);
+            const cached=[...this.buffers.keys()].filter(id=>archive.has(id));
+            while(cached.length>12){const oldest=cached.shift();if(oldest!==this.track)this.buffers.delete(oldest);}
+            return buffer;
+          },error=>{this.pendingBuffers.delete(theme);throw error;});
+          this.pendingBuffers.set(theme,pending);
+        }
+        return this.pendingBuffers.get(theme);
+      }
       if (!this.buffers.has(theme)) {
         const notes = [];
         const data = compose(theme, 22050, notes);
@@ -1570,9 +1904,17 @@ const ArcadeMusic = (() => {
     start() {
       if (!this.track) this.track = this.theme.startsWith("jukebox:") ? this.theme.slice(8)
         : this.oneShot || (loopThemes.includes(this.theme) ? this.theme : this.nextTrack());
+      const buffer=this.buffer(this.track);
+      if(buffer&&typeof buffer.then==='function'){
+        const track=this.track,theme=this.theme;
+        if(this.loadingTrack!==track){this.loadingTrack=track;this.loadError=null;this.onPlaybackChange?.();
+          buffer.then(()=>{if(this.loadingTrack===track)this.loadingTrack=null;if(this.track===track&&this.theme===theme&&this.playing&&!this.current)this.start();this.onPlaybackChange?.();},error=>{if(this.track===track){this.loadingTrack=null;this.loadError=error.message;this.onPlaybackChange?.();}});
+        }return;
+      }
+      this.loadingTrack=null;this.loadError=null;
       const source = this.context.createBufferSource();
       const gain = this.context.createGain();
-      source.buffer = this.buffer(this.track);
+      source.buffer = buffer;
       source.loop = this.theme.startsWith("jukebox:") || loopThemes.includes(this.theme);
       gain.gain.setValueAtTime(0, this.context.currentTime);
       gain.gain.linearRampToValueAtTime(this.track === "core_aftermath" ? .36 : .22, this.context.currentTime + .18);

@@ -1,5 +1,6 @@
 "use strict";
-// Original scores and physically inspired synthesis: no external recordings.
+// Procedural scores and physically inspired synthesis: no external recordings.
+// Regent includes the brief SAVE the World motif credited below.
 const BossAudio=(()=>{
   const profiles=[
     ['Signal / Sentinel',92,38,'metal',[0,7,3,10,7,12,10,3]],
@@ -57,6 +58,14 @@ const BossAudio=(()=>{
     {name:'Beyond Infinity',mode:'major',roots:[38,45,43,38],chord:[0,4,7,12],motif:[12,16,19,24,23,19,16,14]},
     {name:'The Last Coronation',mode:'suspended',roots:[38,41,43,33],chord:[0,5,7,14],motif:[0,7,12,17,19,14,12,7]},
   ];
+  // Brief four-bar SAVE the World motif (Toby Fox), transposed down six semitones.
+  // Pitch/rhythm reference: Kris Dreemur transcription, https://www.vgmusic.com/file/fafa588f8504aad4fdacae905c9868b0.html
+  const saveWorldMotif=Object.freeze([[0,60],[8,72],[16,67],[32,65],[40,72],[44,74],[46,72],[50,69],[54,67],[58,69],[59,67],[60,65]].map(Object.freeze));
+  function regentArrangement(n,intro=false){
+    const position=(n%(64*16))/(16),guitar=!intro&&position>=32&&position<48;
+    const fade=guitar?Math.min(1,(position-32)*2+.15,(48-position)/2):0;
+    return {position,guitar,guitarGain:Math.max(0,fade),groove:guitar&&position>=40,heavy:!intro&&position>=48,endSteps:48*16-n%(64*16)};
+  }
   const hz=n=>440*2**((n-69)/12),TAU=Math.PI*2;
   function random(seed){let n=seed>>>0;return()=>{n=(1664525*n+1013904223)>>>0;return n/4294967296*2-1}}
   function effect(context,level,kind='impact'){
@@ -107,6 +116,20 @@ const BossAudio=(()=>{
       }
     }return buffer;
   }
+  function pluckedGuitar(note,duration,rate=22050){
+    const data=new Float32Array(Math.ceil(duration*rate)),frequency=hz(note),rng=random(note*997+Math.round(duration*1000));
+    const harmonics=Array.from({length:12},(_,i)=>{const k=i+1;return {ratio:k*Math.sqrt(1+.000035*k*k),weight:Math.sin(Math.PI*k*.19)/k**1.25,decay:.65+.2*k+.025*k*k};}).filter(h=>frequency*h.ratio<rate*.42);
+    for(let i=0;i<data.length;i++){
+      const t=i/rate,vibrato=Math.min(1,Math.max(0,(t-.12)/.22));
+      // A slightly sharp pick settles into pitch; gentle vibrato arrives after the attack.
+      const phase=TAU*frequency*(t+.000115*(1-Math.exp(-t/.025)))+frequency*.00065*vibrato*Math.sin(TAU*5.2*t);
+      let string=0;for(const h of harmonics)string+=Math.sin(phase*h.ratio)*h.weight*Math.exp(-t*h.decay);
+      const pick=rng()*.07*Math.exp(-t*95),attack=Math.min(1,t/.003),release=Math.min(1,(duration-t)/Math.min(.035,duration*.15));
+      // Mild amplifier saturation retains the string's decay instead of flattening it.
+      data[i]=Math.tanh((string+pick)*1.8)*.75*attack*release;
+    }
+    return data;
+  }
   class Director{
     constructor(context,destination=context.destination){
       this.context=context;this.sources=new Set();this.cache=new Map();this.session=null;this.events=0;
@@ -119,31 +142,45 @@ const BossAudio=(()=>{
     }
     track(source,gain){this.sources.add(source);source.onended=()=>{this.sources.delete(source);source.disconnect();gain.disconnect()};}
     tone(note,at,duration,volume=.06,voice='strings',pan=0){
+      if(voice==='guitar'){this.guitar(note,at,duration,volume,pan);return;}
       const c=this.context,g=c.createGain(),stereo=c.createStereoPanner();stereo.pan.value=pan;g.connect(stereo);stereo.connect(this.bus);
       g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(volume,at+Math.min(duration*.3,voice==='strings'?.035:.006));g.gain.exponentialRampToValueAtTime(.0001,at+duration);
       const freq=hz(note),partials=voice==='bell'?[1,2.76,5.4]:['brass','blade'].includes(voice)?[1,2,3,4,5]:voice==='choir'?[1,2,3,5,8]:voice==='pluck'?[1,2,4]:[1,2,3];let pending=partials.length;
       partials.forEach((ratio,i)=>{const o=c.createOscillator();o.type=voice==='pulse'?'square':voice==='blade'?'sawtooth':'sine';o.frequency.setValueAtTime(freq*ratio,at);o.detune.value=(i%2?1:-1)*3;const v=c.createGain();v.gain.value=1/(1+i*2);o.connect(v);v.connect(g);this.sources.add(o);o.onended=()=>{this.sources.delete(o);o.disconnect();v.disconnect();if(!--pending){g.disconnect();stereo.disconnect()}};o.start(at);o.stop(at+duration+.02)});
     }
-    sound(level,kind,at=this.context.currentTime,volume=.55){
+    guitar(note,at,duration,volume,pan){
+      const c=this.context,key=`${note}:${duration.toFixed(5)}`;this.guitarBuffers??=new Map();
+      if(!this.guitarBuffers.has(key)){const data=pluckedGuitar(note,duration),buffer=c.createBuffer(1,data.length,22050);buffer.copyToChannel(data,0);if(this.guitarBuffers.size>=48)this.guitarBuffers.delete(this.guitarBuffers.keys().next().value);this.guitarBuffers.set(key,buffer);}
+      const source=c.createBufferSource(),cabinet=c.createBiquadFilter(),gain=c.createGain(),stereo=c.createStereoPanner();
+      source.buffer=this.guitarBuffers.get(key);cabinet.type='lowpass';cabinet.Q.value=.65;cabinet.frequency.setValueAtTime(4600,at);cabinet.frequency.exponentialRampToValueAtTime(1800,at+duration);
+      gain.gain.value=volume;stereo.pan.value=pan;source.connect(cabinet);cabinet.connect(gain);gain.connect(stereo);stereo.connect(this.bus);
+      this.sources.add(source);source.onended=()=>{this.sources.delete(source);source.disconnect();cabinet.disconnect();gain.disconnect();stereo.disconnect();};source.start(at);source.stop(at+duration);
+    }
+    sound(level,kind,at=this.context.currentTime,volume=.55,fadeEnd=null){
       const key=`${level}:${kind}`;if(!this.cache.has(key)){if(this.cache.size>=12)this.cache.delete(this.cache.keys().next().value);this.cache.set(key,kind.startsWith('death_')&&globalThis.BossDefeat?BossDefeat.soundBuffer(this.context,level,kind.slice(6)):['kick','snare','hat','taiko','crash'].includes(kind)?drum(this.context,level,kind):effect(this.context,level,kind));}
-      const s=this.context.createBufferSource(),g=this.context.createGain();s.buffer=this.cache.get(key);g.gain.value=volume;s.connect(g);g.connect(this.bus);this.track(s,g);s.start(at);this.events++;
+      const s=this.context.createBufferSource(),g=this.context.createGain();s.buffer=this.cache.get(key);g.gain.value=volume;s.connect(g);g.connect(this.bus);this.track(s,g);if(fadeEnd!==null){g.gain.setValueAtTime(volume,at);g.gain.setValueAtTime(volume,Math.max(at,fadeEnd-8*60/profiles[level-1].bpm));g.gain.linearRampToValueAtTime(0,fadeEnd);}s.start(at);if(fadeEnd!==null)s.stop(fadeEnd);this.events++;
     }
     regentStep(n,phase,intro,time,at,beatLength){
       const step=n%16,bar=Math.floor(n/16),section=Math.floor(bar/8)%regentMovements.length,m=regentMovements[section];
       const root=m.roots[bar%4],build=intro?Math.min(1,.35+time/11):1,bright=['major','lydian'].includes(m.mode),sparse=section===3||section===5;
+      const arrangement=regentArrangement(n,intro);
+      this.regentFeature(n,at,beatLength,build,arrangement);
+      const drumBuild=build*(arrangement.groove?.45:1),leadBuild=build*(arrangement.guitar?.25:1);
       // Eight movements (~78 seconds): minor tension, major release, then a transformed reprise.
       const kicks=sparse?[0,6,8,14]:section===4?[0,2,3,6,8,10,11,14]:[0,3,6,8,10,14];
-      if(kicks.includes(step))this.sound(20,'kick',at,.76*build);
-      if(step===4||step===12)this.sound(20,'snare',at,.63*build);
-      if(!sparse||step%2===0)this.sound(20,'hat',at,(step%2?.11:.22)*build);
-      if(step%4===0)this.sound(20,'taiko',at,.42*build);
-      if(step===0&&bar%4===0)this.sound(20,'crash',at,.32*build);
-      if(step>=12&&bar%8===7)this.sound(20,step%2?'taiko':'snare',at,.38*build);
+      if(!arrangement.heavy){
+      if(kicks.includes(step))this.sound(20,'kick',at,.76*drumBuild);
+      if(step===4||step===12)this.sound(20,'snare',at,.63*drumBuild);
+      if(!sparse||step%2===0)this.sound(20,'hat',at,(step%2?.11:.22)*drumBuild);
+      if(step%4===0)this.sound(20,'taiko',at,.42*drumBuild);
+      if(step===0&&bar%4===0)this.sound(20,'crash',at,.32*drumBuild);
+      if(step>=12&&bar%8===7)this.sound(20,step%2?'taiko':'snare',at,.38*drumBuild);
+      }
       if(step%2===0){
         this.tone(root+(step%4===2?12:0),at,beatLength*.45,.075*build,'blade',0);
         const note=root+24+m.motif[step/2];
-        this.tone(note,at,beatLength*(bright?1.05:.48),.042*build,bright?'brass':'pulse',-.22);
-        this.tone(note-12,at+beatLength*.04,beatLength*.65,.025*build,'strings',.3);
+        this.tone(note,at,beatLength*(bright?1.05:.48),.042*leadBuild,bright?'brass':'pulse',-.22);
+        this.tone(note-12,at+beatLength*.04,beatLength*.65,.025*leadBuild,'strings',.3);
       }
       // Sustained background harmony, stereo string ostinato, and answering high bells.
       if(step===0){
@@ -156,6 +193,35 @@ const BossAudio=(()=>{
       if(step%4===0)m.chord.slice(0,3).forEach((v,i)=>this.tone(root+12+v,at,beatLength*.7,.016*build,'brass',(i-1)*.25));
       if(phase>=2&&step%2===1)this.tone(root+36+m.chord[step%4],at,beatLength*.23,.014*build,'pluck',-.45);
       if(step===0&&bar%8===7)this.sound(20,'rise',at,.22);
+    }
+    regentFeature(n,at,beatLength,build,arrangement=regentArrangement(n)){
+      const step=n%16,bar=Math.floor(n/16),end=at+arrangement.endSteps*beatLength*.25;
+      if(arrangement.guitar){
+        const offset=(n-32*16)%64,index=saveWorldMotif.findIndex(note=>note[0]===offset);
+        if(index>=0){const [,note]=saveWorldMotif[index],next=saveWorldMotif[index+1]?.[0]??64;
+          const duration=Math.min((next-offset)*beatLength*.25,Math.max(.01,end-at));
+          this.tone(note,at,duration,.13*build*arrangement.guitarGain,'guitar',-.18);
+          if(arrangement.groove)this.tone(note-12,at,duration,.035*build*arrangement.guitarGain,'guitar',.3);
+        }
+      }
+      if(arrangement.groove){
+        const gain=build*arrangement.guitarGain;
+        if([0,3,7,8,10,14].includes(step))this.sound(20,'kick',at,.8*gain,end);
+        if([4,12].includes(step))this.sound(20,'snare',at,.7*gain,end);
+        if([6,15].includes(step))this.sound(20,'snare',at,.23*gain,end);
+        this.sound(20,'hat',at,(step%2?.12:.24)*gain,end);
+        if(step>=12&&bar%2===1)this.sound(20,'taiko',at,.4*gain,end);
+        if(step===0&&bar%4===0)this.sound(20,'crash',at,.35*gain,end);
+      }
+      if(arrangement.heavy){
+        if([0,1,3,6,8,9,11,14].includes(step))this.sound(20,'kick',at,.95*build);
+        if([4,12].includes(step))this.sound(20,'snare',at,.85*build);
+        if([7,15].includes(step))this.sound(20,'snare',at,.33*build);
+        this.sound(20,'hat',at,(step%2?.16:.28)*build);
+        if([2,5,10,13].includes(step))this.sound(20,'taiko',at,.46*build);
+        if(step===0&&bar%2===0)this.sound(20,'crash',at,.5*build);
+        if(bar%4===3&&step>=12){this.sound(20,'snare',at+beatLength*.125,.48*build);this.sound(20,'taiko',at,.5*build);}
+      }
     }
     defeat(level,time,now){
       for(const [cue,kind] of BossDefeat.audioCues(level))if(time>=cue&&this.lastTimeBefore<cue)this.sound(level,'death_'+kind,now,kind==='ray'?.75:kind==='impact'?.65:.46);
@@ -172,10 +238,10 @@ const BossAudio=(()=>{
       this.lastTimeBefore=time;
     }
     stop(){for(const s of this.sources){try{s.stop()}catch{}}this.sources.clear();this.wet.gain.cancelScheduledValues(this.context.currentTime);this.wet.gain.setValueAtTime(0,this.context.currentTime);this.session=null;this.nextBeat=0;this.lastCue=-1;this.lastMove=null;this.lastDefeatBeat=-1;}
-    sync({level,mode='intro',time=0,phase=1,move='',playing=true,speed=1}={}){
+    sync({level,mode='intro',time=0,phase=1,move='',playing=true,speed=1,startBeat=0}={}){
       if(!playing||!level||this.context.state!=='running'){if(this.session)this.stop();return;}
       const key=`${level}:${mode}`,p=profiles[level-1],now=this.context.currentTime;
-      if(this.session!==key||time<this.lastTime-.15){this.stop();this.session=key;this.lastTimeBefore=time-.01;this.wet.gain.setValueAtTime(0,now);this.wet.gain.linearRampToValueAtTime(.22,now+1.5);this.nextBeat=now;this.beat=0;this.lastCue=Math.floor(time/.5)-1;this.lastMove=move;}
+      if(this.session!==key||time<this.lastTime-.15){this.stop();this.session=key;this.lastTimeBefore=time-.01;this.wet.gain.setValueAtTime(0,now);this.wet.gain.linearRampToValueAtTime(.22,now+1.5);this.nextBeat=now;this.beat=startBeat;this.lastCue=Math.floor(time/.5)-1;this.lastMove=move;}
       this.lastTime=time;
       if(mode==='defeat'&&globalThis.BossDefeat){this.defeat(level,time,now);return;}
       // Schedule only a short window, so pause/skip/mute are immediate.
@@ -211,7 +277,7 @@ const BossAudio=(()=>{
       this.lastTimeBefore=time;
     }
   }
-  return {profiles,effect,drum,Director,regentMovements};
+  return {profiles,effect,drum,Director,regentMovements,regentArrangement,saveWorldMotif,pluckedGuitar};
 })();
 if(typeof module!=='undefined')module.exports=BossAudio;
 if(typeof globalThis!=='undefined')globalThis.BossAudio=BossAudio;

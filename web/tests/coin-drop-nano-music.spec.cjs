@@ -32,6 +32,6 @@ test('every score renders real, finite, distinct PCM audio',async({page})=>{
      out.push({id:game.id,rms:Math.sqrt(sum/pcm.length),peak,hash});
    }return out;
  });
- expect(results).toHaveLength(60);expect(new Set(results.map(r=>r.hash)).size).toBe(60);
+ expect(results).toHaveLength(300);expect(new Set(results.map(r=>r.hash)).size).toBe(300);
  for(const r of results){expect(r.rms,r.id).toBeGreaterThan(.0001);expect(r.peak,r.id).toBeLessThan(.5);expect(Number.isFinite(r.rms),r.id).toBe(true);}
 });

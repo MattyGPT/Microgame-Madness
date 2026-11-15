@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{await openGame(page);await page.locator('[data-game="nanolab"]').click();});
-test('Nano Lab lists all 60 tests, filters worlds, and leaves campaign untouched',async({page},info)=>{
- await expect(page.locator('[data-nano-test]')).toHaveCount(60);
+test('Nano Lab lists all 300 tests, filters worlds, and leaves campaign untouched',async({page},info)=>{
+ await expect(page.locator('[data-nano-test]')).toHaveCount(300);
  await page.locator('#cd-lab-world').selectOption('19');await expect(page.locator('[data-nano-test]')).toHaveCount(3);
  await page.locator('#coin-drop-room').screenshot({path:info.outputPath('nano-lab.png')});
  await page.locator('#cd-lab-world').selectOption('all');await page.locator('#cd-lab-search').fill('Vault Code');await expect(page.locator('[data-nano-test]')).toHaveCount(1);
@@ -45,7 +45,7 @@ test('all 50 new nanogames can be won through their controls without saving lab 
    }
    return out;
  });
- expect(results).toHaveLength(50);for(const r of results){expect(r.closed,r.id).toBe(true);expect(r.result,r.id).toContain('won!');expect(r.unchanged,r.id).toBe(true);}expect(errors).toEqual([]);
+ expect(results).toHaveLength(50);for(const r of results){expect(r.closed,r.id).toBe(true);expect(r.result,r.id).toContain('You win!');expect(r.unchanged,r.id).toBe(true);}expect(errors).toEqual([]);
 });
 test('every new game times out safely and campaign victories still award rewards',async({page})=>{
  const results=await page.evaluate(()=>{
@@ -62,7 +62,7 @@ test('Nano Lab supports real keyboard holds, exposes correct visuals, and never 
  const before=await page.evaluate(()=>localStorage.getItem(coinDropGame.key));
  await page.locator('[data-nano-test="nano_hold"]').click();await page.locator('#cd-nano-start').click();
  await page.keyboard.down('Space');await page.evaluate(()=>coinDropGame.tickNano(1.1));await page.keyboard.up('Space');
- await expect(page.locator('#cd-lab-result')).toContainText('Pressure Valve: won!');
+ await expect(page.locator('#cd-lab-result')).toContainText('Pressure Valve: You win!');
  for(const id of ['nano_clock','nano_pairs','nano_orbit','nano_lights']){
    await page.locator(`[data-nano-test="${id}"]`).click();await page.locator('#cd-nano-start').click();
    await page.locator('.cd-nano').screenshot({path:info.outputPath(`${id}.png`)});

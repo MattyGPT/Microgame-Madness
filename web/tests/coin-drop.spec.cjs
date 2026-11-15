@@ -17,8 +17,8 @@ test('flat coin physics, keyboard aim, pause, map clear and reload persistence',
  expect(errors).toEqual([]);
 });
 test('upgrade dependencies, minicoins, forge and map locking',async({page},info)=>{
- await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(20);await expect(page.locator('#cd-maps button').nth(1)).toBeDisabled();
- await page.evaluate(()=>{coinDropGame.p.dots=10000;coinDropGame.render();});await page.locator('[data-tab="tree"]').click();await expect(page.locator('.cd-node')).toHaveCount(8);await expect(page.locator('.cd-node button').nth(1)).toBeDisabled();await page.locator('.cd-node button').first().click();await expect(page.locator('.cd-node button').nth(1)).toBeEnabled();
+ await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(100);await expect(page.locator('#cd-maps button').nth(1)).toBeDisabled();
+ await page.evaluate(()=>{coinDropGame.p.dots=10000;coinDropGame.render();});await page.locator('[data-tab="tree"]').click();await expect(page.locator('.cd-node')).toHaveCount(20);await expect(page.locator('.cd-node button').nth(1)).toBeDisabled();await page.locator('.cd-node button').first().click();await expect(page.locator('.cd-node button').nth(1)).toBeEnabled();
  await page.getByRole('button',{name:'◌ Minicoins',exact:true}).click();await page.locator('.cd-node button').first().click();
  await page.screenshot({path:info.outputPath('coin-drop-tree.png'),fullPage:true});
  await page.locator('[data-tab="board"]').click();await page.locator('#cd-drop').click();expect(await page.evaluate(()=>coinDropGame.coins.filter(c=>c.mini).length)).toBe(1);
@@ -68,8 +68,8 @@ test('landing pockets run all three nanogames, award prizes, and automatically r
    }else for(let i=0;i<5;i++)await page.locator('#cd-nano-star').click();
    await expect(page.locator('.cd-nano')).not.toBeVisible();
    expect(await page.evaluate(()=>coinDropGame.p.dots)).toBeGreaterThan(before.dots);
-   if(kind==='memory')expect(await page.evaluate(()=>coinDropGame.p.rubies)).toBe(before.rubies+1);
-   if(kind==='stars')expect(await page.evaluate(()=>coinDropGame.p.scrap)).toBe(before.scrap+5);
+   if(kind==='memory')expect(await page.evaluate(()=>coinDropGame.p.rubies)).toBe(before.rubies+5);
+   if(kind==='stars')expect(await page.evaluate(()=>coinDropGame.p.scrap)).toBe(before.scrap+25);
    await expect.poll(()=>page.evaluate(()=>coinDropGame.clock)).toBeGreaterThan(before.clock);
  }
 });
@@ -133,7 +133,7 @@ test('Pocket Maze uses arrow keys, kills on walls and edges, and times out after
  }
  await openMaze();const aim=await page.evaluate(()=>coinDropGame.aim),rubies=await page.evaluate(()=>coinDropGame.p.rubies);
  for(const key of ['ArrowDown','ArrowDown','ArrowDown','ArrowRight','ArrowRight','ArrowRight'])await page.keyboard.press(key);
- await expect(page.locator('.cd-nano')).not.toBeVisible();expect(await page.evaluate(()=>coinDropGame.p.rubies)).toBe(rubies+1);expect(await page.evaluate(()=>coinDropGame.aim)).toBe(aim);
+ await expect(page.locator('.cd-nano')).not.toBeVisible();expect(await page.evaluate(()=>coinDropGame.p.rubies)).toBe(rubies+5);expect(await page.evaluate(()=>coinDropGame.aim)).toBe(aim);
  for(const action of ['wall','edge','touch','timeout']){
    await openMaze();const before=await page.evaluate(()=>coinDropGame.p.rubies);
    if(action==='wall')await page.keyboard.press('ArrowRight');
@@ -141,6 +141,6 @@ test('Pocket Maze uses arrow keys, kills on walls and edges, and times out after
    else if(action==='touch')await page.locator('#cd-nano-stage .cd-nano-choices button').nth(3).click();
    else{expect(await page.evaluate(()=>coinDropGame.nano.config.seconds)).toBe(6);await page.evaluate(()=>coinDropGame.tickNano(6.01));}
    await expect(page.locator('.cd-nano')).not.toBeVisible();expect(await page.evaluate(()=>coinDropGame.p.rubies)).toBe(before);expect(await page.evaluate(()=>coinDropGame.playable())).toBe(true);
-   if(action!=='timeout')await expect(page.locator('#cd-status')).toContainText('Hit a wall!');
+   if(action!=='timeout')await expect(page.locator('#cd-status')).toContainText('You lose');
  }
 });

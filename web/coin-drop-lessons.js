@@ -65,6 +65,7 @@ const CoinDropLessons = (() => {
   };
   const romanKey=[['I','1'],['II','2'],['III','3'],['IV','4'],['V','5'],['VI','6'],['VII','7'],['VIII','8'],['IX','9'],['X','10']];
   function get(game){
+    if(game.lesson)return {key:game.id,title:`Learn ${game.title}`,steps:game.lesson.steps,example:game.lesson.example,reference:null};
     const key=game.variant||game.id,entry=notes[key];if(!entry)throw new Error(`Missing lesson: ${game.id}`);
     return {key,title:key==='binary'?'Binary: the 8–4–2–1 code':key==='roman'?'Roman numerals key':`Learn ${game.title}`,steps:entry.slice(0,2),example:entry[2],reference:key==='roman'?romanKey:null};
   }

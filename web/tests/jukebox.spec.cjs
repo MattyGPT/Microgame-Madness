@@ -13,7 +13,7 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
   await page.locator('[data-game="jukebox"]').click();
   const before = await page.evaluate(() => JSON.stringify([saved.scores, saved.achievements], (key, value) => key === "websiteSeconds" ? undefined : value));
   await expect(page.locator('#game-title')).toHaveText('Arcade Jukebox');
-  await expect(page.locator('[data-difficulty]')).toHaveCount(await page.evaluate(() => ArcadeMusic.jukeboxTracks.length));
+  await expect(page.locator('[data-difficulty]')).toHaveCount(await page.evaluate(() => jukeboxTracks.length));
   const art = await page.evaluate(ids => {
     const cards = [...document.querySelectorAll('.song-card')];
     return cards.map(card => ({ fresh: ids.includes(card.dataset.difficulty),

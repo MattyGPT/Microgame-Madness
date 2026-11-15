@@ -32,3 +32,24 @@ test('diagonal arrow combinations choose a mirror answer and wire arrows select 
  await launch(page,'nano_mirror');await page.keyboard.down('ArrowDown');await page.keyboard.down('ArrowRight');await page.keyboard.up('ArrowRight');await page.keyboard.up('ArrowDown');await expect(page.locator('.cd-result-badge')).toHaveText('LOSS');
  await launch(page,'nano_wires');await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowUp');await expect(page.locator('#cd-lab-result')).toBeVisible();await expect(page.locator('.cd-result-badge')).toHaveText('WIN');
 });
+
+test('campaign nanogames keep clear win and loss banners after the drop resumes',async({page})=>{
+ for(const won of [true,false]){
+  await page.evaluate(()=>{
+   const game=coinDropGame;game.setLabMode(true);game.startNanoTest('math');
+   const {coin,pocket}=game.nano;game.closeNano();game.setLabMode(false);
+   game.enterNano(coin,pocket,false);
+  });
+  await page.locator('#cd-nano-start').click();
+  const answer=await page.evaluate(won=>won?coinDropGame.nano.correct:(coinDropGame.nano.correct+1)%3,won);
+  await page.locator('#cd-nano-stage .cd-nano-choices button').nth(answer).click();
+  await expect(page.locator('#cd-lab-result')).toBeVisible();
+  await expect(page.locator('.cd-result-badge')).toHaveText(won?'WIN':'LOSS');
+  await expect(page.locator('#cd-lab-result')).toContainText(won?'You win!':'You lose.');
+  await page.evaluate(()=>coinDropGame.message('Another board event'));
+  await expect(page.locator('#cd-lab-result')).toBeVisible();
+  expect(await page.evaluate(()=>coinDropGame.nano)).toBeNull();
+  await expect(page.locator('#cd-lab-result').getByRole('button',{name:'Try again'})).toHaveCount(0);
+  await page.locator('#cd-lab-result').getByRole('button',{name:'Dismiss'}).click();
+ }
+});

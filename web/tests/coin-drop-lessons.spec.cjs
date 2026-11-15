@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{await openGame(page);await page.locator('[data-game="nanolab"]').click();});
 test('binary lesson teaches place values interactively without running timer or music',async({page},info)=>{
- await expect(page.locator('[data-nano-learn]')).toHaveCount(60);
+ await expect(page.locator('[data-nano-learn]')).toHaveCount(300);
  const before=await page.evaluate(()=>JSON.stringify(coinDropGame.p));
  await page.locator('#cd-lab-search').fill('binary');await page.locator('[data-nano-learn="nano_binary"]').click();
  await expect(page.locator('#cd-nano-lesson')).toHaveAttribute('open','');
