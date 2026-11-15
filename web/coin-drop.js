@@ -3,10 +3,12 @@ const CoinDrop = (() => {
   const NanoPack = typeof CoinDropNanoPack !== 'undefined' ? CoinDropNanoPack : require('./coin-drop-nanogames.js');
   const NanoMusic = typeof CoinDropNanoMusic !== 'undefined' ? CoinDropNanoMusic : require('./coin-drop-nano-music.js');
   const Lessons = typeof CoinDropLessons !== 'undefined' ? CoinDropLessons : require('./coin-drop-lessons.js');
-  const LIMIT = 1e15;
+  const Expansion = typeof CoinDropExpansion !== 'undefined' ? CoinDropExpansion : require('./coin-drop-expansion.js');
+  const LIMIT = 1e300;
+  const MAX_RANK = 1e250;
   const BOARD = Object.freeze({width:840, height:1320, pocketY:1275, slotWidth:120});
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-  const fmt = n => new Intl.NumberFormat('en', {notation: n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 1}).format(n);
+  const fmt = n => new Intl.NumberFormat('en', {notation: n >= 1e15 ? 'scientific' : n >= 10000 ? 'compact' : 'standard', maximumFractionDigits: 1}).format(n);
   // Hand-authored board recipes: layout, motion and hazards combine differently on every map.
   const recipes = [
     ['Bluebell Arcade','A classic staggered garden. Chase the golden center.', '#75c5ff','classic',0,1,0],
@@ -28,9 +30,10 @@ const CoinDrop = (() => {
     ['Twin Vortex','Two swirling peg galaxies and crossing portals.', '#b48cff','vortex',-40,.8,28],
     ['Gilded Gauntlet','Dense moving walls demand a deliberate launch.', '#ffde79','towers',65,1.35,22],
     ['Starfall Engine','Cosmic bumpers shower the board in starlight.', '#8bdaff','fan',-85,.65,30],
-    ['Cubie Crown','The final machine: arches, portals and ruby rain.', '#ffe4a1','arches',70,1.05,34],
+    ['Cubie Crown','The first crown: arches, portals and ruby rain.', '#ffe4a1','arches',70,1.05,34],
   ];
-  const maps = recipes.map((r,i) => ({id:i,name:r[0],hint:r[1],color:r[2],layout:r[3],wind:r[4],gravity:r[5],motion:r[6],goal:120*Math.round(250*1.38**i),value:1.24**i,portal:[8,16,19].includes(i)}));
+  recipes.push(...Expansion.worlds);
+  const maps = recipes.map((r,i) => ({id:i,name:r[0],hint:r[1],color:r[2],layout:r[3],wind:r[4],gravity:r[5],motion:r[6],goal:i>=20?1e89*1.75**(i-20):720*Math.round(250*1.75**i),value:1.24**i,portal:[8,16,19].includes(i)||(i>=20&&i%4===0)}));
   const nanogames = [
     {id:'timing',title:'Golden Stop',rules:'Stop the moving marker inside the gold zone. You have 8 seconds.',seconds:8},
     {id:'memory',title:'Ruby Recall',rules:'Remember four symbols, then repeat them in order. Study for 3 seconds, then answer.',seconds:15,ruby:1},
@@ -43,6 +46,7 @@ const CoinDrop = (() => {
     {id:'code',title:'Vault Code',rules:'Memorize the three-digit code, then enter it on the keypad. Study for 1 second.',seconds:14,ruby:1},
     {id:'rhythm',title:'Triple Chime',rules:'Stop the marker in gold three times. Wait for the next pass between hits.',seconds:12},
     ...NanoPack.games,
+    ...Expansion.games,
   ];
   const branchData = [
     ['mint','Mint','●','#8bc9ff','All dot payouts +12% per rank.',['Polished Faces','Blue Alloy','Deep Stamping','Cash Resonance','Royal Mint','Diamond Dies','Celestial Press','Infinite Treasury']],
@@ -56,24 +60,75 @@ const CoinDrop = (() => {
     ['combo','Combos','∞','#ffb3dc','Each unique peg hit adds +1% pocket payout per rank (up to ×12).',['Bounce Counter','Happy Accident','Chain Link','Lucky Rhythm','Perfect Cadence','Encore','Grand Finale','Infinite Rhythm']],
     ['prism','Prisms','◇','#d5b5ff','Critical pocket chance +1% per rank (up to 60%); critical pays ×3.',['Lucky Glint','Mirror Finish','Split Light','Spectrum','Aurora Glass','Rainbow Engine','Supernova','Infinite Brilliance']],
   ];
+  branchData.push(
+    ['expedition','Expedition','✧','#a8f0ff','Dot payouts, including the condenser, multiply by 1.5 per rank (up to 150 ranks).',['Frontier Charter','Deep Survey','Trade Winds','World Network','Stellar Routes','Galactic Exchange','Crown Commerce','Beyond the Horizon']],
+    ['pocket','Pocketcraft','◎','#ffda93','Pocket landing dots +20% per rank.',['Soft Landing','Gold Lining','Wide Vault','Pocket Dividend','Rich Reservoir','Royal Catch','Star Basin','Infinity Bowl']],
+    ['nano','Nano Mastery','⚗','#d9b4ff','Nanogame win dots +25% per rank.',['First Victory','Practice Pays','Bonus Cache','Master Medal','Pocket Champion','Streak Treasury','Challenge Crown','Nano Legend']],
+    ['bank','Bankworks','▣','#9aebc5','DOT-bank rewards +20% and pocket bonus +5 percentage points per rank.',['Bank Teller','Double Ledger','Capital Reserve','Green Vault','Dividend Engine','Central Reserve','Crown Bond','Endless Credit']],
+    ['overdrive','Overdrive','ϟ','#ffb69a','Boosted drops gain another +25% dot payout per rank.',['Boost Coil','Turbo Valve','Hot Start','Power Surge','Hyperdrive','Nova Thrust','Crown Ignition','Infinity Drive']],
+    ['salvage','Salvage','⚒','#d7ddb4','Each landed minicoin creates +1 scrap per rank.',['Scrap Net','Sorting Line','Recovery Belt','Alloy Recovery','Clean Foundry','Gem Recycler','Crown Reclaimer','Perfect Recovery']],
+  );
+  // Preserve all existing node IDs; add twelve deeper tiers to every branch.
+  const tierNames=['Frontier','Lunar','Solar','Nebula','Comet','Quasar','Galaxy','Cosmic','Eternal','Transcendent','Sovereign','Apex'];
+  for(const branch of branchData)branch[5].push(...tierNames.map(tier=>`${tier} ${branch[1]}`));
   const branches = branchData.map(([id,name,icon,color,description,names]) => ({id,name,icon,color,description,names}));
-  const nodes = branches.flatMap((b,bi) => b.names.map((name,tier) => ({id:`${b.id}-${tier}`,branch:b.id,name,tier,bi,requires:tier ? `${b.id}-${tier-1}` : null,currency:tier>=6?'rubies':'dots'})));
+  const nodes = branches.flatMap((b,bi) => b.names.map((name,tier) => ({id:`${b.id}-${tier}`,branch:b.id,name,tier,bi,requires:tier ? `${b.id}-${tier-1}` : null,currency:tier>=6?(tier%3===2?'scrap':'rubies'):'dots'})));
+  const branchNodes = Object.fromEntries(branches.map(b=>[b.id,nodes.filter(n=>n.branch===b.id)]));
   function restore(raw) {
     const n = (v,max=LIMIT) => Number.isFinite(v) ? clamp(Math.floor(v),0,max) : 0;
-    const p = {dots:n(raw?.dots),rubies:n(raw?.rubies),scrap:n(raw?.scrap),cleared:n(raw?.cleared,20),map:n(raw?.map,19),levels:{},earned:Array.from({length:20},(_,i)=>n(raw?.earned?.[i])),drops:n(raw?.drops),boosts:n(raw?.boosts,10000)};
-    p.map=Math.min(p.map,p.cleared,19);
-    for(const node of nodes) p.levels[node.id]=n(raw?.levels?.[node.id],1000000);
+    const p = {dots:n(raw?.dots),rubies:n(raw?.rubies),scrap:n(raw?.scrap),cleared:n(raw?.cleared,maps.length),map:n(raw?.map,maps.length-1),levels:{},earned:Array.from({length:maps.length},(_,i)=>n(raw?.earned?.[i])),drops:n(raw?.drops),boosts:n(raw?.boosts)};
+    p.map=Math.min(p.map,p.cleared,maps.length-1);
+    for(const node of nodes) p.levels[node.id]=n(raw?.levels?.[node.id],MAX_RANK);
     return p;
   }
-  function rank(p,branch) { return nodes.filter(n=>n.branch===branch).reduce((s,n)=>s+(p.levels[n.id]||0)*(1+n.tier*.25),0); }
-  function cost(p,node) { return Math.min(1e12,Math.ceil((node.currency==='rubies'? 6*2**(node.tier-6):35*2.65**node.tier)*1.48**Math.min(100,p.levels[node.id]||0))); }
+  // Saturate positive payout products before floating-point overflow can turn rewards into zero.
+  function payoutProduct(...factors){
+    let total=1;
+    for(const factor of factors){if(Number.isNaN(factor)||factor<=0)return 0;if(factor===Infinity||total>LIMIT/factor)total=LIMIT;else total*=factor;}
+    return Math.min(LIMIT,total);
+  }
+  function rank(p,branch) { return (branchNodes[branch]||[]).reduce((s,n)=>s+(p.levels[n.id]||0)*(1+n.tier*.25),0); }
+  const FORGE_PRICES = Object.freeze({boost:20,ruby:60,dots:50});
+  const BASE_AMOUNTS = Object.freeze([1,5,10,25,50,100,250,500,1000,2500,5000,...[1e4,1e5,1e6,1e7,1e8].flatMap(n=>[n,n*2.5,n*5]),1e9,1e10,5e10]);
+  const FORGE_AMOUNTS = BASE_AMOUNTS;
+  const BUY_AMOUNTS = Object.freeze([...BASE_AMOUNTS,1e11,1e12,1e15,1e20,1e25,1e30,1e40,1e50,1e75,1e100,1e125,1e150,1e175,1e200]);
+  function rankCost(node,level) { return Math.min(1e12,Math.ceil((node.currency==='rubies'? 6*2**(node.tier-6):node.currency==='scrap'?30*2**(node.tier-8):35*2.65**node.tier)*1.48**Math.min(100,level))); }
+  function cost(p,node,amount=1) {
+    const level=p.levels[node.id]||0;
+    if(!BUY_AMOUNTS.includes(amount)||level+amount>MAX_RANK||level+amount===level)return Infinity;
+    // Only the first 100 ranks can vary; every later rank has the same capped price.
+    const rising=Math.min(amount,Math.max(0,100-level));
+    let total=0;for(let i=0;i<rising;i++)total+=rankCost(node,level+i);
+    return total+(amount-rising)*rankCost(node,100);
+  }
   function unlocked(p,node) { return !node.requires || p.levels[node.requires]>0; }
-  function buy(p,id) { const node=nodes.find(n=>n.id===id); if(!node||!unlocked(p,node)||p.levels[id]>=1000000) return false; const price=cost(p,node); if(p[node.currency]<price) return false; p[node.currency]-=price;p.levels[id]++;return true; }
+  function buy(p,id,amount=1) { const node=nodes.find(n=>n.id===id); if(!node||!unlocked(p,node)||p.levels[id]>=MAX_RANK) return false; const price=cost(p,node,amount); if(!Number.isFinite(price)||p[node.currency]<price) return false; p[node.currency]-=price;p.levels[id]+=amount;return true; }
+  function planBuyAll(p,amount=1) {
+    const purchases=[],totals={dots:0,rubies:0,scrap:0};
+    if(!BUY_AMOUNTS.includes(amount))return {purchases,totals};
+    const draft={...p,levels:{...p.levels}};
+    // Visit each category once in display order, using only the remaining wallet.
+    for(const branch of branches){
+      for(const node of branchNodes[branch.id].slice().reverse()){
+        if(!unlocked(draft,node))continue;
+        const price=cost(draft,node,amount);
+        if(!Number.isFinite(price)||draft[node.currency]<price)continue;
+        buy(draft,node.id,amount);totals[node.currency]+=price;
+        purchases.push({id:node.id,amount,price,currency:node.currency});break;
+      }
+    }
+    return {purchases,totals};
+  }
+  function buyAll(p,amount=1){
+    const plan=planBuyAll(p,amount);
+    for(const purchase of plan.purchases)buy(p,purchase.id,purchase.amount);
+    return plan;
+  }
   function award(p,map,dots,rubies=0,scrap=0) {
     if(!maps[map]) return false;
     const safe=n=>Number.isFinite(n)?clamp(Math.floor(n),0,LIMIT):0;
     p.dots=Math.min(LIMIT,p.dots+safe(dots)); p.rubies=Math.min(LIMIT,p.rubies+safe(rubies));p.scrap=Math.min(LIMIT,p.scrap+safe(scrap));p.earned[map]=Math.min(LIMIT,p.earned[map]+safe(dots));
-    if(map===p.cleared&&p.earned[map]>=maps[map].goal) {p.cleared++;p.rubies+=3+map;p.dots+=Math.round(maps[map].goal*.2);return true;} return false;
+    if(map===p.cleared&&p.earned[map]>=maps[map].goal) {p.cleared++;p.rubies=Math.min(LIMIT,p.rubies+3+map);p.dots=Math.min(LIMIT,p.dots+Math.round(maps[map].goal*.2));return true;} return false;
   }
   function seedPegs(map) {
     const pegs=[];
@@ -155,16 +210,16 @@ const CoinDrop = (() => {
   }
   class Controller {
     constructor(root,{owner=()=> 'guest',sound=()=>true,blocked=()=>false}={}) {
-      this.root=root;this.owner=owner;this.sound=sound;this.blocked=blocked;this.coins=[];this.particles=[];this.aim=420;this.charge=1;this.clock=0;this.paused=false;this.visible=false;this.branch='mint';this.tab='board';this.last=0;this.musicStep=0;this.beat=0;
+      this.root=root;this.owner=owner;this.sound=sound;this.blocked=blocked;this.coins=[];this.particles=[];this.aim=420;this.charge=1;this.clock=0;this.paused=false;this.visible=false;this.branch='mint';this.buyAmount=1;this.buyAllAmount=1;this.craftAmount=1;this.tab='board';this.last=0;this.musicStep=0;this.beat=0;
       this.root.innerHTML=`<div class="cd-top"><div><span class="cd-kicker">THE CUBIE CASH MACHINE</span><h3>Coin Drop <span>●</span></h3></div><div class="cd-wallet"><span>● <b id="cd-dots">0</b><small>Cubie Dots</small></span><span>◆ <b id="cd-rubies">0</b><small>Ruby Shards</small></span><span>◌ <b id="cd-scrap">0</b><small>Minicoin scrap</small></span></div></div>
-      <nav class="cd-tabs" aria-label="Coin Drop sections"><button data-tab="board">Drop zone</button><button data-tab="maps">20 worlds</button><button data-tab="tree">Upgrade tree · 80</button><button data-tab="forge">Minicoin forge</button></nav>
+      <nav class="cd-tabs" aria-label="Coin Drop sections"><button data-tab="board">Drop zone</button><button data-tab="maps">${maps.length} worlds</button><button data-tab="tree">Upgrade tree · ${nodes.length}</button><button data-tab="forge">Minicoin forge</button></nav>
       <section data-panel="board"><div class="cd-map-heading"><div><span id="cd-map-number" class="cd-kicker"></span><h4 id="cd-map-name"></h4></div><button id="cd-pause">Pause</button></div><p id="cd-hint"></p><div id="cd-nano-lineup" class="cd-nano-lineup" aria-label="This world’s nanogames"></div><div class="cd-progress"><div id="cd-progress-fill"></div></div><div class="cd-progress-caption"><span id="cd-progress-label"></span><div class="cd-world-nav"><button id="cd-prev">← Previous world</button><button id="cd-worlds">World select</button><button id="cd-next">Next world →</button></div></div>
-      <div class="cd-table-tools"><span>3× playfield · 60 unique nanogames</span><button id="cd-reset-balls" title="Return active coins to the launcher; keep progress and collected rewards">Reset balls</button><button id="cd-zoom" aria-pressed="false">Zoom table</button></div><div class="cd-board-wrap"><canvas id="cd-board" width="840" height="1320" tabindex="0" aria-label="Coin Drop board. Left and right arrows aim; Space drops a coin. Use the aim slider and Drop button on touchscreens."></canvas><div id="cd-banner" hidden></div></div>
+      <div class="cd-table-tools"><span>3× playfield · ${nanogames.length} unique nanogames</span><button id="cd-reset-balls" title="Return active coins to the launcher; keep progress and collected rewards">Reset balls</button><button id="cd-zoom" aria-pressed="false">Zoom table</button></div><div class="cd-board-wrap"><canvas id="cd-board" width="840" height="1320" tabindex="0" aria-label="Coin Drop board. Left and right arrows aim; Space drops a coin. Use the aim slider and Drop button on touchscreens."></canvas><div id="cd-banner" hidden></div></div>
       <div class="cd-controls"><label>Aim <input id="cd-aim" type="range" min="30" max="810" value="420" aria-label="Coin launch position"></label><button id="cd-drop">Drop coin <span>Space</span></button></div><div class="cd-legend"><span>◎ Pop bumpers</span><span>↗ Slingshots</span><span>✳ Spinners</span><span>▰ Timed gates</span><span>DOT Bonus banks</span><span>◉ Nanogame pockets</span></div><p class="cd-note">Land in a purple pocket to play a bonus nanogame, then resume your drop. Complete a DOT bank with one coin for +25% pocket payout. Gates blink open; slingshots launch coins inward. Zoom to explore the table. Free drops. Aim and click the board, or use ← → and Space. Gold pockets pay more; red pegs can reveal Ruby Shards. Each world's goal counts all dots earned there, even after spending.</p></section>
-      <section data-panel="maps" hidden><h4>Your 20-world expedition</h4><p>Clear each dot target to unlock the next world. Revisit cleared worlds to collect more resources. Switching worlds retires unfinished drops and keeps all collected rewards.</p><div id="cd-maps" class="cd-maps"></div></section>
-      <section data-panel="tree" hidden><h4>A little coin. An enormous future.</h4><p>10 branches · 80 connected discoveries · repeatable ranks. Buy any node once to open the next. Later tiers give stronger ranks; crown nodes cost Ruby Shards.</p><div id="cd-branches" class="cd-branches"></div><div id="cd-tree" class="cd-tree"></div></section>
-      <section data-panel="forge" hidden><h4>Small coins. Big ideas.</h4><p>Unlock Tiny Friends in the Minicoins branch. Their pocket landings create scrap as well as dots. Turn that scrap into useful machinery.</p><div class="cd-recipes"><article><span>ϟ</span><h4>Overdrive capsule</h4><p>Double dots for your next 10 drops. Stacks with your upgrades.</p><button data-craft="boost">Craft · 20 scrap</button></article><article><span>◆</span><h4>Ruby synthesis</h4><p>Compress 60 minicoin scrap into 3 rare Ruby Shards.</p><button data-craft="ruby">Synthesize · 60 scrap</button></article><article><span>●</span><h4>Dot condenser</h4><p>Convert 12 scrap into a payout worth 25% of this world's target.</p><button data-craft="dots">Condense · 12 scrap</button></article></div><p id="cd-boosts"></p></section>
-      <section data-panel="lab" hidden><span class="cd-kicker">TEMPORARY MICROGAME · PRACTICE ONLY</span><h4>Nano Lab</h4><p>Learn the skills behind each challenge, then test yourself. Lessons are untimed. Wins, losses, and skips here never change your currencies or campaign.</p><div class="cd-lab-filters"><label>World <select id="cd-lab-world"><option value="all">All 20 worlds</option></select></label><label>Find a game <input id="cd-lab-search" type="search" placeholder="Name or challenge…" /></label></div><div id="cd-lab-grid" class="cd-lab-grid"></div><p id="cd-lab-result" role="status" aria-live="polite" hidden>Choose any nanogame to test.</p></section>
+      <section data-panel="maps" hidden><h4>Your ${maps.length}-world expedition</h4><p>Clear each dot target to unlock the next world. Revisit cleared worlds to collect more resources. Switching worlds retires unfinished drops and keeps all collected rewards.</p><div id="cd-maps" class="cd-maps"></div></section>
+      <section data-panel="tree" hidden><h4>A little coin. An enormous future.</h4><p>${branches.length} branches · ${nodes.length} connected discoveries · repeatable ranks. Buy any node once to open the next. Later tiers give stronger ranks; deeper nodes cost Ruby Shards or minicoin scrap.</p><div class="cd-buy-all"><h4>Buy all categories</h4><p>Buy one batch of the highest unlocked, affordable tier in each category. Categories are visited in their displayed order using your remaining currency; unaffordable categories are skipped.</p><div class="cd-buy-amounts" role="group" aria-label="Buy all purchase amount">${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-all-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><button type="button" id="cd-buy-all">Buy all</button><p id="cd-buy-all-summary" aria-live="polite"></p><details><summary>Preview upgrades</summary><ul id="cd-buy-all-preview"></ul></details></div><div class="cd-buy-amounts" role="group" aria-label="Upgrade purchase amount"><span>Buy ranks</span>${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Prices include every rank’s increasing cost. Buy the full amount at once.</p><div id="cd-branches" class="cd-branches"></div><div id="cd-tree" class="cd-tree"></div></section>
+      <section data-panel="forge" hidden><h4>Small coins. Big ideas.</h4><p>Unlock Tiny Friends in the Minicoins branch. Their pocket landings create scrap as well as dots. Turn that scrap into useful machinery.</p><div class="cd-buy-amounts" role="group" aria-label="Forge purchase amount"><span>Craft batches</span>${FORGE_AMOUNTS.map(n=>`<button type="button" data-craft-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Each recipe describes one craft. Buttons show the total scrap cost for your selected batch.</p><div class="cd-recipes"><article><span>ϟ</span><h4>Overdrive capsule</h4><p>At least double dots for your next 10 drops. Overdrive upgrades increase the multiplier.</p><button data-craft="boost">Craft · 20 scrap</button></article><article><span>◆</span><h4>Ruby synthesis</h4><p>Compress 60 minicoin scrap into 3 rare Ruby Shards.</p><button data-craft="ruby">Synthesize · 60 scrap</button></article><article><span>●</span><h4>Dot condenser</h4><p>Convert 50 scrap into 2% of this world's target, multiplied by Expedition upgrades.</p><button data-craft="dots">Condense · 50 scrap</button></article></div><p id="cd-boosts"></p></section>
+      <section data-panel="lab" hidden><span class="cd-kicker">NANO LAB · PRACTICE ONLY</span><h4>Nano Lab</h4><p>Learn the skills behind each challenge, then practice. Lessons are untimed. Wins, losses, and skips here never change your currencies or campaign.</p><div class="cd-lab-filters"><label>World <select id="cd-lab-world"><option value="all">All ${maps.length} worlds</option></select></label><label>Find a game <input id="cd-lab-search" type="search" placeholder="Name or challenge…" /></label></div><div id="cd-lab-grid" class="cd-lab-grid"></div></section><p id="cd-lab-result" role="status" aria-live="polite" hidden>Choose any nanogame to practice.</p>
       <p id="cd-status" role="status" aria-live="polite">Aim for the gold. Your first world awaits.</p><p id="cd-save" class="cd-note">Progress saves in this browser for your arcade profile.</p>`;
       this.canvas=root.querySelector('canvas');this.ctx=this.canvas.getContext('2d');
       const svg=document.querySelector('.shop-coin-front')?.cloneNode(true);
@@ -173,12 +228,16 @@ const CoinDrop = (() => {
       this.$('cd-zoom').onclick=()=>{const zoom=this.root.querySelector('.cd-board-wrap').classList.toggle('cd-zoomed');this.$('cd-zoom').setAttribute('aria-pressed',String(zoom));this.$('cd-zoom').textContent=zoom?'Fit table':'Zoom table';};
       this.$('cd-drop').onclick=()=>this.drop();this.$('cd-pause').onclick=()=>{this.paused=!this.paused;this.render();};
       this.$('cd-prev').onclick=()=>this.go(this.p.map-1);this.$('cd-worlds').onclick=()=>this.setTab('maps');this.$('cd-reset-balls').onclick=()=>this.resetBalls();
-      this.$('cd-next').onclick=()=>this.go(Math.min(19,this.p.map+1));
+      this.$('cd-next').onclick=()=>this.go(Math.min(maps.length-1,this.p.map+1));
       this.$('cd-aim').oninput=e=>{this.aim=+e.target.value;};
       this.canvas.onpointermove=e=>{this.aim=clamp((e.clientX-this.canvas.getBoundingClientRect().left)/this.canvas.getBoundingClientRect().width*840,30,810);this.$('cd-aim').value=this.aim;};
       this.canvas.onclick=e=>{this.canvas.onpointermove(e);this.canvas.focus({preventScroll:true});this.drop();};
       root.addEventListener('keydown',e=>{if(this.nano||e.defaultPrevented)return;if(this.tab!=='board'||e.target.matches('input,button'))return;if(['ArrowLeft','ArrowRight',' '].includes(e.key)){e.preventDefault();if(e.key===' ') {if(!e.repeat)this.drop();}else this.aim=clamp(this.aim+(e.key==='ArrowLeft'?-24:24),30,810);this.$('cd-aim').value=this.aim;}});
-      root.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>this.craft(b.dataset.craft));
+      root.querySelectorAll('[data-buy-all-amount]').forEach(b=>b.onclick=()=>{this.buyAllAmount=Number(b.dataset.buyAllAmount);this.render();});
+      this.$('cd-buy-all').onclick=()=>{if(this.blocked())return;const plan=buyAll(this.p,this.buyAllAmount);if(!plan.purchases.length){this.render();return;}this.save();this.render();this.message(`Bought ${this.buyAllAmount} ranks in ${plan.purchases.length} categories.`);this.tone(740,.12);};
+      root.querySelectorAll('[data-buy-amount]').forEach(b=>b.onclick=()=>{this.buyAmount=Number(b.dataset.buyAmount);this.render();});
+      root.querySelectorAll('[data-craft-amount]').forEach(b=>b.onclick=()=>{this.craftAmount=Number(b.dataset.craftAmount);this.render();});
+      root.querySelectorAll('[data-craft]').forEach(b=>b.onclick=()=>this.craft(b.dataset.craft,this.craftAmount));
       document.addEventListener('visibilitychange',()=>{this.last=0;this.silence();});
       this.$('cd-lab-world').append(...maps.map(m=>{const option=document.createElement('option');option.value=m.id;option.textContent=`${m.id+1} · ${m.name}`;return option;}));
       this.$('cd-lab-world').onchange=this.$('cd-lab-search').oninput=()=>this.renderLab();
@@ -195,7 +254,7 @@ const CoinDrop = (() => {
       this.$('cd-lab-grid').replaceChildren(...nanogames.flatMap((g,i)=>{
         const map=maps[Math.floor(i/3)];if(world!=='all'&&+world!==map.id||search&&!`${g.title} ${g.rules}`.toLowerCase().includes(search))return [];
         const card=document.createElement('article'),tag=document.createElement('small'),title=document.createElement('h4'),rules=document.createElement('p'),button=document.createElement('button');
-        tag.textContent=`WORLD ${map.id+1} · POCKET ${i%3+1} · ${g.seconds}s`;title.textContent=g.title;rules.textContent=g.rules;button.textContent='Test nanogame';button.dataset.nanoTest=g.id;button.onclick=()=>this.startNanoTest(g.id);const learn=document.createElement('button');learn.textContent='Learn how';learn.dataset.nanoLearn=g.id;learn.onclick=()=>this.startNanoTest(g.id,true);const actions=document.createElement('div');actions.className='cd-lab-card-actions';actions.append(learn,button);card.append(tag,title,rules,actions);return [card];
+        tag.textContent=`WORLD ${map.id+1} · POCKET ${i%3+1} · ${g.seconds}s`;title.textContent=g.title;rules.textContent=g.rules;button.textContent='Practice nanogame';button.dataset.nanoTest=g.id;button.onclick=()=>this.startNanoTest(g.id);const learn=document.createElement('button');learn.textContent='Learn how';learn.dataset.nanoLearn=g.id;learn.onclick=()=>this.startNanoTest(g.id,true);const actions=document.createElement('div');actions.className='cd-lab-card-actions';actions.append(learn,button);card.append(tag,title,rules,actions);return [card];
       }));
       if(!this.$('cd-lab-grid').children.length)this.$('cd-lab-grid').textContent='No nanogames match this search.';
     }
@@ -219,10 +278,22 @@ const CoinDrop = (() => {
       this.particles=[];this.charge=1;this.paused=true;this.last=0;this.render();
       this.message('Balls returned to the launcher. Press Resume to continue, or choose another unlocked world. Progress and collected rewards are kept.');
     }
-    craft(kind){if(this.blocked())return;const price={boost:20,ruby:60,dots:12}[kind];if(this.p.scrap<price){this.message('Collect more minicoin scrap to craft this.');return;}this.p.scrap-=price;if(kind==='boost')this.p.boosts+=10;if(kind==='ruby')this.p.rubies+=3;if(kind==='dots')this.reward(Math.round(maps[this.p.map].goal*.25));this.save();this.render();this.message('Crafted! '+({boost:'10 overdrive drops ready.',ruby:'3 Ruby Shards added.',dots:'Condenser dots collected.'}[kind]));this.tone(880,.2);}
-    drop(){if(!this.playable()||this.charge<1||this.coins.length>65)return;this.startAudio();this.charge=0;this.p.drops++;const boost=this.p.boosts>0?2:1;if(this.p.boosts>0)this.p.boosts--;const mains=1+Math.min(4,Math.floor(rank(this.p,'launch')/3));const minis=Math.min(8,Math.ceil(rank(this.p,'mini')));
+    craft(kind,amount=1){
+      if(this.blocked()||!Object.hasOwn(FORGE_PRICES,kind)||!FORGE_AMOUNTS.includes(amount))return;
+      const price=FORGE_PRICES[kind]*amount;
+      if(this.p.scrap<price){this.message('Collect more minicoin scrap to craft this batch.');return;}
+      this.p.scrap-=price;
+      if(kind==='boost')this.p.boosts=Math.min(LIMIT,this.p.boosts+10*amount);
+      if(kind==='ruby')this.p.rubies=Math.min(LIMIT,this.p.rubies+3*amount);
+      // Match individual crafts, including per-craft rounding and one-time world-clear rewards.
+      if(kind==='dots')this.reward(Math.round(maps[this.p.map].goal*.02),0,0,amount);
+      this.save();this.render();
+      this.message('Crafted! '+({boost:`${10*amount} overdrive drops ready.`,ruby:`${3*amount} Ruby Shards added.`,dots:`${amount} condenser ${amount===1?'payout':'payouts'} collected.`}[kind]));
+      this.tone(880,.2);
+    }
+    drop(){if(!this.playable()||this.charge<1||this.coins.length>65)return;this.startAudio();this.charge=0;this.p.drops++;const boost=this.p.boosts>0?2+rank(this.p,'overdrive')*.25:1;if(this.p.boosts>0)this.p.boosts--;const mains=1+Math.min(4,Math.floor(rank(this.p,'launch')/3));const minis=Math.min(8,Math.ceil(rank(this.p,'mini')));
       for(let i=0;i<mains+minis;i++){const mini=i>=mains;this.coins.push({x:clamp(this.aim+(i-(mains+minis-1)/2)*13,18,822),y:52-(i%3)*12,vx:(Math.random()-.5)*30,vy:10,r:mini?6:12,mini,boost,age:0,hits:new Set(),featureHits:new Set(),banks:new Set(),pocketBonus:1,portal:0,rubyHits:0});}this.save();this.tone(440,.08);this.render();}
-    reward(dots,rubies=0,scrap=0){const clear=award(this.p,this.p.map,dots,rubies,scrap);if(clear){this.message(this.p.cleared===20?'CROWN COMPLETE! All 20 worlds conquered. Keep building your infinite machine.':`${maps[this.p.map].name} cleared! Bonus dots and ${3+this.p.map} Ruby Shards. Next world unlocked.`);this.burst(420,650,'#ffdc7b',45);this.tone(1046,.5);}return clear;}
+    reward(dots,rubies=0,scrap=0,quantity=1){const clear=award(this.p,this.p.map,payoutProduct(Math.floor(payoutProduct(dots,1.5**Math.min(150,rank(this.p,'expedition')))),quantity),rubies,scrap);if(clear){this.message(this.p.cleared===maps.length?`CROWN COMPLETE! All ${maps.length} worlds conquered. Keep building your infinite machine.`:`${maps[this.p.map].name} cleared! Bonus dots and ${3+this.p.map} Ruby Shards. Next world unlocked.`);this.burst(420,650,'#ffdc7b',45);this.tone(1046,.5);}return clear;}
     startAudio(){if(!this.sound())return;try{if(!this.audio){this.audio=new (window.AudioContext||window.webkitAudioContext)();this.master=this.audio.createGain();this.master.gain.value=.12;this.master.connect(this.audio.destination);}if(this.audio.state==='suspended')this.audio.resume().catch(()=>{});}catch{}}
     silence(){if(this.master)this.master.gain.value=0;this.nanoMusic?.silence();}
     tone(freq,duration=.08,type='sine',volume=.35){if(!this.audio||!this.sound()||!this.playable())return;const t=this.audio.currentTime,o=this.audio.createOscillator(),g=this.audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+duration);o.onended=()=>{o.disconnect();g.disconnect();};}
@@ -258,14 +329,15 @@ const CoinDrop = (() => {
     enterNano(coin,pocket,testing=false){
       if(this.nano)return;coin.nanoPlayed=true;
       this.nano={coin,pocket,testing,game:pocket.game,phase:'ready',elapsed:0,position:.5,sequence:Array.from({length:4},()=>Math.floor(Math.random()*4)),index:0,stars:0,
-        prize:Math.ceil(60*maps[this.p.map].value*(1+rank(this.p,'mint')*.12)*coin.boost)};
+        prize:Math.ceil(payoutProduct(300,maps[this.p.map].value,1+rank(this.p,'mint')*.12,1+rank(this.p,'nano')*.25,coin.boost))};
       const game=nanogames.find(g=>g.id===pocket.game);this.nano.config=game;
       this.nanoDialog.dataset.game=game.id;this.nanoDialog.dataset.kind=game.kind||game.id;const hue=[207,268,164,35,335][Math.floor(nanogames.indexOf(game)/3)%5];this.nanoDialog.style.setProperty('--nano-hue',hue);
       this.nanoDialog.querySelector('.cd-kicker').textContent=testing?'NANO LAB · PRACTICE ONLY':'POCKET NANOGAME · BOARD PAUSED';
-      this.$('cd-nano-skip').textContent=testing?'Close test':'Skip & resume drop';
+      this.$('cd-nano-skip').textContent=testing?'Close practice':'Skip & resume drop';
       this.$('cd-nano-title').textContent=game.title;this.$('cd-nano-rules').textContent=game.rules;
-      this.$('cd-nano-prize').textContent=`Win: ${fmt(this.nano.prize+(game.ruby||game.scrap?0:20))} Cubie Dots`+(game.ruby?' + 1 Ruby Shard':game.scrap?' + 5 minicoin scrap':'');
-      if(testing){this.$('cd-lab-result').hidden=true;this.$('cd-nano-prize').textContent='Nano Lab practice · no rewards or progress changes';}
+      this.$('cd-nano-prize').textContent=`Win: ${fmt(payoutProduct(this.nano.prize+(game.ruby||game.scrap?0:100),1.5**Math.min(150,rank(this.p,'expedition'))))} Cubie Dots`+(game.ruby?' + 5 Ruby Shards':game.scrap?' + 25 minicoin scrap':'');
+      this.$('cd-lab-result').hidden=true;
+      if(testing){this.$('cd-nano-prize').textContent='Nano Lab practice · no rewards or progress changes';}
       this.$('cd-nano-lesson').hidden=!testing;this.$('cd-nano-lesson').open=false;this.$('cd-nano-lesson-body').replaceChildren();if(testing)Lessons.render(this.$('cd-nano-lesson-body'),game);
       this.$('cd-nano-stage').replaceChildren();this.$('cd-nano-feedback').textContent=testing?'Read the lesson or start when you’re ready. No timer is running.':'Your coin is safe. Start when you’re ready.';this.$('cd-nano-start').hidden=false;
       this.nanoDialog.showModal();this.$('cd-nano-start').focus();this.silence();
@@ -318,7 +390,7 @@ const CoinDrop = (() => {
       const delta=[[0,-1],[-1,0],[0,1],[1,0]][direction];if(!delta)return;
       const x=n.mazePos%4,y=Math.floor(n.mazePos/4),nx=x+delta[0],ny=y+delta[1],next=ny*4+nx;
       if(nx<0||nx>3||ny<0||ny>3||n.walls.has(next)){
-        this.finishNano(false);this.message('Hit a wall! Pocket Maze lost — your coin is back in play.');return;
+        this.finishNano(false);return;
       }
       n.mazePos=next;this.renderNanoMaze();if(next===15)this.finishNano(true);
     }
@@ -347,19 +419,20 @@ const CoinDrop = (() => {
     }
     finishNano(won,reason='result'){
       const n=this.nano;if(!n)return;
-      if(n.testing){
+      {
         this.closeNano();const result=this.$('cd-lab-result'),outcome=won?'win':reason==='closed'?'closed':'loss';
         result.dataset.outcome=outcome;result.hidden=false;result.replaceChildren();
         const badge=document.createElement('strong'),text=document.createElement('span'),retry=document.createElement('button'),dismiss=document.createElement('button');
         badge.className='cd-result-badge';badge.textContent=outcome.toUpperCase();
-        text.textContent=`${n.config.title}: ${won?'won!':outcome==='closed'?'test closed.':reason==='timeout'?'lost — time ran out.':'lost.'} Practice only — no rewards saved.`;
+        text.textContent=`${n.config.title}: ${won?'You win!':outcome==='closed'?(n.testing?'Practice closed.':'Skipped.'):reason==='timeout'?'You lose — time ran out.':'You lose.'} ${n.testing?'Practice only — no rewards saved.':outcome==='closed'?'Nanogame skipped — resuming your drop.':won?'Bonus collected — resuming your drop.':'Your coin is back in play.'}`;
         retry.textContent='Try again';retry.onclick=()=>this.startNanoTest(n.game);dismiss.textContent='Dismiss';dismiss.onclick=()=>{result.hidden=true;};
-        result.append(badge,text,retry,dismiss);this.last=0;return;
+        result.append(badge,text);if(n.testing)result.append(retry);result.append(dismiss);
+        if(n.testing){this.last=0;return;}
       }
       n.coin.x=n.pocket.x;n.coin.y=n.pocket.y+n.pocket.r+n.coin.r+6;n.coin.vy=130;n.coin.vx=45;n.coin.age=Math.min(n.coin.age,30);
-      this.closeNano();this.nanoCooldown=this.clock+8;
-      if(won){this.reward(n.prize+(n.config.ruby||n.config.scrap?0:20),n.config.ruby||0,n.config.scrap||0);this.message(`${n.config.title} won! Bonus collected — resuming your drop.`);this.burst(n.coin.x,n.coin.y,'#d6a0ff',24);this.tone(1046,.3);}
-      else this.message('Nanogame finished — your coin is back in play.');
+      this.nanoCooldown=this.clock+8;
+      if(won){this.reward(n.prize+(n.config.ruby||n.config.scrap?0:100),(n.config.ruby||0)*5,(n.config.scrap||0)*5);this.message(`${n.config.title} won! Bonus collected — resuming your drop.`);this.burst(n.coin.x,n.coin.y,'#d6a0ff',24);this.tone(1046,.3);}
+      else this.message(`${n.config.title}: ${reason==='closed'?'Skipped':reason==='timeout'?'You lose — time ran out':'You lose'}. Your coin is back in play.`);
       this.save();this.renderStats();if(this.visible&&this.tab==='board')this.canvas.focus({preventScroll:true});this.last=0;
     }
     update(dt){
@@ -369,13 +442,13 @@ const CoinDrop = (() => {
       while(remaining>1e-8&&!this.nano){const step=Math.min(1/240,remaining);this.stepPhysics(step);remaining-=step;}
     }
     stepPhysics(dt){if(this.nano)return;const map=maps[this.p.map],p=this.p;this.clock+=dt;this.charge=Math.min(1,this.charge+dt/Math.max(.35,1.45/(1+rank(p,'reactor')*.1)));this.beat+=dt;
-      if(this.beat>.24){this.beat=0;const scale=[0,7,12,16,14,7,4,12,0,7,11,14,12,7,4,2];this.tone(220*2**((scale[this.musicStep%16]+(Math.floor(this.p.map/5)*2))/12),.3,'triangle',.16);if(this.musicStep%4===0)this.tone(110*2**([0,0,5,7][Math.floor(this.musicStep/4)%4]/12),.65,'sine',.25);this.musicStep++;}
+      if(this.beat>.24){this.beat=0;const scale=[0,7,12,16,14,7,4,12,0,7,11,14,12,7,4,2];this.tone(220*2**((scale[this.musicStep%16]+(Math.floor(this.p.map/5)%5*2))/12),.3,'triangle',.16);if(this.musicStep%4===0)this.tone(110*2**([0,0,5,7][Math.floor(this.musicStep/4)%4]/12),.65,'sine',.25);this.musicStep++;}
       const positions=this.pegs.map(peg=>({...peg,x:peg.x+Math.sin(this.clock*1.1+peg.phase)*map.motion}));
       let changed=false;
       for(const c of this.coins){c.age+=dt;c.vy+=400*map.gravity*dt;c.vx+=(map.wind*Math.cos(this.clock*.7)+(420-c.x)*Math.min(1.5,rank(p,'magnet')*.018))*dt;c.vx*=Math.exp(-.12*dt);c.vx=clamp(c.vx,-450,450);c.vy=clamp(c.vy,-340,650);c.x+=c.vx*dt;c.y+=c.vy*dt;
         if(c.x<c.r+8){c.x=c.r+8;c.vx=Math.abs(c.vx)*.8;}if(c.x>832-c.r){c.x=832-c.r;c.vx=-Math.abs(c.vx)*.8;}if(c.y<25){c.y=25;c.vy=Math.abs(c.vy);}
         positions.forEach((peg,i)=>{let dx=c.x-peg.x,dy=c.y-peg.y,d=Math.hypot(dx,dy),r=c.r+peg.r;if(d>=r)return;if(d<.001){dx=.1;dy=-1;d=Math.hypot(dx,dy);}const nx=dx/d,ny=dy/d;c.x=peg.x+nx*(r+.15);c.y=peg.y+ny*(r+.15);const dot=c.vx*nx+c.vy*ny;if(dot<0){const bounce=peg.bumper?1.05:map.id===11?.85:.57;c.vx-=(1+bounce)*dot*nx;c.vy-=(1+bounce)*dot*ny;c.vx+=nx*12+(Math.abs(nx)<.05?(Math.random()<.5?-18:18):0);c.vy=clamp(c.vy,-240,480);}
-          if(!c.hits.has(i)){c.hits.add(i);const val=Math.ceil((1+rank(p,'peg')*2)*map.value*(c.mini?.3:1)*(1+rank(p,'mint')*.12)*c.boost);const ruby=peg.ruby&&Math.random()<Math.min(.25,.035+rank(p,'ruby')*.004)&&c.rubyHits<3?1:0;c.rubyHits+=ruby;this.reward(val,ruby);changed=true;if(ruby)this.message('◆ Ruby Shard discovered!');this.burst(peg.x,peg.y,ruby?'#ff638e':map.color,4);if(this.clock-(this.lastPing||0)>.045){this.tone(440*2**((i%12)/12),.06,'sine',.12);this.lastPing=this.clock;}}
+          if(!c.hits.has(i)){c.hits.add(i);const val=Math.ceil(payoutProduct(1+rank(p,'peg')*2,map.value,c.mini?.3:1,1+rank(p,'mint')*.12,c.boost));const ruby=peg.ruby&&Math.random()<Math.min(.25,.035+rank(p,'ruby')*.004)&&c.rubyHits<3?1:0;c.rubyHits+=ruby;this.reward(val,ruby);changed=true;if(ruby)this.message('◆ Ruby Shard discovered!');this.burst(peg.x,peg.y,ruby?'#ff638e':map.color,4);if(this.clock-(this.lastPing||0)>.045){this.tone(440*2**((i%12)/12),.06,'sine',.12);this.lastPing=this.clock;}}
         });
         for(const f of this.features) {
           let contact=false;
@@ -398,7 +471,7 @@ const CoinDrop = (() => {
             const bonus=Math.ceil(({bumper:4,target:6,spinner:8,sling:3,portal:5,rail:0,gate:0}[f.type])*map.value*(c.mini?.3:1)*c.boost);
             if(bonus)this.reward(bonus);changed=true;this.burst(c.x,c.y,color,6);this.tone(f.type==='target'?990:330,.09,'triangle',.18);
             if(f.type==='target'&&!c.banks.has(f.deck)&&this.features.filter(t=>t.type==='target'&&t.deck===f.deck).every(t=>c.featureHits.has(t.id))) {
-              c.banks.add(f.deck);c.pocketBonus+=.25;this.reward(Math.ceil(30*map.value*c.boost));this.message(`DOT bank complete! This coin's pocket payout is now ×${c.pocketBonus.toFixed(2)}.`);this.burst(c.x,c.y,'#8ff2bb',20);
+              c.banks.add(f.deck);c.pocketBonus+=.25+rank(p,'bank')*.05;this.reward(Math.ceil(payoutProduct(30,map.value,c.boost,1+rank(p,'bank')*.2)));this.message(`DOT bank complete! This coin's pocket payout is now ×${c.pocketBonus.toFixed(2)}.`);this.burst(c.x,c.y,'#8ff2bb',20);
             }
           }
         }
@@ -410,14 +483,14 @@ const CoinDrop = (() => {
         if(c.deepestY===undefined||c.y>c.deepestY+20){c.deepestY=c.y;c.noProgress=0;}else c.noProgress=(c.noProgress||0)+dt;
         if(c.stallTime>1.4||c.noProgress>4.5){c.noProgress=0;c.nudges=(c.nudges||0)+1;c.vx=(c.nudges%2?1:-1)*150;c.vy=-95;c.stallTime=0;}
 
-        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(mult*8*map.value*(1+rank(p,'mint')*.12)*combo*c.pocketBonus*(crit?3:1)*(c.mini?.2*(1+rank(p,'mini')*.1):1)*c.boost);const scrap=c.mini?Math.max(1,Math.floor(1+rank(p,'forge')*.2)):0;this.reward(val,0,scrap);c.dead=true;changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
+        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(payoutProduct(mult,8,map.value,1+rank(p,'mint')*.12,combo,c.pocketBonus,1+rank(p,'pocket')*.2,crit?3:1,c.mini?.2*(1+rank(p,'mini')*.1):1,c.boost));const scrap=c.mini?Math.max(1,Math.floor(1+rank(p,'forge')*.2+rank(p,'salvage'))):0;this.reward(val,0,scrap);c.dead=true;changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
       }
       this.coins=this.coins.filter(c=>!c.dead);this.particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;});this.particles=this.particles.filter(p=>p.life>0);if(changed){this.save();this.renderStats();}
       this.$('cd-drop').disabled=this.charge<1;this.$('cd-drop').style.setProperty('--charge',`${this.charge*100}%`);
     }
     draw(){const ctx=this.ctx,map=maps[this.p.map];ctx.clearRect(0,0,840,1320);const bg=ctx.createLinearGradient(0,0,840,1320);bg.addColorStop(0,'#142d43');bg.addColorStop(1,'#080e1c');ctx.fillStyle=bg;ctx.fillRect(0,0,840,1320);ctx.strokeStyle=map.color+'18';ctx.lineWidth=1;
       for(let x=0;x<840;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,1320);ctx.stroke();}for(let y=0;y<1320;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(840,y);ctx.stroke();}
-      ctx.fillStyle=map.color;ctx.font='bold 11px monospace';ctx.textAlign='left';ctx.fillText(`SECTOR ${String(map.id+1).padStart(2,'0')} / 20`,20,27);ctx.textAlign='right';ctx.fillText(`${this.coins.length} IN FLIGHT`,820,27);
+      ctx.fillStyle=map.color;ctx.font='bold 11px monospace';ctx.textAlign='left';ctx.fillText(`SECTOR ${String(map.id+1).padStart(2,'0')} / ${maps.length}`,20,27);ctx.textAlign='right';ctx.fillText(`${this.coins.length} IN FLIGHT`,820,27);
       ctx.strokeStyle=map.color+'60';ctx.setLineDash([3,7]);ctx.beginPath();ctx.moveTo(this.aim,70);ctx.lineTo(this.aim,112);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=map.color;ctx.beginPath();ctx.moveTo(this.aim-17,40);ctx.lineTo(this.aim+17,40);ctx.lineTo(this.aim,52);ctx.fill();
       for(const peg of this.pegs){const x=peg.x+Math.sin(this.clock*1.1+peg.phase)*map.motion;ctx.beginPath();ctx.arc(x,peg.y,peg.r+4,0,Math.PI*2);ctx.fillStyle=(peg.ruby?'#ff6e99':map.color)+'18';ctx.fill();ctx.beginPath();ctx.arc(x,peg.y,peg.r,0,Math.PI*2);ctx.fillStyle=peg.ruby?'#ff759c':peg.bumper?'#ffe39a':map.color;ctx.fill();ctx.fillStyle='#ffffff99';ctx.beginPath();ctx.arc(x-1.5,peg.y-1.5,peg.r*.28,0,Math.PI*2);ctx.fill();}
       ctx.textAlign='left';ctx.font='bold 12px monospace';
@@ -445,17 +518,27 @@ const CoinDrop = (() => {
       if(!this.coins.length){ctx.fillStyle='#d9ebff99';ctx.font='12px monospace';ctx.textAlign='center';ctx.fillText('AIM ABOVE · DROP INTO POSSIBILITY',420,1235);}
       this.$('cd-banner').hidden=!this.paused;this.$('cd-banner').textContent='PAUSED';
     }
-    renderStats(){const p=this.p,map=maps[p.map];this.$('cd-dots').textContent=fmt(p.dots);this.$('cd-rubies').textContent=fmt(p.rubies);this.$('cd-scrap').textContent=fmt(p.scrap);this.$('cd-progress-fill').style.width=Math.min(100,p.earned[p.map]/map.goal*100)+'%';this.$('cd-progress-label').textContent=`${fmt(p.earned[p.map])} / ${fmt(map.goal)} dots · ${p.cleared>p.map?'WORLD CLEARED':Math.floor(Math.min(100,p.earned[p.map]/map.goal*100))+'%'}${p.boosts?' · Overdrive: '+p.boosts+' drops':''}`;this.$('cd-prev').disabled=p.map===0;this.$('cd-next').disabled=!(p.cleared>p.map&&p.map<19);}
-    render(){if(!this.p)return;this.renderStats();const map=maps[this.p.map];this.root.style.setProperty('--cd-accent',map.color);this.$('cd-map-number').textContent=`WORLD ${String(map.id+1).padStart(2,'0')} / 20`;this.$('cd-map-name').textContent=map.name;this.$('cd-hint').textContent=map.hint;this.$('cd-nano-lineup').replaceChildren(...nanogames.slice(map.id*3,map.id*3+3).map((g,i)=>{const chip=document.createElement('span');chip.textContent=`${i+1} · ${g.title}`;chip.title=g.rules;return chip;}));this.$('cd-pause').textContent=this.paused?'Resume':'Pause';this.$('cd-boosts').textContent=`Overdrive reserves: ${this.p.boosts} drops · ${fmt(this.p.drops)} total launches`;
+    renderStats(){const p=this.p,map=maps[p.map];this.$('cd-dots').textContent=fmt(p.dots);this.$('cd-rubies').textContent=fmt(p.rubies);this.$('cd-scrap').textContent=fmt(p.scrap);this.$('cd-progress-fill').style.width=Math.min(100,p.earned[p.map]/map.goal*100)+'%';this.$('cd-progress-label').textContent=`${fmt(p.earned[p.map])} / ${fmt(map.goal)} dots · ${p.cleared>p.map?'WORLD CLEARED':Math.floor(Math.min(100,p.earned[p.map]/map.goal*100))+'%'}${p.boosts?' · Overdrive: '+p.boosts+' drops':''}`;this.$('cd-prev').disabled=p.map===0;this.$('cd-next').disabled=!(p.cleared>p.map&&p.map<maps.length-1);}
+    render(){if(!this.p)return;this.renderStats();const map=maps[this.p.map];this.root.style.setProperty('--cd-accent',map.color);this.$('cd-map-number').textContent=`WORLD ${String(map.id+1).padStart(2,'0')} / ${maps.length}`;this.$('cd-map-name').textContent=map.name;this.$('cd-hint').textContent=map.hint;this.$('cd-nano-lineup').replaceChildren(...nanogames.slice(map.id*3,map.id*3+3).map((g,i)=>{const chip=document.createElement('span');chip.textContent=`${i+1} · ${g.title}`;chip.title=g.rules;return chip;}));this.$('cd-pause').textContent=this.paused?'Resume':'Pause';this.$('cd-boosts').textContent=`Overdrive reserves: ${this.p.boosts} drops · ${fmt(this.p.drops)} total launches`;
       if(this.tab==='maps')this.$('cd-maps').replaceChildren(...maps.map(m=>{const b=document.createElement('button');b.disabled=m.id>this.p.cleared;b.style.setProperty('--map-color',m.color);b.innerHTML=`<span>${String(m.id+1).padStart(2,'0')} ${m.id<this.p.cleared?'✓':m.id>this.p.cleared?'· LOCKED':''}</span><strong>${m.name}</strong><small>${fmt(m.goal)} dots · ${m.layout}</small><small class="cd-map-nanos">${nanogames.slice(m.id*3,m.id*3+3).map(g=>g.title).join(" · ")}</small>`;b.onclick=()=>this.go(m.id);return b;}));
       if(this.tab==='tree'){
+        this.root.querySelectorAll('[data-buy-all-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.buyAllAmount)===this.buyAllAmount)));
+        const plan=planBuyAll(this.p,this.buyAllAmount),allButton=this.$('cd-buy-all');
+        allButton.textContent=`Buy all ×${fmt(this.buyAllAmount)} · ${plan.purchases.length} categories`;allButton.disabled=!plan.purchases.length;
+        const summary=this.$('cd-buy-all-summary');summary.replaceChildren();
+        for(const [currency,label]of [['dots','dots'],['rubies','Ruby Shards'],['scrap','minicoin scrap']]){
+          const span=document.createElement('span');span.dataset.currency=currency;span.textContent=`${fmt(plan.totals[currency])} ${label}`;summary.append(span);
+        }
+        this.$('cd-buy-all-preview').replaceChildren(...plan.purchases.map(purchase=>{const node=nodes.find(n=>n.id===purchase.id),item=document.createElement('li');item.dataset.currency=purchase.currency;item.textContent=`${branches[node.bi].name}: ${node.name} (tier ${node.tier+1}) ×${fmt(purchase.amount)} · ${fmt(purchase.price)} ${purchase.currency}`;return item;}));
+        this.root.querySelectorAll('[data-buy-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.buyAmount)===this.buyAmount)));
         this.$('cd-branches').replaceChildren(...branches.map(branch=>{const b=document.createElement('button');b.textContent=`${branch.icon} ${branch.name}`;b.setAttribute('aria-pressed',String(this.branch===branch.id));b.onclick=()=>{this.branch=branch.id;this.render();};return b;}));
-        const branch=branches.find(b=>b.id===this.branch);this.$('cd-tree').style.setProperty('--branch-color',branch.color);this.$('cd-tree').replaceChildren(...nodes.filter(n=>n.branch===this.branch).map(n=>{const item=document.createElement('article'),level=this.p.levels[n.id],open=unlocked(this.p,n);item.className='cd-node'+(open?'':' cd-locked');item.innerHTML=`<span class="cd-node-icon">${branch.icon}</span><div><small>TIER ${n.tier+1} · RANK ${level} · ${n.currency==='rubies'?'RUBY':'DOT'} NODE</small><h4>${n.name}</h4><p>${branch.description} This tier gives ${(1+n.tier*.25).toFixed(2)} ranks per purchase.</p><small>${open?'Repeatable upgrade':`Requires ${nodes.find(x=>x.id===n.requires).name} rank 1`}</small></div>`;const b=document.createElement('button');b.textContent=`${level?'Upgrade':'Research'} · ${fmt(cost(this.p,n))} ${n.currency==='rubies'?'◆':'●'}`;b.disabled=!open||this.p[n.currency]<cost(this.p,n);b.onclick=()=>{if(!this.blocked()&&buy(this.p,n.id)){this.save();this.render();this.message(`${n.name} upgraded to rank ${this.p.levels[n.id]}.`);this.tone(740,.12);}};item.append(b);return item;}));
+        const branch=branches.find(b=>b.id===this.branch);this.$('cd-tree').style.setProperty('--branch-color',branch.color);this.$('cd-tree').replaceChildren(...nodes.filter(n=>n.branch===this.branch).map(n=>{const item=document.createElement('article'),level=this.p.levels[n.id],open=unlocked(this.p,n);item.className='cd-node'+(open?'':' cd-locked');item.dataset.currency=n.currency;item.innerHTML=`<span class="cd-node-icon">${branch.icon}</span><div><small>TIER ${n.tier+1} · RANK ${fmt(level)} · ${n.currency==='rubies'?'RUBY':n.currency==='scrap'?'SCRAP':'DOT'} NODE</small><h4>${n.name}</h4><p>${branch.description} This tier gives ${(1+n.tier*.25).toFixed(2)} ranks per purchase.</p><small>${open?'Repeatable upgrade':`Requires ${nodes.find(x=>x.id===n.requires).name} rank 1`}</small></div>`;const price=cost(this.p,n,this.buyAmount),b=document.createElement('button');b.textContent=!Number.isFinite(price)?(level>=MAX_RANK?'Rank limit':level+this.buyAmount===level?'Choose a larger batch':'Rank limit'):`${level?'Upgrade':'Research'} ×${fmt(this.buyAmount)} · ${fmt(price)} ${n.currency==='rubies'?'◆':n.currency==='scrap'?'◌':'●'}`;b.dataset.currency=n.currency;b.title=Number.isFinite(price)?`${this.buyAmount} ranks for ${price.toLocaleString('en')} ${n.currency}`:(level+this.buyAmount===level?'Select a larger batch to increase this very large rank.':`${fmt(MAX_RANK-level)} ranks remaining; select a smaller amount.`);b.disabled=!open||!Number.isFinite(price)||this.p[n.currency]<price;b.onclick=()=>{if(!this.blocked()&&buy(this.p,n.id,this.buyAmount)){this.save();this.render();this.message(`${n.name}: bought ${this.buyAmount} ${this.buyAmount===1?'rank':'ranks'} · now rank ${this.p.levels[n.id]}.`);this.tone(740,.12);}};item.append(b);return item;}));
       }
-      this.root.querySelectorAll('[data-craft]').forEach(b=>b.disabled=this.p.scrap<({boost:20,ruby:60,dots:12}[b.dataset.craft]));
+      this.root.querySelectorAll('[data-craft-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.craftAmount)===this.craftAmount)));
+      this.root.querySelectorAll('[data-craft]').forEach(b=>{const kind=b.dataset.craft,price=FORGE_PRICES[kind]*this.craftAmount;b.disabled=this.p.scrap<price;b.textContent=`${{boost:'Craft',ruby:'Synthesize',dots:'Condense'}[kind]} ×${this.craftAmount} · ${price.toLocaleString('en')} scrap`;});
     }
     frame(t){const dt=this.last?Math.min(.05,(t-this.last)/1000):0;this.last=t;if(this.visible&&this.owner()!==this.identity){this.save();this.load();}if(this.nano)this.tickNano(dt);this.syncNanoMusic();const play=this.playable();if(this.master)this.master.gain.value=play && this.sound() ? .12 : 0;if(play){let remaining=dt;while(remaining>0){const step=Math.min(1/120,remaining);this.update(step);remaining-=step;}}if(this.visible&&this.tab==='board')this.draw();requestAnimationFrame(t=>this.frame(t));}
   }
-  return {BOARD,nanogames,featuresFor,segmentFor,gateOpen,hitSegment,maps,branches,nodes,restore,rank,cost,unlocked,buy,award,pegsFor,Controller};
+  return {BOARD,MAX_RANK,BUY_AMOUNTS,FORGE_AMOUNTS,payoutProduct,nanogames,featuresFor,segmentFor,gateOpen,hitSegment,maps,branches,nodes,restore,rank,cost,unlocked,buy,planBuyAll,buyAll,award,pegsFor,Controller};
 })();
 if(typeof module!=='undefined')module.exports=CoinDrop;

@@ -1,30 +1,30 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const C=require('../coin-drop.js');
-test('20 distinct boards have increasing goals and reachable bounded pegs',()=>{
- assert.equal(C.maps.length,20);
- assert.equal(new Set(C.maps.map(m=>JSON.stringify([C.pegsFor(m),m.wind,m.gravity,m.motion]))).size,20);
+test('100 distinct boards have increasing goals and reachable bounded pegs',()=>{
+ assert.equal(C.maps.length,100);
+ assert.equal(new Set(C.maps.map(m=>JSON.stringify([C.pegsFor(m),m.wind,m.gravity,m.motion]))).size,100);
  for(const m of C.maps){assert.ok(C.pegsFor(m).length>20);assert.ok(C.pegsFor(m).every(p=>p.x>0&&p.x<C.BOARD.width&&p.y>70&&p.y<C.BOARD.pocketY));if(m.id)assert.ok(m.goal>C.maps[m.id-1].goal);}
 });
-test('campaign uses earned dots, pays clear bonus once, and progresses all 20 maps',()=>{
+test('campaign uses earned dots, pays clear bonus once, and progresses all 100 maps',()=>{
  const p=C.restore();
  for(const m of C.maps){const before=p.rubies;assert.equal(C.award(p,m.id,m.goal),true);assert.equal(p.cleared,m.id+1);assert.equal(p.rubies,before+3+m.id);p.dots=0;assert.equal(C.award(p,m.id,1),false);assert.equal(p.rubies,before+3+m.id);}
- assert.equal(C.restore(p).cleared,20);
+ assert.equal(C.restore(p).cleared,100);
 });
-test('80 upgrade nodes enforce dependencies and currency, repeat purchases increase real effects',()=>{
- const p=C.restore({dots:1e12,rubies:1e6});assert.equal(C.nodes.length,80);
- for(const b of C.branches){assert.equal(C.buy(p,`${b.id}-1`),false);let previous=0;for(let i=0;i<8;i++){const n=C.nodes.find(n=>n.id===`${b.id}-${i}`);const before=p[n.currency];const price=C.cost(p,n);assert.equal(C.buy(p,n.id),true);assert.equal(p[n.currency],before-price);assert.ok(C.rank(p,b.id)>previous);previous=C.rank(p,b.id);assert.equal(C.buy(p,n.id),true);}}
+test('320 upgrade nodes enforce dependencies and currency, repeat purchases increase real effects',()=>{
+ const p=C.restore({dots:1e20,rubies:1e20,scrap:1e20});assert.equal(C.nodes.length,320);
+ for(const b of C.branches){assert.equal(C.buy(p,`${b.id}-1`),false);let previous=0;for(let i=0;i<b.names.length;i++){const n=C.nodes.find(n=>n.id===`${b.id}-${i}`);const before=p[n.currency];const price=C.cost(p,n);assert.equal(C.buy(p,n.id),true);assert.equal(p[n.currency],before-price);assert.ok(C.rank(p,b.id)>previous);previous=C.rank(p,b.id);assert.equal(C.buy(p,n.id),true);}}
  assert.equal(C.buy(C.restore(),'mint-0'),false);assert.equal(C.buy(p,'unknown'),false);
 });
 test('corrupt saves and invalid payouts cannot poison or bypass campaign progression',()=>{
  const p=C.restore({map:19,cleared:2,dots:Infinity,rubies:-5,levels:{'mini-0':NaN},earned:[-4]});
- assert.equal(p.map,2);assert.equal(p.dots,0);assert.equal(p.rubies,0);assert.equal(p.earned[0],0);assert.equal(C.award(p,99,400),false);
+ assert.equal(p.map,2);assert.equal(p.dots,0);assert.equal(p.rubies,0);assert.equal(p.earned[0],0);assert.equal(C.award(p,100,400),false);
  C.award(p,2,NaN,Infinity,-5);assert.equal(p.dots,0);assert.equal(p.rubies,0);assert.equal(p.scrap,0);
 });
 
-test('world goals are three times the previous targets and playfield area is tripled',()=>{
+test('world 21 starts at 1E89 and later worlds keep growing while early worlds stay unchanged',()=>{
  assert.equal(C.BOARD.width*C.BOARD.height,560*660*3);
- for(const m of C.maps){assert.equal(m.goal,3*8*5*Math.round(250*1.38**m.id));const p=C.restore({cleared:m.id,map:m.id});assert.equal(C.award(p,m.id,m.goal-1),false);assert.equal(C.award(p,m.id,1),true);}
+ for(const m of C.maps){assert.equal(m.goal,m.id>=20?1e89*1.75**(m.id-20):720*Math.round(250*1.75**m.id));const p=C.restore({cleared:m.id,map:m.id});assert.equal(C.award(p,m.id,m.goal*.9),false);assert.equal(C.award(p,m.id,m.goal-p.earned[m.id]),true);}
  const old=C.restore({cleared:6,map:5,earned:[250,345],dots:500});assert.equal(old.cleared,6);assert.equal(old.dots,500);
 });
 test('all worlds have three populated pinball decks and rails physically reflect coins',()=>{
@@ -40,12 +40,12 @@ test('moving pegs preserve a main-coin-wide gap throughout their sweep',()=>{
   assert.ok(Math.hypot(Math.max(0,Math.abs(a.x-b.x)-sweep),a.y-b.y)>=a.r+b.r+32-1e-8,`world ${map.id}`);
  }}
 });
-test('all 60 nanogames appear exactly once in campaign pockets',()=>{
- assert.equal(C.nanogames.length,60);assert.equal(new Set(C.nanogames.map(g=>g.id)).size,60);
+test('all 300 nanogames appear exactly once in campaign pockets',()=>{
+ assert.equal(C.nanogames.length,300);assert.equal(new Set(C.nanogames.map(g=>g.id)).size,300);
  assert.deepEqual(new Set(C.maps.flatMap(m=>C.featuresFor(m).filter(f=>f.type==='nano').map(f=>f.game))),new Set(C.nanogames.map(g=>g.id)));
 });
 function physicsGame(map){
- const g=Object.create(C.Controller.prototype);Object.assign(g,{p:C.restore({map:map.id,cleared:20}),features:C.featuresFor(map),pegs:C.pegsFor(map),coins:[],particles:[],clock:0,beat:0,charge:1,musicStep:0});
+ const g=Object.create(C.Controller.prototype);Object.assign(g,{p:C.restore({map:map.id,cleared:100}),features:C.featuresFor(map),pegs:C.pegsFor(map),coins:[],particles:[],clock:0,beat:0,charge:1,musicStep:0});
  g.$=()=>({style:{setProperty(){}}});g.burst=g.tone=g.save=g.renderStats=g.message=()=>{};g.reward=()=>{};return g;
 }
 function ball(x,y=50){return {x,y,vx:0,vy:0,r:12,age:0,hits:new Set(),featureHits:new Set(),banks:new Set(),pocketBonus:1,boost:1,rubyHits:0,nanoPlayed:true};}
@@ -62,7 +62,7 @@ test('a full campaign of center and edge launches settles with collision-safe nu
 });
 
 test('each world owns exactly three globally unique nanogames and original timings survive',()=>{
- const all=C.maps.flatMap(m=>{const pockets=C.featuresFor(m).filter(f=>f.type==='nano');assert.equal(pockets.length,3);assert.deepEqual(pockets.map(p=>p.game),C.nanogames.slice(m.id*3,m.id*3+3).map(g=>g.id));return pockets.map(p=>p.game);});assert.equal(new Set(all).size,60);
+ const all=C.maps.flatMap(m=>{const pockets=C.featuresFor(m).filter(f=>f.type==='nano');assert.equal(pockets.length,3);assert.deepEqual(pockets.map(p=>p.game),C.nanogames.slice(m.id*3,m.id*3+3).map(g=>g.id));return pockets.map(p=>p.game);});assert.equal(new Set(all).size,300);
  for(const [id,seconds] of [['odd',3],['math',4],['colors',2],['maze',6],['code',14]])assert.equal(C.nanogames.find(g=>g.id===id).seconds,seconds);
 });
 test('new quiz answers are unambiguous and arithmetic is correct across seeds',()=>{
@@ -77,4 +77,106 @@ test('new quiz answers are unambiguous and arithmetic is correct across seeds',(
   if(game.variant==='word')assert.equal(q.answer,q.choices.slice().sort()[0]);
   if(game.variant==='count')assert.equal(+q.answer,[...q.prompt].filter(c=>c==='★').length);
  }
+});
+
+test('completed twenty-world saves retain progress and unlock the first expansion world',()=>{
+ const old={dots:123456,rubies:77,scrap:91,cleared:20,map:19,earned:Array(20).fill(1234),levels:{'mint-7':3,'launch-0':2}};
+ const p=C.restore(old);
+ assert.equal(p.cleared,20);assert.equal(p.map,19);assert.equal(p.dots,old.dots);assert.equal(p.rubies,old.rubies);assert.equal(p.scrap,old.scrap);
+ assert.deepEqual(p.earned.slice(0,20),old.earned);assert.deepEqual(p.earned.slice(20),Array(80).fill(0));
+ assert.equal(p.levels['mint-7'],3);assert.equal(p.levels['launch-0'],2);assert.equal(p.levels['expedition-0'],0);
+ assert.equal(C.nodes.find(n=>n.id==='mint-7').currency,'rubies');
+ assert.equal(C.unlocked(p,C.nodes.find(n=>n.id==='mint-8')),true);
+ assert.equal(C.award(p,20,C.maps[20].goal),true);assert.equal(p.cleared,21);
+});
+
+test('bulk prices and purchases equal sequential ranks for every amount and currency',()=>{
+ assert.equal(C.BUY_AMOUNTS.at(-1),1e200);assert.equal(C.BUY_AMOUNTS.length,43);
+ for(const id of ['mint-0','mint-6','mint-8'])for(const amount of C.BUY_AMOUNTS.filter(n=>n<=5000)){
+  const node=C.nodes.find(n=>n.id===id),p=C.restore({dots:8e15,rubies:8e15,scrap:8e15,levels:{[id]:3,[node.requires]:1}}),sequential=C.restore(p);
+  let total=0;for(let i=0;i<amount;i++){total+=C.cost(sequential,node);assert.equal(C.buy(sequential,id),true);}
+  assert.equal(C.cost(p,node,amount),total);assert.equal(C.buy(p,id,amount),true);assert.deepEqual(p,sequential);
+ }
+});
+test('bulk purchases are atomic and respect funds, dependencies, allowed sizes and rank limits',()=>{
+ const p=C.restore({dots:100,rubies:100,scrap:100}),before=JSON.stringify(p);
+ for(const [id,amount] of [['mint-0',5],['mint-1',1],['mint-0',0],['mint-0',-1],['mint-0',2],['mint-0',Infinity],['mint-0',NaN],['missing',5]]){
+  assert.equal(C.buy(p,id,amount),false);assert.equal(JSON.stringify(p),before);
+ }
+ const capped=C.restore({dots:1e300,levels:{'mint-0':C.MAX_RANK}});assert.equal(C.buy(capped,'mint-0',1),false);assert.equal(C.buy(capped,'mint-0',1e200),false);
+});
+
+test('dot condenser costs 50 scrap and multiplies its two percent payout with Expedition upgrades',()=>{
+ for(const map of [0,19,99]){
+  const g=Object.create(C.Controller.prototype);g.p=C.restore({map,cleared:map,scrap:49,levels:{'expedition-0':2}});
+  g.blocked=()=>false;g.message=g.save=g.render=g.tone=g.burst=()=>{};
+  g.craft('dots');assert.equal(g.p.scrap,49);assert.equal(g.p.dots,0);
+  g.p.scrap=50;g.craft('dots');assert.equal(g.p.scrap,0);
+  assert.equal(g.p.dots,Math.floor(Math.round(C.maps[map].goal*.02)*1.5**2));assert.equal(g.p.earned[map],g.p.dots);
+ }
+});
+
+test('forge bulk crafting matches individual crafts for all sizes and preserves large boost reserves',()=>{
+ const controller=()=>{const g=Object.create(C.Controller.prototype);g.p=C.restore({scrap:1e6,boosts:9999,levels:{'expedition-0':2}});g.blocked=()=>false;g.message=g.save=g.render=g.tone=g.burst=()=>{};return g;};
+ for(const kind of ['boost','ruby','dots'])for(const amount of C.BUY_AMOUNTS.filter(n=>n<=5000)){
+  const bulk=controller(),single=controller();bulk.craft(kind,amount);for(let i=0;i<amount;i++)single.craft(kind);
+  assert.deepEqual(bulk.p,single.p);assert.deepEqual(C.restore(bulk.p),bulk.p);
+ }
+ const g=controller();g.p.scrap=49;const before=JSON.stringify(g.p);
+ for(const [kind,amount]of [['dots',1],['boost',5],['ruby',1],['unknown',1],['boost',-1],['boost',0],['boost',2],['boost',Infinity]]){g.craft(kind,amount);assert.equal(JSON.stringify(g.p),before);}
+});
+
+test('buy all previews without spending and buys only the highest affordable unlocked tier in each category',()=>{
+ const p=C.restore({dots:1e12,rubies:1e12,scrap:1e12,levels:Object.fromEntries(C.nodes.map(n=>[n.id,1]))});
+ const before=JSON.stringify(p),plan=C.planBuyAll(p,5);assert.equal(JSON.stringify(p),before);assert.equal(plan.purchases.length,16);
+ assert.ok(plan.purchases.every(item=>item.id.endsWith('-19')&&item.amount===5));
+ assert.deepEqual(C.buyAll(p,5),plan);
+ for(const n of C.nodes)assert.equal(p.levels[n.id],n.tier===19?6:1);
+ for(const currency of ['dots','rubies','scrap'])assert.equal(p[currency],1e12-plan.totals[currency]);
+});
+test('buy all falls back to affordable tiers, shares currency across categories and respects locks and caps',()=>{
+ const p=C.restore({dots:70});const plan=C.buyAll(p);assert.deepEqual(plan.purchases.map(x=>x.id),['mint-0','peg-0']);assert.equal(p.dots,0);assert.equal(p.levels['mint-1'],0);
+ const fallback=C.restore({dots:500,levels:{'mint-0':1,'mint-1':1,'mint-2':C.MAX_RANK,'mint-3':1}});
+ const planned=C.planBuyAll(fallback);assert.equal(planned.purchases[0].id,'mint-1');
+ const empty=C.restore(),snapshot=JSON.stringify(empty);assert.equal(C.buyAll(empty,5000).purchases.length,0);assert.equal(C.buyAll(empty,-1).purchases.length,0);assert.equal(JSON.stringify(empty),snapshot);
+ const cap=C.restore({dots:1e15,levels:{'mint-0':C.MAX_RANK-1}});assert.ok(!C.planBuyAll(cap,5).purchases.some(x=>x.id==='mint-0'));
+});
+
+test('large batches through a billion quote and purchase without iterating per rank',()=>{
+ for(const amount of C.BUY_AMOUNTS.filter(n=>n>=10000&&n<=5e10)){
+  const p=C.restore({dots:1e25,rubies:1e25,scrap:1e25,levels:Object.fromEntries(C.nodes.map(n=>[n.id,100]))});
+  const node=C.nodes[0],expected=amount*1e12;
+  assert.equal(C.cost(p,node,amount),expected);const old=p.dots;assert.equal(C.buy(p,node.id,amount),true);assert.equal(p.dots,old-expected);assert.equal(p.levels[node.id],100+amount);
+  const plan=C.buyAll(p,amount);assert.equal(plan.purchases.length,16);assert.ok(plan.purchases.every(n=>n.id.endsWith('-19')));
+  assert.deepEqual(C.restore(p).levels,p.levels);
+ }
+});
+test('a billion forge crafts scale rewards, charge once, and award a world clear only once',()=>{
+ const make=()=>{const g=Object.create(C.Controller.prototype);g.p=C.restore({scrap:1e12,levels:{'expedition-0':2}});g.blocked=()=>false;g.message=g.save=g.render=g.tone=g.burst=()=>{};return g;};
+ const boost=make();boost.craft('boost',1e9);assert.equal(boost.p.boosts,1e10);assert.equal(boost.p.scrap,1e12-20e9);assert.equal(C.restore(boost.p).boosts,1e10);
+ const ruby=make();ruby.craft('ruby',1e9);assert.equal(ruby.p.rubies,3e9);assert.equal(ruby.p.scrap,1e12-60e9);
+ const dots=make();dots.craft('dots',1e9);assert.equal(dots.p.scrap,1e12-50e9);assert.equal(dots.p.earned[0],Math.floor(Math.round(C.maps[0].goal*.02)*2.25)*1e9);assert.equal(dots.p.cleared,1);assert.equal(dots.p.rubies,3);assert.equal(dots.p.dots,dots.p.earned[0]+Math.round(C.maps[0].goal*.2));
+});
+
+test('late-world dot balances survive saves above 1E89 and can clear the final world',()=>{
+ const goal=C.maps[99].goal,p=C.restore({map:99,cleared:99,dots:goal*.5,earned:[...Array(99).fill(0),goal*.5]});
+ assert.ok(Number.isFinite(goal));assert.ok(goal>=1e89);assert.equal(p.dots,goal*.5);assert.equal(p.earned[99],goal*.5);
+ assert.equal(C.award(p,99,goal),true);assert.equal(p.cleared,100);
+ const saved=C.restore(JSON.parse(JSON.stringify(p)));assert.equal(saved.dots,p.dots);assert.equal(saved.earned[99],p.earned[99]);assert.equal(saved.cleared,100);
+});
+
+test('ultra upgrade batches through 1E200 stay finite and survive save restoration',()=>{
+ for(const amount of C.BUY_AMOUNTS.filter(n=>n>=1e11)){
+  const p=C.restore({dots:1e300,rubies:1e300,scrap:1e300});
+  assert.ok(Number.isFinite(C.cost(p,C.nodes[0],amount)));const plan=C.buyAll(p,amount);assert.equal(plan.purchases.length,16);
+  for(const branch of C.branches)assert.equal(p.levels[`${branch.id}-0`],amount);
+  assert.deepEqual(C.restore(JSON.parse(JSON.stringify(p))),p);
+ }
+ const p=C.restore({dots:1e300,levels:{'mint-0':1e200}});assert.equal(C.buy(p,'mint-0',1),false);assert.equal(p.levels['mint-0'],1e200);assert.equal(C.buy(p,'mint-0',1e200),true);assert.equal(p.levels['mint-0'],2e200);
+});
+test('ultra payout multiplication saturates instead of generating invalid or zero rewards',()=>{
+ assert.equal(C.payoutProduct(1e200,1e200),1e300);assert.equal(C.payoutProduct(1e200,0,1e200),0);assert.equal(C.payoutProduct(2,3,.5),3);
+ const g=physicsGame(C.maps[0]);g.p=C.restore({levels:Object.fromEntries(C.nodes.map(n=>[n.id,1e200]))});
+ g.reward=C.Controller.prototype.reward;g.coins=[ball(420,C.BOARD.pocketY+1)];g.coins[0].boost=1e200;g.coins[0].pocketBonus=1e200;
+ g.update(1/120);assert.ok(g.p.dots>0);assert.ok(Number.isFinite(g.p.dots));assert.ok(Number.isFinite(g.p.earned[0]));
 });

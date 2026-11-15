@@ -4,9 +4,18 @@ const $ = (id) => document.getElementById(id);
 const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
 const jukeboxCard = jukeboxNote?.closest('.game-card');
 const guideCard = document.querySelector('[data-game="guide"]');
+const geomayhemBossSongs = BossAudio.profiles.map(profile=>({
+  id:`geomayhem_boss_${profile.level}`,title:`${GeomayhemBosses.catalog[profile.level-1].name} — ${profile.title}`,
+  category:'Geomayhem boss',bpm:profile.bpm,bossLevel:profile.level,
+  duration:(profile.level === 20 ? 64 : 8) * profile.steps * .25 * 60 / profile.bpm,
+})).concat(JukeboxArchive.tracks.filter(track=>track.kind==='boss').map(track=>({...track,bossLevel:track.level,bossMode:track.mode,bossPhase:track.phase})));
+// Keep the original catalog (including boss battles) above the expanded archive.
+const addedJukeboxIds = new Set([...JukeboxArchive.tracks.map(track=>track.id),'tearesseract_prelude','gaster_signal']);
+const jukeboxTracks = [...new Map([...ArcadeMusic.jukeboxTracks,...geomayhemBossSongs].map(track=>[track.id,track])).values()]
+  .sort((a,b)=>Number(addedJukeboxIds.has(a.id))-Number(addedJukeboxIds.has(b.id)));
 const modes = {
-  nanolab: {title:"Nano Lab", category:"14 / TEMPORARY TEST ROOM", art:"⚗", heading:"Try every pocket challenge.", copy:"All 60 nanogames, no campaign rewards.", accent:"#cfadff", controls:"Choose a nanogame to test · No currency or campaign changes", localOnly:true, temporary:true, difficulties:{}},
-  coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "20 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
+  nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 300 nanogames, no campaign rewards.", accent:"#cfadff", controls:"Choose a nanogame to practice · No currency or campaign changes", localOnly:true, temporary:true, difficulties:{}},
+  coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "100 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
   guide: {
     title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
     heading: "Know what is falling.", copy: "Meet the blocks in Turtle Dodge Chaos.",
@@ -39,7 +48,7 @@ const modes = {
     copy: "Browse the arcade songs, game themes, and rock tracks. Your selected song loops until you choose another.",
     accent: "#f5a5dc", controls: "Choose a song · Pause or resume below · Esc stops playback",
     choiceLabel: "Choose a song", localOnly: true, temporary: true,
-    difficulties: Object.fromEntries(ArcadeMusic.jukeboxTracks.map(track =>
+    difficulties: Object.fromEntries(jukeboxTracks.map(track =>
       [track.id, [track.title, `${track.category} · ${track.bpm} BPM`]])),
   },
   hangman: {
@@ -641,6 +650,7 @@ $("game-canvas").addEventListener("lostpointercapture", () => { geomayhemFiring 
 
 // Each sleeve has its own palette; related songs share a visual motif.
 const songSleeves = {
+  ...Object.fromEntries(geomayhemBossSongs.map(track=>[track.id,[GeomayhemBosses.catalog[track.bossLevel-1].color,'#a8a0ed','crown']])),
   cubie_hello: ["#c6f783", "#79d7b0", "cubie"],
   chaos_carnival: ["#ffe78a", "#f5a5dc", "bubbles"],
   ...Object.fromEntries(ArcadeMusic.geomayhemTracks.map(track =>
@@ -774,10 +784,28 @@ function styleSongCard(button, id) {
   path.setAttribute("d", sleevePaths[motif]);
   art.append(path);
   button.prepend(art);
+  const duration = jukeboxTracks.find(track => track.id === id).duration;
+  const length = document.createElement('span');
+  length.className = 'song-length';
+  length.textContent = `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, '0')}`;
+  length.setAttribute('aria-label', `Song length ${length.textContent}`);
+  button.append(length);
+  if(id==='geomayhem_boss_20'){
+    button.classList.add('regent-song');
+    const rainbow=['#ff3868','#ff962e','#ffe84c','#57e88b','#37d8ff','#7861ff','#f36cfa'];
+    const defs=document.createElementNS(art.namespaceURI,'defs');
+    defs.innerHTML=`<linearGradient id="regent-jukebox-rainbow" x1="0" y1="0" x2="1" y2="1">${rainbow.map((color,i)=>`<stop offset="${i/6}" stop-color="${color}" style="animation-delay:${-i*.7}s"/>`).join('')}</linearGradient><linearGradient id="regent-jukebox-gold" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#c9b371"/><stop offset=".35" stop-color="#9e7938"/><stop offset=".55" stop-color="#c6ae67"/><stop offset="1" stop-color="#77591f"/></linearGradient>`;
+    art.prepend(defs);path.setAttribute('stroke','url(#regent-jukebox-rainbow)');path.setAttribute('fill','url(#regent-jukebox-gold)');path.setAttribute('stroke-width','4.8');
+    for(const label of button.querySelectorAll(':scope > strong, :scope > span')){
+      const words=label.textContent.split(' ');label.replaceChildren();
+      words.forEach((word,i)=>{if(i)label.append(document.createTextNode(' '));const span=document.createElement('span');span.className='regent-word';span.textContent=word;span.style.setProperty('--regent-ink',rainbow[i%rainbow.length]);span.style.animationDelay=`${-i*.55}s`;label.append(span);});
+    }
+  }
 }
 let selected = "hangman";
 let selectedDifficulty = null;
 let jukeboxPaused = false;
+const bossJukebox = {track:null,elapsed:0,started:null,playing:false};
 let previousBossHealth = null;
 let damageFlashAnimation = null;
 let healingFlashAnimation = null;
@@ -906,8 +934,8 @@ function syncSingularityCard() {
   const unlocked = !!saved.unlocks.singularity;
   document.querySelector('[data-game="singularity"]').hidden = !unlocked;
   $("singularity-rift").hidden = unlocked;
-  $("game-count").textContent = unlocked ? "14" : "13";
-  $("game-total").textContent = `${unlocked ? 9 : 8} GAMES + JUKEBOX + CLOSET + SHOP + GUIDE + NANO LAB / ENDLESS REMATCHES`;
+  $("game-count").textContent = unlocked ? "15" : "14";
+  $("game-total").textContent = `${unlocked ? 10 : 9} GAMES + JUKEBOX + CLOSET + SHOP + GUIDE + NANO LAB / ENDLESS REMATCHES`;
 }
 function unlockSingularity(navigate = true) {
   saved.unlocks.singularity = true;
@@ -1487,7 +1515,7 @@ function showScores() {
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "coindrop" ? "Coin Drop saves its campaign and upgrades in this browser for your arcade profile. Collect Cubie Dots, rare Ruby Shards, and minicoin scrap." : selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "coindrop" ? "Coin Drop saves its campaign and upgrades in this browser for your arcade profile. Collect Cubie Dots, rare Ruby Shards, and minicoin scrap." : selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : selected === "nanolab" ? "Nano Lab practice — rewards and campaign progress are not saved." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1983,6 +2011,23 @@ function selectGame(mode) {
       if (mode === "jukebox") styleSongCard(button, value);
       if (mode === "dodge") decorateDodgeDifficulty(button, value);
       button.onclick = () => mode === "wrath" ? chooseWrathDifficulty(value) : startGame(value);
+      if (mode === "jukebox") {
+        const item = document.createElement("div");
+        item.className = "jukebox-song-item";
+        const progress = document.createElement("div");
+        progress.className = "song-progress";
+        progress.dataset.songProgress = value;
+        progress.hidden = true;
+        const slider = document.createElement("input");
+        slider.type = "range"; slider.min = "0"; slider.max = "100"; slider.step = ".1"; slider.value = "0";
+        slider.setAttribute("aria-label", `Seek in ${label}`);
+        slider.addEventListener("input", () => seekJukebox(Number(slider.value)));
+        const times = document.createElement("div");
+        times.className = "song-progress-times";
+        times.innerHTML = '<span class="song-elapsed">0:00</span><span class="song-duration">0:00</span>';
+        progress.append(slider, times); item.append(button, progress);
+        return item;
+      }
       return button;
     }),
   );
@@ -2811,6 +2856,8 @@ function frame(now) {
     if (jukeboxNote.style.transform !== transform) jukeboxNote.style.transform = transform;
   }
   lastFrame = now;
+  tickBossJukebox();
+  updateJukeboxProgress();
   requestAnimationFrame(frame);
 }
 for (const letter of "abcdefghijklmnopqrstuvwxyz") {
@@ -3312,6 +3359,21 @@ function setSoundEnabled(value) {
   syncMusic();
   initializeAudio();
 }
+function bossJukeboxTime(){return bossJukebox.elapsed+(bossJukebox.playing&&bossJukebox.started!==null?Math.max(0,audioContext.currentTime-bossJukebox.started):0);}
+function tickBossJukebox(){
+  if(!bossJukebox.playing||!bossJukebox.track||!bossAudioDirector)return;
+  const track=bossJukebox.track,time=bossJukeboxTime()%track.duration;
+  bossAudioDirector.sync({level:track.bossLevel,mode:track.bossMode||'battle',time,phase:track.bossPhase||1,playing:true,startBeat:Math.floor(time*track.bpm/60*4)});
+}
+function syncBossJukebox(track,playing){
+  const elapsed=bossJukeboxTime(),changed=track?.id!==bossJukebox.track?.id;
+  if(changed){bossAudioDirector?.stop();bossJukebox.elapsed=0;bossJukebox.started=null;}
+  else if(bossJukebox.playing&&!playing){bossJukebox.elapsed=elapsed;bossJukebox.started=null;}
+  if(playing&&(changed||!bossJukebox.playing))bossJukebox.started=audioContext.currentTime;
+  bossJukebox.track=track||null;bossJukebox.playing=!!track&&playing;
+  if(bossJukebox.playing)tickBossJukebox();
+  else if(track||changed)bossAudioDirector?.stop();
+}
 function syncMusic() {
   if (selected === "jukebox") renderJukebox();
   if (sequencePlayer) {
@@ -3321,8 +3383,9 @@ function syncMusic() {
   }
   if (!musicPlayer) return;
   const welcoming = !!document.querySelector("#welcome-dialog")?.open;
+  const jukeboxBoss = !welcoming&&!coreAftermath&&selected==='jukebox'?geomayhemBossSongs.find(track=>track.id===selectedDifficulty):null;
   const state = {
-    theme: welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+    theme: jukeboxBoss ? 'arcade' : welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "geomayhem" ? `geomayhem_level_${snapshot.level}`
@@ -3335,30 +3398,84 @@ function syncMusic() {
       && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
   const bossActive = active && selected === "geomayhem" && (snapshot?.boss?.hp > 0 || snapshot?.boss_defeat) && !snapshot?.over;
-  bossAudioDirector?.sync({level: bossActive ? snapshot.level : null,
+  syncBossJukebox(jukeboxBoss,state.playing);
+  if(!jukeboxBoss)bossAudioDirector?.sync({level: bossActive ? snapshot.level : null,
     mode: snapshot?.boss_defeat ? 'defeat' : snapshot?.boss_intro ? 'intro' : 'battle',
     time: snapshot?.boss_defeat?.time ?? snapshot?.boss_intro?.time ?? snapshot?.fight_elapsed ?? 0,
     phase: snapshot?.boss?.phase ?? 1, move: snapshot?.boss?.move ?? '',
     playing: state.playing && bossActive && !snapshot?.offers?.length && !welcoming});
-  if (bossActive) state.playing = false;
+  if (bossActive || jukeboxBoss) state.playing = false;
   if (pendingRockSong && !welcoming) {
     musicPlayer.playOnce(pendingRockSong, state);
     pendingRockSong = null;
   } else musicPlayer.setState(state);
+  renderNowPlaying();
 }
 function renderNowPlaying() {
   const indicator = $("now-playing");
-  const track = ArcadeMusic.jukeboxTracks.find(track => track.id === musicPlayer?.current?.track);
-  const audible = soundOn && musicPlayer?.playing && audioContext?.state === "running" && track;
+  const track = bossJukebox.playing?bossJukebox.track:jukeboxTracks.find(track => track.id === musicPlayer?.current?.track);
+  const audible = soundOn && (bossJukebox.playing||musicPlayer?.playing) && audioContext?.state === "running" && track;
   indicator.hidden = !audible;
   const text = audible ? `♫ Now playing: ${track.title}` : "";
   if (indicator.textContent !== text) indicator.textContent = text;
   updateAchievements(achievementTracker.hearMusic(track?.id, saved.cubieCustom, !!audible));
 }
+function jukeboxPosition() {
+  const boss = geomayhemBossSongs.find(track => track.id === selectedDifficulty);
+  if (boss) {
+    const profile = BossAudio.profiles[boss.bossLevel - 1];
+    // Boss scores repeat after eight bars; Regent has a full 64-bar arrangement.
+    const duration = boss.duration;
+    return {duration, elapsed: bossJukebox.track?.id === selectedDifficulty ? bossJukeboxTime() % duration : 0};
+  }
+  if (!musicPlayer || musicPlayer.theme !== `jukebox:${selectedDifficulty}`) return {duration:0, elapsed:0};
+  const buffer=musicPlayer.buffers.get(selectedDifficulty);
+  if(!buffer)return {duration:0,elapsed:0};
+  const duration = buffer.duration;
+  const voice = musicPlayer.current;
+  const elapsed = voice ? voice.offset + audioContext.currentTime - voice.started : musicPlayer.offset;
+  return {duration, elapsed: elapsed % duration};
+}
+function updateJukeboxProgress() {
+  if (selected !== "jukebox" || !selectedDifficulty) return;
+  const progress = document.querySelector(`[data-song-progress="${selectedDifficulty}"]`);
+  if (!progress) return;
+  const {duration, elapsed} = jukeboxPosition();
+  const slider = progress.querySelector('input');
+  slider.disabled = !duration;
+  slider.max = String(duration || 100); slider.value = String(elapsed);
+  slider.style.setProperty('--song-progress', `${duration ? elapsed / duration * 100 : 0}%`);
+  const format = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+  slider.setAttribute('aria-valuetext', `${format(elapsed)} of ${format(duration)}`);
+  progress.querySelector('.song-elapsed').textContent = format(elapsed);
+  progress.querySelector('.song-duration').textContent = format(duration);
+}
+function seekJukebox(seconds) {
+  const {duration} = jukeboxPosition();
+  if (!duration) return;
+  const offset = Math.max(0, Math.min(seconds, duration - .001));
+  if (bossJukebox.track?.id === selectedDifficulty) {
+    bossAudioDirector?.stop();
+    bossJukebox.elapsed = offset;
+    bossJukebox.started = bossJukebox.playing ? audioContext.currentTime : null;
+    tickBossJukebox();
+  } else {
+    if (musicPlayer.current) {
+      musicPlayer.retire(musicPlayer.current, .02);
+      musicPlayer.current = null;
+    }
+    musicPlayer.offset = offset;
+    if (musicPlayer.playing) musicPlayer.start();
+  }
+  updateJukeboxProgress();
+}
 function renderJukebox() {
+  document.querySelectorAll('[data-song-progress]').forEach(progress => {
+    progress.hidden = progress.dataset.songProgress !== selectedDifficulty;
+  });
   const title = modes.jukebox.difficulties[selectedDifficulty]?.[0];
   $("jukebox-status").textContent = title
-    ? `${!soundOn ? "Muted" : jukeboxPaused ? "Paused" : "Now playing"}: ${title}` : "Choose a song to start listening.";
+    ? `${!soundOn ? "Muted" : jukeboxPaused ? "Paused" : musicPlayer?.loadError ? "Unable to load" : musicPlayer?.loadingTrack===selectedDifficulty ? "Preparing" : "Now playing"}: ${title}` : "Choose a song to start listening.";
   $("jukebox-pause").textContent = jukeboxPaused ? "Resume" : "Pause";
   $("jukebox-pause").disabled = $("jukebox-stop").disabled = !title;
   document.querySelectorAll("[data-difficulty]").forEach(button =>
@@ -3387,7 +3504,7 @@ function initializeAudio() {
         musicGain.connect(master);
         const music = new ArcadeMusic.Player(context, musicGain);
         const sequence = new ArcadeEffects.SequencePlayer(context, master);
-        music.onPlaybackChange = renderNowPlaying;
+        music.onPlaybackChange = ()=>{renderNowPlaying();if(selected==='jukebox')renderJukebox();};
         context.addEventListener("statechange", renderNowPlaying);
         audioContext = context;
         audioMaster = master;
@@ -4238,12 +4355,10 @@ function createForgeAudio() {
     oscillator.start(start);oscillator.stop(start+length+.02);
   }
   // Original 16-step celestial arpeggio with a slow bass progression.
-  const notes=[220,329.63,440,493.88,659.25,493.88,440,329.63,261.63,392,523.25,659.25,783.99,659.25,523.25,392];
+
   const timer=setInterval(()=>{
     if(stopped) return;
-    tone(notes[beat%16],.48,.028,'sine',0,notes[beat%16],true);
-    if(beat%4===0) tone(beat%16<8?55:65.41,1.1,.035,'triangle',0,beat%16<8?55:65.41,true);
-    if(beat%2===0) tone(95,.13,.025,'sine',0,38,true);
+    for(const note of JukeboxArchive.forgeBeat(beat))tone(note.hz,note.duration,note.volume,note.type,0,note.endHz??note.hz,true);
     beat++;
   },280);
   return {
