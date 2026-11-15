@@ -166,6 +166,14 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
     for (const property of ['localStorage', 'sessionStorage'])
       Object.defineProperty(window, property, { get() { throw new Error('Storage blocked'); } });
   });
+  // This case checks muting and combat freezing, independently of load timing.
+  // The separate encounter timing test covers the production five-second delay.
+  await page.route('**/app.js*', async route => {
+    const response=await route.fetch();
+    await route.fulfill({response,body:(await response.text()).replace(
+      'setTimeout(startGasterSequence, Math.max(0, 5000 - performance.now()));',
+      'window.triggerPendingGaster=startGasterSequence;')});
+  });
   await openGame(page);
   await page.locator('#welcome-close').click();
   await leaveFullscreen(page);
@@ -182,11 +190,11 @@ test('Gaster respects mute and blocked storage and freezes a running game', asyn
     new MutationObserver(() => window.gasterGameRemaining.push(snapshot.remaining))
       .observe(document.querySelector('#gaster-blackout'), { attributes: true, attributeFilter: ['hidden'] });
   });
-  await page.waitForTimeout(await page.evaluate(() => Math.max(0, 4100 - performance.now())));
   await leaveFullscreen(page);
   await page.locator('[data-game="keyboard"]').click();
   await page.locator('[data-difficulty="progressive"]').click();
-  await expect(page.locator('#gaster-blackout')).toBeVisible({ timeout: 2500 });
+  await page.evaluate(()=>window.triggerPendingGaster());
+  await expect(page.locator('#gaster-blackout')).toBeVisible();
   const remaining = await page.evaluate(() => snapshot.remaining);
   expect(remaining).toBeGreaterThan(.5);
   await expect(page.locator('#gaster-blackout')).toBeHidden({ timeout: 7500 });

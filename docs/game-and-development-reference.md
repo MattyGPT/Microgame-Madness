@@ -317,7 +317,7 @@ The JavaScript tests check achievement thresholds, persistence, and duplicate pr
 
 Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web/tests/fixtures/game.cjs`: it installs the pinned local runtime before navigation. Install test-specific routes before calling `openGame(page)`; use explicit reloads when testing persistence. Each test retains a fresh browser context. Local browser runs use parallel workers; use `--workers=1` when debugging. Runtime startup retains a 30-second allowance, while ordinary assertions fail after 10 seconds. CI records traces on the first retry and merges all shard results into one downloadable `browser-report`.
 
-Pull requests run Python/JavaScript checks alongside a browser build and four browser shards. The shards download the same build artifact and run `npm run test:browser:built` without rebuilding it. Browser fixtures mock leaderboard configuration to keep production services out of the suite. Superseded checks for the same workflow/ref are cancelled. The publish workflow reruns checks on `main` and requires every check to pass before deployment.
+Pull requests run Python/JavaScript checks alongside a browser build and eight browser shards. The shards download the same build artifact and run `npm run test:browser:built` without rebuilding it. Browser fixtures mock leaderboard configuration to keep production services out of the suite. Superseded checks for the same workflow/ref are cancelled. The publish workflow reruns checks on `main` and requires every check to pass before deployment.
 
 ## Cloudflare Workers static assets
 
