@@ -9,22 +9,24 @@ function encounter(){
   vm.createContext(context);
   const source=fs.readFileSync(require.resolve('../tearesseract.js'),'utf8');
   // Observe the real encounter without exposing development hooks to players.
-  vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.encounter={load(n){round=n;hp=12;enter('attack');},step:update,tuning:attackTuning,fire,makeEffect,coreSequence,pressF,seek(value){t=value;},aim(a){mouse={x:p.x+Math.cos(a)*100,y:p.y+Math.sin(a)*100};},safe(value){document.querySelector('#practice-safe').checked=value;},read(){return {phase,t,volley,bullets,lasers,hp,shieldIntegrity,shieldBroken,beamBlocking};}};})();`),context);
+  vm.runInContext(source.replace(/\}\)\(\);\s*$/,`globalThis.encounter={load(n){round=n;hp=12;enter('attack');},step:update,tuning:attackTuning,fire,makeEffect,coreSequence,beamGeometry,pressF,duration,shieldProfile,shieldCovers,spawnBlackHole,updateBlackHoles,enter,pose(x,y){p={x,y};},hazards(b,l=[]){bullets=b;lasers=l;spawn=99;laserTimer=99;},seek(value){t=value;},aim(a){mouse={x:p.x+Math.cos(a)*100,y:p.y+Math.sin(a)*100};},safe(value){document.querySelector('#practice-safe').checked=value;},read(){return {phase,t,p,volley,bullets,lasers,blackHoles,debris,hp,shieldIntegrity,shieldBroken,beamBlocking};}};})();`),context);
   return context.encounter;
 }
-test('all twenty attacks fire faster and more often',()=>{
+test('all twenty attacks use their requested timing and projectile tuning',()=>{
   const game=encounter();
   for(let round=0;round<20;round++){
     game.load(round);const config=game.tuning();
-    assert.ok(config.speed>185+round*9);
-    assert.ok(config.interval<Math.max(.25,.85-round*.025));
+    const multiplier=[0,7].includes(round)?1.4:round===8?.65:1;
+    assert.equal(config.speed,(275+round*13)*multiplier);
     game.step(1/120);
-    const bullet=game.read().bullets[0];
-    assert.ok(Math.abs(Math.hypot(bullet.vx,bullet.vy)-(round===6?510:config.speed))<.001);
+    if([5,10,15].includes(round)){assert.equal(game.read().blackHoles.length,1);assert.equal(game.duration(),18);}
+    else{const bullet=game.read().bullets[0];assert.ok(Math.abs(Math.hypot(bullet.vx,bullet.vy)-(round===6?510:config.speed))<.001);}
     for(let i=0;i<1080;i++)game.step(1/120);
     assert.equal(game.read().phase,'attack');
-    if(round!==9)assert.ok(game.read().volley>=Math.floor(9/(round===6?.38:config.interval)));else assert.ok(game.read().volley>0&&game.read().volley<10);
+    if(![3,5,9,10,15].includes(round))assert.ok(game.read().volley>=Math.floor(9/(round===6?.38:config.interval)));
+    else assert.ok(game.read().volley>0&&game.read().volley<10);
   }
+  game.load(18);assert.equal(game.tuning().interval,(.58-18*.016)/1.35);
 });
 test('late movement attacks pair telegraphed lasers and preserve slow healing',()=>{
   const game=encounter();game.load(19);game.step(.01);
@@ -109,4 +111,54 @@ test('prism ribbons weave independently with stable randomized motion parameters
   assert.ok(Math.abs(pair[0].y-pair[1].y)>.001);
   assert.deepEqual(pair.map(b=>JSON.stringify(b.weave)),configs);
   assert.ok(pair.every(b=>b.weave.amplitude>=6&&b.weave.amplitude<=9));
+});
+
+test('Scissor Protocol doubles hostile bolts and enlarges both opposing shields; Deadlock shrinks coverage',()=>{
+  const game=encounter();game.load(12);game.fire(0);
+  assert.equal(game.read().bullets.length,2);
+  assert.equal(game.read().bullets[0].vx,-game.read().bullets[1].vx);
+  assert.equal(game.shieldProfile().scale,1.2);assert.equal(game.shieldProfile().dual,true);
+  game.aim(0);assert.ok(game.shieldCovers(45,0));assert.ok(game.shieldCovers(-45,0));assert.ok(!game.shieldCovers(0,45));
+  game.load(16);assert.equal(game.shieldProfile().scale,.72);game.aim(0);
+  assert.ok(game.shieldCovers(25,0));assert.ok(!game.shieldCovers(-25,0));assert.ok(!game.shieldCovers(35,0));
+});
+test('Rain slows attacks and all red damaging hazards remove two HP',()=>{
+  const game=encounter();game.load(8);game.safe(false);game.fire(0);
+  assert.equal(game.read().bullets[0].red,true);assert.equal(game.read().bullets[0].damage,2);
+  assert.equal(game.tuning().laserLife,.48/.65);
+  game.hazards([{x:550,y:515,vx:0,vy:0,damage:2,red:true,trail:[]}]);game.step(.001);assert.equal(game.read().hp,10);
+});
+test('Laser Grid telegraphs both horizontal and vertical damaging lanes',()=>{
+  const game=encounter();game.load(11);for(let i=0;i<145;i++)game.step(1/120);
+  assert.ok(game.read().lasers.some(l=>l.axis==='horizontal'));
+  assert.ok(game.read().lasers.some(l=>!l.axis));
+});
+test('all three core attacks sway their heads while aiming exactly at the wisp',()=>{
+  const game=encounter();
+  for(const n of [3,9,19]){game.load(n);game.seek(n===19?32+2.5/1.3:4.5);game.pose(550,515);
+    const sequence=game.coreSequence(),geometry=game.beamGeometry(sequence);
+    assert.ok(Math.abs(sequence.x-550)>60);assert.ok(Math.abs(geometry.across)<1e-8);
+    assert.ok(Math.abs(sequence.tilt)>.2);
+  }
+});
+test('black holes make three right-angle return trips before imploding in all three extended rounds',()=>{
+  const game=encounter();
+  for(const n of [5,10,15]){game.load(n);game.spawnBlackHole();const h=game.read().blackHoles[0];
+    const track=[];for(let i=0;i<920;i++){game.updateBlackHoles(1/120);if([108,154,199].includes(i))track.push([h.x,h.y]);}
+    assert.equal(h.cycle,2);assert.equal(Boolean(h.imploding),false);
+    assert.ok(Math.hypot(track[1][0]-track[0][0],track[1][1]-track[0][1])>80);
+    assert.ok(Math.hypot(track[2][0]-track[0][0],track[2][1]-track[0][1])<15);
+    game.updateBlackHoles(.04);assert.equal(h.imploding,true);
+    game.updateBlackHoles(.5);assert.equal(game.read().blackHoles.length,0);assert.equal(game.duration(),18);
+  }
+});
+test('Orbital Sentence rotates both shock positions and velocities around the wisp',()=>{
+  const game=encounter();game.load(13);game.fire(0);game.hazards(game.read().bullets);const b=game.read().bullets[0];game.step(.01);
+  assert.ok(b.y>515);assert.ok(b.vy<0);assert.ok(Math.hypot(b.x-550,b.y-515)<400);
+});
+test('victory disintegrates the boss into moving fragments and reaches the win state',()=>{
+  const game=encounter();game.enter('ending');game.step(1);assert.equal(game.read().debris.length,0);
+  game.step(1.1);assert.equal(game.read().debris.length,190);const part=game.read().debris[0],x=part.x;
+  game.step(.1);assert.notEqual(part.x,x);
+  for(let i=0;i<1300;i++)game.step(1/120);assert.equal(game.read().phase,'win');
 });

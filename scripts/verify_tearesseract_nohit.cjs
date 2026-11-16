@@ -23,9 +23,9 @@ const source = fs.readFileSync('web/tearesseract.js', 'utf8');
 vm.runInContext(source.replace(/\}\)\(\);\s*$/, `
   globalThis.game = {
     load(n) { round=n; hp=12; inv=0; enter('attack'); },
-    step:update, pressF, coreSequence,
+    step:update, pressF, coreSequence,shieldProfile,
     control(a,r=24) { mouse={x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r}; pointerActive=true; },
-    read() { return {t,p,round,hp,phase,bullets,lasers,shieldBroken}; }
+    read() { return {t,p,round,hp,phase,bullets,lasers,blackHoles,shieldBroken}; }
   };
 })();`), context);
 const game = context.game;
@@ -46,14 +46,14 @@ for (let round = 0; round < 20; round++) {
         };
       }).filter(b => b.approaching).sort((a,b) => a.eta-b.eta);
       if (threats.length) {
-        const group = threats.filter(b => Math.abs(b.eta-threats[0].eta)<.025);
+        const group = threats.filter(b => Math.abs(b.eta-threats[0].eta)<.025 && Math.cos(b.angle-threats[0].angle)>0);
         aim = Math.atan2(group.reduce((sum,b)=>sum+Math.sin(b.angle),0),
           group.reduce((sum,b)=>sum+Math.cos(b.angle),0));
       }
       const clearance = round===19 ? 25 : 45;
-      const danger = state.lasers.find(l => l.age<l.warning+.48 && Math.abs(l.x-state.p.x)<clearance);
+      const danger = state.lasers.find(l => l.age<l.warning+(l.life||.48) && (l.axis==='horizontal'?Math.abs(l.y-state.p.y):Math.abs(l.x-state.p.x))<clearance);
       if (danger && (!threats.length || threats[0].eta>(round===19?.12:.15))) {
-        aim = danger.x>=550 ? Math.PI : 0;
+        aim = danger.axis==='horizontal'?(danger.y>=515?-Math.PI/2:Math.PI/2):(danger.x>=550 ? Math.PI : 0);
         radius = 160;
       }
     }
@@ -62,6 +62,10 @@ for (let round = 0; round < 20; round++) {
       const target = 540+Math.sin(state.t*2.3)*6;
       aim = target>=state.p.y ? Math.PI/2 : -Math.PI/2;
       radius = Math.abs(target-state.p.y)+24;
+    }
+    if([5,10,15].includes(round)){
+      const x=550+120*Math.cos(state.t*1.4),y=515+90*Math.sin(state.t*1.4);
+      aim=Math.atan2(y-state.p.y,x-state.p.x);radius=Math.hypot(x-state.p.x,y-state.p.y)+24;
     }
     game.control(aim,radius);
     game.step(1/120);
