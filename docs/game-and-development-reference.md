@@ -319,6 +319,8 @@ Browser specs are grouped by feature in `web/tests/`. Shared setup lives in `web
 
 Pull requests run Python/JavaScript checks alongside a browser build and eight browser shards. The shards download the same build artifact and run `npm run test:browser:built` without rebuilding it. Browser fixtures mock leaderboard configuration to keep production services out of the suite. Superseded checks for the same workflow/ref are cancelled. The publish workflow reruns checks on `main` and requires every check to pass before deployment.
 
+Tearesseract uses pre-rendered MP3 cues so starting the encounter never synthesizes the full soundtrack on the browser's main thread. After changing `composeTearesseract` in `web/music.js`, run `node scripts/render_tearesseract_audio.cjs` (requires FFmpeg) and commit both `web/tearesseract-*.mp3` files. The standalone encounter preloads them, reports download/decode progress, and continues without audio if loading fails.
+
 ## Cloudflare Workers static assets
 
 Play the browser version at **https://microgame-madness.com/**.

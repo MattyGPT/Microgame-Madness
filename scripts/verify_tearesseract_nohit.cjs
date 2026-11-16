@@ -59,7 +59,7 @@ for (let round = 0; round < 20; round++) {
     }
     if (round===6) {
       // Track the small moving space between two adjacent ribbons.
-      const target = 530+Math.sin(state.t*2.3)*6;
+      const target = 540+Math.sin(state.t*2.3)*6;
       aim = target>=state.p.y ? Math.PI/2 : -Math.PI/2;
       radius = Math.abs(target-state.p.y)+24;
     }
