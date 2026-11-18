@@ -32,6 +32,7 @@ test('Impossible has its own picker, small white arena, scaled blocks, rewards, 
   expect(result.scoreKeys).toContain('dodge:impossible');
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button',{name:'Wear White Dwarf Cubie',exact:true}).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','white_dwarf');
   await page.reload();

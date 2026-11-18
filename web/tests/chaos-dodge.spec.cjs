@@ -95,6 +95,7 @@ test('guide preview changes on 2.5-second ticks and Chaos Cubies equip and persi
   });
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.locator('#customs-search').fill('Pristine Prism');
   const custom=page.locator('.custom-tile[data-custom="chaos_pristine"]');
   await expect(custom.locator('.custom-equip')).toBeEnabled();

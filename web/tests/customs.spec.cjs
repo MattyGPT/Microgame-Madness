@@ -10,6 +10,7 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await expect(card.locator('.cubie-float')).toHaveCSS('animation-name', 'custom-float');
   await expect(card.locator('.cubie-eyes')).toHaveCSS('animation-name', 'mascot-blink');
   await card.click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await expect(page.locator('#customs-room')).toBeVisible();
   await expect(page.locator('#customs-grid .custom-tile')).toHaveCount(await page.evaluate(() => CubieCustoms.catalog.length));
   await expect(page.locator('#customs-count')).toHaveText(`1 / ${await page.evaluate(() => CubieCustoms.catalog.length)} Customs unlocked`);
@@ -45,6 +46,7 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await page.locator('#cube').click({ force: true });
   await expect(page.locator('#cube')).toHaveClass(/blushing/);
   await card.click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button', { name: 'Wear Classic Cubie', exact: true }).click();
   await expect(page.locator('#cube')).not.toHaveClass(/custom-equipped/);
   await leaveFullscreen(page);
@@ -53,6 +55,7 @@ test('Custom Cubie unlocks, equips, persists, and preserves normal game flow', a
   await page.locator('[data-difficulty="easy"]').click();
   await expect(page.locator('#hangman-game')).toBeVisible();
   await card.click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await expect(page.locator('#customs-room')).toBeVisible();
   expect(await page.evaluate(() => active)).toBe(false);
 });
@@ -74,6 +77,7 @@ test('locked Customs can be previewed with flavor text without equipping', async
   await openGame(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button', { name: 'Preview Pumpkin Cubie', exact: true }).click();
   await expect(page.locator('#customs-equipped-name')).toHaveText('Pumpkin Cubie');
   await expect(page.locator('#customs-flavor')).toHaveText('Won the crown. Kept the pumpkin. Refuses to become pie.');
@@ -107,6 +111,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await expect(page.locator('#runtime-status')).toContainText('All games ready', { timeout: 30000 });
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await expect(page.locator('#customs-count')).toHaveText(`125 / ${await page.evaluate(() => CubieCustoms.catalog.length)} Customs unlocked`);
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
@@ -139,6 +144,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'gaster');
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button', { name: 'Wear Empyrorite Cubie', exact: true }).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'medal_empyrorite');
 });
@@ -147,6 +153,7 @@ test('every Custom shows its tier on the card and preview with matching outlines
   await openGame(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const customs = await page.evaluate(() => CubieCustoms.catalog.map(item => ({
     id: item.id, name: item.name, tier: item.tier, label: CubieCustoms.tierLabels[item.tier],
   })));
@@ -234,13 +241,14 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   };
   await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(171);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(174);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');
-  await expect(mint.locator('button')).toBeDisabled();
+  await expect(mint.locator('button')).toBeEnabled();
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const locked = page.locator('#customs-grid [data-custom="shop_blue_mint"]');
   await locked.locator('.custom-preview-button').click();
   await expect(page.locator('#customs-flavor')).toContainText('Freshly minted');
@@ -288,6 +296,7 @@ test('CODEXISTHEBEST unlocks rainbow Codex Cubie and equipment survives reload',
   await openGame(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const custom = page.locator('#customs-grid .custom-tile[data-custom="codex"]');
   await expect(custom).toHaveAttribute('data-tier', 'rainbow');
   await expect(custom.locator('.custom-equip')).toBeDisabled();

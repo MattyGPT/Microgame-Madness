@@ -82,13 +82,15 @@ const TurtleTrails = (() => {
   class Field {
     constructor() { this.reset(); }
     reset() { this.particles = []; this.last = null; this.carry = 0; this.serial = 0; this.itemId = null; this.mode = null; }
-    update(dt, snapshot, item, reducedMotion = false) {
+    update(dt, snapshot, item, reducedMotion = false, heading = 0) {
       if (!item || !allowedModes.has(snapshot?.mode) || !snapshot.player?.visible || snapshot.over || reducedMotion) { this.reset(); return; }
       if (this.itemId !== item.id || this.mode !== snapshot.mode) { this.reset(); this.itemId = item.id; this.mode = snapshot.mode; }
       if (snapshot.paused) return;
       dt = Math.max(0, Math.min(Number.isFinite(dt) ? dt : 0, .1));
       this.particles = this.particles.filter(p => (p.age += dt) < item.lifetime);
-      const point = { x: snapshot.player.x, y: -snapshot.player.y };
+      // Rear-leg midpoint in sprite space, rotated with the turtle in Chaos.
+      const turn=Number.isFinite(heading)?heading:0;
+      const point = { x: snapshot.player.x-Math.sin(turn)*8, y: -snapshot.player.y+Math.cos(turn)*8 };
       if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) { this.reset(); return; }
       if (this.last) {
         const dx = point.x - this.last.x, dy = point.y - this.last.y, distance = Math.hypot(dx, dy);
@@ -96,7 +98,7 @@ const TurtleTrails = (() => {
         else if (distance > .001) {
           const spacing = 5;
           for (let d = spacing - this.carry; d <= distance; d += spacing) {
-            const n = this.serial++, offset = Math.sin(n * 2.399) * 2.4;
+            const n = this.serial++, offset = 0;
             this.particles.push({ x: this.last.x + dx * d / distance - dy / distance * offset,
               y: this.last.y + dy * d / distance + dx / distance * offset,
               age: dt * (1 - d / distance), rotation: n * 2.399, color: item.colors[n % item.colors.length] });
@@ -122,6 +124,11 @@ const TurtleTrails = (() => {
           const path = getPath(item.shape);
           ['snow','ripple','rune'].includes(item.shape) ? ctx.stroke(path) : ctx.fill(path);
         }
+        if(item.crown) {
+          ctx.globalAlpha=life*.4;ctx.strokeStyle=item.colors[(this.serial%2)+1];ctx.lineWidth=.12;
+          ctx.beginPath();ctx.arc(0,0,1.2+(1-life),0,Math.PI*2);ctx.stroke();
+          ctx.rotate(p.age*8);ctx.beginPath();ctx.moveTo(-1.8,0);ctx.lineTo(1.8,0);ctx.moveTo(0,-1.8);ctx.lineTo(0,1.8);ctx.stroke();
+        }
         ctx.restore();
       }
       ctx.restore();
@@ -134,7 +141,7 @@ const TurtleTrails = (() => {
   }
   function preview(item) {
     const marks = Array.from({ length: 12 }, (_, i) => {
-      const color = item.colors[i % item.colors.length], x = 20 + i * 9, y = 45 + Math.sin(i * .7) * 8;
+      const color = item.colors[i % item.colors.length], x = 20 + i * 9.5, y = 44;
       const opacity = .12 + i / 12 * .8;
       const stroke = ['ring','snow','ripple','rune'].includes(item.shape);
       const shape = ['ring','dot'].includes(item.shape) ? '<circle r=".8"/>' : `<path d="${paths[item.shape]}"/>`;

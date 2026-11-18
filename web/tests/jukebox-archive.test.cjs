@@ -9,9 +9,9 @@ test('every nanogame and missing score appears once, with duration, outside auto
   for(const game of coin.nanogames)assert.ok(ids.includes(`nano_theme_${game.id}`));
   for(const track of archive.tracks){assert.ok(ids.includes(track.id));assert.ok(track.duration>0);assert.ok(!automatic.has(track.id));}
   for(const id of ['tearesseract_prelude','gaster_signal']){assert.ok(ids.includes(id));assert.ok(!automatic.has(id));}
-  assert.equal(music.arcadeTracks.length,47);
+  assert.equal(music.arcadeTracks.length,50);
   const player=new music.Player({});
-  const shuffled=Array.from({length:47*3},()=>player.nextTrack());
+  const shuffled=Array.from({length:50*3},()=>player.nextTrack());
   assert.ok(shuffled.every(id=>automatic.has(id)));
 });
 test('board variants and forge use their in-game note patterns',()=>{

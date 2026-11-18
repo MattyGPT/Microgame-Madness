@@ -1,6 +1,9 @@
 "use strict";
 
+CrownPacks.install(CubieCustoms, TurtleCustoms, TurtleTrails);
 const $ = (id) => document.getElementById(id);
+document.querySelector('[data-game="treasure"] .card-art').innerHTML=TreasureTrove.chest();
+const treasureTrove=new TreasureTrove.Game($('treasure-room'),{owner:()=>accountApp?.controller?.state().owner||'guest'});
 const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
 const jukeboxCard = jukeboxNote?.closest('.game-card');
 const guideCard = document.querySelector('[data-game="guide"]');
@@ -14,6 +17,9 @@ const addedJukeboxIds = new Set([...JukeboxArchive.tracks.map(track=>track.id),'
 const jukeboxTracks = [...new Map([...ArcadeMusic.jukeboxTracks,...geomayhemBossSongs].map(track=>[track.id,track])).values()]
   .sort((a,b)=>Number(addedJukeboxIds.has(a.id))-Number(addedJukeboxIds.has(b.id)));
 const modes = {
+  treasure: {title:"Treasure Trove",category:"TREASURE TRACKING",art:"◇",heading:"Keep your eyes on the prize.",copy:"One hidden gem. More chests, faster shuffles, and trickier crossings each round.",accent:"#ffda83",controls:"Watch the gem · Follow its chest · Tap, click, or use Tab + Enter to choose",localOnly:true,temporary:true,difficulties:{}},
+  turtles: {title:"Custom Turtles",category:"TURTLE WARDROBE",art:"♧",heading:"A shell for every adventure.",copy:"Explore elemental collections and temporary #1 packs.",accent:"#77efcf",controls:"Open a collection · Preview and equip your turtles",localOnly:true,temporary:true,difficulties:{}},
+  trails: {title:"Turtle Trails",category:"TRAIL GALLERY",art:"✧",heading:"Leave a little wonder behind.",copy:"Browse glowing wakes by tier, color, and theme.",accent:"#d6a3ff",controls:"Open a collection · Preview and equip your trails",localOnly:true,temporary:true,difficulties:{}},
   nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 300 nanogames, no campaign rewards.", accent:"#cfadff", controls:"Choose a nanogame to practice · No currency or campaign changes", localOnly:true, temporary:true, difficulties:{}},
   coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "100 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
   guide: {
@@ -888,7 +894,7 @@ saved.shop = CubieShop.restore(saved.shop, [...CubieCustoms.catalog, ...TurtleTr
 const announcedCustoms = new Set(CubieCustoms.catalog.filter(item =>
   CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
 ).map(item => item.id));
-saved.turtleTrail = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned)?.id || null;
+saved.turtleTrail = TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned)?.id || null;
 saved.achievements = achievementTracker.data;
 $("player").value = saved.player;
 function persist() {
@@ -1083,12 +1089,63 @@ function filterCatalogGrid(gridId, inputId) {
     card.hidden = !matchesCatalogSearch(card.textContent, $(inputId).value);
   return cards.filter(card => !card.hidden).length;
 }
+let cubieGroup = null;
 function updateCustomsSearch() {
-  const count = filterCatalogGrid("customs-grid", "customs-search");
-  $("customs-search-status").textContent = count
-    ? `${count} ${count === 1 ? "Custom" : "Customs"} shown`
-    : "No Customs match your search and filter.";
+  const query=$("customs-search").value.trim(), filter=$("customs-filter").value;
+  const catalog=CubieCustoms.catalog.filter(i=>filter==='all'||(filter==='unlocked')===CubieCustoms.unlocked(i,achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618));
+  const overview=!cubieGroup&&!query;
+  $("cubie-groups").hidden=!overview;$("customs-grid").hidden=overview;$("cubie-groups-back").hidden=overview;
+  CosmeticCollections.covers($("cubie-groups"),catalog,CubieCustoms.svg,group=>{cubieGroup=group.id;updateCustomsSearch();$("cubie-groups-back").focus();});
+  const group=CosmeticCollections.groups(catalog).find(g=>g.id===cubieGroup),ids=new Set((group?.items||catalog).map(i=>i.id));
+  let count=0;
+  for(const card of $("customs-grid").children){card.hidden=!ids.has(card.dataset.custom)||!matchesCatalogSearch(card.textContent,query);if(!card.hidden)count++;}
+  $("customs-search-status").textContent=overview?'Choose a collection. Customs can appear in several groups.':count?`${group?.title||'All Customs'} · ${count} shown`:'No Customs match your search and filter.';
 }
+$("cubie-groups-back").onclick=()=>{cubieGroup=null;$("customs-search").value='';updateCustomsSearch();};
+let equipmentGroup=null;
+function renderTurtleTabIcons() {
+  const item=TurtleCustoms.selected(CrownPacks.equipped("turtle",saved.turtleCustom),saved.shop.owned);
+  const id=item?.id||'classic';
+  for(const mode of ['turtles','trails']) {
+    const art=document.querySelector(`[data-game="${mode}"] .card-art`);
+    if(art.dataset.turtle===id)continue;
+    art.dataset.turtle=id;
+    art.innerHTML=item?TurtleCustoms.preview(item):'<svg viewBox="-22 -25 44 50" aria-hidden="true"><path d="M-7 -6L-12 -9M7 -6L12 -9M-7 7L-11 11M7 7L11 11" stroke="#b6ed93" stroke-width="4" stroke-linecap="round"/><ellipse rx="8" ry="11" fill="#87c966" stroke="#c1f5a4" stroke-width="1.3"/><circle cy="-15" r="4" fill="#b6ed93"/><path d="M0 -7L5 -3V4L0 8L-5 4V-3Z" fill="none" stroke="#4e8c4e" stroke-width="1.3"/></svg>';
+  }
+}
+function renderEquipmentCollection(reset=false) {
+  renderTurtleTabIcons();
+  if(reset){equipmentGroup=null;$("collection-search").value='';}
+  const turtle=selected==='turtles',slot=turtle?'turtle':'trail',field=turtle?'turtleCustom':'turtleTrail',api=turtle?TurtleCustoms:TurtleTrails;
+  const equipped=api.selected(CrownPacks.equipped(slot,saved[field]),saved.shop.owned);
+  $("collection-equipped").textContent=`Equipped: ${equipped?.name||'Classic / none'}`;
+  const query=$("collection-search").value.trim(),overview=!equipmentGroup&&!query;
+  $("equipment-groups").hidden=!overview;$("equipment-grid").hidden=overview;$("equipment-back").hidden=overview;
+  CosmeticCollections.covers($("equipment-groups"),api.catalog,api.preview,g=>{equipmentGroup=g.id;renderEquipmentCollection();$("equipment-back").focus();});
+  const group=CosmeticCollections.groups(api.catalog).find(g=>g.id===equipmentGroup);
+  const items=(group?.items||api.catalog).filter(i=>matchesCatalogSearch(`${i.name} ${i.tier} ${i.flavor}`,query));
+  $("collection-status").textContent=overview?'Open a collection to preview and equip.':`${group?.title||'All Customs'} · ${items.length} shown`;
+  $("equipment-grid").replaceChildren(...items.map(item=>{
+    const owned=item.crown?CrownPacks.has(item.crown):saved.shop.owned.includes(item.id),wearing=equipped?.id===item.id;
+    const card=document.createElement('article');card.className='custom-tile';card.dataset.custom=item.id;card.dataset.tier=item.tier;
+    const art=document.createElement('div');art.className='equipment-art';art.innerHTML=api.preview(item);
+    const title=document.createElement('h4');title.textContent=item.name;
+    const tier=document.createElement('span');tier.className='custom-tier';tier.textContent=CubieCustoms.tierLabels[item.tier];
+    const description=document.createElement('p');description.textContent=item.flavor;
+    const button=document.createElement('button');button.type='button';button.className='custom-equip';button.textContent=wearing?'Equipped ✓':owned?'Equip':item.crown?'Hold #1 to equip':'Find in shop';button.disabled=wearing||(!owned&&!!item.crown);
+    button.onclick=()=>{
+      if(!owned){selectGame('shop');setShopCategory(turtle?'turtles':'trails');$("shop-search").value=item.name;updateShopSearch();return;}
+      if(item.crown&&!CrownPacks.has(item.crown)){renderEquipmentCollection();return;}
+      CrownPacks.equip(slot,item.crown?item.id:null);if(!item.crown)saved[field]=item.id;
+      persist();renderEquipmentCollection();
+    };
+    card.append(art,title,tier,description,button);return card;
+  }));
+}
+$("equipment-back").onclick=()=>{equipmentGroup=null;$("collection-search").value='';renderEquipmentCollection();};
+$("collection-search").oninput=()=>renderEquipmentCollection();
+$("equipment-remove").onclick=()=>{const turtle=selected==='turtles';CrownPacks.equip(turtle?'turtle':'trail',null);saved[turtle?'turtleCustom':'turtleTrail']=null;persist();renderEquipmentCollection();};
+
 function updateShopSearch() {
   const customs = filterCatalogGrid("shop-grid", "shop-search");
   const trails = filterCatalogGrid("trail-grid", "shop-search");
@@ -1211,8 +1268,9 @@ function initializeAchievements() {
   renderAchievements();
 }
 function applyCubieCustom() {
-  const item = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
-  saved.cubieCustom = item.id;
+  renderTurtleTabIcons();
+  const item = CubieCustoms.selected(CrownPacks.equipped("cubie", saved.cubieCustom), achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
+  if(!item.crown) saved.cubieCustom = item.id;
   const cube = $("cube");
   cube.querySelector(".cubie-custom-art")?.remove();
   cube.classList.toggle("custom-equipped", item.id !== "classic");
@@ -1233,18 +1291,18 @@ function previewCustom(item) {
   $("customs-preview-tier").textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
   $("customs-flavor").textContent = item.flavor;
   $("customs-preview-art").innerHTML = CubieCustoms.svg(item);
-  const equipped = CubieCustoms.selected(saved.cubieCustom, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
+  const equipped = CubieCustoms.selected(CrownPacks.equipped("cubie", saved.cubieCustom), achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
   $("customs-status").textContent = item.id === equipped.id ? `Now wearing ${item.name}.`
     : CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
       ? "Preview only · Unlocked. Choose Wear Custom to equip."
-      : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
+      : item.crown ? "Preview only · Hold #1 on this game’s all-time combined leaderboard to wear this Exclusive Custom." : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
   $("customs-grid").querySelectorAll(".custom-preview-button").forEach(button => {
     button.setAttribute("aria-pressed", String(button.dataset.preview === item.id));
   });
 }
 function renderCustoms() {
   const medals = achievementTracker.data.unlocked;
-  const equipped = CubieCustoms.selected(saved.cubieCustom, medals, saved.shop.owned, saved.testerTon618);
+  const equipped = CubieCustoms.selected(CrownPacks.equipped("cubie", saved.cubieCustom), medals, saved.shop.owned, saved.testerTon618);
   const count = CubieCustoms.catalog.filter(item => CubieCustoms.unlocked(item, medals, saved.shop.owned, saved.testerTon618)).length;
   $("customs-count").textContent = `${count} / ${CubieCustoms.catalog.length} Customs unlocked`;
 
@@ -1274,6 +1332,7 @@ function renderCustoms() {
     tier.textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
     const requirement = document.createElement("p");
     if (item.id === "classic") requirement.textContent = "Your original arcade buddy. Always yours.";
+    else if (item.crown) requirement.textContent = item.flavor;
     else if (item.price) requirement.textContent = `Cubie Shop · ${item.price} Cubie Cash`;
     else if (item.id === "gaster") requirement.textContent = "Some things are better left unexplained.";
     else if (item.id === "pumpkin") requirement.textContent = "Defeat the Pumpkin King in any mode.";
@@ -1292,7 +1351,8 @@ function renderCustoms() {
     button.setAttribute("aria-pressed", String(wearing));
     button.onclick = () => {
       if (!CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)) return;
-      saved.cubieCustom = item.id;
+      CrownPacks.equip("cubie", item.crown ? item.id : null);
+      if(!item.crown) saved.cubieCustom = item.id;
       previewCustomId = item.id;
       applyCubieCustom();
       persist();
@@ -1324,9 +1384,10 @@ function setShopCategory(category) {
 }
 $("shop-customs-tab").onclick = () => setShopCategory("customs");
 $("shop-turtles-tab").onclick = () => setShopCategory("turtles");
-$("turtle-custom-remove").onclick = () => { saved.turtleCustom = null; persist(); renderShop(); };
+$("turtle-custom-remove").onclick = () => { CrownPacks.equip("turtle",null); saved.turtleCustom = null; persist(); renderShop(); };
 $("shop-trails-tab").onclick = () => setShopCategory("trails");
 $("trail-remove").onclick = () => {
+  CrownPacks.equip("trail", null);
   saved.turtleTrail = null;
   turtleTrailField.reset();
   persist();
@@ -1335,10 +1396,10 @@ $("trail-remove").onclick = () => {
   $("trail-remove").focus({ preventScroll: true });
 };
 function renderTrails() {
-  const equipped = TurtleTrails.selected(saved.turtleTrail, saved.shop.owned);
+  const equipped = TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned);
   $("trail-equipped").textContent = `Equipped: ${equipped?.name || "No trail"}`;
   $("trail-remove").setAttribute("aria-pressed", String(!equipped));
-  $("trail-grid").replaceChildren(...[...TurtleTrails.catalog].sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
+  $("trail-grid").replaceChildren(...[...TurtleTrails.catalog].filter(item=>!item.crown).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
     const owned = saved.shop.owned.includes(item.id), wearing = equipped?.id === item.id;
     const card = document.createElement("article");
     card.className = "custom-tile trail-tile";
@@ -1355,11 +1416,13 @@ function renderTrails() {
     const price = document.createElement("strong"); price.className = "shop-price";
     price.textContent = owned ? "Owned" : `${item.price.toLocaleString()} Cubie Cash`;
     const button = document.createElement("button"); button.className = "custom-equip";
-    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip trail" : `Buy · ${item.price.toLocaleString()} Cash`;
-    button.setAttribute("aria-label", `${owned ? "Equip" : "Buy"} ${item.name} trail`);
-    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip trail" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive" : `Buy · ${item.price.toLocaleString()} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Equip" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive:" : "Buy"} ${item.name} trail`);
+    button.disabled = wearing;
+    button.classList.toggle("too-expensive",!owned&&CubieShop.balance(saved.shop)<item.price);
     button.onclick = async () => {
       if (saved.shop.owned.includes(item.id)) {
+        CrownPacks.equip("trail", null);
         saved.turtleTrail = item.id;
         turtleTrailField.reset();
         $("shop-status").textContent = `${item.name} equipped. Your turtle is ready to leave a trail.`;
@@ -1367,7 +1430,7 @@ function renderTrails() {
         if (accountApp?.initialized && accountApp.controller) {
           try { await accountApp.purchase(item.id); }
           catch (error) { $("shop-status").textContent = error.message; return; }
-        } else if (!CubieShop.buy(saved.shop, item)) return;
+        } else if (!CubieShop.buy(saved.shop, item)) { $("shop-status").textContent = `You need ${Math.max(0,item.price-CubieShop.balance(saved.shop)).toLocaleString()} more Cubie Cash for ${item.name}.`; return; }
         $("shop-status").textContent = `${item.name} is yours! Choose Equip trail to use it.`;
       }
       persist(); renderShop();
@@ -1378,10 +1441,11 @@ function renderTrails() {
   }));
 }
 function renderTurtleCustoms() {
-  const equipped = TurtleCustoms.selected(saved.turtleCustom, saved.shop.owned);
+  renderTurtleTabIcons();
+  const equipped = TurtleCustoms.selected(CrownPacks.equipped("turtle", saved.turtleCustom), saved.shop.owned);
   $("turtle-custom-equipped").textContent = `Equipped: ${equipped?.name || "Classic turtle"}`;
   $("turtle-custom-remove").setAttribute("aria-pressed", String(!equipped));
-  $("turtle-custom-grid").replaceChildren(...[...TurtleCustoms.catalog].sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
+  $("turtle-custom-grid").replaceChildren(...[...TurtleCustoms.catalog].filter(item=>!item.crown).sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
     const owned = saved.shop.owned.includes(item.id), wearing = equipped?.id === item.id;
     const card = document.createElement("article");
     card.className = "custom-tile trail-tile";
@@ -1398,18 +1462,20 @@ function renderTurtleCustoms() {
     const price = document.createElement("strong"); price.className = "shop-price";
     price.textContent = owned ? "Owned" : `${item.price.toLocaleString()} Cubie Cash`;
     const button = document.createElement("button"); button.className = "custom-equip";
-    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip Custom" : `Buy · ${item.price.toLocaleString()} Cash`;
-    button.setAttribute("aria-label", `${owned ? "Equip" : "Buy"} ${item.name} Custom`);
-    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Equip Custom" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive" : `Buy · ${item.price.toLocaleString()} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Equip" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive:" : "Buy"} ${item.name} Custom`);
+    button.disabled = wearing;
+    button.classList.toggle("too-expensive",!owned&&CubieShop.balance(saved.shop)<item.price);
     button.onclick = async () => {
       if (saved.shop.owned.includes(item.id)) {
+        CrownPacks.equip("turtle", null);
         saved.turtleCustom = item.id;
         $("shop-status").textContent = `${item.name} equipped. Your turtle has a new look.`;
       } else {
         if (accountApp?.initialized && accountApp.controller) {
           try { await accountApp.purchase(item.id); }
           catch (error) { $("shop-status").textContent = error.message; return; }
-        } else if (!CubieShop.buy(saved.shop, item)) return;
+        } else if (!CubieShop.buy(saved.shop, item)) { $("shop-status").textContent = `You need ${Math.max(0,item.price-CubieShop.balance(saved.shop)).toLocaleString()} more Cubie Cash for ${item.name}.`; return; }
         $("shop-status").textContent = `${item.name} is yours! Choose Equip Custom to use it.`;
       }
       persist(); renderShop();
@@ -1440,7 +1506,7 @@ function renderShop() {
   }));
   $("shop-grid").replaceChildren(...shopCustoms.sort((a, b) => a.price - b.price || a.name.localeCompare(b.name)).map(item => {
     const owned = saved.shop.owned.includes(item.id);
-    const wearing = saved.cubieCustom === item.id;
+    const wearing = CrownPacks.equipped("cubie",saved.cubieCustom) === item.id;
     const card = document.createElement("article");
     card.className = "custom-tile shop-art-paused";
     card.dataset.custom = item.id;
@@ -1461,11 +1527,13 @@ function renderShop() {
     price.textContent = owned ? "In your closet" : `${item.price} Cubie Cash`;
     const button = document.createElement("button");
     button.className = "custom-equip";
-    button.disabled = wearing || (!owned && CubieShop.balance(saved.shop) < item.price);
-    button.textContent = wearing ? "Equipped ✓" : owned ? "Wear Custom" : `Buy · ${item.price} Cash`;
-    button.setAttribute("aria-label", `${owned ? "Wear" : "Buy"} ${item.name}`);
+    button.disabled = wearing;
+    button.classList.toggle("too-expensive",!owned&&CubieShop.balance(saved.shop)<item.price);
+    button.textContent = wearing ? "Equipped ✓" : owned ? "Wear Custom" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive" : `Buy · ${item.price} Cash`;
+    button.setAttribute("aria-label", `${owned ? "Wear" : CubieShop.balance(saved.shop)<item.price ? "Too Expensive:" : "Buy"} ${item.name}`);
     button.onclick = async () => {
       if (saved.shop.owned.includes(item.id)) {
+        CrownPacks.equip("cubie", null);
         saved.cubieCustom = item.id;
         applyCubieCustom();
         $("shop-status").textContent = `Now wearing ${item.name}.`;
@@ -1473,7 +1541,7 @@ function renderShop() {
         if (accountApp?.initialized && accountApp.controller) {
           try { await accountApp.purchase(item.id); }
           catch (error) { $("shop-status").textContent = error.message; return; }
-        } else if (!CubieShop.buy(saved.shop, item)) return;
+        } else if (!CubieShop.buy(saved.shop, item)) { $("shop-status").textContent = `You need ${Math.max(0,item.price-CubieShop.balance(saved.shop)).toLocaleString()} more Cubie Cash for ${item.name}.`; return; }
         $("shop-status").textContent = `${item.name} is yours! Find it in your closet or choose Wear Custom.`;
         announcedCustoms.delete(item.id);
         showAchievementToasts(newCustomNotifications());
@@ -1944,7 +2012,7 @@ function decorateDodgeDifficulty(button, difficulty) {
 function selectGame(mode) {
   $("boss-cinema").hidden=true;bossCinemaWasOpen=false;
   coreAftermath = false;
-  if (loadFailed && !["customs", "shop", "coindrop", "nanolab"].includes(mode)) return;
+  if (loadFailed && !["customs", "turtles", "trails", "treasure", "shop", "coindrop", "nanolab"].includes(mode)) return;
   if (["singularity", "core_practice"].includes(mode) && !saved.unlocks.singularity) return;
   if (active && selected === "geomayhem") saveRound();
   accountApp?.finish(snapshot, active && selected === "keyboard" ? "exit" : "interrupted");
@@ -1961,6 +2029,8 @@ function selectGame(mode) {
   jukeboxPaused = false;
   $("jukebox-controls").hidden = mode !== "jukebox";
   $("customs-room").hidden = mode !== "customs";
+  $("collection-room").hidden = !["turtles","trails"].includes(mode);
+  treasureTrove.setVisible(mode==="treasure");
   $("shop-room").hidden = mode !== "shop";
   $("coin-drop-room").hidden = !["coindrop", "nanolab"].includes(mode);
   coinDropGame.setLabMode(mode === "nanolab");
@@ -2040,9 +2110,10 @@ function selectGame(mode) {
     "exit",
     "touch-controls",
   ].forEach((id) => ($(id).hidden = true));
-  $("welcome").hidden = ["customs", "shop", "guide", "coindrop", "nanolab"].includes(mode);
+  $("welcome").hidden = ["customs", "turtles", "trails", "treasure", "shop", "guide", "coindrop", "nanolab"].includes(mode);
   if (mode === "shop") renderShop();
   if (mode === "customs") renderCustoms();
+  if (["turtles","trails"].includes(mode)) renderEquipmentCollection(true);
   setTextIfChanged("metric", "—");
   setTextIfChanged("score", "0");
   $("metric-label").textContent =
@@ -2456,7 +2527,7 @@ function paintGeomayhemPolygon(context, x, y, radius, sides, fill, outline, angl
 // Rasterize each equipped Custom once, never parse SVG in the frame loop.
 const geomayhemCubieSprites = new Map();
 function drawGeomayhemCubie(context, command) {
-  const item=CubieCustoms.selected(saved.cubieCustom,achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
+  const item=CubieCustoms.selected(CrownPacks.equipped("cubie", saved.cubieCustom),achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
   let sprite=geomayhemCubieSprites.get(item.id);
   if(!sprite) {
     sprite=new Image();
@@ -2630,9 +2701,9 @@ function draw(s) {
       reduced:trailReducedMotion.matches||!!saved.preferences?.reducedMotion});
   for (const command of s.commands) {
     if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || saved.preferences?.reducedMotion))
-      turtleTrailField.draw(ctx, TurtleTrails.selected(saved.turtleTrail, saved.shop.owned));
+      turtleTrailField.draw(ctx, TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned));
     const turtleCustom = command.role === "player" && TurtleTrails.allowedModes.has(s.mode)
-      ? TurtleCustoms.selected(saved.turtleCustom, saved.shop.owned) : null;
+      ? TurtleCustoms.selected(CrownPacks.equipped("turtle", saved.turtleCustom), saved.shop.owned) : null;
     if (turtleCustom && s.player?.visible) {
       TurtleCustoms.draw(ctx, turtleCustom, s.player.x, -s.player.y,
         s.paused ? 0 : performance.now() / 1000,
@@ -2834,7 +2905,7 @@ function frame(now) {
         chaosTurtleAngle += difference * (trailReducedMotion.matches || saved.preferences?.reducedMotion ? 1 : 1 - Math.exp(-14 * Math.min(.1, Math.max(0, (now - lastFrame) / 1000))));
       }
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
-        TurtleTrails.selected(saved.turtleTrail, saved.shop.owned), trailReducedMotion.matches || !!saved.preferences?.reducedMotion);
+        TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned), trailReducedMotion.matches || !!saved.preferences?.reducedMotion, selected === "dodge" && selectedDifficulty === "chaos" ? chaosTurtleAngle : 0);
       render();
     } catch (error) {
       fail(error);
@@ -2893,6 +2964,7 @@ function runArcadeCode(rawName, separate = false) {
     saved.cubieCustom = "ton_618";
     applyCubieCustom();
     if (selected === "customs") renderCustoms();
+    if (["turtles","trails"].includes(selected)) renderEquipmentCollection();
     persist();
     $("name-surprise").dataset.secret = "ton618tester";
     $("name-surprise").textContent = "TON 618 tester Custom unlocked. No achievement awarded.";
@@ -3386,6 +3458,7 @@ function syncMusic() {
   const jukeboxBoss = !welcoming&&!coreAftermath&&selected==='jukebox'?geomayhemBossSongs.find(track=>track.id===selectedDifficulty):null;
   const state = {
     theme: jukeboxBoss ? 'arcade' : welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+      : selected === "treasure" ? "treasure_trove"
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
       : active && selected === "geomayhem" ? `geomayhem_level_${snapshot.level}`
@@ -3418,7 +3491,7 @@ function renderNowPlaying() {
   indicator.hidden = !audible;
   const text = audible ? `♫ Now playing: ${track.title}` : "";
   if (indicator.textContent !== text) indicator.textContent = text;
-  updateAchievements(achievementTracker.hearMusic(track?.id, saved.cubieCustom, !!audible));
+  updateAchievements(achievementTracker.hearMusic(track?.id, CrownPacks.equipped("cubie",saved.cubieCustom), !!audible));
 }
 function jukeboxPosition() {
   const boss = geomayhemBossSongs.find(track => track.id === selectedDifficulty);
@@ -3858,6 +3931,7 @@ function applyAccountProfile(profile) {
   appliedAccountOwner = owner;
   applyingAccountProfile = true;
   try {
+    CrownPacks.identity(owner);
     saved = profile;
     // A delayed snapshot must not roll back an already-applied sound setting.
     // Revisions belong to the profile owner, so switching accounts resets this.
@@ -3888,7 +3962,9 @@ function applyAccountProfile(profile) {
     renderAchievements(); applyCubieCustom(); showScores();
     if (selected === "shop") renderShop();
     if (selected === "customs") renderCustoms();
+    if (["turtles","trails"].includes(selected)) renderEquipmentCollection();
     if (selected === "geomayhem") renderGeomayhemHub();
+    if (selected === "treasure") treasureTrove.setVisible(true);
     persist();
   } finally { applyingAccountProfile = false; }
 }
@@ -4031,9 +4107,9 @@ if (!storageAvailable)
   $("storage-note").textContent =
     "Storage is unavailable. Scores and achievements last for this visit only.";
 const jackpotMachine = new JackpotSlots.Controller({
-  equipped: () => saved.cubieCustom,
+  equipped: () => CrownPacks.equipped("cubie",saved.cubieCustom),
   reducedMotion: () => trailReducedMotion.matches || !!saved.preferences?.reducedMotion,
-  onResult: symbols => updateAchievements(achievementTracker.slotResult(symbols, saved.cubieCustom, true)),
+  onResult: symbols => updateAchievements(achievementTracker.slotResult(symbols, CrownPacks.equipped("cubie",saved.cubieCustom), true)),
 });
 requestAnimationFrame(frame);
 const gameLayout = new ResizeObserver(() => fitArcade());
@@ -4105,7 +4181,7 @@ document.addEventListener("visibilitychange", syncCardDecorationVisibility);
 syncCardDecorationVisibility();
 
 // Observe individual decorative tiles, including ones rebuilt by filters.
-const decorationSelector = '.intro, [data-difficulty], .custom-tile, .achievement-card';
+const decorationSelector = '.intro, [data-difficulty], .custom-tile, .achievement-card, .collection-cover';
 const decorationVisibility = new Map();
 function syncOffscreenDecoration(element, visible) {
   element.classList.toggle('decoration-paused', active || document.hidden || !visible);
@@ -4135,7 +4211,7 @@ const decorationChanges = new MutationObserver(records => {
     record.addedNodes.forEach(node => observeDecorationTree(node));
   }
 });
-for (const container of document.querySelectorAll('#difficulty-choices, #customs-room, #shop-room, #achievements-list'))
+for (const container of document.querySelectorAll('#difficulty-choices, #customs-room, #collection-room, #shop-room, #achievements-list'))
   decorationChanges.observe(container, { childList: true, subtree: true });
 document.addEventListener('visibilitychange', () => {
   for (const [element, visible] of decorationVisibility) syncOffscreenDecoration(element, visible);
@@ -4378,3 +4454,46 @@ function forgeTimingHit(position, center, width, markerHalfWidth) {
   return position + markerHalfWidth >= center - width/2 - 1e-9
     && position - markerHalfWidth <= center + width/2 + 1e-9;
 }
+
+let crownRefreshBusy=false;
+async function refreshCrowns() {
+  if(crownRefreshBusy)return;
+  crownRefreshBusy=true;
+  try {
+    await accountApp.ready;
+    const client=await leaderboardReady;
+    if(accountApp.session)client.accountSession=accountApp.session;
+    const before=CrownPacks.games.map(g=>CrownPacks.has(g.mode)).join();
+    await CrownPacks.refresh(client,accountApp.controller?.state().owner||null);
+    if(before===CrownPacks.games.map(g=>CrownPacks.has(g.mode)).join())return;
+    applyCubieCustom();
+    if(selected==='customs')renderCustoms();
+    if(['turtles','trails'].includes(selected))renderEquipmentCollection();
+  } catch { /* Unverified rewards expire automatically; normal equipment remains available. */ } finally { crownRefreshBusy=false; }
+}
+refreshCrowns();
+setInterval(()=>{if(!document.hidden)refreshCrowns();},30000);
+window.addEventListener('focus',refreshCrowns);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCrowns();});
+
+// Expire visible equipment even if a ranking request stalls indefinitely.
+setInterval(()=>{
+  if(document.hidden)return;
+  renderTurtleTabIcons();
+  const expected=CubieCustoms.selected(CrownPacks.equipped('cubie',saved.cubieCustom),achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
+  if($('cube').dataset.custom!==expected.id){applyCubieCustom();if(selected==='customs')renderCustoms();}
+  if(['turtles','trails'].includes(selected)){
+    const slot=selected==='turtles'?'turtle':'trail',api=selected==='turtles'?TurtleCustoms:TurtleTrails,field=selected==='turtles'?'turtleCustom':'turtleTrail';
+    const item=api.selected(CrownPacks.equipped(slot,saved[field]),saved.shop.owned);
+    if($('collection-equipped').textContent!==`Equipped: ${item?.name||'Classic / none'}`)renderEquipmentCollection();
+  }
+},1000);
+
+// SMIL wire deformation respects the same motion and offscreen rules as CSS art.
+setInterval(()=>{
+  const reduced=trailReducedMotion.matches||!!saved.preferences?.reducedMotion;
+  for(const svg of document.querySelectorAll('svg[data-custom="shop_dbtv"]')){
+    const pause=reduced||document.hidden||!!svg.closest('[hidden],.decoration-paused,.shop-art-paused');
+    if(pause!==svg.animationsPaused())pause?svg.pauseAnimations():svg.unpauseAnimations();
+  }
+},500);

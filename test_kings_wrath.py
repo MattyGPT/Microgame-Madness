@@ -293,7 +293,7 @@ class WrathVariantTests(unittest.TestCase):
         self.assertGreater(game.damage_taken, 0)
 
     def test_spook_speeds_and_opposite_pair(self):
-        for level, speed in (("easy", .5), ("hard", 1.08)):
+        for level, speed in (("easy", .5), ("hard", 1.08 * .86 * .85)):
             game = KingsWrath("haunted_quadrants__" + level)
             self.assertEqual(game.scare_speed, speed)
             game.update(5, set())
@@ -301,7 +301,7 @@ class WrathVariantTests(unittest.TestCase):
                 a, b = game.scare_rectangles
                 self.assertEqual(a[:2], (-b[0], -b[1]))
                 game.x, game.y = 0, -160
-                game.update(.15, set())
+                game.update(.12 / (.86 * .85) + .01, set())
                 self.assertGreater(game.damage_taken, 0)
 
     def test_blind_rage_deck_and_timing(self):

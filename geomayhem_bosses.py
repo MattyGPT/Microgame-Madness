@@ -38,7 +38,8 @@ BOSS_TEMPO = (1.8225, 2.295, 2.2275, 1.62, 2.2275, 2.7, 1.9575, 2.43, 2.0925, 2.
 def boss_health(level):
     """Neutral-anomaly boss HP, shared by all encounter entry points."""
     if level <= 15:
-        return (13000 + 750 * (level - 1)) / 1.2 * 1.25
+        early_scale = .3 + .035 * (level - 1) if level <= 10 else min(1, .625 + .075 * (level - 10))
+        return (13000 + 750 * (level - 1)) / 1.2 * 1.25 * early_scale
     return 350 * (1 + (level - 1) * .18 + 19 * .035) * (31.5 if level == 20 else 16.875)
 
 

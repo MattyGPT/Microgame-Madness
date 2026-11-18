@@ -47,6 +47,7 @@ test('Pumpkin and Wrath completed attacks combine, persist, and unlock the match
   await clearCelebrations(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const tile = page.locator('.custom-tile[data-custom="attack_pumpkin_bone_gauntlet"]');
   await expect(tile).toContainText('Bone Veteran');
   await expect(tile.locator('.custom-equip')).toBeEnabled();
@@ -74,6 +75,7 @@ test('Core full fight and loader combine to three, award once, and preserve equi
   await clearCelebrations(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const tile = page.locator('.custom-tile[data-custom="attack_core_photon_rain"]');
   await expect(tile).toContainText('Survive Photon Rain 3 times.');
   await expect(tile).not.toContainText(/loader|temporary/);

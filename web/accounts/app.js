@@ -131,6 +131,7 @@ const AccountApp = (() => {
         await this.controller.initialize(copy(this.getProfile()));
         if (this.controller.state().importRequired) this.registrationHandle = this.session.snapshot().user?.handle || null;
         await this.controller.claimStream(await this.tabIdentity());
+        await this.restoreForge();
         this.controller.subscribe(state => {
           this.render();
           if (this.isolateChangedIdentity()) return;
@@ -253,7 +254,28 @@ const AccountApp = (() => {
       const data = snapshot ? compactSnapshot(snapshot) : run.last || { mode: run.mode, difficulty: run.difficulty, score: 0 };
       this.enqueue('run.finish', { snapshot: data, outcome }, { runId: run.id, occurredAt }).catch(() => {});
     }
-    arcade(event, payload = {}, options = {}) { this.enqueue('arcade', { event, ...payload }, options).catch(() => {}); }
+    forgeRecoveryKey() { return `microgame-madness.forge-recovery:${this.controller?.state().owner || 'guest'}`; }
+    async restoreForge() {
+      const key=this.forgeRecoveryKey();let pending;
+      try { pending=JSON.parse(localStorage.getItem(key)); } catch { return; }
+      if(!pending || typeof pending.id!=='string')return;
+      const state=this.controller.state(),record=await this.store.get(state.owner);
+      const known=record?.pending.some(op=>op.id===pending.id)||record?.receipts.includes(pending.id);
+      if(!known&&!state.profile.achievements?.unlocked?.galactic_forge)
+        await this.controller.enqueue('arcade',{event:'galactic-forge'},{id:pending.id,occurredAt:pending.occurredAt});
+      try { if(JSON.parse(localStorage.getItem(key))?.id===pending.id)localStorage.removeItem(key); } catch {}
+    }
+    arcade(event, payload = {}, options = {}) {
+      let key;
+      if(event==='galactic-forge'){
+        // Synchronous recovery receipt survives closing the tab before IndexedDB commits.
+        key=this.forgeRecoveryKey();options={...options,id:crypto.randomUUID(),occurredAt:options.occurredAt??Date.now()};
+        try { localStorage.setItem(key,JSON.stringify({id:options.id,occurredAt:options.occurredAt})); } catch {}
+      }
+      return this.enqueue('arcade', { event, ...payload }, options).then(()=>{
+        if(key)try{if(JSON.parse(localStorage.getItem(key))?.id===options.id)localStorage.removeItem(key);}catch{}
+      }).catch(error=>this.message(error.message));
+    }
     preferences(profile) {
       if (!this.initialized || !this.controller) return;
       const generation = this.controller.generation;

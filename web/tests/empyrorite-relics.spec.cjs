@@ -11,6 +11,7 @@ test('Empyrorite relics preview while locked and equip after their achievements'
   page.on('pageerror', e => errors.push(e.message));
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   for (const id of ids) {
     const tile = page.locator(`#customs-grid [data-custom="${id}"].custom-tile`);
     await expect(tile).toHaveAttribute('data-tier','empyrorite');
