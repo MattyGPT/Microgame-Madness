@@ -32,15 +32,19 @@ test('verified first place equips a temporary pack; losing it restores normal eq
   await page.locator('#cubie-groups [data-group="exclusive"]').click();
   await page.locator('[data-custom="crown_keyboard_cubie"] .custom-equip').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','crown_keyboard_cubie');
+  for(const mode of ['turtles','trails'])await expect(page.locator(`[data-game="${mode}"] .card-art`)).toHaveAttribute('data-turtle','classic');
   expect(await page.evaluate(()=>saved.shop.owned.some(id=>id.startsWith('crown_')))).toBe(false);
   for(const [mode,slot] of [['turtles','turtle'],['trails','trail']]){
     await page.evaluate(mode=>selectGame(mode),mode);await page.locator('#equipment-groups [data-group="exclusive"]').click();
     await page.locator(`#equipment-grid [data-custom="crown_keyboard_${slot}"] button`).click();
     await expect(page.locator('#collection-equipped')).toContainText('Chromatic Keymaster');
   }
+  for(const mode of ['turtles','trails'])await expect(page.locator(`[data-game="${mode}"] .card-art`)).toHaveAttribute('data-turtle','crown_keyboard_turtle');
+  expect(await page.locator('[data-game="turtles"]').evaluate(el=>el.getAnimations({subtree:true}).filter(a=>a.playState==='running').length)).toBe(0);
   await page.evaluate(async()=>{await CrownPacks.refresh({configured:true,listGame:async()=>[{rank:1,is_you:false}]},accountApp.controller.state().owner);applyCubieCustom();renderEquipmentCollection();});
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','classic');
   await expect(page.locator('#collection-equipped')).toContainText('Classic / none');
+  for(const mode of ['turtles','trails'])await expect(page.locator(`[data-game="${mode}"] .card-art`)).toHaveAttribute('data-turtle','classic');
 });
 test('DBTV wires deform along their length and stop for reduced motion',async({page})=>{
   await openGame(page);await leaveFullscreen(page);await page.evaluate(()=>selectGame('shop'));await page.locator('#shop-search').fill('DBTV');

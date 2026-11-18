@@ -2,8 +2,6 @@
 
 CrownPacks.install(CubieCustoms, TurtleCustoms, TurtleTrails);
 const $ = (id) => document.getElementById(id);
-document.querySelector('[data-game="turtles"] .card-art').innerHTML=TurtleCustoms.preview(TurtleCustoms.catalog.find(i=>i.angel));
-document.querySelector('[data-game="trails"] .card-art').innerHTML=TurtleTrails.preview(TurtleTrails.catalog.find(i=>i.id==='trail_spectrum_finale'));
 document.querySelector('[data-game="treasure"] .card-art').innerHTML=TreasureTrove.chest();
 const treasureTrove=new TreasureTrove.Game($('treasure-room'),{owner:()=>accountApp?.controller?.state().owner||'guest'});
 const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
@@ -1105,7 +1103,18 @@ function updateCustomsSearch() {
 }
 $("cubie-groups-back").onclick=()=>{cubieGroup=null;$("customs-search").value='';updateCustomsSearch();};
 let equipmentGroup=null;
+function renderTurtleTabIcons() {
+  const item=TurtleCustoms.selected(CrownPacks.equipped("turtle",saved.turtleCustom),saved.shop.owned);
+  const id=item?.id||'classic';
+  for(const mode of ['turtles','trails']) {
+    const art=document.querySelector(`[data-game="${mode}"] .card-art`);
+    if(art.dataset.turtle===id)continue;
+    art.dataset.turtle=id;
+    art.innerHTML=item?TurtleCustoms.preview(item):'<svg viewBox="-22 -25 44 50" aria-hidden="true"><path d="M-7 -6L-12 -9M7 -6L12 -9M-7 7L-11 11M7 7L11 11" stroke="#b6ed93" stroke-width="4" stroke-linecap="round"/><ellipse rx="8" ry="11" fill="#87c966" stroke="#c1f5a4" stroke-width="1.3"/><circle cy="-15" r="4" fill="#b6ed93"/><path d="M0 -7L5 -3V4L0 8L-5 4V-3Z" fill="none" stroke="#4e8c4e" stroke-width="1.3"/></svg>';
+  }
+}
 function renderEquipmentCollection(reset=false) {
+  renderTurtleTabIcons();
   if(reset){equipmentGroup=null;$("collection-search").value='';}
   const turtle=selected==='turtles',slot=turtle?'turtle':'trail',field=turtle?'turtleCustom':'turtleTrail',api=turtle?TurtleCustoms:TurtleTrails;
   const equipped=api.selected(CrownPacks.equipped(slot,saved[field]),saved.shop.owned);
@@ -1259,6 +1268,7 @@ function initializeAchievements() {
   renderAchievements();
 }
 function applyCubieCustom() {
+  renderTurtleTabIcons();
   const item = CubieCustoms.selected(CrownPacks.equipped("cubie", saved.cubieCustom), achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618);
   if(!item.crown) saved.cubieCustom = item.id;
   const cube = $("cube");
@@ -1431,6 +1441,7 @@ function renderTrails() {
   }));
 }
 function renderTurtleCustoms() {
+  renderTurtleTabIcons();
   const equipped = TurtleCustoms.selected(CrownPacks.equipped("turtle", saved.turtleCustom), saved.shop.owned);
   $("turtle-custom-equipped").textContent = `Equipped: ${equipped?.name || "Classic turtle"}`;
   $("turtle-custom-remove").setAttribute("aria-pressed", String(!equipped));
@@ -4468,6 +4479,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCro
 // Expire visible equipment even if a ranking request stalls indefinitely.
 setInterval(()=>{
   if(document.hidden)return;
+  renderTurtleTabIcons();
   const expected=CubieCustoms.selected(CrownPacks.equipped('cubie',saved.cubieCustom),achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
   if($('cube').dataset.custom!==expected.id){applyCubieCustom();if(selected==='customs')renderCustoms();}
   if(['turtles','trails'].includes(selected)){
