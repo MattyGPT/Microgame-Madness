@@ -316,7 +316,7 @@ const CubieCustoms = (() => {
   add("star", "Starlight Cubie", "name_starlight", "#ffe5a0",
     '<path d="m96 12 3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#fff6cc"/>',
     '<path d="m60 8 17 29 34 7-17 30 4 35-38-11-38 11 4-35L9 44l34-7z"/>');
-  add("pixel", "Retro Cubie", "name_pixel", "#a1dcdd",
+  add("pixel", "Pixel Cubie", "name_pixel", "#a1dcdd",
     '<path d="M24 29h12v12H24M84 29h12v12H84M24 91h12v12H24M84 91h12v12H84" fill="#5d9eb6"/>',
     '<path d="M30 22h60v10h12v62H90v12H30V94H18V32h12z"/>');
   add("mushroom", "One-Up Cubie", "name_1up", "#f3e6c3",
@@ -599,6 +599,10 @@ const CubieCustoms = (() => {
     ["hourglass", "Hourglass Cubie", 1200, "diamond", "#badbe0", "There is always time for one more little adventure.",
       '<path d="M28 35h64L67 66v7l25 28H28l25-28v-7Z" fill="#e6f5ed" stroke="#79a4ae" stroke-width="2"/><path d="M34 40h52L60 64Z" fill="#edc477"/><path d="M32 99 60 80 88 99Z" fill="#edc477"/><path class="cubie-motion motion-energy" d="M60 65v17" stroke="#d5a452" stroke-width="2"/><path d="M24 30v74m72-74v74" stroke="#6d567d" stroke-width="5"/><path d="M16 23h88v12H16ZM16 102h88v12H16Z" fill="#80658d" stroke="#d8b7d4" stroke-width="2"/><path d="M22 27h76M22 110h76" stroke="#f3d8ae" stroke-width="2"/>'],
   );
+  shopCustoms.push(["retro","Retro Cubie",1000,"silver","#9bbc0f","Four shades of green. A pocket-sized classic.",'<g data-art="retro"/>'], ["invisible","Invisible Cubie",600,"silver","none","Only the eyes give them away.",'<g data-art="invisible"/>']);
+  shopCustoms.push(["dbtv","DBTV Cubie",3000,"rainbow","#ffffff","A little broadcast from a very friendly frequency.",
+    '<path d="M60 28V18M60 18 37 4M60 18 83 4" fill="none" stroke="#13131d" stroke-width="4" stroke-linecap="round"/><rect x="27" y="35" width="34" height="18" rx="2" fill="#f7f7fb" stroke="#14141d" stroke-width="2"/><path d="M44 35v18M33 39h5m-2.5 0v10M33 49h5" stroke="#11111c" stroke-width="2"/><circle class="dbtv-record" cx="53" cy="44" r="4" fill="#f42d48"/>',
+    {back:'<g class="dbtv-wires" fill="none" stroke="#090912" stroke-width="5" stroke-linecap="round">'+Array.from({length:6},(_,i)=>`<path class="dbtv-wire" style="--wire-delay:${-i*.3}s" d="M${30+i*12} 99c-16 10 18 24 -4 34"><animate attributeName="d" dur="${2.1+i*.17}s" begin="${-i*.38}s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.25;.5;.75;1" keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1;.4 0 .6 1" values="M${30+i*12} 99c-16 10 18 24 -4 34;M${30+i*12} 99c-7 16 -21 22 -12 36;M${30+i*12} 99c16 10 -18 24 4 34;M${30+i*12} 99c7 16 21 22 12 36;M${30+i*12} 99c-16 10 18 24 -4 34"/></path>`).join('')+'</g>'}]);
   for (const [id, name, price, tier, color, flavor, detail, layers = {}] of shopCustoms)
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
   add("shop_toasted_marshmallow", "Toasted Marshmallow Cubie", null, "#fff0d7",
@@ -973,6 +977,7 @@ const CubieCustoms = (() => {
     return {back:defs+back, detail:`<g data-geomayhem-tier="${item.tier}">${shell}<path d="M26 47v-8q0-5 6-5h43" fill="none" stroke="#fff" stroke-width="${rank>=3?1.5:1}" opacity=".6"/>${polish}${detail}${sparkles}</g>`, sideOffset:rank>=3?9:11, shadowOffset:rank>=3?15:20, sideColor:sideColor(item.color),shadowColor:'#27323e'};
   }
   function animatedArt(item, uid) {
+    if(item.id==='shop_dbtv')return {detail:item.detail,back:item.back,eyes:'<g class="dbtv-no-eyes"/>',mouth:'<path class="dbtv-smile" d="M54 84q0 14 10 14 8 0 9-10 1 10 9 10 10 0 10-14" fill="none" stroke="#14141d" stroke-width="4" stroke-linecap="round"/>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
     if (item.id === 'galactic_smith') {
       const id = name => `smith-${uid}-${name}`;
       const paint = name => `url(#${id(name)})`;
@@ -1821,6 +1826,7 @@ const CubieCustoms = (() => {
       detail: `<g clip-path="${url('body')}">${shell}</g>${detail}${finish}<g class="attack-fine-detail">${extra}</g>` };
   }
   function faceBlush(item) {
+    if(item.id==='shop_dbtv')return '';
     const [left, right, y, rx, ry] = item.id === 'golden_hand' ? [50, 101, 113, 9, 5]
       : ['diamond', 'star'].includes(item.id) ? [36, 109, 84, 10, 6]
       : item.id === 'shop_space_junk' ? [40, 103, 84, 8, 5]
@@ -1914,6 +1920,9 @@ const CubieCustoms = (() => {
       '<g class="cubie-blush" fill="#f17f99"><ellipse cx="30" cy="86" rx="14.5" ry="8"/><ellipse cx="115" cy="86" rx="14.5" ry="8"/></g></g></g></svg>';
   }
   function svg(item) {
+    if(item.id==='shop_invisible')return '<svg class="cubie-custom-art" data-custom="shop_invisible" viewBox="0 0 145 145" xmlns="http://www.w3.org/2000/svg"><g class="cubie-eyes" fill="#e5fff5"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g></svg>';
+    if(item.id==='shop_retro')return '<svg class="cubie-custom-art retro-cubie" data-custom="shop_retro" viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path d="M4 2h24v2h2v24h-2v2H4v-2H2V4h2Z" fill="#0f380f"/><path d="M5 4h22v2h1v20h-2v2H5v-2H4V6h1Z" fill="#8bac0f"/><path d="M6 6h20v17H6Z" fill="#9bbc0f"/><path class="cubie-eyes" d="M8 10h4v7H8ZM21 10h4v7h-4Z" fill="#0f380f"/><path class="cubie-smile" d="M12 20h3v2h6v-2h3v4H12Z" fill="#0f380f"/><path d="M6 26h20M6 8h2M25 22h2" stroke="#306230" stroke-width="2"/></svg>';
+
     if (item.id === 'shop_puzzle_cube') return puzzleCubeSvg();
     if (item.id === 'three_d') return threeDCubieSvg();
     if (item.id === 'shop_disco') return discoSphereSvg();
@@ -1972,6 +1981,7 @@ const CubieCustoms = (() => {
   // Flat, static arena art: reuse every Custom's silhouette and identifying trim,
   // Keep effects bounded to the arena sprite and rasterize its static detail once.
   function gameSvg(item) {
+    if(['shop_dbtv','shop_invisible','shop_retro'].includes(item.id))return svg(item);
     const [x,y,w,h]=bodyBounds[item.id] || [20,28,80,80];
     const scale=28/Math.max(w,h);
     const fit=`translate(22 22) scale(${scale}) translate(${-x-w/2} ${-y-h/2})`;

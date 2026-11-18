@@ -41,7 +41,7 @@ class KingsWrath(PumpkinKing):
         self.wrath_pattern = None
         self.projectile_speed = {"easy": .7, "normal": 1, "hard": 1.25}[self.variant]
         self.ring_speed = {"easy": .7, "normal": 1, "hard": 1.38}[self.variant]
-        self.scare_speed = {"easy": .5, "normal": 1, "hard": 1.08}[self.variant]
+        self.scare_speed = {"easy": .5, "normal": 1, "hard": 1.08 * .86 * .85}[self.variant]
         if attack not in WRATH_ATTACKS and attack != RANDOM_ORDER:
             raise ValueError("Unknown King's Wrath attack")
         self.practice_attack = WRATH_ATTACKS.get(attack)
@@ -235,7 +235,7 @@ class KingsWrath(PumpkinKing):
     @property
     def scare_warning(self):
         age = self.stage_age - self.scare_beat * SCARE_PERIOD / self.scare_speed
-        warning = .12 if self.variant == "hard" else SCARE_WARNING / self.scare_speed
+        warning = .12 / (.86 * .85) if self.variant == "hard" else SCARE_WARNING / self.scare_speed
         return age < warning - 1e-9
 
     @property

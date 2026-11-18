@@ -800,10 +800,52 @@ const ArcadeMusic = (() => {
       "B5 G#5 E5 G#5 B5 D6 C#6 B5", "A5 C#6 E6 C#6 B5 G#5 A5 -",
     ], {groove:"skip", swing:.06, gate:.75}],
   ];
+  arcadeJourneys.push(
+    ["treasure_trove","Treasure Trove — Gilded Tides",112,"Dm C Bb A Dm F C A Gm Dm Bb A Dm C A Dm",[
+      "D5 - F5 A5 A5 - G5 F5","E5 G5 - E5 C5 - G4 -",
+      "D5 F5 Bb5 - A5 F5 D5 -","C#5 E5 A5 - G5 E5 C#5 -",
+      "D5 - A4 D5 F5 - A5 C6","A5 F5 - C5 F5 A5 G5 -",
+      "G5 E5 C5 - E5 G5 C6 -","Bb5 A5 G5 E5 C#5 - A4 -",
+      "G5 - Bb5 D6 C6 Bb5 A5 -","F5 A5 D6 - A5 F5 E5 D5",
+      "F5 - D5 F5 Bb5 A5 F5 -","E5 C#5 E5 G5 A5 - C#6 -",
+      "D6 - A5 F5 D5 F5 A5 -","G5 E5 C5 G4 C5 E5 G5 -",
+      "A5 G5 E5 C#5 E5 - A4 -","D5 - F5 E5 D5 - - -"
+    ],{groove:"skip",lead:"triangle",swing:.12,gate:.85}],
+    ["creepy_cascade","Creepy Cascade",104,"Dm Bb Gm A Dm F Edim A Bb Gm Dm A Gm Edim A Dm",[
+      "D5 - A5 F5 E5 - D5 -","Bb4 F5 A5 - G5 F5 E5 -",
+      "G5 D5 Bb4 - D5 F5 E5 D5","C#5 - E5 G5 A5 - G5 E5",
+      "D6 A5 F5 E5 D5 - A4 -","F5 A5 C6 - A5 G5 F5 -",
+      "E5 G5 Bb5 G5 E5 - Bb4 -","C#5 E5 A5 Bb5 A5 - E5 -",
+      "Bb5 - A5 F5 D5 F5 A5 -","G5 F5 D5 Bb4 G4 - D5 -",
+      "A5 F5 E5 D5 A4 D5 F5 -","E5 G5 A5 C#6 Bb5 A5 E5 -",
+      "G5 - Bb5 A5 F5 D5 Bb4 -","E5 Bb5 G5 E5 Bb4 G4 E5 -",
+      "C#5 E5 G5 Bb5 A5 G5 E5 -","D5 - A4 D5 F5 E5 D5 -"
+    ],{groove:"hush",lead:"triangle",gate:.8,swing:.1}],
+    ["forged_dove","Forged Dove",132,"Em C G D Em Am B Em C G Am B Em C B Em",[
+      "E5 - B5 G5 E5 G5 A5 B5","C6 B5 G5 E5 C5 - E5 G5",
+      "G5 B5 D6 B5 A5 G5 D5 -","F#5 A5 D6 - C6 A5 F#5 -",
+      "E5 G5 B5 E6 D6 B5 G5 -","A5 C6 E6 C6 B5 A5 E5 -",
+      "D#5 F#5 B5 D#6 C6 B5 F#5 -","E6 B5 G5 E5 F#5 G5 E5 -",
+      "G5 C6 E6 G6 E6 D6 C6 -","B5 D6 G6 D6 B5 A5 G5 -",
+      "A5 E6 C6 A5 G5 E5 A5 -","F#5 B5 D#6 F#6 E6 D#6 B5 -",
+      "E6 D6 B5 G5 E5 G5 B5 -","C6 G5 E5 C5 E5 G5 C6 -",
+      "B5 D#6 F#6 D#6 B5 A5 F#5 -","E5 G5 B5 E6 B5 G5 E5 -"
+    ],{groove:"drive",lead:"sawtooth",gate:.9}],
+    ["jungle_greatness","Jungle Greatness",146,"Am G F E Am Dm G C F G Am E Dm F E Am",[
+      "A5 - C6 E6 - C6 A5 G5","B5 D6 - G5 A5 B5 D6 -",
+      "A5 C6 F6 - E6 C6 A5 -","G#5 B5 E6 D6 B5 - G#5 -",
+      "A5 E5 A5 C6 - E6 C6 A5","D6 A5 F5 A5 C6 D6 - F6",
+      "G5 B5 D6 G6 - D6 B5 -","E6 D6 C6 G5 E5 - G5 C6",
+      "F6 E6 C6 A5 C6 - F6 -","G6 D6 B5 G5 A5 B5 D6 -",
+      "A5 C6 E6 A6 G6 E6 C6 -","G#5 B5 D6 E6 B5 G#5 E5 -",
+      "D6 F6 A6 F6 D6 C6 A5 -","C6 A5 F5 A5 C6 F6 - E6",
+      "B5 E6 G#6 E6 D6 B5 G#5 -","A5 - E6 C6 A5 G5 A5 -"
+    ],{groove:"skip",lead:"triangle",swing:.16,gate:.7}]
+  );
   for (const [id, title, bpm, progression, bars, options] of arcadeJourneys) {
     scores[id] = song(title, bpm, progression, bars, options);
   }
-  const loopThemes = ["cubie_hello", "chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
+  const loopThemes = ["treasure_trove", "cubie_hello", "chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
@@ -1660,6 +1702,20 @@ const ArcadeMusic = (() => {
           const wave = track === "christmas_99" && (voice === "lead" || voice === "pad")
             ? (Math.sin(t * frequency * Math.PI * 2) + .3 * Math.sin(t * frequency * Math.PI * 5.52)) * Math.exp(-t * 4)
             : triangle ? 1 - 4 * Math.abs(phase - .5) : table[Math.floor(phase * table.length)];
+          if(track==='treasure_trove') {
+            // Bowed strings, mandolin harmonics, double bass and reed chords; no pulse oscillator.
+            const bowed=voice==='lead'||voice==='answer',plucked=voice==='arp',bass=voice==='bass';
+            const vibrato=bowed?.0035*Math.sin(t*Math.PI*2*5.4)*(1-Math.exp(-t*18)):0;
+            const phase=Math.PI*2*frequency*t+vibrato*frequency;
+            let acoustic=0;
+            for(let harmonic=1;harmonic<=(bass?4:8);harmonic++){
+              const body=bowed?Math.pow(harmonic,-1.35)*(harmonic===3?1.3:1):plucked?Math.exp(-t*(3+harmonic*1.5))/harmonic:bass?Math.exp(-t*2.8)/harmonic**1.8:(harmonic%2?1:.35)/harmonic**1.3;
+              acoustic+=Math.sin(phase*harmonic*(plucked?1+harmonic*harmonic*.00013:1))*body;
+            }
+            const attack=bowed?.035:plucked?.002:bass?.012:.055,release=bowed?.055:.04;
+            const naturalEnvelope=Math.max(0,Math.min(1,t/attack,(duration-t)/release));
+            data[i]=acoustic*amplitude*naturalEnvelope*(bowed?.8:1);continue;
+          }
           const tremolo = (track === "pumpkin" || score.tremolo) && voice === "lead" ? .88 + .12 * Math.cos(t * 35) : 1;
           data[i] = wave * amplitude * envelope * tremolo;
         }
@@ -1671,7 +1727,7 @@ const ArcadeMusic = (() => {
     }
     let seed = 7341;
     function drum(start, kind, volume = 1) {
-      const duration = kind === "hat" ? .035 : .13;
+      const duration = track === "treasure_trove" ? (kind === "kick" ? .38 : .14) : kind === "hat" ? .035 : .13;
       const offset = Math.round(start * sampleRate);
       let previousNoise = 0;
       for (let i = 0; i < duration * sampleRate && offset + i < samples.length; i++) {
@@ -1681,7 +1737,8 @@ const ArcadeMusic = (() => {
         const envelope = Math.min(1, t / .002) * (1 - t / duration) ** 3;
         const wave = kind === "kick" ? Math.sin(2 * Math.PI * (58 * t + 5 * (1 - Math.exp(-t * 35))))
           : kind === "hat" ? (noise - previousNoise) * .18 : noise * .5;
-        samples[offset + i] += wave * envelope * (kind === "kick" ? .3 : .2) * volume;
+        const deck=kind==='kick'?(Math.sin(2*Math.PI*(72*t+1.4*(1-Math.exp(-t*22))))+.35*Math.sin(2*Math.PI*117*t)+.2*Math.sin(2*Math.PI*186*t))*Math.exp(-t*5):kind==='snare'?.35*noise*Math.exp(-t*24)+.45*Math.sin(2*Math.PI*310*t)*Math.exp(-t*35):.3*Math.sin(2*Math.PI*1350*t)*Math.exp(-t*65)+.1*noise;
+        samples[offset + i] += (track==='treasure_trove'?deck:wave) * envelope * (kind === "kick" ? .3 : .2) * volume;
         previousNoise = noise;
       }
     }
@@ -1707,8 +1764,9 @@ const ArcadeMusic = (() => {
         start + position * beat, beat * (score.bassGate || (score.groove === "hush" ? .85 : .4)), .24, "bass"));
       for (let n = 0; n < groove.hats; n++)
         drum(start + (n + (n % 2 ? score.swing || 0 : 0)) * 4 * beat / groove.hats, "hat", score.groove === "hush" ? .55 : 1);
-      for (let n = 0; n < 16; n++)
-        tone(root + 24 + chord[[0, 1, 2, chord.length === 4 ? 3 : 1][n % 4]], start + n * beat / 4, beat * .18, .065, "arp");
+      for (let n = 0; n < (track==='treasure_trove'?8:16); n++)
+        tone(root + 24 + chord[[0, 1, 2, chord.length === 4 ? 3 : 1][n % 4]], start + n * beat / (track==='treasure_trove'?2:4), beat * (track==='treasure_trove'?.8:.18), track==='treasure_trove'?.09:.065, "arp");
+      if(track==='treasure_trove')for(const position of [1,3])for(const interval of chord)tone(root+24+interval,start+position*beat,beat*.8,.045,'pad');
       for (const position of groove.kicks) drum(start + position * beat, "kick");
       for (const position of [1, 3]) drum(start + position * beat, "snare", score.groove === "hush" ? .45 : 1);
       if (bar >= 16) {

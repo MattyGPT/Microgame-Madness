@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./core-origin.css" />
     <link rel="stylesheet" href="./trails.css" />
+    <link rel="stylesheet" href="./treasure-trove.css" />
+    <script src="./treasure-trove.js" defer></script>
     <link rel="stylesheet" href="./accounts/profile.css" />
     <script
       src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
@@ -40,6 +42,8 @@
     <script src="./core-origin.js" defer></script>
     <script src="./jukebox-archive.js" defer></script>
     <script src="./music.js" defer></script>
+    <script src="./crown-packs.js" defer></script>
+    <script src="./collections.js" defer></script>
     <script src="./account-rules.js" defer></script>
     <script src="./accounts/store.js" defer></script>
     <script src="./accounts/session.js" defer></script>
@@ -1663,6 +1667,9 @@ A
           <span class="card-title">Arcade Jukebox <span>↗</span></span>
           <span class="card-description">Your songs. On repeat.</span>
         </button>
+<button class="game-card collection-game-card" data-game="turtles" aria-pressed="false" style="--accent:#77efcf"><span class="card-art" aria-hidden="true">♧</span><span class="card-title">Custom Turtles <span>↗</span></span><span class="card-description">Elemental shells. Crowned champions.</span></button>
+<button class="game-card collection-game-card" data-game="trails" aria-pressed="false" style="--accent:#d6a3ff"><span class="card-art" aria-hidden="true">✧</span><span class="card-title">Turtle Trails <span>↗</span></span><span class="card-description">Find your own dazzling wake.</span></button>
+<button class="game-card" data-game="treasure" aria-pressed="false" style="--accent:#ffda83"><span class="card-art" aria-hidden="true"></span><span class="card-title">Treasure Trove <span>↗</span></span><span class="card-description">Follow the chest. Find your fortune.</span></button>
         <button class="game-card" data-game="customs" aria-pressed="false" style="--accent: #c6f783"><span class="arcade-card-scene cubie-atelier" aria-hidden="true">
  <svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs>
@@ -2008,7 +2015,7 @@ A
                   <path d="M16 27a32 32 0 0 1 38-14" fill="none" stroke="#d8efff" opacity=".45" stroke-width="2" stroke-linecap="round"/>
                 </svg></span><span class="card-title">Coin Drop</span><span class="card-description">100 worlds. One extraordinary coin.</span></button>
         <button class="game-card nano-lab-card" data-game="nanolab" aria-pressed="false" style="--accent:#cfadff"><span class="card-top">14 / NANOGAME PRACTICE</span><span class="card-art" aria-hidden="true">⚗</span><span class="card-title">Nano Lab</span><span class="card-description">Practice all 300 nanogames. No rewards saved.</span></button>
-        <a class="game-card tearesseract-card" href="./tearesseract.html" style="--accent:#76ffe1;text-decoration:none"><span class="card-top">15 / EXTREME BOSS ENCOUNTER</span><span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 100" width="120" height="100" fill="none" stroke-linejoin="round"><g stroke="#76ffe1" stroke-width="1.7"><path d="M23 23 76 12 102 35 48 47Z M23 23V68L48 90 102 77V35 M48 47V90 M76 12V57L23 68 M76 57 102 77"/><path d="M42 36 69 30 83 43 56 49Z M42 36V60L56 73 83 67V43 M56 49V73 M69 30V54L42 60 M69 54 83 67"/><path d="M23 23 42 36 M76 12 69 30 M102 35 83 43 M48 47 56 49 M23 68 42 60 M76 57 69 54 M102 77 83 67 M48 90 56 73" opacity=".5"/></g><circle cx="62" cy="51" r="4" fill="#d9fff6" stroke="none"/></svg></span><span class="card-title">Tearesseract</span><span class="card-description">20 attacks. A shield. An impossible machine.</span></a>
+        <a class="game-card tearesseract-card" href="./tearesseract.html" style="--accent:#76ffe1;text-decoration:none"><span class="card-top">15 / EXTREME BOSS ENCOUNTER</span><span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 100" width="120" height="100" fill="none" stroke-linejoin="round"><g stroke="#76ffe1" stroke-width="1.7"><path d="M23 23 76 12 102 35 48 47Z M23 23V68L48 90 102 77V35 M48 47V90 M76 12V57L23 68 M76 57 102 77"/><path d="M42 36 69 30 83 43 56 49Z M42 36V60L56 73 83 67V43 M56 49V73 M69 30V54L42 60 M69 54 83 67"/><path d="M23 23 42 36 M76 12 69 30 M102 35 83 43 M48 47 56 49 M23 68 42 60 M76 57 69 54 M102 77 83 67 M48 90 56 73" opacity=".5"/></g><circle cx="62" cy="51" r="4" fill="#d9fff6" stroke="none"/></svg></span><span class="card-title">Tearesseract</span><span class="card-description">30 attacks. A shield. An impossible machine.</span></a>
         <script src="./chaos-preview.js"></script>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
@@ -2102,6 +2109,13 @@ A
                 <div id="trail-grid"></div>
               </section>
             </section>
+            <section id="treasure-room" aria-label="Treasure Trove" hidden></section>
+            <section id="collection-room" aria-label="Turtle wardrobe" hidden>
+              <div class="collection-toolbar"><h3 id="collection-equipped"></h3><button id="equipment-remove" type="button">Use classic / no trail</button></div>
+              <label class="catalog-search">Search collection <input id="collection-search" type="search" placeholder="Name, color, or theme…" /></label>
+              <p id="collection-status" role="status"></p><button id="equipment-back" type="button" hidden>← All groups</button>
+              <div id="equipment-groups" class="collection-groups"></div><div id="equipment-grid" class="equipment-grid" hidden></div>
+            </section>
             <section id="customs-room" aria-label="Cubie's Customs" hidden>
               <div class="customs-preview">
                 <div id="customs-preview-art"></div>
@@ -2118,6 +2132,7 @@ A
                 <input id="customs-search" type="search" placeholder="Name, tier, or unlock requirement…" aria-controls="customs-grid" autocomplete="off" />
               </label>
               <p id="customs-search-status" class="search-status" role="status"></p>
+              <button id="cubie-groups-back" type="button" hidden>← All groups</button><div id="cubie-groups" class="collection-groups"></div>
               <div id="customs-grid"></div>
             </section>
             <div id="hangman-game" class="hangman-game" hidden>

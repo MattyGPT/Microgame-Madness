@@ -41,6 +41,7 @@ test('audible Christmas song unlocks persistent Gold Santa, muted selection does
   await expect.poll(() => page.evaluate(() => !!saved.achievements.unlocked.santa_song)).toBe(true);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button', { name: 'Wear Santa Cubie', exact: true }).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom', 'santa');
   expect(await page.evaluate(() => CubieCustoms.catalog.find(c => c.id === 'santa').tier)).toBe('gold');

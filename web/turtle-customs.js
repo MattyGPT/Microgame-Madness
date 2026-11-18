@@ -199,6 +199,17 @@ const TurtleCustoms = (() => {
       ...Object.fromEntries(themes.map((theme,n)=>[`element${n}`,['#ffffff',spectrum[n],theme[1]]]))} : {}),
   });
   function shapes(item, time = 0) {
+    if(item.crown) {
+      const parts=sovereignShapes(item,time);
+      // A second moving orrery and game-specific armor in the actual arena renderer.
+      for(let n=0;n<6;n++) {
+        const a=time*.65+n*Math.PI/3,x=Math.cos(a)*57,y=Math.sin(a)*57;
+        parts.push({d:`M${x} ${y-4}l3 4-3 4-3-4Z`,fill:item.accent,stroke:'#fff8df',width:.7,motion:'gem'});
+      }
+      const engraving={hangman:'M-12 -14Q0 -19 12 -14V15Q0 10-12 15ZM0 -16V12M-8 -8h5M3 -8h5',keyboard:'M-13 -13h26v26h-26ZM-5 -13v26M4 -13v26M-13 -4h26M-13 5h26',dodge:'M-17 0Q0 -23 17 0Q0 23-17 0M0 -19V19',boss:'M-14 -15L0 -5 14 -15 9 11 0 19-9 11ZM-7 -3L0 4 7-3',pumpkin:'M0 -14C-20 -25-23 19 0 17C23 19 20 -25 0 -14M0 -14Q-7 -25 5 -24',wrath:'M-16 14Q-18 -12-5 -17L0 -10 5 -17Q18 -12 16 14M-13 6L-21 0M13 6L21 0'};
+      parts.push({d:engraving[item.crown],fill:'#171827',stroke:item.accent,width:1.7});
+      return parts;
+    }
     if(item.angel) return angelShapes(item,time);
     if(item.level===6) return sovereignShapes(item,time);
     const {level:l,color,accent} = item, parts=[];

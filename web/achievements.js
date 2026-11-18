@@ -193,7 +193,7 @@ const Achievements = (() => {
   add("core_flawless_3", "Perfect Gravity", "empyrorite", "Singularity Core", "Destroy Singularity Core 3 times without taking any damage. Each victory must be flawless.", "coreFlawlessWins", 3);
   // Unicode Wingdings equivalents of RUNRUNRUNRUNRUN, matching the Gaster symbols above.
   add("gaster_remix", "Signal Recognized", "black", "Arcade",
-    "☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎", "gasterRemixHeard", 1, { wingdings: true });
+    "☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎☼🕆☠︎", "gasterRemixHeard", 1, { wingdings: true, secret: true });
   const attackRewards = [];
   for (const [family, target, group, entries] of [
     ['pumpkin', 10, 'Pumpkin King', [

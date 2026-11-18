@@ -29,7 +29,7 @@ class BossUpgradeTests(unittest.TestCase):
             for level in range(1,21):
                 game,boss=self.boss(level,anomaly)
                 old=350*(1+(level-1)*.18+19*.035)*multiplier
-                expected = (13000+750*(level-1))/1.2*multiplier*1.25 if level<=15 else old*(31.5 if level==20 else 16.875)
+                expected = (13000+750*(level-1))/1.2*multiplier*1.25*(.3+.035*(level-1) if level<=10 else min(1,.625+.075*(level-10))) if level<=15 else old*(31.5 if level==20 else 16.875)
                 self.assertAlmostEqual(boss.max_hp,expected)
                 self.assertGreater(boss.max_hp,previous)
                 previous=boss.max_hp

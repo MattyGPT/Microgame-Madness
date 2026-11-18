@@ -39,6 +39,7 @@ test('shop search filters Customs and trails while preserving buying and sorting
 test('Cubie collection search combines with ownership filters and keeps preview usable', async ({ page }) => {
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   const search = page.getByRole('searchbox', { name: 'Search Cubie collection' });
   await search.fill('chocolate');
   await expect(page.locator('#customs-grid .custom-tile:visible')).toHaveCount(1);

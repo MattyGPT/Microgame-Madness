@@ -71,3 +71,5 @@
 .coin-drop-room .cd-node[data-currency="rubies"] small{color:#ff8399}.coin-drop-room .cd-node button[data-currency="rubies"]{color:#ff8399;border-color:#b95169}.coin-drop-room .cd-node[data-currency="scrap"] small{color:#91f1a9}.coin-drop-room .cd-node button[data-currency="scrap"]{color:#91f1a9;border-color:#4b9561}
 
 .cd-buy-all{border:1px solid #46617e;background:#14283c;padding:16px;border-radius:12px;margin:20px 0}.cd-buy-all [data-currency="rubies"]{color:#ff8399}.cd-buy-all [data-currency="scrap"]{color:#91f1a9}.cd-buy-all [data-currency="dots"]{color:#8bc9ff}#cd-buy-all-summary{display:flex;flex-wrap:wrap;gap:6px 18px}#cd-buy-all-preview{padding-left:20px}#cd-buy-all-preview li{margin:8px 0;overflow-wrap:anywhere}
+
+#coin-drop-room .cd-instructions{font-size:clamp(17px,2vw,21px);line-height:1.6;padding:18px 20px;border:1px solid #b9a6e0;border-radius:14px;background:#251e38;color:#f1eaff;margin:16px 0}

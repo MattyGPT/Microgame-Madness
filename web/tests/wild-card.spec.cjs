@@ -5,6 +5,7 @@ test('Wild Card changes only while edge-on and hidden, and stays visible with re
   await openGame(page);
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.evaluate(() => previewCustom(CubieCustoms.catalog.find(c => c.id === 'chaos_wild')));
   const card = page.locator('#customs-preview-art .chaos-wild-card');
   await page.locator('#customs-preview-art').scrollIntoViewIfNeeded();

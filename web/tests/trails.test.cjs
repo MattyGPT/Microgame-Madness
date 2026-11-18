@@ -37,7 +37,7 @@ test('movement emits by distance; stopping fades, pausing freezes, and teleports
   field.update(.016,state(0),item);
   for(let x=1;x<=30;x++) field.update(.001,state(x),item);
   assert.equal(field.particles.length,6);
-  assert.ok(field.particles.every(p=>p.x>0 && p.x<=30 && Math.abs(p.y+20)<3));
+  assert.ok(field.particles.every(p=>p.x>0 && p.x<=30 && Math.abs(p.y+12)<1e-9));
   const before=JSON.stringify(field.particles);
   field.update(.1,state(30,{paused:true}),item);
   assert.equal(JSON.stringify(field.particles),before);
@@ -60,5 +60,13 @@ test('both Core modes, death, unequipping, and reduced motion clear trails', () 
   for(const mode of ['dodge','boss','pumpkin','wrath']) {
     const field=new Trails.Field();field.update(.016,state(0,{mode}),item);field.update(.016,state(30,{mode}),item);
     assert.ok(field.particles.length>0);
+  }
+});
+
+test('all trail emitters are centered between the rear legs and follow turtle rotation',()=>{
+  for(const trail of Trails.catalog){
+    const field=new Trails.Field();field.update(.016,state(0),trail,false,Math.PI/2);field.update(.016,state(20),trail,false,Math.PI/2);
+    assert.ok(Math.abs(field.last.x-12)<1e-9);assert.ok(Math.abs(field.last.y+20)<1e-9);
+    assert.ok(field.particles.every(p=>Math.abs(p.y+20)<1e-9));
   }
 });

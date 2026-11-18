@@ -22,6 +22,7 @@ test('live progress grants Cubies and arena rewards survive profile reloads',asy
   expect(totals).toEqual({kills:150,waves:20,wins:1,cash:0});
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await page.getByRole('button',{name:'Wear Arena Victor Cubie',exact:true}).click();
   await page.evaluate(()=>accountApp.settle());
   await page.reload();
@@ -35,6 +36,7 @@ test('a flawless final arena grants both Empyrorite Cubies',async({page})=>{
   await page.evaluate(()=>accountApp.settle());
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
+  if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
   await expect(page.getByRole('button',{name:'Wear Mayhem Sovereign Cubie',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Wear Zero Point Seraph Cubie',exact:true}).click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','geo_seraph');
