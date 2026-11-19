@@ -4986,3 +4986,20 @@ html.account-reduced-motion .regent-song::after{opacity:0}
 /* Keep the turtle arcade tile entirely still, even when its preview uses animated art. */
 .game-card[data-game="turtles"],.game-card[data-game="turtles"] *{animation:none!important;transition:none!important}
 .custom-equip.too-expensive{background:#343a40!important;border-color:#646c74!important;color:#c3c8ce!important;box-shadow:none!important}
+
+/* Public rankings: equipped Cubies and metallic podium places. */
+#global-scores li { display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 8px;border-radius:12px;position:relative;isolation:isolate; }
+#global-scores .global-player-name { text-align:left;overflow-wrap:anywhere;min-width:0;padding:4px 0;font:inherit;line-height:1.5; }
+#global-scores .global-cubie { width:48px;height:48px;display:block;position:relative; }
+#global-scores .global-cubie svg { display:block;width:100%;height:100%;position:static; }
+#global-scores .global-cubie * { animation:none!important; }
+#global-scores .global-rank { display:grid;place-items:center;font-weight:800;font-size:11px;font-variant-numeric:tabular-nums; }
+#global-scores li[data-podium] { border:1px solid color-mix(in srgb,var(--medal) 42%,transparent);margin:6px 0;background:linear-gradient(115deg,color-mix(in srgb,var(--medal) 14%,#111817),#111817 76%);box-shadow:inset 0 1px 0 #ffffff16,0 4px 16px #0003; }
+#global-scores li[data-podium="gold"] { --medal:#ffd36a;--medal-dark:#91601f; }
+#global-scores li[data-podium="silver"] { --medal:#d4e5f3;--medal-dark:#637b92; }
+#global-scores li[data-podium="bronze"] { --medal:#e5aa7b;--medal-dark:#8b4b2e; }
+#global-scores li[data-podium] .global-rank { position:relative;width:28px;height:32px;border:1px solid var(--medal);border-radius:50%;color:#172020;background:linear-gradient(135deg,#fff9e8,var(--medal) 42%,var(--medal-dark));box-shadow:0 0 12px color-mix(in srgb,var(--medal) 20%,transparent),inset 0 0 0 3px #ffffff30; }
+#global-scores li[data-podium] .global-rank::before { content:"";position:absolute;top:-8px;width:24px;height:10px;background:linear-gradient(135deg,#fff,var(--medal),var(--medal-dark));clip-path:polygon(0 0,28% 50%,50% 0,72% 50%,100% 0,87% 100%,13% 100%); }
+#global-scores li[data-podium] .global-cubie::after { content:"✦";position:absolute;right:-1px;top:0;color:var(--medal);font-size:12px;text-shadow:0 0 7px var(--medal);pointer-events:none; }
+#global-scores li[data-podium] strong { color:var(--medal); }
+@media(max-width:420px){#global-scores li{grid-template-columns:25px 38px minmax(0,1fr) auto;gap:6px;padding:10px 5px}#global-scores .global-cubie{width:38px;height:38px}#global-scores li[data-podium] .global-rank{width:25px;height:29px}}

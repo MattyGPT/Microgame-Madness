@@ -373,3 +373,17 @@ test('Wrath difficulty variants retain raw scores and carry exact global weights
     }
   }
 });
+
+test('combined leaderboard returns current public Cubies and hides private equipment', async t=>{
+  const {db,role,call,read}=await setup(t);
+  await read(first);
+  await role('postgres');
+  await db.query("update accounts_private.profiles set cubie='shop_retro',profile_visible=true,ranking_enabled=true where owner=$1",[first]);
+  await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score,total) values($1,'hangman','easy','Public Cubie',7,7)",[first]);
+  const board=()=>db.query("select * from public.get_game_leaderboard('hangman')");
+  await role('anon');assert.equal((await board()).rows[0].cubie,'shop_retro');
+  await role('postgres');await db.query("update accounts_private.profiles set cubie='shop_dbtv' where owner=$1",[first]);
+  await role('anon');assert.equal((await board()).rows[0].cubie,'shop_dbtv');
+  await role('postgres');await db.query('update accounts_private.profiles set profile_visible=false where owner=$1',[first]);
+  await role('anon');const row=(await board()).rows[0];assert.equal(row.cubie,'classic');assert.equal(row.public_id,null);
+});
