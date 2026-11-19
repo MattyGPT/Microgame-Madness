@@ -28,3 +28,28 @@ test('signed-in rounds and Refresh flush account scores and show the new lifetim
   expect(result.afterRound).toContain('30109');
   expect(result.afterRefresh).toContain('30134');
 });
+
+test('global rows show saved Cubies and award metallic bling only to absolute ranks one through three', async ({page},info) => {
+  await openGame(page);
+  await page.evaluate(async()=>{
+    const client=await leaderboardReady;
+    client.listGame=async()=>[
+      {rank:1,player:'Golden player',score:900,cubie:'shop_retro'},
+      {rank:2,player:'Silver player',score:800,cubie:'shop_dbtv'},
+      {rank:3,player:'Bronze player',score:700,cubie:'shop_invisible',is_you:true},
+      {rank:12,player:'<img src=x onerror=alert(1)>',score:600,cubie:'unknown-future-cubie'}
+    ];
+    document.getElementById('global-panel').hidden=false;
+    await loadGlobalScores();
+  });
+  const rows=page.locator('#global-scores li');
+  for(const [i,metal,id] of [[0,'gold','shop_retro'],[1,'silver','shop_dbtv'],[2,'bronze','shop_invisible']]){
+    await expect(rows.nth(i)).toHaveAttribute('data-podium',metal);
+    await expect(rows.nth(i).locator('.global-cubie svg')).toHaveAttribute('data-custom',id);
+  }
+  await expect(rows.nth(3)).not.toHaveAttribute('data-podium');
+  await expect(rows.nth(3).locator('.global-cubie svg')).toHaveAttribute('data-custom','classic');
+  await expect(rows.nth(3).locator('img')).toHaveCount(0);
+  expect(await rows.evaluateAll(nodes=>nodes.every(n=>n.scrollWidth<=n.clientWidth+1))).toBe(true);
+  await page.locator('#global-scores').screenshot({path:info.outputPath('podium-cubies.png')});
+});

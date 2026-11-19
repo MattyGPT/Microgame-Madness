@@ -1728,10 +1728,22 @@ async function loadGlobalScores() {
           } catch (error) { $("leaderboard-status").textContent = error.message; }
         };
       }
-      name.textContent = `${String(entry.rank).padStart(2, "0")}  ${entry.player}${entry.is_you ? " (you)" : ""}`;
+      const rank = document.createElement("span"), portrait = document.createElement("span");
+      rank.className = "global-rank";
+      rank.textContent = String(entry.rank).padStart(2, "0");
+      rank.setAttribute("aria-label", `Rank ${entry.rank}`);
+      const podium = ["gold", "silver", "bronze"][Number(entry.rank) - 1];
+      if (podium) { row.dataset.podium = podium; rank.title = `${podium[0].toUpperCase() + podium.slice(1)} · Rank ${entry.rank}`; }
+      const cubie = CubieCustoms.catalog.find(item => item.id === entry.cubie) || CubieCustoms.catalog.find(item => item.id === "classic");
+      portrait.className = "global-cubie";
+      portrait.title = cubie.name;
+      portrait.setAttribute("aria-hidden", "true");
+      portrait.innerHTML = CubieCustoms.svg(cubie);
+      name.classList.add("global-player-name");
+      name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
       score.textContent = `${entry.score}${mode === "keyboard" ? " rounds" : " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
-      row.append(name, score);
+      row.append(rank, portrait, name, score);
       $("global-scores").append(row);
     }
     $("leaderboard-previous").disabled = leaderboardOffset === 0 || leaderboardAroundMe;
