@@ -1,0 +1,50 @@
+.news-card{grid-column:1 / -1;min-height:180px!important;position:relative;background:linear-gradient(115deg,#202e3a,#182322 65%,#293126)!important;--accent:#c6f783}.news-card .card-art{position:relative;width:70px;height:65px;font-size:45px;margin:0 0 16px}.news-badge{position:absolute;top:-7px;left:-9px;min-width:23px;height:23px;padding:2px 5px;border-radius:50%;background:#e64049;color:white;font:700 13px/19px sans-serif;border:2px solid #182322}.news-dialog{width:min(850px,94vw);max-height:90dvh;padding:26px;border:1px solid #53635e;border-radius:22px;background:#141d22;color:#edf1e8}.news-dialog::backdrop{background:#050b10cc;backdrop-filter:blur(7px)}.news-heading,.news-tabs,.news-author{display:flex;align-items:center;gap:14px}.news-heading{justify-content:space-between}.news-heading h2{font-size:30px;margin:8px 0}.news-tabs{margin:22px 0}.news-tabs [aria-selected=true]{background:#c6f783;color:#152021}.news-dialog button{cursor:pointer;border:1px solid #53635e;border-radius:9px;padding:9px 14px;background:#253139;color:#edf1e8}.news-scroll{overflow:auto;max-height:52dvh;padding:2px 8px 12px 0}.news-entry{border:1px solid #3b4b50;border-radius:14px;padding:22px;margin-bottom:16px;background:#1b272d}.news-entry h3{font-size:23px;margin:8px 0}.news-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65}.news-avatar{width:55px;flex-shrink:0}.news-avatar svg{width:55px;height:55px}.news-dialog textarea,.news-dialog input{display:block;box-sizing:border-box;width:100%;background:#10191e;color:white;border:1px solid #53635e;border-radius:8px;padding:12px;margin:8px 0 12px;font:inherit}.news-dialog textarea{min-height:95px}.news-empty{text-align:center;padding:35px 10px;color:#c6d0cc;line-height:1.8}.news-dialog small{color:#bdc8c5}.news-dialog form{margin:18px 0}.news-kind-art{width:110px;margin:auto}.news-kind-art svg{width:100%}.news-dialog [hidden]{display:none!important}#news-status{color:#ffcc97}#news-block-list{display:flex;gap:8px;flex-wrap:wrap}
+
+/* The arcade's little broadcast studio. All art stays crisp at any screen size. */
+.news-card {
+  display:flex; align-items:center; min-height:300px!important; padding:30px 34px 40px;
+  overflow:hidden; isolation:isolate; border-color:#47625d;
+  background:radial-gradient(ellipse at 80% 45%,#233c45 0,transparent 55%),linear-gradient(115deg,#172725,#101b28 80%)!important;
+  box-shadow:inset 0 1px #b0edbb17,0 12px 35px #0002;
+}
+.news-card::after {content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(120deg,#d5ffba08,transparent 45%);box-shadow:inset 0 0 50px #08132055;z-index:-1}
+.news-card-grid {position:absolute;inset:0;z-index:-1;opacity:.17;background-image:linear-gradient(#8ab8a822 1px,transparent 1px),linear-gradient(90deg,#8ab8a822 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(90deg,transparent,#000)}
+.news-card-copy {display:block;width:53%;position:relative;z-index:2}
+.news-card .card-top {justify-content:flex-start;align-items:center;gap:8px;font-size:10px;letter-spacing:2px;color:#acc6b8;margin-bottom:18px}
+.news-on-air {width:6px;height:6px;background:#c6f783;border-radius:50%;box-shadow:0 0 12px #c6f783}
+.news-card .news-emblem {display:flex;position:relative;width:44px;height:44px;margin:0 0 12px;border:1px solid #a8d9ad55;border-radius:12px;background:linear-gradient(135deg,#c6f78322,#8acaff11);box-shadow:0 5px 15px #0002;color:#c6f783}
+.news-emblem>svg {width:32px;height:32px}
+.news-card .news-badge {letter-spacing:0;top:-9px;left:-9px;box-shadow:0 2px 9px #ed424666;z-index:3}
+.news-card .card-title {display:block;font-size:clamp(26px,3.5vw,43px);line-height:1.15;letter-spacing:-1.4px;color:#f0f5e9}
+.news-card .card-title .news-title-accent {font:inherit;color:#c6f783;display:inline}
+.news-card .card-description {display:block;font-size:13px;line-height:1.7;max-width:340px;color:#b3c8c5;margin-top:13px}
+.news-card-tags {display:flex;gap:7px;margin-top:20px;flex-wrap:wrap}
+.news-card-tags>span {font:9px monospace;letter-spacing:1px;padding:5px 8px;border:1px solid #93c3b32b;border-radius:5px;color:#aac9c4;background:#a3dfc306}
+.news-studio {position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:min(49%,500px);pointer-events:none}
+.news-studio>svg {display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 14px 15px #0003)}
+.news-card-open {position:absolute;bottom:17px;right:24px;display:flex;align-items:center;gap:12px;color:#b8d5cb;font:9px monospace;letter-spacing:1.5px}
+.news-card-open>span {font-size:22px;color:#c6f783;transition:transform .25s}
+.news-card:hover .news-card-open>span {transform:translate(3px,-3px)}
+.news-card:hover {border-color:#b8e88b;box-shadow:0 12px 40px #90cf9a12,inset 0 1px #dbffb733}
+.news-floating-sheet {animation:news-sheet-drift 6s ease-in-out infinite}
+.news-idea-bubble {animation:news-sheet-drift 7s ease-in-out -3s infinite}
+.news-signal {animation:news-transmit 4s ease-in-out infinite}
+@keyframes news-sheet-drift {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes news-transmit {0%,100%{opacity:.45}50%{opacity:1}}
+@media(max-width:620px){
+ .news-card {padding:24px 23px 35px;min-height:390px!important;align-items:flex-start}
+ .news-card-copy {width:100%}
+ .news-card .card-top {font-size:9px;letter-spacing:1.3px;margin-bottom:14px}
+ .news-card .news-emblem {float:left;margin:0 13px 0 0;width:36px;height:36px;border-radius:9px}
+ .news-card .card-title {font-size:29px;line-height:38px;letter-spacing:-1px}
+ .news-card .card-description {font-size:12px;margin-top:12px}
+ .news-card-tags {margin-top:12px;gap:5px}
+ .news-card-tags>span {font-size:8px;padding:4px 6px}
+ .news-studio {top:auto;bottom:10px;right:-2%;transform:none;width:84%;max-width:350px}
+ .news-card-open {bottom:15px;left:23px;right:auto;font-size:8px;writing-mode:vertical-rl;transform:rotate(180deg);gap:5px}
+}
+@media(prefers-reduced-motion:reduce){.news-floating-sheet,.news-idea-bubble,.news-signal{animation:none}.news-card,.news-card-open>span{transition:none}}
+
+/* Authorship is supplied by the backend; visual themes never grant permissions. */
+.news-entry.news-galaxy{position:relative;isolation:isolate;overflow:hidden;border-color:#a282e466;background:radial-gradient(ellipse at 90% 0,#a345bc40,transparent 60%),radial-gradient(ellipse at 5% 100%,#5645a840,transparent 60%),#231b36;box-shadow:inset 0 1px #d5b2ff12}
+.news-entry.news-galaxy::before{content:'';position:absolute;inset:0;z-index:-1;opacity:.45;background-image:radial-gradient(circle at 15% 18%,#e7d3ff 0 1px,transparent 2px),radial-gradient(circle at 80% 30%,#cfb0ff 0 1px,transparent 2px),radial-gradient(circle at 65% 80%,#ead8ff 0 1px,transparent 2px);background-size:141px 123px,189px 163px,223px 191px;pointer-events:none}.news-galaxy .eyebrow{color:#ddbbff}.news-galaxy h3{color:#f0e3ff}.news-entry.news-fire{position:relative;isolation:isolate;overflow:hidden;border-color:#ec935b66;background:radial-gradient(ellipse at 100% 0,#f7943245,transparent 60%),radial-gradient(ellipse at 0 100%,#ce3b2440,transparent 60%),#30201f;box-shadow:inset 0 1px #ffbb731a}.news-entry.news-fire::before{content:'';position:absolute;inset:0;z-index:-1;opacity:.22;pointer-events:none;background:repeating-conic-gradient(from 0deg at 100% 0,#ffba6533 0deg 3deg,transparent 3deg 18deg)}.news-fire .eyebrow{color:#ffbf86}.news-fire h3{color:#ffecd2}.news-entry.news-galaxy button{background:#533a6c;border-color:#a480ca66}.news-entry.news-fire button{background:#693e2d;border-color:#d7865466}.news-entry .news-body{color:#f1e9ed}

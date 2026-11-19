@@ -1,0 +1,55 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const {PGlite}=require('@electric-sql/pglite');
+test('news permissions, shared likes, filter strikes, bans and comment identity',async t=>{
+ const db=new PGlite();t.after(()=>db.close());
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+ const dir=path.resolve(__dirname,'../../../supabase/migrations');for(const f of fs.readdirSync(dir).filter(f=>f.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(dir,f),'utf8'));
+ const who='00000000-0000-0000-0000-000000000001';
+ await db.query('insert into auth.users values($1)',[who]);
+ await db.query("insert into accounts_private.identities(owner,handle,provider_identifier,active) values($1,'cubiefan','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@accounts.invalid',true)",[who]);
+ await db.query("insert into accounts_private.profiles(owner,state,cubie,ranking_enabled) values($1,'{}','classic',true)",[who]);
+ const post=(await db.query("insert into news_private.posts(title,body) values('Update','A tiny fix') returning id")).rows[0].id;
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[who]);
+ await db.query("insert into leaderboard_private.scores(player_id,mode,difficulty,player,score,total) values($1,'hangman','easy','Cubie',5,5)",[who]);
+ await db.exec('set role authenticated');
+ const action=async(a,body=null,target=null)=>(await db.query('select public.news_action($1,$2,$3) data',[a,target,body])).rows[0].data;
+ const feed=async()=>(await db.query('select public.news_feed() data')).rows[0].data;
+ await assert.rejects(db.exec("delete from news_private.comments"));
+ await assert.rejects(db.exec("insert into news_private.posts(title,body) values('fake','fake')"));
+ await action('like',null,post);assert.equal((await feed()).posts[0].likes,1);await action('like',null,post);assert.equal((await feed()).posts[0].likes,0);
+ await action('seen',null,post);assert.equal((await feed()).posts[0].seen,true);
+ await action('comment','Please add another game!');assert.equal((await feed()).comments[0].name,'cubiefan');assert.equal((await feed()).comments[0].cubie,'classic');assert.deepEqual((await feed()).comments[0].medals,[{game:'hangman',place:1}]);
+ assert.match((await action('comment','Another idea')).error,/30 seconds/);
+ for(let n=1;n<=5;n++){
+  await db.exec('reset role');await db.query('update news_private.people set banned_until=null where owner=$1',[who]);await db.exec('set role authenticated');
+  const result=await action('comment','f.u.c.k');assert.equal(result.kind,true);assert.equal(result.hours,n>=5);
+  assert.ok((await action('comment','A nice idea')).until);
+ }
+ assert.equal((await feed()).comments.length,1);
+ await db.exec('reset role');await db.query('update news_private.people set blocked=true,banned_until=null where owner=$1',[who]);await db.exec('set role authenticated');
+ assert.match((await action('comment','Nice game')).error,/blocked/);
+ await db.exec('reset role');await db.query('delete from news_private.comments');await db.exec('set role anon');
+ assert.equal((await feed()).comments.length,0);await assert.rejects(action('comment','Bypass'));
+ await db.exec('reset role');
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[who]);
+ await db.exec('set role authenticated');
+ await assert.rejects(db.query("select public.news_team('publish',null,'Forged','No')"),{code:'42501'});
+ await assert.rejects(db.query('select public.news_chat()'),{code:'42501'});
+ await assert.rejects(db.exec("insert into news_private.team values(auth.uid(),'Impostor','moderator')"),{code:'42501'});
+ await db.exec('reset role');
+ await db.query("insert into news_private.team values($1,'Aidan, the gametester','moderator')",[who]);
+ await db.query("insert into news_private.chat(owner,local_creator,body) values(null,true,'Hello from Nate')");
+ await db.exec('set role authenticated');
+ await db.query("select public.news_team('publish',null,'Tester update','New things soon')");
+ assert.equal((await feed()).posts.find(p=>p.title==='Tester update').author_label,'Aidan, the gametester');
+ const chat=(await db.query("select public.news_chat('Hello from Aidan') data")).rows[0].data;
+ assert.deepEqual(chat.map(c=>c.label),['Nate, the creator','Aidan, the gametester']);
+ assert.equal(chat[1].mine,true);
+ assert.ok(!JSON.stringify(await feed()).includes('Hello from Nate'));
+ await db.exec('reset role');await db.query('delete from news_private.team where owner=$1',[who]);await db.exec('set role authenticated');
+ await assert.rejects(db.query('select public.news_chat()'),{code:'42501'});
+
+});
