@@ -112,7 +112,7 @@ test('Gaster and tier Customs migrate earned medals, preview, equip, and persist
   await leaveFullscreen(page);
   await page.locator('[data-game="customs"]').click();
   if(await page.locator('#cubie-groups [data-group="all"]').isVisible()) await page.locator('#cubie-groups [data-group="all"]').click();
-  await expect(page.locator('#customs-count')).toHaveText(`125 / ${await page.evaluate(() => CubieCustoms.catalog.length)} Customs unlocked`);
+  await expect(page.locator('#customs-count')).toHaveText(`${125 + require('../customs.js').catalog.filter(item => item.rewardMode).length} / ${await page.evaluate(() => CubieCustoms.catalog.length)} Customs unlocked`);
   for (const [tier, threshold] of [['gold', 10], ['silver', 15], ['bronze', 20],
     ['crystal', 5], ['diamond', 3], ['rainbow', 2], ['empyrorite', 1]]) {
     const tile = page.locator('.custom-tile[data-custom="medal_' + tier + '"]');

@@ -1,17 +1,18 @@
 const {test,expect,openGame,leaveFullscreen}=require('./fixtures/game.cjs');
 test.use({deterministicMusic:true});
+const crownCount=require('../crown-packs.js').games.length;
 test('group covers open overlapping Cubie, turtle and trail galleries',async({page},info)=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await openGame(page);await leaveFullscreen(page);await page.evaluate(()=>selectGame('customs'));
   await expect(page.locator('#cubie-groups')).toBeVisible();await expect(page.locator('#customs-grid')).toBeHidden();
   await page.locator('#cubie-groups [data-group="exclusive"]').click();
-  await expect(page.locator('#customs-grid .custom-tile:visible')).toHaveCount(6);
+  await expect(page.locator('#customs-grid .custom-tile:visible')).toHaveCount(crownCount);
   await expect(page.locator('[data-custom="crown_hangman_cubie"] .custom-equip')).toBeDisabled();
   await page.locator('#cubie-groups-back').click();await page.locator('#customs-search').fill('Retro Cubie');
   await expect(page.locator('#customs-grid .custom-tile:visible')).toHaveCount(1);
   for(const mode of ['turtles','trails']){
     await page.locator(`[data-game="${mode}"]`).click();await expect(page.locator('#equipment-groups')).toBeVisible();
-    await page.locator('#equipment-groups [data-group="exclusive"]').click();await expect(page.locator('#equipment-grid .custom-tile')).toHaveCount(6);
+    await page.locator('#equipment-groups [data-group="exclusive"]').click();await expect(page.locator('#equipment-grid .custom-tile')).toHaveCount(crownCount);
     await page.locator('#equipment-back').click();await page.locator('#equipment-groups [data-group="ember"]').click();
     expect(await page.locator('#equipment-grid .custom-tile').count()).toBeGreaterThan(0);
   }
