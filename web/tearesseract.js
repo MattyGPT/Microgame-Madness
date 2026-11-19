@@ -19,6 +19,7 @@ const classicPatterns=[
   {holes:true},
 ];
 const classicPattern=()=>round>=19&&round<FINAL_ROUND?classicPatterns[round-19]:null;
+let rankedEncounter=null,rankedEligible=false,rankedClears=0;
 let phase='ready',round=0,hp=12,boss=BOSS_MAX,t=0,world=0,spawn=0,inv=0,bullets=[],lasers=[],sparks=[],hits=0,blocked=0,paused=false,muted=false,mouse={x:550,y:300},p={x:550,y:515},keys=new Set(),audio,beat=0,nextBeat=0,frame=0,last=0,healSent=false;
 let impactReservations=[];
 let touchStick={pointer:null,x:0,y:0},touchFire=null;
@@ -201,9 +202,10 @@ document.querySelector('#preview-music').onclick=previewMusic;
 document.addEventListener('pointerdown',previewMusic);
 document.addEventListener('keydown',previewMusic);
 function burst(x,y,color,n=18){for(let i=0;i<n;i++){let a=Math.random()*TAU,s=40+Math.random()*210;sparks.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.5+Math.random()*.5,color});}}
-function enter(s){const recenter=overdriveFinale();phase=s;if(recenter){p={x:550,y:525};mouse={x:550,y:425};pointerActive=false;wispTrail=[];}if(canvas.dataset)canvas.dataset.phase=s;if(s==='dead'&&typeof TearesseractDeath!=='undefined')TearesseractDeath.start(audio,muted);t=0;spawn=0;impactReservations=[];finalCuts=[];finalWave=-1;finalShotTimer=0;chaosSlashes=[];chaosWave=-1;chaosShotTimer=0;bullets=[];prismMist=[];lasers=[];blackHoles=[];holeTimer=3;healSent=false;beamBlocking=false;if(s==='heal'||s==='counter'){shieldBroken=false;shieldIntegrity=100;}if(s==='ending'){boss=0;debris=[];destructionStarted=false;status.textContent='SYSTEM OVERDRIVE — TOTAL STRUCTURAL FAILURE';}if(s==='intro')status.textContent='CONNECTION IN PROGRESS / ASSEMBLING TEARESSERACT';if(s==='attack'){shieldAngle=-Math.PI/2;shieldIntegrity=100;shieldBroken=false;beamStarted=false;beamFired=false;beamFinished=false;beamFx=0;volley=0;laserTimer=1.2;p={x:550,y:515};wispTrail=[];pointerActive=false;status.textContent=`${attackNumber()}/${names.length} · ${names[round]} · ${moving()?'RELEASE: MOUSE MOVES WISP + SHIELD':'ANCHORED: AIM SHIELD'}`;if(round===8)status.textContent=`${attackNumber()}/${names.length} · RELEASE / RAIN · SHIELD OFF — MOUSE TO DODGE · RED HAZARDS: 2 DAMAGE`;if(round===12)status.textContent+=' · DUAL SHIELDS: 120%';if(round===16)status.textContent+=' · SHIELD SIZE: 85%';if(classicPattern()&&!classicPattern().holes)status.textContent+=' · '+(classicPattern().pink?'PINK: BLOCK TWICE · ':'')+(classicPattern().yellow?'YELLOW: HALF-ORBIT → OPPOSITE SIDE':'WATCH THE RHYTHM');if(blackHoleRound())status.textContent+=' · THREE BLACK-HOLE RETURNS';} }
+function enter(s){if((s==='dead'||s==='ending')&&rankedEligible){rankedEligible=false;if(typeof TearesseractProgress!=='undefined')TearesseractProgress.finish(rankedEncounter,rankedClears,s==='ending');}const recenter=overdriveFinale();phase=s;if(recenter){p={x:550,y:525};mouse={x:550,y:425};pointerActive=false;wispTrail=[];}if(canvas.dataset)canvas.dataset.phase=s;if(s==='dead'&&typeof TearesseractDeath!=='undefined')TearesseractDeath.start(audio,muted);t=0;spawn=0;impactReservations=[];finalCuts=[];finalWave=-1;finalShotTimer=0;chaosSlashes=[];chaosWave=-1;chaosShotTimer=0;bullets=[];prismMist=[];lasers=[];blackHoles=[];holeTimer=3;healSent=false;beamBlocking=false;if(s==='heal'||s==='counter'){shieldBroken=false;shieldIntegrity=100;}if(s==='ending'){boss=0;debris=[];destructionStarted=false;status.textContent='SYSTEM OVERDRIVE — TOTAL STRUCTURAL FAILURE';}if(s==='intro')status.textContent='CONNECTION IN PROGRESS / ASSEMBLING TEARESSERACT';if(s==='attack'){shieldAngle=-Math.PI/2;shieldIntegrity=100;shieldBroken=false;beamStarted=false;beamFired=false;beamFinished=false;beamFx=0;volley=0;laserTimer=1.2;p={x:550,y:515};wispTrail=[];pointerActive=false;status.textContent=`${attackNumber()}/${names.length} · ${names[round]} · ${moving()?'RELEASE: MOUSE MOVES WISP + SHIELD':'ANCHORED: AIM SHIELD'}`;if(round===8)status.textContent=`${attackNumber()}/${names.length} · RELEASE / RAIN · SHIELD OFF — MOUSE TO DODGE · RED HAZARDS: 2 DAMAGE`;if(round===12)status.textContent+=' · DUAL SHIELDS: 120%';if(round===16)status.textContent+=' · SHIELD SIZE: 85%';if(classicPattern()&&!classicPattern().holes)status.textContent+=' · '+(classicPattern().pink?'PINK: BLOCK TWICE · ':'')+(classicPattern().yellow?'YELLOW: HALF-ORBIT → OPPOSITE SIDE':'WATCH THE RHYTHM');if(blackHoleRound())status.textContent+=' · THREE BLACK-HOLE RETURNS';} }
 async function start(attack=null){
   if(phase==='loading')return;
+  rankedEligible=false;
   const request=++songRequest;enter('loading');paused=false;loadingUI(true);loadingProgress();
   status.textContent='ESTABLISHING LINK — PREPARING ENCOUNTER';
   document.querySelector('#preview-music').hidden=true;
@@ -214,7 +216,9 @@ async function start(attack=null){
     }catch{ /* Streaming music does not depend on WebAudio. */ }
     await prepareSong('tearesseract');audioReady=true;
   }catch{ /* A blocked or failed audio request must never prevent the fight. */ }
+  const progressRun=typeof TearesseractProgress!=='undefined'?await TearesseractProgress.begin():null;
   if(request!==songRequest)return;
+  rankedEncounter=progressRun;rankedClears=0;rankedEligible=attack===null&&!document.querySelector('#practice-safe').checked;
   recoil=discharge=parry=0;keys.clear();sparks=[];round=attack??0;hp=12;boss=BOSS_MAX-(attackNumber()-1)*5;
   blocked=hits=beat=0;paused=Boolean(document.hidden);autoPaused=paused;syncEffects();
   for(const voice of activeEffects.splice(0))voice.source.stop();inv=0;
@@ -556,7 +560,7 @@ if(moving()){
 }
 }
 if(t>=duration()){enter(attackNumber()%4===0?'heal':'counter');return;}
-}else if(phase==='heal'){if(!healSent){fire(-Math.PI/2,true);healSent=true;}if(t>4.4)enter('counter');}else if(phase==='counter'&&t>3){if(hits<12){status.textContent=`CORE LOCK: ${12-hits} MORE F STRIKES`;t=2;}else{hits=0;boss= Math.max(0,BOSS_MAX-attackNumber()*5);if(round===FINAL_ROUND)enter('ending');else{round=attackOrder[attackNumber()];enter('attack');}}}else if(phase==='ending')updateDestruction(dt);
+}else if(phase==='heal'){if(!healSent){fire(-Math.PI/2,true);healSent=true;}if(t>4.4)enter('counter');}else if(phase==='counter'&&t>3){if(hits<12){status.textContent=`CORE LOCK: ${12-hits} MORE F STRIKES`;t=2;}else{rankedClears++;hits=0;boss= Math.max(0,BOSS_MAX-attackNumber()*5);if(round===FINAL_ROUND)enter('ending');else{round=attackOrder[attackNumber()];enter('attack');}}}else if(phase==='ending')updateDestruction(dt);
 updatePrismMist(dt);
 if(phase==='attack')updateBlackHoles(dt);
 for(const b of bullets){
@@ -822,6 +826,7 @@ for(const type of ['pointerup','pointercancel','lostpointercapture'])touchShot.a
 touchShot.addEventListener('click',event=>{if(event.detail===0)pressF();});
 window.addEventListener('blur',resetTouchControls);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)resetTouchControls();});
+document.querySelector('#practice-safe').addEventListener('change',()=>{if(document.querySelector('#practice-safe').checked)rankedEligible=false;});
 document.querySelector('#load-attack').onclick=()=>start(Number(loader.value));document.querySelector('#replay-intro').onclick=()=>start();document.querySelector('#preview-ending').onclick=async()=>{await start(FINAL_ROUND);boss=0;enter('ending');};
 // Resume only lifecycle pauses; an explicit PAUSE remains paused after switching apps.
 let autoPaused=false;

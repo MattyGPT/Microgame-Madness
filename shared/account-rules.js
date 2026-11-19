@@ -12,7 +12,8 @@ const AccountRules = (() => {
   const catalog = [...customs.catalog, ...trails.catalog, ...turtles.catalog];
   const modes = Object.fromEntries(Object.entries(shop.rates).map(([mode, rate]) => [mode, Object.keys(rate.modes)]));
   modes.core_practice = achievements.attackRewards.filter(a => a.family === 'core').map(a => a.key);
-  modes.geomayhem = Array.from({length:10}, (_,i) => `level_${i+1}`);
+  modes.geomayhem = Array.from({length:20}, (_,i) => `level_${i+1}`);
+  for(const game of achievements.sideGames)modes[game.mode]=['standard'];
   const clone = value => JSON.parse(JSON.stringify(value));
   const object = value => value !== null && typeof value === 'object' && !Array.isArray(value)
     && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
@@ -126,7 +127,7 @@ const AccountRules = (() => {
       clean.attack_survivals = raw.attack_survivals.slice();
     }
     if (run.mode === 'geomayhem') {
-      for (const [key,max] of Object.entries({geo_level:10,geo_kills:1000000,geo_waves:20,geo_rank:10000,
+      for (const [key,max] of Object.entries({geo_level:20,geo_kills:1000000,geo_waves:20,geo_rank:10000,
         geo_weapon_count:4,geo_max_stars:5,geo_five_star_count:4,geo_relic_count:3}))
         if (clean[key] !== undefined) requireValue(integer(clean[key],max), `Invalid ${key}.`);
       if (clean.geo_level !== undefined) requireValue(run.difficulty === `level_${clean.geo_level}`, 'Arena does not match the run.');
@@ -249,7 +250,7 @@ const AccountRules = (() => {
       if (final) {
         const completed = ['win','loss'].includes(payload.outcome);
         if (!completed) tracker.abandon();
-        const eligible = !['core_practice','geomayhem'].includes(run.mode) && (completed || (run.mode === 'keyboard' && payload.outcome === 'exit'));
+        const eligible = run.mode !== 'core_practice' && (completed || (run.mode === 'keyboard' && payload.outcome === 'exit'));
         const score = observation.score || 0;
         if (eligible) {
           shop.reward(state.shop, run.mode, run.difficulty, score);
@@ -269,7 +270,20 @@ const AccountRules = (() => {
           eligible: run.eligible, provenance: run.provenance, timeSource: run.timeSource, timeAdjusted: run.timeAdjusted };
       }
     } else if (operation.kind === 'arcade') {
-      if (payload.event === 'visit') {
+      if(payload.event==='side-result') {
+        const {mode,score,level=0,won=false}=payload;
+        requireValue(achievements.sideGames.some(game=>game.mode===mode),'Unknown side game.');
+        requireValue(integer(score,mode==='tearesseract'?30:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
+        if(mode==='coindrop')requireValue(score===1&&won,'Only banked coins count.');
+        if(mode==='nanolab'||mode==='treasure')requireValue(score===(won?1:0),'Score does not match the result.');
+        if(mode==='treasure')requireValue(level>=1,'A treasure round is required.');
+        if(mode==='tearesseract'&&won)requireValue(score===30,'A victory requires all 30 attacks.');
+        tracker.sideResult(mode,{score,level,won});
+        addBest(state,mode,'standard',state.player,score);
+        finishedRun={id:operation.id,mode,difficulty:'standard',outcome:won?'win':'loss',score,
+          startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,
+          provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};
+      } else if (payload.event === 'visit') {
         tracker.visit();
       } else if (payload.event === 'secret') {
         requireValue(typeof payload.name === 'string' && secretNames.has(payload.name.toLowerCase()), 'Unknown arcade event.');

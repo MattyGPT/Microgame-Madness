@@ -6,12 +6,12 @@ test('Nano Lab lists all 300 tests, filters worlds, and leaves campaign untouche
  await page.locator('#coin-drop-room').screenshot({path:info.outputPath('nano-lab.png')});
  await page.locator('#cd-lab-world').selectOption('all');await page.locator('#cd-lab-search').fill('Vault Code');await expect(page.locator('[data-nano-test]')).toHaveCount(1);
  const before=await page.evaluate(()=>JSON.stringify(coinDropGame.p));await page.locator('[data-nano-test]').click();await page.locator('#cd-nano-start').click();
- await expect(page.locator('#cd-nano-prize')).toContainText('no rewards');
+ await expect(page.locator('#cd-nano-prize')).toContainText('achievements');
  await page.evaluate(()=>coinDropGame.tickNano(1.01));await expect(page.locator('#cd-nano-code')).toHaveText('Enter code');
  await page.locator('#cd-nano-skip').click();expect(await page.evaluate(()=>JSON.stringify(coinDropGame.p))).toBe(before);
  await page.locator('[data-game="coindrop"]').click();await expect(page.locator('[data-panel="board"]')).toBeVisible();await expect(page.locator('.cd-nano-lineup span')).toHaveCount(3);
 });
-test('all 50 new nanogames can be won through their controls without saving lab rewards',async({page})=>{
+test('all 50 new nanogames can be won through their controls without changing Coin Drop currencies',async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  const results=await page.evaluate(()=>{
    const g=coinDropGame,before=JSON.stringify(g.p),out=[];

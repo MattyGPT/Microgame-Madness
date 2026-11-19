@@ -2,7 +2,7 @@ const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{await openGame(page);await page.locator('[data-game="nanolab"]').click();});
 async function launch(page,id){await page.evaluate(id=>coinDropGame.startNanoTest(id),id);await page.locator('#cd-nano-start').click();}
 const keys=['ArrowUp','ArrowLeft','ArrowDown','ArrowRight'];
-test('Nano Lab displays WIN, LOSS, timeout and CLOSED distinctly, with replay and no rewards',async({page},info)=>{
+test('Nano Lab displays WIN, LOSS, timeout and CLOSED distinctly, with replay and unchanged Coin Drop currencies',async({page},info)=>{
  const before=await page.evaluate(()=>JSON.stringify(coinDropGame.p));
  await launch(page,'math');const answer=await page.evaluate(()=>coinDropGame.nano.correct);await page.locator('#cd-nano-stage .cd-nano-choices button').nth(answer).click();
  await expect(page.locator('#cd-lab-result')).toBeInViewport();await expect(page.locator('#cd-lab-result')).toBeVisible();await expect(page.locator('.cd-result-badge')).toHaveText('WIN');await expect(page.locator('#cd-lab-result')).toHaveAttribute('data-outcome','win');

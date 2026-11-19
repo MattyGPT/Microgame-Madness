@@ -7,6 +7,11 @@ const CosmeticCollections = (() => {
     for(const tier of tiers)add(tier,tier==='exclusive'?'Exclusive · #1 Crowns':tier[0].toUpperCase()+tier.slice(1),i=>i.tier===tier);
     const text=i=>`${i.id} ${i.name} ${i.flavor||''}`;
     for(const [id,title,pattern] of [
+      ['geomayhem','Geomayhem',/geo_|geomayhem/i],
+      ['coindrop','Coin Drop',/coindrop|coin drop/i],
+      ['nanolab','Nano Lab',/nanolab|nano lab/i],
+      ['tearesseract','Tearesseract',/tearesseract/i],
+      ['treasure','Treasure Trove',/treasure/i],
       ['animals','Animals',/cat|dog|fox|wolf|bunny|rabbit|bear|panda|frog|koi|turtle|butterfly|bird|bee|otter|penguin|axolotl|jellyfish|shark/i],
       ['boss','Boss Crush',/boss|overlord|crush|regent|pumpkin|wrath|royal_slams|bone_gauntlet|magenta_fingers|crown_chess/i],
       ['radiant','Radiant',/radiant|light|solar|sun|spark|glow|prism|crystal/i],

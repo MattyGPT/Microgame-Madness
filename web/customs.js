@@ -123,6 +123,10 @@ const CubieCustoms = (() => {
   for (const [id, name, achievement, color, flavor, detail] of chaosCubies)
     add(id, name, achievement, color, detail, square, { flavor });
   add("galactic_smith", "Galactic Smith Cubie", "galactic_forge", "#b69aff", `<path d="M24 30L34 9 60 19 86 9 96 30Z" fill="#d6c8ff"/><path d="M28 83h64v25H28Z" fill="#302350"/><path d="M78 50l22-22M86 19l20 20 9-9-20-20Z" stroke="#90f9ff" stroke-width="6" fill="#b69aff"/><path d="M37 91h46l-9 8H46Z" fill="#90f9ff"/>`, square, {flavor: "Ten perfect strikes. A galaxy forged into steel."});
+  for(const game of achievementModel.sideGames)game.targets.forEach((target,index)=>{
+    const art=sideRewardDesign(game.mode,index);
+    add(`${game.mode}_cubie_${target}`,`${game.names[index]} Cubie`,`${game.mode}_milestone_${target}`,art.color,art.detail,art.body,{...art,flavor:`Earned through ${game.name}. ${game.names[index]} is ready for another adventure.`});
+  });
   for (const [id,name,achievement,color,flavor] of geomayhemCustoms)
     add(id,name,achievement,color,`<path d="M24 34h72" stroke="${color}"/>`,square,{flavor});
   add("choo_choo", "Choo Choo Cubie", "website_5_hours", "#408bc0",
@@ -976,7 +980,153 @@ const CubieCustoms = (() => {
     const shell = rank ? `<g fill="${paint('shell')}">${item.body}</g>` : '';
     return {back:defs+back, detail:`<g data-geomayhem-tier="${item.tier}">${shell}<path d="M26 47v-8q0-5 6-5h43" fill="none" stroke="#fff" stroke-width="${rank>=3?1.5:1}" opacity=".6"/>${polish}${detail}${sparkles}</g>`, sideOffset:rank>=3?9:11, shadowOffset:rank>=3?15:20, sideColor:sideColor(item.color),shadowColor:'#27323e'};
   }
+  // Each reward has its own construction; shared materials keep the tier language consistent.
+  function sideRewardDesign(mode,rank) {
+    const path=(d,fill='none',stroke='@gold@',width=2)=>`<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const circle=(x,y,r,fill='@gold@',stroke='#fff0cc')=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>`;
+    const motion=(kind,art,origin='60px 68px')=>`<g class="reward-${kind}" style="transform-origin:${origin}">${art}</g>`;
+    const gem=(x,y,r=9,color='@gem@')=>path(`m${x} ${y-r} ${r*.8} ${r} ${-r*.8} ${r} ${-r*.8} ${-r}Z`,color,'#edffff',1)+path(`M${x} ${y-r}v${r*2}m${-r*.8} ${-r}h${r*1.6}`,'none','#ffffff88',.8);
+    const coin=(x,y,r=9)=>circle(x,y,r)+circle(x,y,r*.72,'none','#936134')+path(`M${x} ${y-r*.42}v${r*.84}m${-r*.3} ${-r*.55}h${r*.6}m${-r*.6} ${r*.3}h${r*.6}`,'none','#fff4c6',1.4);
+    const star=(x,y,r=7)=>path(`m${x} ${y-r} ${r*.25} ${r*.75} ${r*.75} ${r*.25} ${-r*.75} ${r*.25} ${-r*.25} ${r*.75} ${-r*.25} ${-r*.75} ${-r*.75} ${-r*.25} ${r*.75} ${-r*.25}Z`,'@rainbow@','#fff',.7);
+    const orbit=(rx,ry,tilt=0)=>`<g transform="rotate(${tilt} 60 68)">${motion('orbit',`<ellipse cx="60" cy="68" rx="${rx}" ry="${ry}" fill="none" stroke="@rainbow@" stroke-width="1.3" stroke-dasharray="42 4 3 4"/>${gem(60-rx,68,4)}`)}</g>`;
+    const wings=(color='@gem@')=>[false,true].map(right=>`<g transform="${right?'translate(120 0) scale(-1 1)':''}">${motion('wing',path('M26 78Q-2 66-8 22L7 35 3 8 24 29 27 11 44 45 34 91Z',color,'#edffff',1.3)+path('M3 33 28 69M10 24l22 32M9 49l21 28','none','#ffffffaa',1),'30px 65px')}</g>`).join('');
+    const palettes={coindrop:['#d1aa76','#cb8762','#e0bf73','#9d5377','#77aaa5','#555295','#66d4ad'],nanolab:['#a8cbbc','#7bafcf','#a58ac7','#89ced4','#8d9dc9','#9b77bf','#6894b4'],treasure:['#a9be7c','#ad805c','#d4b66c','#7dc5bf','#547ca4','#796ba8','#9de6d4'],tearesseract:['#9acbd3','#8ba8bf','#c2a673','#639caa','#9b91c9','#625ca6','#c1e8e7']};
+    let body='<rect x="20" y="28" width="80" height="80" rx="14"/>',back='',detail='',faceColor=rank>=4?'#f2fcff':'#192b34';
+    if(rank===6&&mode!=='nanolab')faceColor='#173942';
+    if(mode==='coindrop')switch(rank){
+      case 0: // Canvas pocket with a stitched flap and a single brass token.
+        body=path('M25 34q35-10 70 0l5 58q0 16-16 16H36q-16 0-16-16Z','inherit','none',0);
+        back=path('M16 48H6v43l18 9','@leather@','#b08c61');
+        detail=path('M27 33q33-25 66 0v10H27Z','#846e46','#dfc8a1')+path('M26 93h68v15H26Z','#8f744e')+path('M31 97h58','none','#f1dcc0',1)+coin(60,29,8)+path('M30 44v42m60-42v42','none','#dfc8a1',2);break;
+      case 1: // Copper collection pail, handle, and tumbling coins.
+        body=path('M20 30h80L94 102q-34 13-68 0Z','inherit','none',0);
+        back=path('M25 44Q-1 5 33 9M95 44q26-39-8-35','none','#c9976c',5)+motion('bob',coin(101,24,8),'101px 24px');
+        detail=path('M18 30h84v10H18ZM25 96h70v8H25Z','@copper@','#f6d6b9')+path('M28 44l5 45m59-45-5 45','none','#f0c8a6',2)+motion('tilt',coin(52,18,12)+coin(76,25,8),'60px 25px');break;
+      case 2: // Banker in a tailored coat with a working pocket watch.
+        body=path('M28 28h64l8 16-5 64H25l-5-64Z','inherit','none',0);
+        back=path('M21 43 8 55v43l17 7M99 43l13 12v43l-17 7','#584454');
+        detail=path('M29 28V-1h62v29M19 29h82','@velvet@','@gold@',3)+path('M31 12h58','none','@gold@',7)+path('M23 37 38 48l-9 44m68-55L82 48l9 44M32 96l28 12 28-12','none','@gold@',2)+motion('pendulum',path('M98 71q15 15 3 26')+coin(103,99,8),'98px 71px');break;
+      case 3: // Hinged ruby treasure chest with faceted latches.
+        body=path('M20 40q0-16 20-16h40q20 0 20 16v61l-10 9H30l-10-9Z','inherit','none',0);
+        back=motion('lid',path('M22 30V5q38-20 76 0v25Z','@velvet@','@gold@',2)+path('M35 4v23m50-23v23','none','@gold@',4),'60px 30px')+motion('bob',gem(14,56,10,'#f292bc')+gem(107,48,7,'#ffbdcf'));
+        detail=path('M28 30v73m64-73v73','none','@gold@',7)+path('M22 94h76v14H22Z','@leather@')+gem(60,33,8,'#ff9bc3')+gem(60,101,6,'#e673ac');break;
+      case 4: // An art-deco vault with an exposed spinning dial above the face.
+        body=path('M31 22h58l16 17v57l-16 18H31L15 96V39Z','inherit','none',0);
+        back=path('M14 39H4v55h10m92-55h10v55h-10','@steel@','#cbfff2',3);
+        detail=path('M27 44V34h66v62l-9 10H36l-9-10','none','@gold@',3)+motion('spin',circle(60,25,17,'@steel@')+path('M60 10v30M45 25h30m-26-11 22 22m0-22L49 36','none','@gold@',2)+circle(60,25,5),'60px 25px')+path('M30 96h60','none','#d5fff4',2)+gem(17,68,6)+gem(103,68,6);break;
+      case 5: // Coin constellation: crescent faceplate and elliptical coin belts.
+        body=path('M29 29 60 20 91 29 103 61 93 100 60 113 27 100 17 61Z','inherit','none',0);
+        back=orbit(59,41,-22)+motion('reverse',coin(10,68,9)+coin(104,28,7)+star(98,112,8));
+        detail=path('M24 40q10-20 36-17-22 8-25 27M95 91q-13 21-40 17 24-8 27-22','@gold@','none',0)+motion('twinkle',star(37,96,4)+star(87,37,5))+path('M43 101 60 110 79 101','none','@rainbow@',3);break;
+      case 6: // A miniature mint temple, coin waterfall, and clockwork wings.
+        body=path('M35 26h50l15 19-7 55-33 16-33-16-7-55Z','inherit','none',0);
+        back=wings('@gold@')+orbit(64,55)+path('M11 23v87M109 23v87','none','@gold@',7)+path('M3 113h114v8H3ZM3 21 60-10 117 21Z','@steel@','@gold@',2);
+        detail=motion('mint',coin(60,3,9)+coin(60,22,6),'60px 14px')+path('M25 39 39 33m42 0 14 6M27 96l33 16 33-16','none','@gold@',4)+gem(60,104,9)+motion('twinkle',star(8,42)+star(112,88)+star(60,-6,5));break;
+    }
+    if(mode==='nanolab')switch(rank){
+      case 0: // Laboratory apron, flask, and one raised safety lens.
+        back=path('M91 59h16v41H91Z','#5c9289','#cbeee2')+path('M101 36h10m-8 0v10l-7 12h20l-7-12V36','#9be8dd','#eafff6',1.5);
+        detail=path('M29 31v17m62-17v17M24 91l13 4v13h46V95l13-4','#eef6e6','#d3ded3',2)+circle(60,29,13,'#9cddd9','#f6fff8')+path('M55 22l9 10','none','#ffffff',2)+path('M49 99h22v9H49Z','#709e95','none',0);break;
+      case 1: // Quick-thinker helmet with a blinking antenna and lightning fins.
+        body=path('M34 23h52q16 0 16 18v48l-13 18H31L18 89V41q0-18 16-18Z','inherit','none',0);
+        back=path('M20 49 5 35l4 24-12 6 23 23M100 49l15-14-4 24 12 6-23 23','@steel@','#bdeaff');
+        detail=path('M20 43q0-30 40-30t40 30L80 34H40Z','@steel@','#d8f5ff',2)+path('M60 14V-1','none','#a9dfff',3)+motion('pulse',circle(60,-4,5,'#c4ffff'))+path('M32 98h56v9H32Z','#386380','#afe9f7')+path('m56 96 9-5-4 8h5l-10 9 3-8h-5Z','#fff4b0','none',0);break;
+      case 2: // Pocket professor: mortarboard, ribbon, and moving scroll.
+        back=motion('bob',path('M101 49h16v47h-16Z','#fff0c8')+circle(109,49,8,'#fff0c8')+path('M105 63h8m-8 7h8m-8 7h6','none','#a58e6c',1.2),'109px 70px');
+        detail=path('M23 32 60 14 97 32v11H23Z','@velvet@')+path('M11 20 60-1 109 20 60 40Z','@velvet@','@gold@')+motion('pendulum',path('M101 22v23m-3 0h6v10h-6Z','@gold@'),'101px 22px')+path('M27 92l19 16H27Zm66 0-19 16h19Z','@gold@')+gem(60,101,5);break;
+      case 3: // Crystal book: translucent folded pages and a hovering bookmark.
+        body=path('M20 32q20-9 40 0 20-9 40 0v72q-20-8-40 4-20-12-40-4Z','inherit','none',0);
+        back=path('M17 33 6 23v76l14 14M103 33l11-10v76l-14 14','@gem@','#d8ffff',1.3);
+        detail=path('M23 94q20-8 37 6 17-14 37-6M24 101q18-6 36 5 18-11 36-5','none','#ebffff',1.3)+path('M57 33h6v14h-6Z','@gold@','none',0)+motion('bob',gem(60,13,15)) +path('M29 34l11 4m40 0 11-4','none','#fff',2);break;
+      case 4: // Brainstorm: glass cranial dome, neural cloud, and electric arcs.
+        body=path('M34 29h52l14 20-5 46-15 15H40L25 95l-5-46Z','inherit','none',0);
+        back=motion('pulse',path('M24 44 3 30l11 26L0 76l23 15M96 44l21-14-11 26 14 20-23 15','none','#bcecff',2));
+        detail=path('M25 34a35 35 0 0 1 70 0Z','@gem@','#e9ffff',1.5)+motion('neural',path('M34 25q-7-14 5-17 2-12 16-7 10-9 20 0 16-2 16 14 9 12-4 17H39q-9 0-5-7Z','#c9b2f5','#f6e7ff',1.4)+path('M49 8v16m11-20v23m11-17v14m-30-7h37','none','#7c6baf',1.2),'60px 15px')+path('M30 96h60v9H30Z','@steel@','#d3e5ff')+circle(60,101,4,'#d5faff');break;
+      case 5: // Microverse master: three tilted atom rings and a starlit robe.
+        body=path('M31 28h58l8 40 7 39-22 5-22-7-22 7-22-5 7-39Z','inherit','none',0);
+        back=orbit(58,24,38)+orbit(58,24,-38)+orbit(24,57)+motion('reverse',star(13,27,8)+gem(110,92,6));
+        detail=path('M23 92 41 100 60 92 79 100 97 92v16l-19-6-18 6-18-6-19 6Z','@rainbow@','#eee4ff',1)+motion('pulse',circle(60,24,12,'@rainbow@')+circle(60,24,5,'#fff'))+path('M29 38h14m34 0h14','none','#d6d5ff',2);break;
+      case 6: // Infinite curiosity: observatory, aurora wings, and a living prism.
+        body=path('M60 21 92 31 104 68 90 104 60 116 30 104 16 68 28 31Z','inherit','none',0);
+        back=wings('@rainbow@')+orbit(61,59)+motion('reverse',path('M60-8 118 26v79l-58 28-58-28V26Z','none','@gold@',1));
+        detail=path('M28 35 42 29m36 0 14 6M28 99l32 14 32-14','none','@gold@',3)+motion('prism',gem(60,5,19,'@rainbow@'),'60px 5px')+motion('twinkle',star(9,42,6)+star(112,43,6)+star(28,115,5)+star(92,115,5))+gem(60,101,7,'@rainbow@');break;
+    }
+    if(mode==='treasure')switch(rank){
+      case 0: // An explorer with a knotted scarf and magnifying glass.
+        back=path('M90 32l19-6-6 17 11 8-19 5','#71954c','#bed28c')+path('M100 85l12 22','none','#8a6b43',5)+circle(100,78,14,'#b6e9db88','#e7d49c');
+        detail=path('M23 31q37-14 74 0v13H23Z','#627c3f','#c0d494')+gem(60,34,5,'#c8eeb5')+path('M26 98h68v10H26Z','#7f6544','#e6c99a');break;
+      case 1: // A brass-bound cedar chest, not the explorer's outfit.
+        body=path('M20 44q0-22 22-22h36q22 0 22 22v56l-9 10H29l-9-10Z','inherit','none',0);
+        back=path('M19 54H8v24h11m82-24h11v24h-11','none','@copper@',5);
+        detail=path('M23 36h74M23 93h74M23 102h74','none','#603e30',2)+path('M31 29v78m58-78v78','none','@gold@',6)+path('M49 24h22v18H49Z','@gold@','#fff0c8')+circle(60,32,3,'#604533','#604533')+motion('twinkle',star(95,31,3));break;
+      case 2: // Golden compass with cardinal spikes and a swinging needle.
+        body=path('M37 25h46l20 22v42l-20 22H37L17 89V47Z','inherit','none',0);
+        back=path('M60-2 69 20H51ZM9 57l-17 11 17 11Zm102 0 17 11-17 11ZM51 116l9 17 9-17Z','@gold@','#fff0bc',1.3);
+        detail=path('M33 35 60 24 87 35 97 59v22l-12 19-25 10-25-10-12-19V59Z','none','@gold@',3)+motion('needle',path('m60 4 6 18-6 9-6-9Z','#a5554c','#fff2cc'),'60px 22px')+path('M28 46l5 3m54 0 5-3M32 95l4-4m48 0 4 4','none','#fff7d8',2);break;
+      case 3: // Fortune finder floats on a lamp's translucent ribbons.
+        body=path('M32 26q28-12 56 0l12 21-5 44-19 19H44L25 91l-5-44Z','inherit','none',0);
+        back=motion('ribbon',path('M26 101Q-12 75 9 37q-1 36 24 42M94 101q38-26 17-64 1 36-24 42','@gem@','#e5fff4',1),'60px 90px')+path('M32 117h56l-11 9H43Z','@gold@');
+        detail=path('M23 40Q17 7 60 7t37 33L78 26H42Z','@gem@','#e7ffff',1.3)+path('M31 27q29-17 58 0','none','@gold@',3)+motion('bob',gem(60,19,9))+path('M29 96q31 16 62 0','none','@gold@',5);break;
+      case 4: // Captain's tricorn and coat, with anchor and wind-blown pennants.
+        body=path('M30 28h60l10 20-8 60H28l-8-60Z','inherit','none',0);
+        back=motion('flag',path('M13 34V8l-16 7 16 7M107 34V8l16 7-16 7','@gem@','#d6f6ff',1.5),'60px 30px')+path('M9 84v26m-8-9q8 20 16 0M3 88h12','none','@gold@',2.5);
+        detail=path('M15 30 29 4 60 15 91 4 105 30Q60 45 15 30Z','@velvet@','@gold@',2.5)+gem(60,24,8)+path('M26 41l14 12-8 37m62-49L80 53l8 37M31 97l29 13 29-13','none','@gold@',3)+circle(33,84,2)+circle(87,84,2);break;
+      case 5: // Admiral under a miniature ship's sails, riding prismatic surf.
+        body=path('M30 25h60l12 29-7 50-19 8-16-7-16 7-19-8-7-50Z','inherit','none',0);
+        back=motion('sail',path('M8 102V-3m104 105V-3M8 1Q-13 30 8 50Zm104 0q21 29 0 49Z','@rainbow@','#fff1d4',2),'60px 80px')+motion('surf',path('M-3 111q16-18 32-4t31 0 31 0 32-4v12H-3Z','@rainbow@','#cafff6',1));
+        detail=path('M16 27Q32-1 60 8 88-1 104 27L87 38H33Z','@velvet@','@gold@',3)+path('M27 94l15 5-2 11m53-16-15 5 2 11','none','@gold@',4)+motion('twinkle',star(60,21,9))+gem(25,49,6)+gem(95,49,6);break;
+      case 6: // All-seeing gem: faceted diamond body with a hovering third eye.
+        body=path('M38 21h44l25 32-13 42-34 23-34-23-13-42Z','inherit','none',0);
+        back=orbit(62,49,24)+orbit(62,49,-24)+motion('reverse',gem(5,66,11)+gem(115,66,11)+gem(60,129,8))+motion('pulse',path('M33 3Q60-19 87 3 60 25 33 3Z','@gem@','@gold@',2)+circle(60,3,8,'@gold@')+circle(60,3,3,'#17383c'),'60px 3px');
+        detail=path('M38 21 33 47 13 53M82 21l5 26 20 6M26 95l19-7 15 30 15-30 19 7M33 47l12-12h30l12 12','none','#ecfff4',1.4)+path('M32 100l28 18 28-18','none','@gold@',3)+motion('twinkle',star(17,23)+star(103,23)+star(19,112)+star(101,112));break;
+    }
+    if(mode==='tearesseract')switch(rank){
+      case 0: // A signal wisp trails soft ribbons of static.
+        body=path('M30 37Q24 12 46 25L60 11l14 14q22-13 16 12 22 19 9 48l-7 24-16-9-16 12-16-12-16 9-7-24Q8 56 30 37Z','inherit','none',0);
+        back=motion('wisp',path('M22 89Q-7 85 4 57m94 32q29-4 18-32','none','#b4eaf0',3),'60px 68px');
+        detail=path('M33 39q27-14 54 0','none','#e1fcff',2)+motion('pulse',circle(60,26,3,'#edffff'))+path('M30 96l14-6m32 0 14 6','none','#d9fcff',1);break;
+      case 1: // A layered shield with an electric crest and shoulder guards.
+        body=path('M20 34 60 19 100 34v48q-10 24-40 34-30-10-40-34Z','inherit','none',0);
+        back=path('M23 40 6 38 1 62l23 12M97 40l17-2 5 24-23 12','@steel@','#d5ebf6',2);
+        detail=path('M28 42 60 29 92 42v41q-10 20-32 26-22-6-32-26','none','#d3f5ff',2)+motion('pulse',path('m62 2-11 16h9l-3 14 15-20H62Z','#ceffff','#fff',1))+path('M40 98l20 10 20-10','none','@gold@',2);break;
+      case 2: // Containment suit: brass helmet, filters, warning stripes.
+        body=path('M34 24h52l17 24-6 51-16 12H39L23 99l-6-51Z','inherit','none',0);
+        back=path('M8 44h12v52H8Zm92 0h12v52h-12Z','@steel@','@gold@',2)+motion('pulse',path('M11 51h6v26h-6Zm92 0h6v26h-6Z','#99ffee','none',0));
+        detail=path('M24 41q0-27 36-27t36 27l-13-9H37Z','@steel@','@gold@',2)+path('M34 33h52','none','#a5ffed',3)+path('M25 94h70v14H25Z','@steel@')+path('m29 105 8-8m4 8 8-8m22 8 8-8m4 8 8-8','none','@gold@',3);break;
+      case 3: // Core defender: a compact mech with cooling fins and power cells.
+        body=path('M33 24h54l18 19-7 51-20 17H42L22 94l-7-51Z','inherit','none',0);
+        back=[0,1].map(i=>`<g transform="${i?'translate(120 0) scale(-1 1)':''}">${path('M2 37h17v66H2Z','@steel@','#b4eeff',2)}${motion('core',path('M6 48h9v38H6Z','@gem@','#fff',1),'10px 66px')}${path('M-3 42h22m-22 12h7m-7 34h7m-7 10h22','none','#a6ddeb',2)}</g>`).join('');
+        detail=path('M26 40 39 29h42l13 11M25 93l17 13h36l17-13','none','@gold@',3)+motion('spin',gem(60,24,12),'60px 24px')+path('M28 48h8m48 0h8','none','#d7ffff',3);break;
+      case 4: // Fracture walker: disconnected armor plates around a stable core.
+        body=path('M24 33 49 24l11 9 13-10 24 10-6 22 10 20-10 31-26-9-17 14-26-11 7-23-13-20Z','inherit','none',0);
+        back=motion('shards',gem(7,31,10)+gem(111,53,12)+gem(13,111,9)+gem(102,113,7))+motion('pulse',path('M4 18 21 36 12 60m98-48-11 21 17 49M0 93l17 9-2 17','none','#e0d0ff',1.2));
+        detail=path('M24 33 38 43 29 77l13 17-20 6M97 33 82 43l9 33-14 18 14 12M48 24l12 9 13-10M48 111l17-14','none','#e8ddff',1.6)+motion('pulse',path('M35 35l9 5m34 0 8-4M43 100l9-4m22 0 10 5','none','#b6fff7',3));break;
+      case 5: // Dimension keeper: two counter-rotating tesseract cages.
+        body=path('M34 25 60 18l26 7 16 27-6 46-36 18-36-18-6-46Z','inherit','none',0);
+        back=motion('orbit',path('M60-8 121 27v77l-61 35-61-35V27Z M-1 27l61 36 61-36M60 63v76','none','@rainbow@',1.2))+motion('reverse',path('M60 1 113 32v67l-53 31-53-31V32Z','none','#c9e5ff',.8));
+        detail=path('M29 37 60 25 91 37M26 95l34 16 34-16','none','@rainbow@',3)+motion('prism',path('m60-3 15 9v18l-15 8-15-8V6Z M45 6l15 9 15-9M60 15v17','@gem@','#e7e3ff',1.2),'60px 14px')+star(28,98,5)+star(93,98,5);break;
+      case 6: // Impossible overcome: liberated wisp in a broken six-wing machine.
+        body=path('M33 31 48 24 60 12 72 24 87 31 102 57 92 99 75 108 60 119 45 108 28 99 18 57Z','inherit','none',0);
+        back=wings('@gem@')+motion('reverse',path('M60-9 117 24v25m0 40v25l-57 26-57-26V89m0-40V24L60-9','none','@rainbow@',2))+motion('shards',gem(-2,81,9)+gem(122,81,9)+gem(16,13,7)+gem(104,13,7));
+        detail=path('M29 40 43 31 60 20 77 31 91 40M29 99l31 19 31-19','none','@gold@',3)+motion('core',gem(60,22,11,'@rainbow@'),'60px 22px')+motion('twinkle',star(60,-10,8)+star(22,109,6)+star(98,109,6))+path('M31 88l8 8m42 0 8-8','none','#fff',2);break;
+    }
+    body=body.replace(/ stroke(?:-width|-linecap|-linejoin)?="[^"]*"/g,'');
+    return {color:palettes[mode][rank],body,back,detail,faceColor,rewardMode:mode,rewardRank:rank};
+  }
+  function sideRewardArt(item,uid) {
+    const rank=item.rewardRank,id=name=>`reward-${uid}-${name}`,paint=name=>`url(#${id(name)})`;
+    const replace=svg=>svg.replace(/@(\w+)@/g,(_,name)=>paint(name));
+    const stops=(colors)=>colors.map((c,i)=>`<stop offset="${i/(colors.length-1)}" stop-color="${c}"/>`).join('');
+    const gradients={shell:['#f4ffff',item.color,item.color,sideColor(item.color)],gold:['#fff8d0','#deb269','#fff1b3','#9b723b'],copper:['#f6d0ad','#c78058','#f2ba8a','#83523e'],steel:['#dbeef1','#7596a7','#293b51','#748da0'],gem:['#f7ffff',item.color,'#d7d0ff','#6caec6'],rainbow:['#ff9bc8','#ffe3a1','#95f4d2','#9ddcff','#cbb2ff'],leather:['#c2a17a','#775a47'],velvet:[item.color,'#253248','#182037']};
+    const defs=`<defs><clipPath id="${id('clip')}">${item.body}</clipPath>${Object.entries(gradients).map(([name,colors])=>`<linearGradient id="${id(name)}" x2=".8" y2="1">${stops(colors)}</linearGradient>`).join('')}<radialGradient id="${id('aura')}"><stop stop-color="${item.color}" stop-opacity=".38"/><stop offset="1" stop-color="${item.color}" stop-opacity="0"/></radialGradient></defs>`;
+    const facets=rank>=3?`<path d="M17 25 40 41 29 77 40 110H17ZM103 25 80 41 91 77 80 110h23Z" fill="#f2ffff" opacity="${rank>=4?.17:.1}"/>`:'';
+    const sheen=rank>=2?'<g class="reward-sheen"><path d="M-48 0h14l80 130H32Z" fill="#fff" opacity=".25"/></g>':'';
+    const shell=`<g clip-path="${paint('clip')}"><rect x="10" y="10" width="100" height="115" fill="${paint('shell')}"/>${facets}${sheen}</g><g fill="none" stroke="${rank>=5?paint('rainbow'):rank>=2?paint('gold'):'#f2e7d1'}" stroke-width="${rank>=4?1.6:1}">${item.body}</g>`;
+    return {back:defs+(rank>=3?`<ellipse class="reward-aura" cx="60" cy="68" rx="70" ry="75" fill="${paint('aura')}"/>`:'')+replace(item.back),detail:shell+replace(item.detail),faceColor:item.faceColor,sideColor:sideColor(item.color),shadowColor:'#131b2c',sideOffset:rank>=3?6:9,shadowOffset:rank>=3?12:18};
+  }
+
   function animatedArt(item, uid) {
+    if(item.rewardMode)return sideRewardArt(item,uid);
     if(item.id==='shop_dbtv')return {detail:item.detail,back:item.back,eyes:'<g class="dbtv-no-eyes"/>',mouth:'<path class="dbtv-smile" d="M54 84q0 14 10 14 8 0 9-10 1 10 9 10 10 0 10-14" fill="none" stroke="#14141d" stroke-width="4" stroke-linecap="round"/>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
     if (item.id === 'galactic_smith') {
       const id = name => `smith-${uid}-${name}`;
@@ -1987,7 +2137,9 @@ const CubieCustoms = (() => {
     const fit=`translate(22 22) scale(${scale}) translate(${-x-w/2} ${-y-h/2})`;
     const tier=Math.max(0,tierOrder.indexOf(item.tier)), uid=`arena-${++artId}`;
     let body=item.body, detail=item.detail || '', back=item.back || '';
-    if(item.expansion) {
+    if(item.rewardMode) {
+      const art=sideRewardArt(item,uid);detail=art.detail;back=art.back;
+    } else if(item.expansion) {
       const art=expansion.art(item, uid, true);
       detail=art.detail; back=art.back;
     } else if(tier>=3 || ['shop_toasted_marshmallow','shop_boba'].includes(item.id)) {

@@ -387,3 +387,21 @@ test('combined leaderboard returns current public Cubies and hides private equip
   await role('postgres');await db.query('update accounts_private.profiles set profile_visible=false where owner=$1',[first]);
   await role('anon');const row=(await board()).rows[0];assert.equal(row.cubie,'classic');assert.equal(row.public_id,null);
 });
+
+test('expanded games use atomic score receipts and support nearby rankings',async t=>{
+  const {db,role,apply,read,commit}=await setup(t);
+  for(const mode of ['coindrop','nanolab','treasure','tearesseract']){
+    const score=mode==='tearesseract'?30:1;
+    const operation=op(`side_${mode}`,'arcade',{event:'side-result',mode,score,won:true,level:1});
+    const firstResult=await apply(first,operation);
+    await commit(first,operation,firstResult.current,firstResult.next);
+    await role('authenticated',first);
+    const rows=(await db.query('select * from public.get_game_leaderboard($1,null,0,10,true)',[mode])).rows;
+    assert.equal(rows.length,1);assert.equal(rows[0].score,score);assert.equal(rows[0].is_you,true);
+    const current=await read(first);assert.ok(current.state.achievements.unlocked[`${mode}_milestone_1`]);
+  }
+  await apply(first,op('geo_start','run.start',{mode:'geomayhem',difficulty:'level_20'},'geo_ranked'));
+  await apply(first,op('geo_finish','run.finish',{outcome:'loss',snapshot:{mode:'geomayhem',difficulty:'level_20',geo_level:20,geo_waves:4,score:300,over:true,won:false}},'geo_ranked'));
+  await role('authenticated',first);
+  const geo=(await db.query("select * from public.get_game_leaderboard('geomayhem')")).rows;assert.equal(geo[0].score,300);
+});

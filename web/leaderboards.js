@@ -2,6 +2,7 @@
 
 const Leaderboards = (() => {
   const difficulties = Object.freeze({
+    geomayhem:Array.from({length:20},(_,i)=>`level_${i+1}`),coindrop:['standard'],nanolab:['standard'],tearesseract:['standard'],treasure:['standard'],
     hangman: ['easy', 'medium', 'hard'], keyboard: ['progressive', 'endurance'],
     dodge: ['easy', 'normal', 'hard', 'merciless', 'impossible', 'chaos'],
     boss: ['mean', 'cruel', 'nightmare', 'impossible'],
@@ -9,6 +10,7 @@ const Leaderboards = (() => {
     wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'starfall_verdict', 'pendulum_court', 'crown_chess', 'mirror_lances', 'briar_pursuit', 'eclipse_waltz', 'resonant_bells', 'royal_loom', 'random_order'].flatMap(attack => [attack, `${attack}__easy`, `${attack}__hard`]),
   });
   const multipliers = Object.freeze({
+    geomayhem:Object.fromEntries(Array.from({length:20},(_,i)=>[`level_${i+1}`,1])),coindrop:{standard:1},nanolab:{standard:1},tearesseract:{standard:1},treasure:{standard:1},
     hangman: { easy: 1, medium: 2.5, hard: 4 },
     keyboard: { progressive: 1, endurance: .5 },
     dodge: { easy: 1, normal: 1.75, chaos: 2.5, hard: 3.5, merciless: 4.75, impossible: 5.5 },

@@ -57,7 +57,7 @@ test('unfinished, mismatched, and other-mode observations cannot grant Geomayhem
   tracker.start('boss','mean');tracker.observe(state(1,{geo_kills:1000,over:true,won:true}));
   assert.equal(tracker.data.stats.geoKills,0);
 });
-test('account checkpoints persist rewards across reloads without giving arcade Cash or scores',()=>{
+test('account checkpoints persist rewards and completed expeditions rank without arcade Cash',()=>{
   let profile=Rules.initial(),serial=0;
   const apply=(kind,payload)=>{const result=Rules.apply(profile,{schema:1,id:`geo-${++serial}`,stream_id:'geo-device',run_id:'geo-run',kind,payload},{now:Date.parse('2026-11-07T12:00:00Z')});profile=result.state;return result;};
   apply('run.start',{mode:'geomayhem',difficulty:'level_10'});
@@ -68,5 +68,5 @@ test('account checkpoints persist rewards across reloads without giving arcade C
   const result=apply('run.finish',{outcome:'win',snapshot:{...snapshot,geo_waves:20,over:true,won:true}});
   assert.ok(profile.achievements.unlocked.geo_arena_10);
   assert.ok(profile.achievements.unlocked.geo_flawless_10);
-  assert.equal(profile.shop.units,0);assert.deepEqual(profile.scores,{});assert.equal(result.run.eligible,false);
+  assert.equal(profile.shop.units,0);assert.deepEqual(profile.scores,{'geomayhem:level_10':[{player:'Player',score:1000}]});assert.equal(result.run.eligible,true);
 });

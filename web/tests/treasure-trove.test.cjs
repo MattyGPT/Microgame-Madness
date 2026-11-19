@@ -1,9 +1,11 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {Round,difficulty}=require('../treasure-trove.js');
-test('difficulty increases chest count, shuffle count and speed within playable bounds',()=>{
+test('difficulty increases chest count, shuffle count and speed beyond the former caps',()=>{
   assert.equal(difficulty(1).count,3);assert.equal(difficulty(16).count,8);
   for(let i=2;i<100;i++){assert.ok(difficulty(i).count>=difficulty(i-1).count);assert.ok(difficulty(i).seconds<=difficulty(i-1).seconds);assert.ok(difficulty(i).swaps>=difficulty(i-1).swaps);}
-  assert.equal(difficulty(1000).seconds,.22);assert.equal(difficulty(1000).count,8);
+  for(const round of [25,100,1000,10000]){assert.ok(difficulty(round).seconds<difficulty(round-1).seconds);assert.ok(difficulty(round).swaps>difficulty(round-1).swaps);}
+  assert.ok(difficulty(1000).seconds<.22);assert.ok(difficulty(1000).count>difficulty(100).count);
+  const positions=new Round(1000).positions();assert.equal(new Set(positions.map(p=>`${p.x},${p.y}`)).size,positions.length);
 });
 test('all shuffle techniques preserve chest identities and exactly one correct answer',()=>{
   const techniques=new Set();let seed=8;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);

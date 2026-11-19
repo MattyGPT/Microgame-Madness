@@ -306,6 +306,20 @@ const Achievements = (() => {
   ];
   for (const [id,title,tier,description,stat,target] of geomayhemRewards)
     add(id,title,tier,'Geomayhem',description,stat,target);
+  const sideGames = [
+    {mode:'coindrop',name:'Coin Drop',stat:'coinBanked',unit:'coins in pockets',targets:[1,10,50,100,500,1000,5000],color:'#ffd77c',names:['Pocket Scout','Copper Collector','Golden Banker','Ruby Treasurer','Vault Keeper','Coin Constellation','Infinite Mint']},
+    {mode:'nanolab',name:'Nano Lab',stat:'nanoWins',unit:'nanogames',targets:[1,10,25,50,100,300,1000],color:'#c6a0ff',names:['Lab Apprentice','Quick Thinker','Pocket Professor','Nano Scholar','Brainstorm','Microverse Master','Infinite Curiosity']},
+    {mode:'treasure',name:'Treasure Trove',stat:'treasureBest',unit:'round',targets:[1,3,6,10,20,30,50],color:'#7ffff0',names:['Gem Spotter','Chest Tracker','Golden Compass','Fortune Finder','Crossing Captain','Treasure Admiral','All Seeing Gem']},
+    {mode:'tearesseract',name:'Tearesseract',stat:'teaAttacksBest',unit:'attacks in one ranked encounter',targets:[1,3,5,10,15,20,30],color:'#8eeaff',names:['Signal Wisp','Shield Spark','Containment Scout','Core Defender','Fracture Walker','Dimension Keeper','Impossible Overcome']},
+  ];
+  for(const game of sideGames)game.targets.forEach((target,index)=>add(
+    `${game.mode}_milestone_${target}`,game.names[index],['bronze','silver','gold','crystal','diamond','rainbow','empyrorite'][index],game.name,
+    game.mode==='treasure'?`Find the treasure in round ${target}.`:
+      game.mode==='coindrop'?`Bank ${target} non-mini ${game.unit} in total.`:
+      game.mode==='nanolab'?`Win ${target} ${game.unit} in Nano Lab. Lessons and closed games do not count.`:
+      `Clear ${target} ${game.unit}, without practice tools.`,game.stat,target));
+  add('tearesseract_win','Machine Unbound','empyrorite','Tearesseract','Defeat Tearesseract in a full encounter without practice tools.','teaWins',1);
+  add('tearesseract_wins_10','Beyond Containment','empyrorite','Tearesseract','Win ten full Tearesseract encounters without practice tools.','teaWins',10);
   // These must follow ordinary medals so the threshold-crossing event awards
   // its collector medal immediately. A collector never counts itself.
   for (const [tier, target, title] of [
@@ -407,6 +421,14 @@ const Achievements = (() => {
     completeForge() {
       return this.update(stats => { stats.galacticForge = 1; });
     }
+    sideResult(mode,{score=0,level=0,won=false}={}) {
+      return this.update(stats=>{
+        if(mode==='coindrop')stats.coinBanked+=score;
+        if(mode==='nanolab')stats.nanoWins+=score;
+        if(mode==='treasure'&&won)stats.treasureBest=Math.max(stats.treasureBest,level);
+        if(mode==='tearesseract'){stats.teaAttacksBest=Math.max(stats.teaAttacksBest,score);if(won)stats.teaWins++;}
+      });
+    }
     completeGaster() {
       return this.update(stats => { stats.gasterCompleted = 1; });
     }
@@ -426,7 +448,7 @@ const Achievements = (() => {
     observeGeomayhem(s) {
       const round = this.round;
       const level = Number(round.difficulty.slice(6));
-      if (!Number.isInteger(level) || level < 1 || level > 10 || s.geo_level !== level)
+      if (!Number.isInteger(level) || level < 1 || level > 20 || s.geo_level !== level)
         return { earned: [], changed: false };
       const kills = count(s.geo_kills), waves = Math.min(20, count(s.geo_waves));
       const newKills = Math.max(0, kills - (round.geoKills || 0));
@@ -592,7 +614,7 @@ const Achievements = (() => {
       });
     }
   }
-  return { catalog, points, Tracker, attackRewards };
+  return { catalog, points, Tracker, attackRewards, sideGames };
 })();
 if (typeof module !== "undefined") module.exports = Achievements;
 

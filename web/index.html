@@ -44,6 +44,7 @@
     <script src="./core-origin.js" defer></script>
     <script src="./jukebox-archive.js" defer></script>
     <script src="./music.js" defer></script>
+    <script src="./jukebox-search.js" defer></script>
     <script src="./crown-packs.js" defer></script>
     <script src="./collections.js" defer></script>
     <script src="./account-rules.js" defer></script>
@@ -2089,6 +2090,16 @@ A
                 <p id="jukebox-status" role="status" aria-live="polite">Choose a song to start listening.</p>
                 <button id="jukebox-pause" class="quiet-button" disabled>Pause</button>
                 <button id="jukebox-stop" class="quiet-button" disabled>Stop</button>
+              </div>
+              <div id="jukebox-search" hidden>
+                <label for="jukebox-search-input">Search arcade music</label>
+                <div class="jukebox-search-field">
+                  <input id="jukebox-search-input" type="search" placeholder="Try Boss Crush or 100 BPM and below" autocomplete="off" aria-describedby="jukebox-search-help" aria-controls="difficulty-choices jukebox-search-suggestions">
+                  <button type="button" class="quiet-button jukebox-search-clear" hidden>Clear</button>
+                </div>
+                <div id="jukebox-search-suggestions" class="jukebox-suggestions" role="group" aria-label="Search suggestions" hidden></div>
+                <p id="jukebox-search-help">Search songs, categories, or tempo. Combine them to narrow your results.</p>
+                <p role="status" aria-live="polite"></p>
               </div>
               <h4 id="difficulty-title">Choose a difficulty to play</h4>
               <section id="geomayhem-loadout" class="geomayhem-loadout" aria-label="Geomayhem armory" hidden>

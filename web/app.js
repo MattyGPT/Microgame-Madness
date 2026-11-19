@@ -3,7 +3,7 @@
 CrownPacks.install(CubieCustoms, TurtleCustoms, TurtleTrails);
 const $ = (id) => document.getElementById(id);
 document.querySelector('[data-game="treasure"] .card-art').innerHTML=TreasureTrove.chest();
-const treasureTrove=new TreasureTrove.Game($('treasure-room'),{owner:()=>accountApp?.controller?.state().owner||'guest'});
+const treasureTrove=new TreasureTrove.Game($('treasure-room'),{owner:()=>accountApp?.controller?.state().owner||'guest',blocked:()=>!accountApp||accountApp.blocked,onResult:(owner,result)=>recordSideResult(owner,'treasure',result)});
 const jukeboxNote = document.querySelector('[data-game="jukebox"] .card-art');
 const jukeboxCard = jukeboxNote?.closest('.game-card');
 const guideCard = document.querySelector('[data-game="guide"]');
@@ -20,7 +20,7 @@ const modes = {
   treasure: {title:"Treasure Trove",category:"TREASURE TRACKING",art:"◇",heading:"Keep your eyes on the prize.",copy:"One hidden gem. More chests, faster shuffles, and trickier crossings each round.",accent:"#ffda83",controls:"Watch the gem · Follow its chest · Tap, click, or use Tab + Enter to choose",localOnly:true,temporary:true,difficulties:{}},
   turtles: {title:"Custom Turtles",category:"TURTLE WARDROBE",art:"♧",heading:"A shell for every adventure.",copy:"Explore elemental collections and temporary #1 packs.",accent:"#77efcf",controls:"Open a collection · Preview and equip your turtles",localOnly:true,temporary:true,difficulties:{}},
   trails: {title:"Turtle Trails",category:"TRAIL GALLERY",art:"✧",heading:"Leave a little wonder behind.",copy:"Browse glowing wakes by tier, color, and theme.",accent:"#d6a3ff",controls:"Open a collection · Preview and equip your trails",localOnly:true,temporary:true,difficulties:{}},
-  nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 300 nanogames, no campaign rewards.", accent:"#cfadff", controls:"Choose a nanogame to practice · No currency or campaign changes", localOnly:true, temporary:true, difficulties:{}},
+  nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 300 nanogames. Win achievements, Cubies, and leaderboard points.", accent:"#cfadff", controls:"Choose a nanogame or play at random · Wins earn rewards · Coin Drop currencies stay separate", localOnly:true, temporary:true, difficulties:{}},
   coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "100 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
   guide: {
     title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
@@ -1588,10 +1588,17 @@ function showScores() {
     $("scores-list").replaceChildren(row);
     return;
   }
+  const sideGame=Achievements.sideGames.find(game=>game.mode===selected);
+  if(sideGame){
+    const total=achievementTracker.data.stats[sideGame.stat]||0;
+    $("best").textContent=total;
+    const row=document.createElement('li');row.textContent=`${total} ${selected==='treasure'?'best round':selected==='nanolab'?'Nano Lab wins':'banked coins'}. Earn achievements and Cubies as you play. Open Global for lifetime rankings.`;
+    $("scores-list").replaceChildren(row);return;
+  }
   if (modes[selected].temporary) {
     $("best").textContent = "—";
     const row = document.createElement("li");
-    row.textContent = selected === "coindrop" ? "Coin Drop saves its campaign and upgrades in this browser for your arcade profile. Collect Cubie Dots, rare Ruby Shards, and minicoin scrap." : selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : selected === "nanolab" ? "Nano Lab practice — rewards and campaign progress are not saved." : "Temporary practice — records are not saved.";
+    row.textContent = selected === "coindrop" ? "Coin Drop saves its campaign and upgrades in this browser for your arcade profile. Collect Cubie Dots, rare Ruby Shards, and minicoin scrap." : selected === "guide" ? "Learn the Chaos blocks here, then choose Turtle Dodge → Chaos to play." : selected === "shop" ? "Play games to earn Cubie Cash. Spend it here on Cubie Customs, Turtle Customs, and Turtle Trails." : selected === "customs" ? "Collect Customs through achievements and the Cubie Shop." : selected === "jukebox" ? "Just music. Pick a song and enjoy." : selected === "nanolab" ? "Nano Lab wins earn achievements, Cubies, and leaderboard points. Coin Drop currencies and campaign stay separate." : "Temporary practice — records are not saved.";
     $("scores-list").replaceChildren(row);
     return;
   }
@@ -1628,6 +1635,7 @@ function saveRound() {
       roundNewPersonalBest = snapshot.cleared > (geomayhemRun.store.read().best[snapshot.level] || 0);
       geomayhemResult = geomayhemRun.store.finish(geomayhemRun.id, snapshot);
     }
+    if(snapshot.over)publishGlobalScore({mode:'geomayhem',difficulty:selectedDifficulty,player:currentPlayer,score:snapshot.score,runId:accountApp?.lastFinishedRun?.id||geomayhemRun?.id});
     return;
   }
   accountApp?.finish(snapshot, snapshot.over ? (snapshot.won ? "win" : "loss") : "exit");
@@ -1647,6 +1655,18 @@ function saveRound() {
   publishGlobalScore({ mode: selected, difficulty: selectedDifficulty, player: currentPlayer, score: snapshot.score,
     runId: accountApp?.lastFinishedRun?.id });
 }
+async function recordSideResult(owner,mode,result) {
+  if(!accountApp?.controller||owner!==accountApp.controller.state().owner||accountApp.blocked)return;
+  const id=crypto.randomUUID();
+  const payload={event:'side-result',mode,...result};
+  updateAchievements(achievementTracker.sideResult(mode,result));
+  try {
+    await accountApp.enqueue('arcade',payload,{id});
+    if(owner!==accountApp.controller.state().owner)return;
+    showScores();
+    if(result.score>0)await publishGlobalScore({mode,difficulty:'standard',score:result.score,player:saved.player||'Player',runId:id});
+  } catch(error){accountApp.message(error.message);}
+}
 // The cloud identity uses its own key; never replace the existing local profile.
 const leaderboardReady = fetch("./leaderboard-config.json", { cache: "no-store" })
   .then(response => response.ok ? response.json() : {})
@@ -1659,16 +1679,18 @@ let submissionRequest = 0;
 function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
-    `${modes[mode].difficulties[difficulty][0]} ×${multiplier}`);
-  $("leaderboard-multipliers").textContent = mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · ");
+    `${modes[mode]?.difficulties[difficulty]?.[0] || (difficulty === "standard" ? "Standard" : difficulty.replace("level_", "Arena "))} ×${multiplier}`);
+  const scoring={geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
+  $("leaderboard-multipliers").textContent = scoring[mode] || (mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · "));
 }
 function initializeGlobalLeaderboards() {
-  $("leaderboard-game").replaceChildren(...Object.entries(modes).filter(([, config]) => !config.localOnly).map(([value, config]) => {
+  $("leaderboard-game").replaceChildren(...Object.entries(Leaderboards.difficulties).map(([mode])=>[mode,{title:modes[mode]?.title||'Tearesseract'}]).map(([value, config]) => {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = config.title;
     return option;
   }));
+  $("leaderboard-game").value="hangman";
   updateGlobalMultipliers();
   $("leaderboard-game").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; updateGlobalMultipliers(); loadGlobalScores(); };
   $("leaderboard-season").onchange = () => { leaderboardOffset = 0; leaderboardAroundMe = false; loadGlobalScores(); };
@@ -1741,14 +1763,14 @@ async function loadGlobalScores() {
       portrait.innerHTML = CubieCustoms.svg(cubie);
       name.classList.add("global-player-name");
       name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
-      score.textContent = `${entry.score}${mode === "keyboard" ? " rounds" : " pts"}`;
+      score.textContent = `${entry.score}${({keyboard:" rounds",coindrop:" coins",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(rank, portrait, name, score);
       $("global-scores").append(row);
     }
     $("leaderboard-previous").disabled = leaderboardOffset === 0 || leaderboardAroundMe;
     $("leaderboard-next").disabled = rows.length < 10 || leaderboardAroundMe;
-    $("leaderboard-status").textContent = rows.length ? "All difficulties combined. Weighted lifetime total, rounded to the nearest whole number." : "No scores yet. Set the first record!";
+    $("leaderboard-status").textContent = rows.length ? "Total points for the selected period. Scoring rules are shown above." : "No scores yet. Set the first record!";
   } catch (error) {
     if (request === globalRequest) $("leaderboard-status").textContent = error.message;
   } finally {
@@ -2048,6 +2070,7 @@ function selectGame(mode) {
   selectedDifficulty = null;
   jukeboxPaused = false;
   $("jukebox-controls").hidden = mode !== "jukebox";
+  $("jukebox-search").hidden = mode !== "jukebox";
   $("customs-room").hidden = mode !== "customs";
   $("collection-room").hidden = !["turtles","trails"].includes(mode);
   treasureTrove.setVisible(mode==="treasure");
@@ -2121,6 +2144,7 @@ function selectGame(mode) {
       return button;
     }),
   );
+  if(mode === "jukebox") jukeboxSearch.refresh();
   [
     "hangman-game",
     "keyboard-game",
@@ -2179,7 +2203,7 @@ function startGame(difficulty) {
   resetDamageFeedback();
   turtleTrailField.reset();
   selectedDifficulty = difficulty;
-  if (!modes[selected].localOnly) {
+  if (Leaderboards.difficulties[selected]) {
     $("leaderboard-game").value = selected;
     updateGlobalMultipliers();
     if (!$("global-panel").hidden) loadGlobalScores();
@@ -2959,7 +2983,7 @@ for (const letter of "abcdefghijklmnopqrstuvwxyz") {
   button.onclick = () => guess(letter);
   $("alphabet").append(button);
 }
-const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn && !$("autumn-room")?.open, blocked: () => !!accountApp?.blocked});
+const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn && !$("autumn-room")?.open, blocked: () => !!accountApp?.blocked,onResult:(owner,mode,result)=>recordSideResult(owner,mode,result)});
 document
   .querySelectorAll("[data-game]")
   .forEach(
@@ -3563,6 +3587,7 @@ function seekJukebox(seconds) {
   }
   updateJukeboxProgress();
 }
+const jukeboxSearch=JukeboxSearch.mount($("jukebox-search"),jukeboxTracks,$("difficulty-choices"));
 function renderJukebox() {
   document.querySelectorAll('[data-song-progress]').forEach(progress => {
     progress.hidden = progress.dataset.songProgress !== selectedDifficulty;
@@ -4476,6 +4501,41 @@ function forgeTimingHit(position, center, width, markerHalfWidth) {
     && position - markerHalfWidth <= center + width/2 + 1e-9;
 }
 
+function showCrownCelebration() {
+  const owner=accountApp?.controller?.state().owner;
+  let dialog=$('crown-celebration');
+  if(dialog?.open){
+    if(dialog.dataset.owner!==owner||JSON.parse(dialog.dataset.modes).some(mode=>!CrownPacks.has(mode)))dialog.close();
+    return;
+  }
+  if(document.hidden||!owner||active||['coindrop','nanolab','treasure'].includes(selected)||document.querySelector('dialog[open]'))return;
+  const packs=CrownPacks.celebrations();
+  if(!packs.length)return;
+  if(!dialog){
+    dialog=document.createElement('dialog');dialog.id='crown-celebration';dialog.className='account-dialog crown-celebration';
+    dialog.setAttribute('aria-labelledby','crown-celebration-title');dialog.setAttribute('aria-describedby','crown-celebration-note');
+    dialog.innerHTML='<div class="crown-celebration-emblem" aria-hidden="true"><svg viewBox="0 0 80 64" width="80" height="64"><path d="M9 13l17 14L40 6l14 21 17-14-9 38H18Z" fill="#ffdc78" stroke="#fff1bd" stroke-width="2"/><path d="M20 44h40M20 56h40" stroke="#b98236" stroke-width="5"/><path d="m40 26 6 8-6 8-6-8Z" fill="#fff8dc"/></svg></div><p class="crown-celebration-kicker">EXCLUSIVE · LEADERBOARD CHAMPION</p><h2 id="crown-celebration-title">You’re #1!</h2><p id="crown-celebration-note">Your crown packs are ready to equip. Each includes an exclusive Cubie, turtle, and turtle trail. Keep first place to keep using them!</p><div id="crown-celebration-packs"></div><div class="crown-celebration-actions"><button id="crown-celebration-view" type="button">View Exclusive packs</button><button id="crown-celebration-close" type="button" autofocus>Keep playing</button></div>';
+    document.body.append(dialog);
+    $('crown-celebration-close').onclick=()=>dialog.close();
+    $('crown-celebration-view').onclick=()=>{dialog.close();selectGame('customs');$('customs-search').value='';cubieGroup='exclusive';updateCustomsSearch();$('cubie-groups-back').focus();};
+  }
+  $('crown-celebration-packs').replaceChildren(...packs.map(pack=>{
+    const card=document.createElement('section');card.className='crown-celebration-pack';card.style.setProperty('--pack-color',pack.color);
+    const title=document.createElement('h3');title.textContent=`#1 in ${pack.game}`;
+    const name=document.createElement('p');name.textContent=pack.name;
+    const art=document.createElement('div');art.className='crown-celebration-rewards';
+    for(const [kind,label] of [['cubie','Cubie'],['turtle','Turtle'],['trail','Turtle trail']]){
+      const figure=document.createElement('figure');figure.innerHTML=CrownPacks.art({crown:pack.mode,id:`crown_${pack.mode}_${kind}`},kind);
+      const caption=document.createElement('figcaption');caption.textContent=label;figure.append(caption);art.append(figure);
+    }
+    card.append(title,name,art);return card;
+  }));
+  dialog.dataset.owner=owner;dialog.dataset.modes=JSON.stringify(packs.map(g=>g.mode));
+  dialog.showModal();
+  CrownPacks.acknowledge(packs.map(g=>g.mode));
+  playSound('achievement');
+}
+
 let crownRefreshBusy=false;
 async function refreshCrowns() {
   if(crownRefreshBusy)return;
@@ -4486,6 +4546,7 @@ async function refreshCrowns() {
     if(accountApp.session)client.accountSession=accountApp.session;
     const before=CrownPacks.games.map(g=>CrownPacks.has(g.mode)).join();
     await CrownPacks.refresh(client,accountApp.controller?.state().owner||null);
+    showCrownCelebration();
     if(before===CrownPacks.games.map(g=>CrownPacks.has(g.mode)).join())return;
     applyCubieCustom();
     if(selected==='customs')renderCustoms();
@@ -4500,6 +4561,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshCro
 // Expire visible equipment even if a ranking request stalls indefinitely.
 setInterval(()=>{
   if(document.hidden)return;
+  showCrownCelebration();
   renderTurtleTabIcons();
   const expected=CubieCustoms.selected(CrownPacks.equipped('cubie',saved.cubieCustom),achievementTracker.data.unlocked,saved.shop.owned,saved.testerTon618);
   if($('cube').dataset.custom!==expected.id){applyCubieCustom();if(selected==='customs')renderCustoms();}

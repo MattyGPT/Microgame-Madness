@@ -5,6 +5,10 @@ const { test, expect, openGame, routeLocalRuntime } = require('./fixtures/game.c
 test.use({ deterministicMusic: true });
 
 async function mockGlobalLeaderboards(page, service) {
+  // Ranking tests acknowledge the separately tested champion celebration.
+  await page.addLocatorHandler(page.locator('#crown-celebration[open]'), async () => {
+    await page.locator('#crown-celebration-close').click();
+  });
   await page.route('**/leaderboard-config.json', route => route.fulfill({
     json: { url: 'https://leaderboard.test', key: 'sb_publishable_browser_test' },
   }));
@@ -101,10 +105,10 @@ test('global rankings have one combined board per game without a difficulty filt
     await page.locator('#leaderboard-game').selectOption(mode);
     await expect(page.locator('#leaderboard-status')).toHaveText('No scores yet. Set the first record!');
     await expect.poll(() => service.requested.has(mode)).toBe(true);
-    await expect(page.locator('#leaderboard-multipliers')).toContainText('×1');
+    await expect(page.locator('#leaderboard-multipliers')).toContainText(['coindrop','nanolab','treasure','tearesseract'].includes(mode) ? '1 point' : '×1');
   }
   await expect(page.locator('#leaderboard-difficulty')).toHaveCount(0);
-  expect(service.requested.size).toBe(6);
+  expect([...service.requested].sort()).toEqual(Object.keys(modes).sort());
   expect(service.guests).toBe(1); // Default-on sharing establishes a guest identity.
   await page.locator('#global-tab').press('End');
   await expect(page.locator('#global-tab')).toBeFocused();

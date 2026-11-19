@@ -209,8 +209,8 @@ const CoinDrop = (() => {
     return true;
   }
   class Controller {
-    constructor(root,{owner=()=> 'guest',sound=()=>true,blocked=()=>false}={}) {
-      this.root=root;this.owner=owner;this.sound=sound;this.blocked=blocked;this.coins=[];this.particles=[];this.aim=420;this.charge=1;this.clock=0;this.paused=false;this.visible=false;this.branch='mint';this.buyAmount=1;this.buyAllAmount=1;this.craftAmount=1;this.tab='board';this.last=0;this.musicStep=0;this.beat=0;
+    constructor(root,{owner=()=> 'guest',sound=()=>true,blocked=()=>false,onResult=()=>{}}={}) {
+      this.root=root;this.owner=owner;this.sound=sound;this.blocked=blocked;this.onResult=onResult;this.coins=[];this.particles=[];this.aim=420;this.charge=1;this.clock=0;this.paused=false;this.visible=false;this.branch='mint';this.buyAmount=1;this.buyAllAmount=1;this.craftAmount=1;this.tab='board';this.last=0;this.musicStep=0;this.beat=0;
       this.root.innerHTML=`<div class="cd-top"><div><span class="cd-kicker">THE CUBIE CASH MACHINE</span><h3>Coin Drop <span>●</span></h3></div><div class="cd-wallet"><span>● <b id="cd-dots">0</b><small>Cubie Dots</small></span><span>◆ <b id="cd-rubies">0</b><small>Ruby Shards</small></span><span>◌ <b id="cd-scrap">0</b><small>Minicoin scrap</small></span></div></div>
       <p class="cd-instructions">Land in a purple pocket to play a bonus nanogame, then resume your drop. Complete a DOT bank with one coin for +25% pocket payout. Gates blink open; slingshots launch coins inward. Zoom to explore the table. Free drops. Aim and click the board, or use ← → and Space. Gold pockets pay more; red pegs can reveal Ruby Shards. Each world's goal counts all dots earned there, even after spending.</p>
       <nav class="cd-tabs" aria-label="Coin Drop sections"><button data-tab="board">Drop zone</button><button data-tab="maps">${maps.length} worlds</button><button data-tab="tree">Upgrade tree · ${nodes.length}</button><button data-tab="forge">Minicoin forge</button></nav>
@@ -220,7 +220,7 @@ const CoinDrop = (() => {
       <section data-panel="maps" hidden><h4>Your ${maps.length}-world expedition</h4><p>Clear each dot target to unlock the next world. Revisit cleared worlds to collect more resources. Switching worlds retires unfinished drops and keeps all collected rewards.</p><div id="cd-maps" class="cd-maps"></div></section>
       <section data-panel="tree" hidden><h4>A little coin. An enormous future.</h4><p>${branches.length} branches · ${nodes.length} connected discoveries · repeatable ranks. Buy any node once to open the next. Later tiers give stronger ranks; deeper nodes cost Ruby Shards or minicoin scrap.</p><div class="cd-buy-all"><h4>Buy all categories</h4><p>Buy one batch of the highest unlocked, affordable tier in each category. Categories are visited in their displayed order using your remaining currency; unaffordable categories are skipped.</p><div class="cd-buy-amounts" role="group" aria-label="Buy all purchase amount">${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-all-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><button type="button" id="cd-buy-all">Buy all</button><p id="cd-buy-all-summary" aria-live="polite"></p><details><summary>Preview upgrades</summary><ul id="cd-buy-all-preview"></ul></details></div><div class="cd-buy-amounts" role="group" aria-label="Upgrade purchase amount"><span>Buy ranks</span>${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Prices include every rank’s increasing cost. Buy the full amount at once.</p><div id="cd-branches" class="cd-branches"></div><div id="cd-tree" class="cd-tree"></div></section>
       <section data-panel="forge" hidden><h4>Small coins. Big ideas.</h4><p>Unlock Tiny Friends in the Minicoins branch. Their pocket landings create scrap as well as dots. Turn that scrap into useful machinery.</p><div class="cd-buy-amounts" role="group" aria-label="Forge purchase amount"><span>Craft batches</span>${FORGE_AMOUNTS.map(n=>`<button type="button" data-craft-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Each recipe describes one craft. Buttons show the total scrap cost for your selected batch.</p><div class="cd-recipes"><article><span>ϟ</span><h4>Overdrive capsule</h4><p>At least double dots for your next 10 drops. Overdrive upgrades increase the multiplier.</p><button data-craft="boost">Craft · 20 scrap</button></article><article><span>◆</span><h4>Ruby synthesis</h4><p>Compress 60 minicoin scrap into 3 rare Ruby Shards.</p><button data-craft="ruby">Synthesize · 60 scrap</button></article><article><span>●</span><h4>Dot condenser</h4><p>Convert 50 scrap into 2% of this world's target, multiplied by Expedition upgrades.</p><button data-craft="dots">Condense · 50 scrap</button></article></div><p id="cd-boosts"></p></section>
-      <section data-panel="lab" hidden><span class="cd-kicker">NANO LAB · PRACTICE ONLY</span><h4>Nano Lab</h4><p>Learn the skills behind each challenge, then practice. Lessons are untimed. Wins, losses, and skips here never change your currencies or campaign.</p><div class="cd-lab-filters"><label>World <select id="cd-lab-world"><option value="all">All ${maps.length} worlds</option></select></label><label>Find a game <input id="cd-lab-search" type="search" placeholder="Name or challenge…" /></label></div><div id="cd-lab-grid" class="cd-lab-grid"></div></section><p id="cd-lab-result" role="status" aria-live="polite" hidden>Choose any nanogame to practice.</p>
+      <section data-panel="lab" hidden><span class="cd-kicker">NANO LAB · PLAY & LEARN</span><h4>Nano Lab</h4><p>Learn the skills behind each challenge, then practice. Lessons are untimed. Wins earn achievements, Cubies, and leaderboard points. Your Coin Drop currencies and campaign stay separate.</p><button id="cd-lab-random" type="button">Play random nanogame</button><div class="cd-lab-filters"><label>World <select id="cd-lab-world"><option value="all">All ${maps.length} worlds</option></select></label><label>Find a game <input id="cd-lab-search" type="search" placeholder="Name or challenge…" /></label></div><div id="cd-lab-grid" class="cd-lab-grid"></div></section><p id="cd-lab-result" role="status" aria-live="polite" hidden>Choose any nanogame to practice.</p>
       <p id="cd-status" role="status" aria-live="polite">Aim for the gold. Your first world awaits.</p><p id="cd-save" class="cd-note">Progress saves in this browser for your arcade profile.</p>`;
       this.canvas=root.querySelector('canvas');this.ctx=this.canvas.getContext('2d');
       const svg=document.querySelector('.shop-coin-front')?.cloneNode(true);
@@ -242,6 +242,7 @@ const CoinDrop = (() => {
       document.addEventListener('visibilitychange',()=>{this.last=0;this.silence();});
       this.$('cd-lab-world').append(...maps.map(m=>{const option=document.createElement('option');option.value=m.id;option.textContent=`${m.id+1} · ${m.name}`;return option;}));
       this.$('cd-lab-world').onchange=this.$('cd-lab-search').oninput=()=>this.renderLab();
+      this.$('cd-lab-random').onclick=()=>this.startNanoTest(nanogames[Math.floor(Math.random()*nanogames.length)].id);
       this.setupNano();this.load();this.setTab('board');requestAnimationFrame(t=>this.frame(t));
     }
     $(id){return this.root.querySelector('#'+id);}
@@ -333,12 +334,12 @@ const CoinDrop = (() => {
         prize:Math.ceil(payoutProduct(300,maps[this.p.map].value,1+rank(this.p,'mint')*.12,1+rank(this.p,'nano')*.25,coin.boost))};
       const game=nanogames.find(g=>g.id===pocket.game);this.nano.config=game;
       this.nanoDialog.dataset.game=game.id;this.nanoDialog.dataset.kind=game.kind||game.id;const hue=[207,268,164,35,335][Math.floor(nanogames.indexOf(game)/3)%5];this.nanoDialog.style.setProperty('--nano-hue',hue);
-      this.nanoDialog.querySelector('.cd-kicker').textContent=testing?'NANO LAB · PRACTICE ONLY':'POCKET NANOGAME · BOARD PAUSED';
+      this.nanoDialog.querySelector('.cd-kicker').textContent=testing?'NANO LAB · PLAY & LEARN':'POCKET NANOGAME · BOARD PAUSED';
       this.$('cd-nano-skip').textContent=testing?'Close practice':'Skip & resume drop';
       this.$('cd-nano-title').textContent=game.title;this.$('cd-nano-rules').textContent=game.rules;
       this.$('cd-nano-prize').textContent=`Win: ${fmt(payoutProduct(this.nano.prize+(game.ruby||game.scrap?0:100),1.5**Math.min(150,rank(this.p,'expedition'))))} Cubie Dots`+(game.ruby?' + 5 Ruby Shards':game.scrap?' + 25 minicoin scrap':'');
       this.$('cd-lab-result').hidden=true;
-      if(testing){this.$('cd-nano-prize').textContent='Nano Lab practice · no rewards or progress changes';}
+      if(testing){this.$('cd-nano-prize').textContent='Nano Lab · Win for achievements, Cubies, and leaderboard points';}
       this.$('cd-nano-lesson').hidden=!testing;this.$('cd-nano-lesson').open=false;this.$('cd-nano-lesson-body').replaceChildren();if(testing)Lessons.render(this.$('cd-nano-lesson-body'),game);
       this.$('cd-nano-stage').replaceChildren();this.$('cd-nano-feedback').textContent=testing?'Read the lesson or start when you’re ready. No timer is running.':'Your coin is safe. Start when you’re ready.';this.$('cd-nano-start').hidden=false;
       this.nanoDialog.showModal();this.$('cd-nano-start').focus();this.silence();
@@ -420,12 +421,13 @@ const CoinDrop = (() => {
     }
     finishNano(won,reason='result'){
       const n=this.nano;if(!n)return;
+      if(n.testing&&n.phase==='playing'&&reason!=='closed')this.onResult?.(this.identity,'nanolab',{score:won?1:0,won:!!won});
       {
         this.closeNano();const result=this.$('cd-lab-result'),outcome=won?'win':reason==='closed'?'closed':'loss';
         result.dataset.outcome=outcome;result.hidden=false;result.replaceChildren();
         const badge=document.createElement('strong'),text=document.createElement('span'),retry=document.createElement('button'),dismiss=document.createElement('button');
         badge.className='cd-result-badge';badge.textContent=outcome.toUpperCase();
-        text.textContent=`${n.config.title}: ${won?'You win!':outcome==='closed'?(n.testing?'Practice closed.':'Skipped.'):reason==='timeout'?'You lose — time ran out.':'You lose.'} ${n.testing?'Practice only — no rewards saved.':outcome==='closed'?'Nanogame skipped — resuming your drop.':won?'Bonus collected — resuming your drop.':'Your coin is back in play.'}`;
+        text.textContent=`${n.config.title}: ${won?'You win!':outcome==='closed'?(n.testing?'Practice closed.':'Skipped.'):reason==='timeout'?'You lose — time ran out.':'You lose.'} ${n.testing?'Nano Lab wins count toward achievements and rankings.':outcome==='closed'?'Nanogame skipped — resuming your drop.':won?'Bonus collected — resuming your drop.':'Your coin is back in play.'}`;
         retry.textContent='Try again';retry.onclick=()=>this.startNanoTest(n.game);dismiss.textContent='Dismiss';dismiss.onclick=()=>{result.hidden=true;};
         result.append(badge,text);if(n.testing)result.append(retry);result.append(dismiss);
         if(n.testing){this.last=0;return;}
@@ -484,7 +486,7 @@ const CoinDrop = (() => {
         if(c.deepestY===undefined||c.y>c.deepestY+20){c.deepestY=c.y;c.noProgress=0;}else c.noProgress=(c.noProgress||0)+dt;
         if(c.stallTime>1.4||c.noProgress>4.5){c.noProgress=0;c.nudges=(c.nudges||0)+1;c.vx=(c.nudges%2?1:-1)*150;c.vy=-95;c.stallTime=0;}
 
-        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(payoutProduct(mult,8,map.value,1+rank(p,'mint')*.12,combo,c.pocketBonus,1+rank(p,'pocket')*.2,crit?3:1,c.mini?.2*(1+rank(p,'mini')*.1):1,c.boost));const scrap=c.mini?Math.max(1,Math.floor(1+rank(p,'forge')*.2+rank(p,'salvage'))):0;this.reward(val,0,scrap);c.dead=true;changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
+        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(payoutProduct(mult,8,map.value,1+rank(p,'mint')*.12,combo,c.pocketBonus,1+rank(p,'pocket')*.2,crit?3:1,c.mini?.2*(1+rank(p,'mini')*.1):1,c.boost));const scrap=c.mini?Math.max(1,Math.floor(1+rank(p,'forge')*.2+rank(p,'salvage'))):0;this.reward(val,0,scrap);c.dead=true;if(!c.mini)this.onResult?.(this.identity,'coindrop',{score:1,won:true});changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
       }
       this.coins=this.coins.filter(c=>!c.dead);this.particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;});this.particles=this.particles.filter(p=>p.life>0);if(changed){this.save();this.renderStats();}
       this.$('cd-drop').disabled=this.charge<1;this.$('cd-drop').style.setProperty('--charge',`${this.charge*100}%`);

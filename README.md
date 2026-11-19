@@ -121,3 +121,23 @@ If it is already installed for the current login, use
 `systemctl --user restart microgame-preview`. This remains a loopback-only service;
 do not expose it on the public site. Public News and invited-account moderation
 are delivered through the static site and authenticated database API.
+
+### Expanded game rewards and rankings
+
+Geomayhem retains its existing achievement and Cubie rewards and now ranks total
+points from completed expeditions across all 20 arenas. Coin Drop, Nano Lab,
+Treasure Trove, and Tearesseract add 30 achievements and 28 permanent Cubies.
+
+- Coin Drop: one leaderboard point per banked non-mini coin; upgrade currencies stay separate.
+- Nano Lab: one point per win. Closing a challenge or reading a lesson earns no points. The random button selects from all 300 nanogames.
+- Treasure Trove: one point per correct treasure; achievements use the highest round won.
+- Tearesseract: cleared attacks from full encounters that end in defeat or victory. Attack loading, ending previews, and any use of invincibility disqualify that encounter.
+
+All five games have temporary #1 Cubie, Turtle, and Trail packs. Crown ownership
+is checked against the all-time combined leaderboard and expires when unverified
+or when another player takes first place. Every crown Turtle uses turtle anatomy
+and a game-specific shell emblem.
+
+Cloud rollout requires migration `20261119000005_expanded_combined_leaderboards.sql`
+and redeployment of the `accounts` function with the updated shared rules and
+catalogs. Local profile rewards work without a configured leaderboard service.

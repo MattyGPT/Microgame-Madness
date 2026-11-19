@@ -4,6 +4,7 @@ import hashlib
 import json
 import base64
 import os
+import re
 import shutil
 import sys
 from urllib.parse import urlsplit
@@ -109,17 +110,10 @@ def build():
     finally:
         sys.path.pop(0)
     html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
-    for name in ("news.js", "news.css", "autumn-room.js", "autumn-room.css", "tearesseract-theme.mp3", "tearesseract-prelude.mp3", "tearesseract-death.js", "jukebox-archive.js", "tearesseract-icon.js", "tearesseract.html", "tearesseract.js", "style.css", "crown-packs.js", "treasure-trove.js", "treasure-trove.css", "collections.js", "app.js", "coin-drop.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-nano-music.js", "coin-drop-lessons.js", "coin-drop.css", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
+    for name in ("news.js", "news.css", "autumn-room.js", "autumn-room.css", "tearesseract-theme.mp3", "tearesseract-prelude.mp3", "tearesseract-death.js", "jukebox-archive.js", "jukebox-search.js", "tearesseract-icon.js", "tearesseract.html", "tearesseract.js", "tearesseract-progress.js", "style.css", "crown-packs.js", "treasure-trove.js", "treasure-trove.css", "collections.js", "app.js", "coin-drop.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-nano-music.js", "coin-drop-lessons.js", "coin-drop.css", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
-    # Standalone encounter assets must refresh together after deployment.
-    encounter_path = OUTPUT / "tearesseract.html"
-    encounter_html = encounter_path.read_text()
-    for name in ("tearesseract.js", "tearesseract-death.js", "tearesseract-theme.mp3", "tearesseract-prelude.mp3"):
-        version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
-        encounter_html = encounter_html.replace(f'"./{name}"', f'"./{name}?v={version}"')
-    encounter_path.write_text(encounter_html)
     shutil.copy2(ROOT / "shared" / "account-rules.js", OUTPUT / "account-rules.js")
     account_names = ("store.js", "session.js", "sync.js", "app.js", "welcome.js", "profile.css")
     (OUTPUT / "accounts").mkdir()
@@ -138,6 +132,13 @@ def build():
         version = hashlib.sha256((OUTPUT / "ops" / name).read_bytes()).hexdigest()[:12]
         ops_html = ops_html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     (OUTPUT / "ops" / "usage.html").write_text(ops_html)
+    # Standalone encounter assets must refresh together after deployment.
+    encounter_path = OUTPUT / "tearesseract.html"
+    encounter_html = encounter_path.read_text()
+    for name in (*re.findall(r'src="\./([^"?]+)"', encounter_html), "tearesseract-theme.mp3", "tearesseract-prelude.mp3"):
+        version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
+        encounter_html = encounter_html.replace(f'"./{name}"', f'"./{name}?v={version}"')
+    encounter_path.write_text(encounter_html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
     python_dir = OUTPUT / "python"
     python_dir.mkdir()

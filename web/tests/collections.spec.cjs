@@ -28,7 +28,7 @@ test('group covers open overlapping Cubie, turtle and trail galleries',async({pa
 });
 test('verified first place equips a temporary pack; losing it restores normal equipment',async({page})=>{
   await openGame(page);await leaveFullscreen(page);
-  await page.evaluate(async()=>{await accountApp.ready;await CrownPacks.refresh({configured:true,listGame:async()=>[{rank:1,is_you:true}]},accountApp.controller.state().owner);selectGame('customs');});
+  await page.evaluate(async()=>{await accountApp.ready;await CrownPacks.refresh({configured:true,listGame:async()=>[{rank:1,is_you:true}]},accountApp.controller.state().owner);CrownPacks.acknowledge(CrownPacks.games.map(g=>g.mode));selectGame('customs');});
   await page.locator('#cubie-groups [data-group="exclusive"]').click();
   await page.locator('[data-custom="crown_keyboard_cubie"] .custom-equip').click();
   await expect(page.locator('#cube')).toHaveAttribute('data-custom','crown_keyboard_cubie');

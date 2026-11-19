@@ -4987,6 +4987,17 @@ html.account-reduced-motion .regent-song::after{opacity:0}
 .game-card[data-game="turtles"],.game-card[data-game="turtles"] *{animation:none!important;transition:none!important}
 .custom-equip.too-expensive{background:#343a40!important;border-color:#646c74!important;color:#c3c8ce!important;box-shadow:none!important}
 
+#jukebox-search {width:100%;max-width:760px;margin:24px auto;text-align:left;}
+#jukebox-search label {display:block;margin-bottom:9px;font-weight:700;color:#f5a5dc;}
+.jukebox-search-field {display:flex;gap:8px;}
+#jukebox-search-input {min-width:0;flex:1;width:100%;padding:13px 15px;border:1px solid #796185;border-radius:12px;background:#151322;color:#fff;font:inherit;}
+#jukebox-search-input:focus-visible {outline:2px solid #f5a5dc;outline-offset:3px;}
+#jukebox-search p {font-size:13px;margin:10px 0;color:#c7bacd;}
+.jukebox-suggestions {display:flex;flex-direction:column;margin-top:8px;padding:6px;max-height:290px;overflow:auto;border:1px solid #796185;border-radius:12px;background:#211a2c;}
+.jukebox-suggestions button {text-align:left;padding:10px 12px;min-height:44px;border:0;background:transparent;color:#f4e7f7;white-space:normal;}
+.jukebox-suggestions button:hover,.jukebox-suggestions button:focus-visible {background:#46304e;outline:2px solid #f5a5dc;outline-offset:-2px;}
+.jukebox-song-item[hidden] {display:none;}
+
 /* Public rankings: equipped Cubies and metallic podium places. */
 #global-scores li { display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 8px;border-radius:12px;position:relative;isolation:isolate; }
 #global-scores .global-player-name { text-align:left;overflow-wrap:anywhere;min-width:0;padding:4px 0;font:inherit;line-height:1.5; }
@@ -5003,3 +5014,65 @@ html.account-reduced-motion .regent-song::after{opacity:0}
 #global-scores li[data-podium] .global-cubie::after { content:"✦";position:absolute;right:-1px;top:0;color:var(--medal);font-size:12px;text-shadow:0 0 7px var(--medal);pointer-events:none; }
 #global-scores li[data-podium] strong { color:var(--medal); }
 @media(max-width:420px){#global-scores li{grid-template-columns:25px 38px minmax(0,1fr) auto;gap:6px;padding:10px 5px}#global-scores .global-cubie{width:38px;height:38px}#global-scores li[data-podium] .global-rank{width:25px;height:29px}}
+
+.crown-celebration{width:min(720px,calc(100vw - 28px));max-height:85dvh;overflow:auto;text-align:center;border:1px solid #e8c77b;background:radial-gradient(ellipse at top,#453257 0,#171b2a 45%,#10151c 100%);color:#fff1d0;box-shadow:0 0 70px #ffd57b25;padding:24px;border-radius:24px;animation:crown-arrival .45s ease-out}
+.crown-celebration::backdrop{background:#040610bf;backdrop-filter:blur(6px)}
+.crown-celebration-emblem{font-size:64px;color:#ffdf83;text-shadow:0 0 28px #ffbc6466;line-height:1}
+.crown-celebration-kicker{font-size:11px;letter-spacing:.13em;color:#f8d67c}
+.crown-celebration h2{font-size:clamp(30px,6vw,44px);margin:12px 0}
+#crown-celebration-note{font-size:14px;line-height:1.6;color:#dbd4e6;max-width:520px;margin:0 auto 20px}
+#crown-celebration-packs{display:grid;gap:14px}
+.crown-celebration-pack{padding:16px;border:1px solid color-mix(in srgb,var(--pack-color) 45%,transparent);border-radius:18px;background:#080d1980}
+.crown-celebration-pack h3{color:var(--pack-color);font-size:20px;margin:0 0 5px}
+.crown-celebration-pack>p{margin:0;font-size:13px;color:#f6e8cc}
+.crown-celebration-rewards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.crown-celebration-rewards figure{margin:8px 0 0;min-width:0}
+.crown-celebration-rewards svg{display:block;width:100%;max-height:160px}
+.crown-celebration-rewards figcaption{font-size:12px;color:#e0d8e8}
+.crown-celebration-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+.crown-celebration-actions button{min-height:44px}
+@keyframes crown-arrival{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.crown-celebration,.crown-celebration *{animation:none!important}}
+html.account-reduced-motion .crown-celebration,html.account-reduced-motion .crown-celebration *{animation:none!important}
+
+/* Tiered reward art: slow material glints, mechanical motion, and magical effects. */
+.reward-bob,.reward-shards {animation:reward-drift 4s ease-in-out infinite alternate;}
+.reward-shards {animation-duration:5.5s;}
+.reward-tilt,.reward-needle {animation:reward-tilt 5s ease-in-out infinite alternate;}
+.reward-pendulum {animation:reward-tilt 3.8s ease-in-out infinite alternate;}
+.reward-pulse,.reward-neural,.reward-aura {animation:reward-breathe 3.6s ease-in-out infinite alternate;}
+.reward-neural {animation-duration:4.7s;}
+.reward-orbit,.reward-reverse {transform-origin:60px 68px;animation:reward-rotate 36s linear infinite;}
+.reward-reverse {animation-direction:reverse;animation-duration:49s;}
+.reward-spin {animation:reward-rotate 18s linear infinite;}
+.reward-twinkle {animation:reward-twinkle 3.2s ease-in-out infinite alternate;}
+.reward-sheen {animation:reward-sheen 8s ease-in-out infinite;}
+.reward-wing {animation:reward-wing 5s ease-in-out infinite alternate;}
+.reward-lid {animation:reward-lid 6s ease-in-out infinite alternate;}
+.reward-mint {animation:reward-mint 3s ease-in-out infinite;}
+.reward-prism {animation:reward-prism 6s ease-in-out infinite;}
+.reward-core {animation:reward-core 3.5s ease-in-out infinite alternate;}
+.reward-ribbon,.reward-wisp {animation:reward-ribbon 5s ease-in-out infinite alternate;}
+.reward-sail,.reward-flag {animation:reward-sail 4.5s ease-in-out infinite alternate;}
+.reward-surf {animation:reward-surf 4s ease-in-out infinite alternate;}
+@keyframes reward-drift {from{transform:translateY(-2px)}to{transform:translateY(3px)}}
+@keyframes reward-tilt {from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}
+@keyframes reward-breathe {from{opacity:.55}to{opacity:1}}
+@keyframes reward-rotate {to{transform:rotate(360deg)}}
+@keyframes reward-twinkle {from{opacity:.4;filter:drop-shadow(0 0 0px #eaffff)}to{opacity:1;filter:drop-shadow(0 0 2px #eaffff)}}
+@keyframes reward-sheen {0%,25%{transform:translateX(0)}75%,100%{transform:translateX(180px)}}
+@keyframes reward-wing {from{transform:scaleX(.94) rotate(-2deg)}to{transform:scaleX(1.04) rotate(2deg)}}
+@keyframes reward-lid {from{transform:scaleY(.8) rotate(-2deg)}to{transform:scaleY(1) rotate(2deg)}}
+@keyframes reward-mint {0%,100%{transform:translateY(-4px);opacity:.6}50%{transform:translateY(4px);opacity:1}}
+@keyframes reward-prism {0%,100%{transform:scaleX(1)}50%{transform:scaleX(.55)}}
+@keyframes reward-core {from{opacity:.6;filter:drop-shadow(0 0 1px #a7faff)}to{opacity:1;filter:drop-shadow(0 0 4px #a7faff)}}
+@keyframes reward-ribbon {from{transform:translateY(1px) scaleX(.97)}to{transform:translateY(-3px) scaleX(1.03)}}
+@keyframes reward-sail {from{transform:skewX(-2deg)}to{transform:skewX(3deg)}}
+@keyframes reward-surf {from{transform:translateX(-3px)}to{transform:translateX(3px)}}
+@media(prefers-reduced-motion:reduce){[class^="reward-"]{animation:none!important;}}
+html.account-reduced-motion [class^="reward-"]{animation:none!important;}
+
+.crown-dimension{transform-origin:75px 81px;animation:crown-dimension-fold 5s ease-in-out infinite}
+@keyframes crown-dimension-fold{0%,100%{transform:skewY(-5deg) scaleX(.9)}50%{transform:skewY(5deg) scaleX(1.06)}}
+@media(prefers-reduced-motion:reduce){.crown-dimension{animation:none}}
+html.account-reduced-motion .crown-dimension{animation:none}
