@@ -6,7 +6,7 @@
  function stopMusic(){clearInterval(musicTimer);musicTimer=null;if(audio){audio.close().catch(()=>{});audio=null;master=null;}$('autumn-music').textContent='♫ Play lo-fi';$('autumn-music').setAttribute('aria-pressed','false');}
  async function startMusic(){
   const Context=window.AudioContext||window.webkitAudioContext;if(!Context)throw Error('Audio is unavailable in this browser.');
-  audio=new Context();await audio.resume();
+  const started=audio=new Context();await started.resume();if(audio!==started||!room.open)return;
   master=audio.createGain();master.gain.value=Number($('autumn-volume').value)/100*.45;
   const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=2600;master.connect(filter);filter.connect(audio.destination);
   const chords=[[48,55,59,62,67],[45,52,55,59,64],[41,48,52,57,60],[43,50,53,57,62]];
@@ -24,15 +24,14 @@
   const ids=rows.map(r=>r.id).join(',');if(ids===lastIds)return;
   const list=$('autumn-messages'),atBottom=list.scrollHeight-list.scrollTop-list.clientHeight<65;
   const first=!lastIds;lastIds=ids;list.replaceChildren();
-  if(!rows.length){const p=document.createElement('p');p.className='autumn-empty';p.textContent='A quiet corner for two. Leave the first note.';list.append(p);}
   for(const row of rows){const article=document.createElement('article');article.className='autumn-message'+(row.mine?' is-mine':'');const label=document.createElement('strong');label.textContent=row.label;const time=document.createElement('time');time.dateTime=row.created_at;time.textContent=new Date(row.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});const body=document.createElement('p');body.textContent=row.body;article.append(label,time,body);list.append(article);}
   if(atBottom||first)list.scrollTop=list.scrollHeight;
  }
  async function refresh(){if(!room.open||document.hidden||!allowed||loading)return;loading=true;const version=generation;try{const rows=await api().chat();if(version!==generation||!room.open)return;render(rows);$('autumn-status').textContent='';}catch(e){if(version===generation)$('autumn-status').textContent=e.message;}finally{loading=false;}}
  window.addEventListener('news-access',e=>{allowed=e.detail.allowed;$('autumn-open').hidden=!allowed;if(!allowed||e.detail.identityChanged){generation++;room.close();$('autumn-messages').replaceChildren();$('autumn-message').value='';lastIds=null;stopMusic();}});
- $('autumn-open').onclick=()=>{if(!allowed)return;room.showModal();refresh();clearInterval(timer);timer=setInterval(refresh,5000);};
+ $('autumn-open').onclick=()=>{if(!allowed)return;room.showModal();document.dispatchEvent(new Event('autumn-room-state'));startMusic().catch(()=>{stopMusic();$('autumn-status').textContent='Tap Play lo-fi to start the music.';});refresh();clearInterval(timer);timer=setInterval(refresh,5000);};
  $('autumn-close').onclick=()=>room.close();
- room.addEventListener('close',()=>{generation++;clearInterval(timer);stopMusic();});
+ room.addEventListener('close',()=>{generation++;clearInterval(timer);stopMusic();document.dispatchEvent(new Event('autumn-room-state'));});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMusic();else refresh();});
  $('autumn-music').onclick=async()=>{try{if(audio)stopMusic();else await startMusic();}catch{stopMusic();$('autumn-status').textContent='Could not start audio. Please try again.';}};
  $('autumn-volume').oninput=()=>{if(master&&audio)master.gain.setTargetAtTime(Number($('autumn-volume').value)/100*.45,audio.currentTime,.08);};

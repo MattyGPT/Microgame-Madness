@@ -2947,7 +2947,7 @@ for (const letter of "abcdefghijklmnopqrstuvwxyz") {
   button.onclick = () => guess(letter);
   $("alphabet").append(button);
 }
-const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn, blocked: () => !!accountApp?.blocked});
+const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn && !$("autumn-room")?.open, blocked: () => !!accountApp?.blocked});
 document
   .querySelectorAll("[data-game]")
   .forEach(
@@ -3459,7 +3459,7 @@ function syncMusic() {
   if (sequencePlayer) {
     const kind = snapshot?.dying ? "death" : snapshot?.laser_firing ? "finale" : null;
     sequencePlayer.sync(active ? kind : null, kind === "death" ? snapshot.death_age : snapshot?.cinematic_age,
-      soundOn && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
+      soundOn && !$("autumn-room")?.open && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
   }
   if (!musicPlayer) return;
   const welcoming = !!document.querySelector("#welcome-dialog")?.open;
@@ -3475,7 +3475,7 @@ function syncMusic() {
       : active && selected === "dodge" && selectedDifficulty === "chaos" ? "chaos_carnival"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
-    playing: soundOn && !["coindrop", "nanolab"].includes(selected) && !document.querySelector("#galactic-forge") && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
+    playing: soundOn && !$("autumn-room")?.open && !["coindrop", "nanolab"].includes(selected) && !document.querySelector("#galactic-forge") && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
       && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
   };
   const bossActive = active && selected === "geomayhem" && (snapshot?.boss?.hp > 0 || snapshot?.boss_defeat) && !snapshot?.over;
@@ -3492,6 +3492,7 @@ function syncMusic() {
   } else musicPlayer.setState(state);
   renderNowPlaying();
 }
+document.addEventListener("autumn-room-state", syncMusic);
 function renderNowPlaying() {
   const indicator = $("now-playing");
   const track = bossJukebox.playing?bossJukebox.track:jukeboxTracks.find(track => track.id === musicPlayer?.current?.track);

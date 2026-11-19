@@ -104,8 +104,10 @@ only a private operator can grant or revoke it. Moderator actions are audited.
 and the invited account. Its backend checks membership on every read and send;
 chat messages are never included in the public news feed. It stores the latest
 conversation on the backend and displays the most recent 100 messages. The purple
-fall setting includes original synthesized lo-fi music with a play/pause button
-and volume control. Music stops when the room closes or the browser tab is hidden.
+fall setting starts original synthesized lo-fi music when opened, pausing other
+arcade music. A play/pause button and volume control remain available. Room music
+stops when the room closes or the browser tab is hidden; arcade music can resume
+when you close the room.
 
 For a preview that survives terminal closure, run from this workspace:
 
