@@ -1108,6 +1108,14 @@ function renderTurtleTabIcons() {
   const id=item?.id||'classic';
   for(const mode of ['turtles','trails']) {
     const art=document.querySelector(`[data-game="${mode}"] .card-art`);
+    if(mode==='trails') {
+      const trail=TurtleTrails.selected(CrownPacks.equipped("trail",saved.turtleTrail),saved.shop.owned);
+      const trailId=trail?.id||'none';
+      if(art.dataset.trail===trailId)continue;
+      art.dataset.trail=trailId;
+      art.innerHTML=trail?TurtleTrails.preview(trail):'<span class="trail-icon-empty">∅</span>';
+      continue;
+    }
     if(art.dataset.turtle===id)continue;
     art.dataset.turtle=id;
     art.innerHTML=item?TurtleCustoms.preview(item):'<svg viewBox="-22 -25 44 50" aria-hidden="true"><path d="M-7 -6L-12 -9M7 -6L12 -9M-7 7L-11 11M7 7L11 11" stroke="#b6ed93" stroke-width="4" stroke-linecap="round"/><ellipse rx="8" ry="11" fill="#87c966" stroke="#c1f5a4" stroke-width="1.3"/><circle cy="-15" r="4" fill="#b6ed93"/><path d="M0 -7L5 -3V4L0 8L-5 4V-3Z" fill="none" stroke="#4e8c4e" stroke-width="1.3"/></svg>';
