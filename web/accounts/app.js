@@ -317,7 +317,10 @@ const AccountApp = (() => {
       if (this.signedIn) {
         await this.controller.flush();
         this.checkIdentity(generation);
-        if (this.controller.state().pending) throw new Error('Connect and sync your earnings before purchasing.');
+        // Blocked run dependencies must not prevent spending already confirmed Cash.
+        // The controller checks confirmed funds and serializes pending purchases.
+        await this.controller.pull();
+        this.checkIdentity(generation);
         if (!navigator.onLine) throw new Error('Connect to purchase with your account.');
       }
       await this.enqueue('purchase', { itemId });

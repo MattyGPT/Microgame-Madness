@@ -52,7 +52,7 @@ test('a server-rejected purchase is not reported as owned', async t => {
   const app = Object.create(App.prototype);
   app.chain = Promise.resolve();
   app.session = { snapshot: () => ({ user: { id: 'account', is_anonymous: false } }) };
-  app.controller = { generation: 1, enqueue: async () => {}, flush: async () => {},
+  app.controller = { generation: 1, enqueue: async () => {}, flush: async () => {}, pull: async () => {},
     state: () => ({ owner: 'account', pending: 0, profile: { shop: { owned: [] } } }) };
   app.applyCurrent = () => {};
   global.navigator ||= { onLine: true };
@@ -174,4 +174,17 @@ test('a failed account deletion preserves local data and permits retry', async (
   await assert.rejects(app.resetDeviceProgress('wrong'), /Incorrect password/);
   assert.equal(app.busy, false);
   assert.equal(app.resetting, false);
+});
+
+test('unrelated pending progress does not block a purchase using confirmed funds', async t => {
+ const app=Object.create(App.prototype),profile={shop:{owned:[]}};let pulled=false;
+ app.chain=app.ready=Promise.resolve();app.message=app.applyCurrent=()=>{};
+ app.session={snapshot:()=>({user:{id:'account',is_anonymous:false}})};
+ app.controller={generation:1,flush:async()=>{},pull:async()=>{pulled=true;},
+ state:()=>({owner:'account',pending:3,profile}),enqueue:async(kind,payload)=>{assert.equal(kind,'purchase');assert.ok(pulled);profile.shop.owned.push(payload.itemId);}};
+ global.navigator ||= {};
+ const previous=Object.getOwnPropertyDescriptor(global.navigator,'onLine');
+ Object.defineProperty(global.navigator,'onLine',{value:true,configurable:true});
+ t.after(()=>{if(previous)Object.defineProperty(global.navigator,'onLine',previous);else delete global.navigator.onLine;});
+ await app.purchase('shop_dbth');assert.deepEqual(profile.shop.owned,['shop_dbth']);
 });
