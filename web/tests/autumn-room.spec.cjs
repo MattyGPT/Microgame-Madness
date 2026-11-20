@@ -7,6 +7,9 @@ test('private autumn room renders messages safely, controls music and closes',as
  await page.route('**/__news',async r=>{const b=r.request().postDataJSON();if(b.action==='status')return r.fulfill({json:{moderator:true}});if(b.body)rows.push({id:2,label:'Nate, the creator',body:b.body,created_at:'2026-11-19T12:01:00Z',mine:true});return r.fulfill({json:rows});});
  await page.goto('/');await expect(page.locator('#autumn-open')).toBeVisible();await page.locator('#autumn-open').click();
  await expect(page.locator('#autumn-messages')).toContainText('Welcome to autumn.');
+ await page.locator('#autumn-refresh').click();await expect(page.locator('#autumn-status')).toContainText('Room refreshed');
+ expect((await page.locator('#autumn-refresh').boundingBox()).height).toBeGreaterThanOrEqual(60);
+ await expect(page.locator('#autumn-music')).toHaveAttribute('aria-pressed','true');
  await page.locator('#autumn-message').fill('<img src=x onerror=alert(1)>');await page.locator('#autumn-compose button').click();
  await expect(page.locator('#autumn-messages')).toContainText('<img src=x onerror=alert(1)>');await expect(page.locator('#autumn-messages img')).toHaveCount(0);
  await expect(page.locator('#autumn-music')).toHaveAttribute('aria-pressed','true');

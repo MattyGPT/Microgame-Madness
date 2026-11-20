@@ -1303,7 +1303,7 @@ function previewCustom(item) {
   $("customs-status").textContent = item.id === equipped.id ? `Now wearing ${item.name}.`
     : CubieCustoms.unlocked(item, achievementTracker.data.unlocked, saved.shop.owned, saved.testerTon618)
       ? "Preview only · Unlocked. Choose Wear Custom to equip."
-      : item.crown ? "Preview only · Hold #1 on this game’s all-time combined leaderboard to wear this Exclusive Custom." : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
+      : item.serverReward ? "Have ten suggestions liked by Nate or Aidan to unlock this Custom." : item.crown ? "Preview only · Hold #1 on this game’s all-time combined leaderboard to wear this Exclusive Custom." : item.price ? "Preview only · Locked. Buy this Custom in the Cubie Shop." : "Preview only · Locked. Earn its achievement to wear this Custom.";
   $("customs-grid").querySelectorAll(".custom-preview-button").forEach(button => {
     button.setAttribute("aria-pressed", String(button.dataset.preview === item.id));
   });
@@ -1340,6 +1340,7 @@ function renderCustoms() {
     tier.textContent = `${CubieCustoms.tierLabels[item.tier]} Custom`;
     const requirement = document.createElement("p");
     if (item.id === "classic") requirement.textContent = "Your original arcade buddy. Always yours.";
+    else if (item.serverReward) requirement.textContent = "Have ten suggestions liked by Nate or Aidan.";
     else if (item.crown) requirement.textContent = item.flavor;
     else if (item.price) requirement.textContent = `Cubie Shop · ${item.price} Cubie Cash`;
     else if (item.id === "gaster") requirement.textContent = "Some things are better left unexplained.";

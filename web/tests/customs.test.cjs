@@ -3,10 +3,10 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('327 distinct Customs use achievements or shop purchases and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 327);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 327);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 327);
+test('328 distinct Customs use achievements, shop purchases, or server rewards and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 328);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 328);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 328);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
     if(item.id==='shop_dbtv'){
@@ -17,7 +17,7 @@ test('327 distinct Customs use achievements or shop purchases and retain Cubie�
       assert.match(Customs.svg(item), /class="cubie-eyes"/);assert.match(Customs.svg(item), /class="cubie-smile"/);
     }
     assert.equal(Customs.unlocked(item, {}), item.id === 'classic');
-    assert.ok(item.achievements.length || item.price > 0);
+    assert.ok(item.achievements.length || item.price > 0 || item.serverReward);
     assert.ok(item.flavor);
   }
 });

@@ -141,3 +141,5 @@ and a game-specific shell emblem.
 Cloud rollout requires migration `20261119000005_expanded_combined_leaderboards.sql`
 and redeployment of the `accounts` function with the updated shared rules and
 catalogs. Local profile rewards work without a configured leaderboard service.
+
+Suggestions support one like per signed-in account, plus Nate’s private localhost like. Ten distinct suggestions liked by Nate or Aidan earn the Empyrorite Front-Page Thinker achievement and permanently unlock News Cubie. Both creators liking the same suggestion counts only once. Ordinary player likes do not count toward this reward. Approval counts follow current likes until the reward is earned; unliking or deleting a suggestion does not revoke an earned Cubie. The database protects this reward from imported saves. Never make moderator access public or expose the localhost moderator server.

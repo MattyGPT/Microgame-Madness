@@ -20,6 +20,7 @@ const Achievements = (() => {
   add("cube_pet", "Awwwwww!", "gold", "Arcade", "Make Cubie blush and squeak.", "cubePets");
   add("cube_pet_100", "Cubie's Best Friend", "crystal", "Arcade", "Pet Cubie 100 times.", "cubePets", 100);
   add("healing_20", "Sweet Recovery", "silver", "Arcade", "Collect 20 healing items in total across fights and Core attack practice.", "healingItems", 20);
+  add("news_ideas_10", "Front-Page Thinker", "empyrorite", "Community", "Have 10 different suggestions liked by Nate or Aidan. Unlocks News Cubie.", "creatorApprovedIdeas", 10, {serverAward:true});
   add("website_10_hours", "The Party Never Stops", "empyrorite", "Arcade", "Spend 10 hours total on the website across visits (36,000 seconds).", "websiteSeconds", 36000);
   add("website_5_hours", "All Aboard!", "rainbow", "Arcade", "Spend 5 hours total on the website across visits (18,000 seconds).", "websiteSeconds", 18000);
   add("cube_pet_500", "A New Dimension", "diamond", "Arcade", "Click Cubie 500 times in total.", "cubePets", 500);
@@ -365,7 +366,7 @@ const Achievements = (() => {
       this.data.stats.magentaCounterHits = this.data.stats.wrathCounterHits + this.data.stats.pumpkinCounterHits;
       const earned = [];
       for (const item of catalog) {
-        if (!this.data.unlocked[item.id] && this.progress(item) >= item.target) {
+        if (!item.serverAward && !this.data.unlocked[item.id] && this.progress(item) >= item.target) {
           this.data.unlocked[item.id] = new Date(this.observedAt).toISOString();
           earned.push(item);
         }

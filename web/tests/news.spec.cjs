@@ -13,3 +13,23 @@ test('news spans the grid, reads only while visible, and shows Cubie warning',as
  await expect(page.locator('#news-kind')).toBeVisible();await expect(page.locator('#news-kind-message')).toContainText('10 minutes');
  await expect(page.locator('#news-kind-art svg')).toBeVisible();
 });
+
+test('suggestions show likes and ten-idea Empyrorite reward progress',async({page})=>{
+ let liked=false;
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('https://news.test/**',async r=>{
+  if(r.request().url().endsWith('news_suggestion_like')){liked=!liked;return r.fulfill({json:{}});}
+  return r.fulfill({json:{posts:[],reward:{approved:3,earned:false},comments:[{id:'00000000-0000-0000-0000-000000000001',body:'More tiny adventures',name:'Cubie fan',cubie:'classic',medals:[],created_at:'2026-11-19',likes:liked?2:1,liked,creator_liked:true}]}});
+ });
+ await page.goto('/');await page.locator('#news-open').click();await page.locator('#news-suggestions').click();
+ await expect(page.locator('#news-reward')).toContainText('3/10');await expect(page.locator('#news-reward')).toContainText('Empyrorite');
+ const like=page.locator('[data-suggestion-like]');await expect(like).toHaveAttribute('aria-pressed','false');
+ await like.click();await expect(like).toHaveAttribute('aria-pressed','true');await expect(like).toContainText('2');
+ await like.click();await expect(like).toHaveAttribute('aria-pressed','false');await expect(like).toContainText('1');
+ await expect(page.locator('.news-creator-like')).toContainText('Liked by a creator');
+ await expect(page.locator('.news-cubie-wave')).toHaveCount(0);
+ await page.locator('#news-search').fill('no matching idea');await expect(page.locator('[data-suggestion-like]')).toHaveCount(0);await expect(page.locator('#news-list')).toContainText('No matches');
+ await page.locator('#news-search').fill('adventures');await expect(page.locator('[data-suggestion-like]')).toHaveCount(1);
+ await page.locator('#news-sort').selectOption('popular');await page.locator('#news-filter').selectOption('creator');await expect(page.locator('[data-suggestion-like]')).toHaveCount(1);
+});

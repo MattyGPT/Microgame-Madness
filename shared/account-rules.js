@@ -53,8 +53,10 @@ const AccountRules = (() => {
     const clean = initial();
     try { clean.player = playerName(value.player); } catch { /* Keep safe default. */ }
     clean.achievements = new achievements.Tracker(value.achievements).data;
+    for (const item of achievements.catalog.filter(item => item.serverAward)) { delete clean.achievements.unlocked[item.id]; clean.achievements.stats[item.stat] = 0; }
     for (const key of streakKeys) clean.achievements.stats[key] = 0;
     clean.shop = shop.restore(value.shop, catalog);
+    clean.shop.owned = clean.shop.owned.filter(id => !catalog.find(item => item.id === id)?.serverReward);
     clean.unlocks.singularity = value.unlocks?.singularity === true;
     clean.testerTon618 = value.testerTon618 === true;
     clean.minigamesCompleted = integer(value.minigamesCompleted) ? Math.min(20, value.minigamesCompleted) : 0;

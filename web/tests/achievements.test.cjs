@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 301);
+  assert.equal(catalog.length, 302);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
@@ -655,3 +655,8 @@ test('Endurance cannot unlock Key Rush medals or Cubies, including through resto
   assert.ok(tracker.data.unlocked.typing_5);
   assert.equal(tracker.data.unlocked.typing_10, undefined);
 });
+
+ test('Front-Page Thinker is a server-awarded ten-idea Empyrorite achievement',()=>{
+ const item=catalog.find(a=>a.id==='news_ideas_10');assert.equal(item.target,10);assert.equal(item.tier,'empyrorite');
+ const tracker=new Tracker({stats:{creatorApprovedIdeas:10}});tracker.visit();assert.equal(tracker.data.unlocked.news_ideas_10,undefined);
+ });

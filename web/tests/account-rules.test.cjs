@@ -352,3 +352,16 @@ test('new Wrath victories retain all fifteen counters and grant the matching med
     }
   }
 });
+
+test('News Cubie is Empyrorite, equips from trusted ownership, and cannot be bought or imported',()=>{
+ const item=Customs.catalog.find(c=>c.id==='news_anchor');assert.equal(item.tier,'empyrorite');
+ let state=Rules.initial();
+ assert.throws(()=>apply(state,'settings',{changes:{cubieCustom:item.id}}),{code:'not_owned'});
+ state.shop.owned.push(item.id);
+ state.achievements.unlocked.news_ideas_10=new Date().toISOString();state.achievements.stats.creatorApprovedIdeas=10;
+ assert.equal(Shop.restore(state.shop,Customs.catalog).owned.includes(item.id),true);
+ assert.equal(apply(state,'settings',{changes:{cubieCustom:item.id}}).state.cubieCustom,item.id);
+ assert.equal(Rules.sanitizeLegacy(state).shop.owned.includes(item.id),false);
+ assert.equal(Rules.sanitizeLegacy(state).achievements.unlocked.news_ideas_10,undefined);assert.equal(Rules.sanitizeLegacy(state).achievements.stats.creatorApprovedIdeas,0);
+ assert.equal(Shop.buy({units:1000000000,owned:[]},item),false);
+});

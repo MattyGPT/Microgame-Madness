@@ -686,13 +686,16 @@ const CubieCustoms = (() => {
     '<circle cx="60" cy="67" r="39" fill="none" stroke="#c3a5ff" stroke-width="2"/>',
     '<circle cx="60" cy="67" r="39"/>',
     { faceColor: "#d4faff", flavor: "One tiny heartbeat. One enormous smile." });
+  add("news_anchor", "News Cubie", "news_ideas_10", "#b7ee7c",
+    '<path d="M20 82h80v12q0 14-14 14H34q-14 0-14-14Z" fill="#152233"/><path d="m44 82 16 26 16-26" fill="#fff8e6"/><path d="m40 82-8 9 11 4-5 4 20 9-10-26m32 0 8 9-11 4 5 4-20 9 10-26" fill="#43556f" stroke="#bed7ee" stroke-width=".7"/><path d="m60 87-8-4v9l8-4 8 4v-9Z" fill="#101923"/><circle cx="60" cy="97" r="1.4" fill="#172131"/><path d="m80 96 4-5 4 5" fill="#d9b6ff"/><path d="M24 39v25" stroke="#efffd1" stroke-width="2" stroke-linecap="round"/>', square,
+    {tier:"empyrorite",serverReward:true,flavor:"Ten bright ideas, approved by the creators. Live from Cubie’s desk!"});
   catalog.push(...expansion.catalog);
   // Code grants are permanent; the achievement remains an independent unlock.
   const testerCodeActive = false;
   const redeemTesterCode = name => testerCodeActive && typeof name === "string"
     && name.trim().toLowerCase() === "gravitron618";
   const unlocked = (item, medals, owned = [], testerTon618 = false) => item.id === "classic"
-    || (testerTon618 === true && item.id === "ton_618") || (item.price
+    || (testerTon618 === true && item.id === "ton_618") || (item.serverReward ? owned.includes(item.id) : item.price
     ? owned.includes(item.id) : item.achievements.some(id => !!medals[id]));
   function selected(id, medals, owned = [], testerTon618 = false) {
     const item = catalog.find(item => item.id === id);
@@ -1128,6 +1131,29 @@ const CubieCustoms = (() => {
   function animatedArt(item, uid) {
     if(item.rewardMode)return sideRewardArt(item,uid);
     if(item.id==='shop_dbtv')return {detail:item.detail,back:item.back,eyes:'<g class="dbtv-no-eyes"/>',mouth:'<path class="dbtv-smile" d="M54 84q0 14 10 14 8 0 9-10 1 10 9 10 10 0 10-14" fill="none" stroke="#14141d" stroke-width="4" stroke-linecap="round"/>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
+    if (item.id === 'news_anchor') {
+      const id=name=>`news-${uid}-${name}`, paint=name=>`url(#${id(name)})`;
+      const defs=`<defs>
+        <linearGradient id="${id('shell')}" x2=".8" y2="1"><stop stop-color="#f0ffd4"/><stop offset=".24" stop-color="#bced81"/><stop offset=".6" stop-color="#7db85d"/><stop offset="1" stop-color="#3e7144"/></linearGradient>
+        <linearGradient id="${id('suit')}" x2=".9" y2="1"><stop stop-color="#43546f"/><stop offset=".4" stop-color="#172436"/><stop offset=".7" stop-color="#0c1627"/><stop offset="1" stop-color="#35465b"/></linearGradient>
+        <linearGradient id="${id('satin')}" x2="1" y2=".7"><stop stop-color="#b2c4db"/><stop offset=".25" stop-color="#53657f"/><stop offset=".5" stop-color="#25354d"/><stop offset=".78" stop-color="#7c91af"/><stop offset="1" stop-color="#273850"/></linearGradient>
+        <linearGradient id="${id('pearl')}" x2=".7" y2="1"><stop stop-color="#fffef3"/><stop offset=".5" stop-color="#e6e6d8"/><stop offset="1" stop-color="#a3b5b8"/></linearGradient>
+        <linearGradient id="${id('gold')}" x2=".7" y2="1"><stop stop-color="#fff3bf"/><stop offset=".4" stop-color="#c69a51"/><stop offset=".65" stop-color="#ffdf91"/><stop offset="1" stop-color="#966b32"/></linearGradient>
+        <clipPath id="${id('clip')}">${item.body}</clipPath>
+      </defs>`;
+      return {back:defs,sideColor:'#34513c',shadowColor:'#15281f',sideOffset:9,shadowOffset:18,
+        eyes:'<g class="cubie-eyes" fill="#14271d"><rect x="35" y="38" width="14" height="22" rx="4"/><rect x="95" y="38" width="14" height="22" rx="4"/><path d="M38 41v5m60-5v5" stroke="#f5ffdf" stroke-width="2.2" stroke-linecap="round"/></g>',
+        mouth:'<path class="cubie-smile" d="M58 74q14 15 28 0" fill="none" stroke="#163221" stroke-width="4.5" stroke-linecap="round"/>',
+        detail:`<g clip-path="${paint('clip')}"><g fill="${paint('shell')}">${item.body}</g><path d="M23 60V39q0-8 9-8h54" fill="none" stroke="#f8ffe0" stroke-width="1.8" opacity=".7"/><path d="M26 58V40q0-5 5-5h17" fill="none" stroke="#fff" stroke-width=".6"/>
+        <path d="M20 82q10-4 24-2l16 8 16-8q14-2 24 2v26H20Z" fill="${paint('suit')}"/>
+        <path d="m44 80 16 28 16-28-16 5Z" fill="${paint('pearl')}"/><path d="M60 90v17m-4-13v10m8-10v10" stroke="#9baeb0" stroke-width=".5"/>
+        <path d="m43 80-10 9 10 5-6 5 21 9-10-27m29-1 10 9-10 5 6 5-21 9 10-27" fill="${paint('satin')}" stroke="#a9bfd0" stroke-width=".55"/><path d="m36 89 9 4-5 6 14 7m30-17-9 4 5 6-14 7" fill="none" stroke="#dae6e9" stroke-opacity=".35" stroke-width=".5"/>
+        <path d="m60 87-9-5q-2 5 0 10l9-4 9 4q2-5 0-10Z" fill="${paint('satin')}" stroke="#b8cad9" stroke-width=".5"/><path d="m54 85 4 2m8-2-4 2" stroke="#e1e9f1" stroke-width=".7"/><rect x="58.5" y="85" width="3" height="5" rx="1" fill="${paint('gold')}"/>
+        <circle cx="60" cy="97" r="1.6" fill="${paint('gold')}"/><circle cx="60" cy="103" r="1.4" fill="${paint('gold')}"/>
+        <path d="m79 96 3-6 3 5 3-4 2 5Z" fill="#d8c1f6" stroke="#fff0ff" stroke-width=".5"/><path d="M77 97h14" stroke="#8499b2" stroke-width="1"/><path d="M26 94v11m68-11v11" stroke="#74849c" stroke-opacity=".4" stroke-width=".7"/>
+        <circle cx="38" cy="87" r="2" fill="${paint('gold')}"/><path d="M37 87h2m-1-1v2" stroke="#fff7ce" stroke-width=".5"/>
+        <g class="news-anchor-sheen"><path d="M-15 25h8l62 90h-8Z" fill="#fff" opacity=".15"/></g></g><g fill="none" stroke="#e2f5c4" stroke-opacity=".5" stroke-width=".8">${item.body}</g>`};
+    }
     if (item.id === 'galactic_smith') {
       const id = name => `smith-${uid}-${name}`;
       const paint = name => `url(#${id(name)})`;

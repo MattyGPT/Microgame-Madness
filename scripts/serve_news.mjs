@@ -16,6 +16,8 @@ export const server=http.createServer(async(req,res)=>{
    let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('Too large');}
    const b=JSON.parse(raw);let result;
    if(b.action==='status')result={moderator:true,label:'Nate, the creator'};
+   else if(b.action==='suggestionLike') {await query(`select news_private.toggle_suggestion(${uuid(b.id)},null,true)`);result={};}
+   else if(b.action==='suggestionLikes') {result=await query("select comment from news_private.suggestion_likes where actor='local_creator'");}
    else if(b.action==='chat'){
     if(b.body!==undefined){
      if(typeof b.body!=='string'||!b.body.trim()||b.body.length>2000)throw Error('Invalid message');

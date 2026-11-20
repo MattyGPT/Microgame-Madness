@@ -18,7 +18,7 @@ const CubieShop = (() => {
   function restore(raw, catalog) {
     return {
       units: Number.isSafeInteger(raw?.units) && raw.units >= 0 ? raw.units : 0,
-      owned: [...new Set(Array.isArray(raw?.owned) ? raw.owned.filter(id => catalog.some(c => c.price && c.id === id)) : [])],
+      owned: [...new Set(Array.isArray(raw?.owned) ? raw.owned.filter(id => catalog.some(c => (c.price || c.serverReward) && c.id === id)) : [])],
     };
   }
   function reward(wallet, mode, difficulty, score) {

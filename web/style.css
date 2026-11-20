@@ -5076,3 +5076,28 @@ html.account-reduced-motion [class^="reward-"]{animation:none!important;}
 @keyframes crown-dimension-fold{0%,100%{transform:skewY(-5deg) scaleX(.9)}50%{transform:skewY(5deg) scaleX(1.06)}}
 @media(prefers-reduced-motion:reduce){.crown-dimension{animation:none}}
 html.account-reduced-motion .crown-dimension{animation:none}
+
+/* Articulated mechanisms in the five newer champion Cubies. */
+.reward-fin{animation:champion-fin 5.2s ease-in-out infinite alternate}
+.reward-thruster{transform-origin:75px 119px;animation:champion-thruster 1.7s ease-in-out infinite}
+.reward-coin-turn{animation:champion-coin 3.7s ease-in-out infinite}
+.reward-bezel{animation:reward-rotate 24s linear infinite}
+.reward-polish{animation:champion-polish 4s ease-in-out infinite}
+.reward-bubble{animation:champion-bubble 3s linear infinite}
+.reward-stopper{animation:champion-stopper 5s ease-in-out infinite}
+.reward-hyper{animation:champion-hyper 7s ease-in-out infinite}
+.reward-charge{animation:crown-stream 5s linear infinite}
+.reward-treasure-rise{animation:champion-treasure 3.8s ease-in-out infinite}
+@keyframes champion-fin{from{transform:rotate(-5deg)}to{transform:rotate(6deg)}}
+@keyframes champion-thruster{0%,100%{transform:scaleY(.7);opacity:.55}50%{transform:scaleY(1.12);opacity:1}}
+@keyframes champion-coin{0%,100%{transform:scaleX(1) rotate(-8deg)}50%{transform:scaleX(.22) rotate(8deg)}}
+@keyframes champion-polish{0%,100%{opacity:.2}50%{opacity:.9}}
+@keyframes champion-bubble{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-31px);opacity:0}}
+@keyframes champion-stopper{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(4deg)}}
+@keyframes champion-hyper{0%,100%{transform:rotate(-12deg) scale(.8)}50%{transform:rotate(22deg) scale(1.12)}}
+@keyframes champion-treasure{0%,100%{transform:translateY(0);opacity:.1}50%{transform:translateY(-17px);opacity:1}}
+
+.news-anchor-sheen {animation:news-anchor-sheen 7s ease-in-out infinite}
+@keyframes news-anchor-sheen {0%,20%{transform:translateX(-40px)}65%,100%{transform:translateX(155px)}}
+@media(prefers-reduced-motion:reduce){.news-anchor-sheen{animation:none;opacity:0}}
+.account-reduced-motion .news-anchor-sheen{animation:none;opacity:0}

@@ -2,7 +2,7 @@
 (() => {
  const $=id=>document.getElementById(id), dialog=$('news-dialog');
  let config, moderator=false, localModerator=false, teamMember=false, posts=[], tab='posts', busy=false, observer;
- const timers=new Map();
+ const timers=new Map();let feedCache=null, localLikeCache=new Set();
  let read=new Set(), readOwner='';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function session(){return typeof accountApp!=='undefined'?accountApp?.session:null;}
@@ -13,7 +13,7 @@
   const headers={'Content-Type':'application/json',apikey:config.key};
   if(session()?.snapshot()?.user)headers.Authorization='Bearer '+await session().token();
   const r=await fetch(config.url+'/rest/v1/rpc/'+name,{method:'POST',headers,body:JSON.stringify(body),signal:AbortSignal.timeout(12000)});
-  if(!r.ok)throw Error(name==='news_action'?'Sign in to participate, then try again.':'News is unavailable. Please try again.');
+  if(!r.ok)throw Error(['news_action','news_suggestion_like'].includes(name)?'Sign in to participate, then try again.':'News is unavailable. Please try again.');
   return r.json();
  }
  async function localAdmin(body){const r=await fetch('/__news',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw Error(data.error);return data;}
@@ -56,11 +56,25 @@
   dialog.querySelectorAll('[data-post]').forEach(el=>observer.observe(el));
  }
  function art(id){return CubieCustoms.svg(CubieCustoms.catalog.find(c=>c.id===id)||CubieCustoms.catalog[0]);}
- async function refresh(){
+ async function refresh(useCache=false){
   try{
-   const data=await rpc('news_feed');posts=data.posts;badge();
-   $('news-list').innerHTML=tab==='posts'?posts.map(p=>`<article class="news-entry ${p.author_label==='Aidan, the gametester'?'news-fire':'news-galaxy'}" data-post="${esc(p.id)}"><p class="eyebrow">${esc(p.author_label||'Nate, the creator')} · ${esc(new Date(p.created_at).toLocaleDateString())}</p><h3>${esc(p.title)}</h3><p class="news-body">${esc(p.body)}</p><button data-like="${p.id}" aria-pressed="${p.liked}">${p.liked?'♥ Liked':'♡ Like'} · ${p.likes}</button>${moderator?` <button data-delete-post="${p.id}">Delete post</button>`:''}</article>`).join('')||'<p class="news-empty">Fresh from the arcade, soon.<br>Updates and bug fixes will appear here.</p>':
-   data.comments.map(c=>`<article class="news-entry"><header class="news-author"><span class="news-avatar">${art(c.cubie)}</span><div><strong>${esc(c.name)}</strong><div>${c.medals.map(m=>`${['','🥇','🥈','🥉'][m.place]} ${esc(m.game)}`).join(' · ')}</div><small>${esc(new Date(c.created_at).toLocaleString())}</small></div></header><p class="news-body">${esc(c.body)}</p>${moderator?`<button data-delete="${c.id}">Delete for everyone</button> <button data-block="${c.id}">Block commenting</button>`:''}</article>`).join('')||'<p class="news-empty">What should we make next?<br>Be the first to share an idea.</p>';
+   const data=useCache===true&&feedCache?feedCache:await rpc('news_feed');feedCache=data;posts=data.posts;badge();
+   if(useCache!==true)$('news-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+   const query=$('news-search').value.trim().toLowerCase(),filter=$('news-filter').value;
+   const rows=(tab==='posts'?posts:data.comments).filter(row=>[row.title,row.body,row.name,row.author_label].some(text=>String(text||'').toLowerCase().includes(query))).filter(row=>filter==='unread'&&tab==='posts'?!row.seen&&!seen().has(row.id):filter==='creator'&&tab==='suggestions'?row.creator_liked:true).slice().sort((a,b)=>$('news-sort').value==='popular'?(b.likes||0)-(a.likes||0)||Date.parse(b.created_at)-Date.parse(a.created_at):Date.parse(b.created_at)-Date.parse(a.created_at));
+   $('news-results').textContent=`${rows.length} ${tab==='posts'?'updates':'ideas'} · Latest 100 on the board`;
+   $('news-list').setAttribute('aria-labelledby','news-'+tab);
+   let localLikes=new Set();
+   if(localModerator&&tab==='suggestions'){if(useCache!==true)localLikeCache=new Set((await localAdmin({action:'suggestionLikes'})).map(row=>row.comment));localLikes=localLikeCache;}
+   $('news-reward').hidden=tab!=='suggestions';
+   $('news-reward-art').innerHTML=art('news_anchor');$('news-reward-progress').value=data.reward?.earned?10:Math.min(10,data.reward?.approved||0);
+   $('news-reward-copy').textContent=data.reward?.earned?'Front-Page Thinker achievement earned · Empyrorite News Cubie unlocked!':`Empyrorite News Cubie · ${data.reward?.approved||0}/10 suggestions liked by Nate or Aidan. Each suggestion counts once. Sign in to save your reward.`;
+   if(data.reward&&session()?.snapshot()?.user&&typeof accountApp!=='undefined'&&(data.reward.earned?(!saved.shop.owned.includes('news_anchor')||!saved.achievements.unlocked.news_ideas_10):saved.achievements.stats.creatorApprovedIdeas!==Number(data.reward.approved))){
+    await accountApp.controller.flush();await accountApp.controller.pull();accountApp.applyCurrent();
+   }
+   $('news-list').innerHTML=tab==='posts'?rows.map(p=>`<article class="news-entry ${p.author_label==='Aidan, the gametester'?'news-fire':'news-galaxy'}" data-post="${esc(p.id)}"><p class="eyebrow">${esc(p.author_label||'Nate, the creator')} · ${esc(new Date(p.created_at).toLocaleDateString())}</p><h3>${esc(p.title)}</h3><p class="news-body">${esc(p.body)}</p><button data-like="${p.id}" aria-pressed="${p.liked}">${p.liked?'♥ Liked':'♡ Like'} · ${p.likes}</button>${moderator?` <button data-delete-post="${p.id}">Delete post</button>`:''}</article>`).join('')||'<p class="news-empty">Fresh from the arcade, soon.<br>Updates and bug fixes will appear here.</p>':
+   rows.map(c=>`<article class="news-entry"><header class="news-author"><span class="news-avatar">${art(c.cubie)}</span><div><strong>${esc(c.name)}</strong><div>${c.medals.map(m=>`${['','🥇','🥈','🥉'][m.place]} ${esc(m.game)}`).join(' · ')}</div><small>${esc(new Date(c.created_at).toLocaleString())}</small></div></header><p class="news-body">${esc(c.body)}</p><button data-suggestion-like="${c.id}" aria-pressed="${localModerator?localLikes.has(c.id):Boolean(c.liked)}">${(localModerator?localLikes.has(c.id):c.liked)?'♥ Liked':'♡ Like'} · ${c.likes||0}</button>${c.creator_liked?'<span class="news-creator-like">★ Liked by a creator</span>':''} ${moderator?`<button data-delete="${c.id}">Delete for everyone</button> <button data-block="${c.id}">Block commenting</button>`:''}</article>`).join('')||'<p class="news-empty">What should we make next?<br>Be the first to share an idea.</p>';
+   if(!rows.length&&(query||filter!=='all'))$('news-list').innerHTML='<p class="news-empty">No matches yet. Try another search or choose Everything.</p>';
    $('news-status').textContent='';observe();
   }catch(e){$('news-status').textContent=e.message;}
  }
@@ -68,10 +82,12 @@
  $('news-open').onclick=()=>{dialog.showModal();refresh();};
  $('news-close').onclick=()=>dialog.close();dialog.addEventListener('close',stop);
  document.addEventListener('visibilitychange',observe);
- $('news-refresh').onclick=refresh;
+ $('news-refresh').onclick=()=>act(async()=>{const button=$('news-refresh');button.disabled=true;button.textContent='Refreshing…';try{await refresh();}finally{button.disabled=false;button.textContent='Refresh';}});
+ for(const id of ['news-search','news-sort','news-filter'])$(id).addEventListener(id==='news-search'?'input':'change',()=>refresh(true));
  for(const name of ['posts','suggestions'])$('news-'+name).onclick=()=>{tab=name;for(const t of ['posts','suggestions'])$('news-'+t).setAttribute('aria-selected',String(t===tab));$('news-compose').hidden=tab!=='suggestions';$('news-publish').hidden=tab!=='posts'||!moderator;refresh();};
  $('news-list').onclick=e=>act(async()=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.suggestionLike){if(localModerator)await localAdmin({action:'suggestionLike',id:b.dataset.suggestionLike});else await rpc('news_suggestion_like',{target:b.dataset.suggestionLike});}
   if(b.dataset.like)await rpc('news_action',{action:'like',target:b.dataset.like});
   for(const [field,action] of [['delete','delete'],['block','block'],['deletePost','deletePost']])if(b.dataset[field]){
    if(!confirm(action==='block'?'Block this player from commenting?':'Delete this for everyone?'))return;
