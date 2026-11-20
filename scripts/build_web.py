@@ -140,6 +140,13 @@ def build():
         encounter_html = encounter_html.replace(f'"./{name}"', f'"./{name}?v={version}"')
     encounter_path.write_text(encounter_html)
     (OUTPUT / "leaderboard-config.json").write_text(json.dumps(config) + "\n")
+    # Announcement clips may be public while unreleased game sources stay local.
+    media = ROOT / "web" / "media"
+    if media.exists():
+        (OUTPUT / "media").mkdir()
+        for asset in media.iterdir():
+            if asset.is_file() and asset.suffix in (".mp4", ".jpg"):
+                shutil.copy2(asset, OUTPUT / "media" / asset.name)
     python_dir = OUTPUT / "python"
     python_dir.mkdir()
     for name in PYTHON_SOURCES:

@@ -28,3 +28,6 @@ node_modules/
 test-results/
 playwright-report/
 blob-report/
+
+# Unreleased games are machine-local and never included in public builds.
+local-games/

@@ -5,6 +5,12 @@
  const timers=new Map();let feedCache=null, localLikeCache=new Set();
  let read=new Set(), readOwner='';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function postBody(body){
+  const text=String(body||''),video=text.match(/^https:\/\/microgame-madness\.com\/media\/[a-z0-9-]+\.mp4$/m);
+  if(!video)return `<p class="news-body">${esc(text)}</p>`;
+  const [before,after]=text.split(video[0]);
+  return `<p class="news-body">${esc(before.trim())}</p><figure class="news-video"><video controls playsinline preload="metadata" src="${esc(video[0])}" poster="${esc(video[0].replace('.mp4','.jpg'))}" aria-label="Gameplay preview"></video><figcaption>Gameplay sneak peek · <a href="${esc(video[0])}" target="_blank" rel="noopener">Open video ↗</a></figcaption></figure><p class="news-body">${esc((after||'').trim())}</p>`;
+ }
  function session(){return typeof accountApp!=='undefined'?accountApp?.session:null;}
  function key(){return 'microgame.news.seen.'+(session()?.snapshot()?.user?.id||'guest');}
  function seen(){if(readOwner!==key()){readOwner=key();read=new Set();}try{return new Set([...JSON.parse(localStorage.getItem(key())||'[]'),...read]);}catch{return read;}}
@@ -72,7 +78,7 @@
    if(data.reward&&session()?.snapshot()?.user&&typeof accountApp!=='undefined'&&(data.reward.earned?(!saved.shop.owned.includes('news_anchor')||!saved.achievements.unlocked.news_ideas_10):saved.achievements.stats.creatorApprovedIdeas!==Number(data.reward.approved))){
     await accountApp.controller.flush();await accountApp.controller.pull();accountApp.applyCurrent();
    }
-   $('news-list').innerHTML=tab==='posts'?rows.map(p=>`<article class="news-entry ${p.author_label==='Aidan, the gametester'?'news-fire':'news-galaxy'}" data-post="${esc(p.id)}"><p class="eyebrow">${esc(p.author_label||'Nate, the creator')} · ${esc(new Date(p.created_at).toLocaleDateString())}</p><h3>${esc(p.title)}</h3><p class="news-body">${esc(p.body)}</p><button data-like="${p.id}" aria-pressed="${p.liked}">${p.liked?'♥ Liked':'♡ Like'} · ${p.likes}</button>${moderator?` <button data-delete-post="${p.id}">Delete post</button>`:''}</article>`).join('')||'<p class="news-empty">Fresh from the arcade, soon.<br>Updates and bug fixes will appear here.</p>':
+   $('news-list').innerHTML=tab==='posts'?rows.map(p=>`<article class="news-entry ${p.author_label==='Aidan, the gametester'?'news-fire':'news-galaxy'}" data-post="${esc(p.id)}"><p class="eyebrow">${esc(p.author_label||'Nate, the creator')} · ${esc(new Date(p.created_at).toLocaleDateString())}</p><h3>${esc(p.title)}</h3>${postBody(p.body)}<button data-like="${p.id}" aria-pressed="${p.liked}">${p.liked?'♥ Liked':'♡ Like'} · ${p.likes}</button>${moderator?` <button data-delete-post="${p.id}">Delete post</button>`:''}</article>`).join('')||'<p class="news-empty">Fresh from the arcade, soon.<br>Updates and bug fixes will appear here.</p>':
    rows.map(c=>`<article class="news-entry"><header class="news-author"><span class="news-avatar">${art(c.cubie)}</span><div><strong>${esc(c.name)}</strong><div>${c.medals.map(m=>`${['','🥇','🥈','🥉'][m.place]} ${esc(m.game)}`).join(' · ')}</div><small>${esc(new Date(c.created_at).toLocaleString())}</small></div></header><p class="news-body">${esc(c.body)}</p><button data-suggestion-like="${c.id}" aria-pressed="${localModerator?localLikes.has(c.id):Boolean(c.liked)}">${(localModerator?localLikes.has(c.id):c.liked)?'♥ Liked':'♡ Like'} · ${c.likes||0}</button>${c.creator_liked?'<span class="news-creator-like">★ Liked by a creator</span>':''} ${moderator?`<button data-delete="${c.id}">Delete for everyone</button> <button data-block="${c.id}">Block commenting</button>`:''}</article>`).join('')||'<p class="news-empty">What should we make next?<br>Be the first to share an idea.</p>';
    if(!rows.length&&(query||filter!=='all'))$('news-list').innerHTML='<p class="news-empty">No matches yet. Try another search or choose Everything.</p>';
    $('news-status').textContent='';observe();

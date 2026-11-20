@@ -33,3 +33,13 @@ test('suggestions show likes and ten-idea Empyrorite reward progress',async({pag
  await page.locator('#news-search').fill('adventures');await expect(page.locator('[data-suggestion-like]')).toHaveCount(1);
  await page.locator('#news-sort').selectOption('popular');await page.locator('#news-filter').selectOption('creator');await expect(page.locator('[data-suggestion-like]')).toHaveCount(1);
 });
+
+test('official gameplay preview renders as a controlled video without allowing arbitrary embeds',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('**/__news',r=>r.fulfill({status:404,json:{}}));
+ await page.route('https://news.test/**',r=>r.fulfill({json:{posts:[{id:'preview',title:"What's Poppin?",body:'Watch this!\nhttps://microgame-madness.com/media/balloon-pop-preview.mp4\nSee ya round! —Nate',created_at:'2026-11-20',likes:0},{id:'unsafe',title:'Plain text',body:'<script>alert(1)</script>\nhttps://untrusted.example/video.mp4',created_at:'2026-11-19',likes:0}],comments:[]}}));
+ await page.goto('/');await page.locator('#news-open').click();
+ const video=page.locator('#news-list video');await expect(video).toHaveCount(1);await expect(video).toHaveAttribute('controls','');await expect(video).toHaveAttribute('playsinline','');await expect(video).not.toHaveAttribute('autoplay','');
+ await expect(page.locator('#news-list')).toContainText('See ya round!');await expect(page.locator('#news-list script')).toHaveCount(0);
+});

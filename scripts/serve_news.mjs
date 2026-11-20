@@ -41,7 +41,7 @@ export const server=http.createServer(async(req,res)=>{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
   const file=resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
   if(!file.startsWith(root+'/'))return reply(403,{});
-  const data=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.wasm':'application/wasm','.mp3':'audio/mpeg','.webp':'image/webp'})[extname(file)]||'application/octet-stream'});res.end(data);
+  const data=await readFile(file);res.writeHead(200,{'Content-Type':({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.wasm':'application/wasm','.mp3':'audio/mpeg','.mp4':'video/mp4','.jpg':'image/jpeg','.webp':'image/webp'})[extname(file)]||'application/octet-stream'});res.end(data);
  }catch{reply(404,{error:'Not found'});}
 });
 server.listen(8777,'127.0.0.1',()=>console.log('Private news moderator and preview: http://localhost:8777/'));

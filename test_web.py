@@ -438,7 +438,10 @@ class PackagingTests(unittest.TestCase):
                 expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app", "welcome")}
                 expected |= {f"accounts/tours/{game}.{ext}" for game in ("hangman", "keyboard", "dodge", "boss", "pumpkin", "wrath", "geomayhem") for ext in ("webm", "webp")}
                 expected |= {f"ops/usage.{ext}" for ext in ("html", "css", "js")}
+                expected |= {"media/balloon-pop-preview.mp4", "media/balloon-pop-preview.jpg"}
                 self.assertEqual(files, expected)
+                self.assertFalse((output / "balloon-pop").exists())
+                self.assertNotIn('balloon-pop/index.html', (output / "index.html").read_text())
                 for name in PYTHON_SOURCES:
                     self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
 
