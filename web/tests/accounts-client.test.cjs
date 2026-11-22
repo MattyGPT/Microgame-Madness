@@ -600,3 +600,19 @@ test('recorded registration retry refuses credentials that authenticate a differ
   await assert.rejects(auth.register('cubie', 'test-password-123'), { code: 'identity_changed' });
   assert.equal(auth.snapshot().user.id, 'original-guest');
 });
+
+test('Geomayhem clears, shards and workshop remain with each account across switches and devices', async t => {
+ const auth=session(),backend=server(),sync=controller(t,{session:auth,backend,online:()=>true});
+ await sync.initialize({player:'Guest'});
+ await sync.enqueue('arcade',{event:'geomayhem-import',progress:{cleared:4,shards:200,workshop:{power:1}}});
+ await sync.enqueue('arcade',{event:'geomayhem-upgrade',upgrade:'vitality'});await sync.flush();
+ const first=structuredClone(sync.state().profile.geomayhem);
+ auth.switch('user-two');await sync.activate('user-two');
+ assert.equal(sync.state().profile.geomayhem,null);
+ await sync.enqueue('arcade',{event:'geomayhem-import',progress:{cleared:1,shards:42}});await sync.flush();
+ assert.equal(sync.state().profile.geomayhem.cleared,1);
+ auth.switch('user-one');await sync.activate('user-one');assert.deepEqual(sync.state().profile.geomayhem,first);
+ const secondDevice=controller(t,{session:session('user-two'),backend});await secondDevice.initialize();
+ assert.equal(secondDevice.state().profile.geomayhem.cleared,1);assert.equal(secondDevice.state().profile.geomayhem.shards,42);assert.equal(secondDevice.state().profile.geomayhem.workshop.vitality,0);
+ await sync.signOut();assert.equal(sync.state().profile.geomayhem,null);
+});

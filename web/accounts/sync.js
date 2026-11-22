@@ -218,7 +218,15 @@ const AccountSync = (() => {
     }
     async flush() {
       if (this.owner === 'guest' || this.record?.importRequired || !this.session.configured) return this.state();
-      if (this.flushing && this.flushGeneration === this.generation) return this.flushing;
+      if (this.flushing && this.flushGeneration === this.generation) {
+        const inFlight = this.flushing, generation = this.generation;
+        await inFlight;
+        if (generation !== this.generation) return this.state();
+        // An enqueue can land after the in-flight pass read an empty outbox.
+        // Drain again so that action is saved before a caller switches accounts.
+        if (this.flushing === inFlight) this.flushing = null;
+        return this.flush();
+      }
       if (!this.online()) { this.status = 'offline'; this.emit(); return this.state(); }
       const owner = this.owner, generation = this.generation;
       this.flushGeneration = generation;

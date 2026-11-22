@@ -66,7 +66,7 @@ test('Balloon Pop gives all three pieces, 50 satellite balloons, and 20 ordered 
  const item=cubies.catalog.find(i=>i.id==='crown_balloon_cubie'),svg=crowns.art(item);
  assert.equal((svg.match(/class="ex-satellite-balloon"/g)||[]).length,50);assert.match(svg,/ex-flame/);
  assert.ok(crowns.celebrations().some(g=>g.mode==='balloon'));crowns.acknowledge(['balloon']);assert.equal(crowns.celebrations().length,0);
- const keyboard=crowns.art(cubies.catalog.find(i=>i.id==='crown_keyboard_cubie'));assert.equal((keyboard.match(/data-expression=/g)||[]).length,20);
+ const keyboard=crowns.art(cubies.catalog.find(i=>i.id==='crown_keyboard_cubie'));assert.match(keyboard,/data-expression-count="20"/);assert.match(keyboard,/attributeName="d" dur="100s"/);assert.doesNotMatch(keyboard,/class="ex-expression"/);
  assert.ok(crowns.games.some(g=>g.name==='Nanoverse Luminary'));assert.ok(crowns.games.every(g=>g.name!=='Microverse Luminary'));
  await crowns.refresh({configured:true,listGame:async()=>[{rank:2,is_you:true}]},'sky-player');assert.equal(crowns.has('balloon'),false);
 });

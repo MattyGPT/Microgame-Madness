@@ -164,7 +164,7 @@ progress, purchases, moderation, or account data. Separate game pages keep their
 own audio controls. Ctrl/Command + comma opens the utility when enabled.
 
 The mmu1.5 release includes a public Balloon Pop leaderboard (raw points weighted
-once by difficulty: ×1, ×2, ×3, ×4). Its Diamond Sky Sovereign #1 pack contains a
+once by difficulty: ×1, ×2, ×3, ×4). Its Diamond Sky Balloon #1 pack contains a
 Cubie, Turtle and Trail. All 13 first-place packs use the same verified entitlement,
 revocation, and once-per-ownership celebration flow. Nanoverse Luminary is the Nano
 Lab pack. Rich SVG effects respect reduced motion.

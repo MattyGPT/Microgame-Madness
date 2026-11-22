@@ -4033,7 +4033,7 @@ accountApp = new AccountApp.App({ getProfile: () => saved, applyProfile: applyAc
   getSoundPreference: () => soundOn,
   onSoundPreference: value => { rememberSoundChoice(value); setSoundEnabled(value); },
   isPlaying: () => active, config: leaderboardReady.then(client => ({ url: client.url, key: client.key })),
-  onIdentityLoss: () => { active = false; snapshot = null; clearKeys(); selectGame("hangman"); } });
+  onIdentityLoss: () => { active = false; snapshot = null; geomayhemRun = null; geomayhemResult = null; clearKeys(); selectGame("hangman"); } });
 accountApp.onVisibilityChange = syncGuestLeaderboardPrivacy;
 let resetStep = 0;
 let resetPending = false;

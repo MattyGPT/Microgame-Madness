@@ -4,3 +4,27 @@
 html[data-setting-motion=true] .ex-expression,.account-reduced-motion .ex-expression,#global-scores .ex-expression{animation:none!important;opacity:0}html[data-setting-motion=true] .ex-expression:first-of-type,.account-reduced-motion .ex-expression:first-of-type,#global-scores .ex-expression:first-of-type{opacity:1}
 @media(prefers-reduced-motion:reduce){[class^="ex-"]{animation:none!important}.ex-expression{opacity:0}.ex-expression[data-expression="1"]{opacity:1}.ex-rainbow-glare{transform:translateX(30px)}}
 html[data-setting-motion=true] .ex-expression[data-expression="1"],.account-reduced-motion .ex-expression[data-expression="1"],#global-scores .ex-expression[data-expression="1"]{opacity:1}
+/* Each silhouette carries its own regalia; expressions move without opacity swaps. */
+.ex-face-idle{transform-origin:78px 80px;animation:ex-face-idle 4s ease-in-out infinite}.ex-blink{transform-box:fill-box;transform-origin:center;animation:ex-blink 4.8s linear infinite}.ex-cheeks{animation:ex-cheeks 3s ease-in-out infinite}.ex-galaxy-detail{animation:ex-orbit 26s linear infinite;transform-origin:0 0}.ex-wheel-rock{transform-origin:75px 82px;animation:ex-wheel-rock 1.8s ease-in-out infinite}.ex-satellite-sheen{animation:ex-spectrum 4s linear infinite}.ex-circuit{animation:ex-neon 1.7s ease-in-out infinite}.ex-pixel{animation:ex-pixel 1.6s steps(2,end) infinite}.ex-wisp{animation:ex-wisp 3s ease-in-out infinite;transform-origin:75px 30px}.ex-glitch-crown{animation:ex-glitch 5s steps(1,end) infinite}.ex-hat-liquid{animation:ex-liquid 2s ease-in-out infinite;transform-origin:75px 34px}.ex-spirit{animation:ex-spirit 4.2s ease-in-out infinite;transform-origin:0 0}.ex-ghost{animation:ex-ghost 3s ease-in-out infinite}.ex-infected{animation:ex-neon 3.4s ease-in-out infinite}.ex-obsidian-breathe{transform-origin:75px 82px;animation:ex-obsidian-breathe 5.6s ease-in-out infinite}.ex-magma{animation:ex-magma 2.3s ease-in-out infinite}.ex-ember{animation:ex-ember 2.5s ease-out infinite}.ex-ice-crystals{transform-origin:75px 138px;animation:ex-ice-grow 3.8s ease-in-out infinite}.ex-ice-shimmer{animation:ex-ice-shimmer 2.8s ease-in-out infinite}.ex-treasury-tilt{transform-origin:75px 80px;animation:ex-treasury-tilt 5s ease-in-out infinite}.ex-tip-dot{animation:ex-tip-dot 1s linear infinite}.ex-tip-exhaust{overflow:visible}.ex-regalia-geomayhem{transform:translateY(4px)}.ex-regalia-balloon{filter:drop-shadow(0 0 2px #f1ddff)}
+@keyframes ex-face-idle{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(-1px,1px) rotate(-2deg)}65%{transform:translate(1px,-1px) rotate(2deg)}}
+@keyframes ex-blink{0%,42%,46%,100%{transform:scaleY(1)}44%{transform:scaleY(.12)}}
+@keyframes ex-cheeks{50%{stroke-width:2.3}}
+@keyframes ex-wheel-rock{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes ex-spectrum{to{filter:hue-rotate(360deg)}}
+@keyframes ex-pixel{50%{fill:#fff;transform:translateY(-1px)}}
+@keyframes ex-wisp{50%{transform:scaleX(1.12) translateY(-2px);opacity:.5}}
+@keyframes ex-glitch{0%,91%,95%,100%{transform:translate(0)}92%{transform:translate(-2px,1px)}94%{transform:translate(2px,-1px)}}
+@keyframes ex-spirit{0%,100%{transform:translate(var(--sx),29px) scale(.15,.5);opacity:.1}25%{transform:translate(calc(var(--sx) - 10px),7px) scale(.8);opacity:.8}50%{transform:translate(calc(var(--sx) + 7px),14px) scale(1.2);opacity:.95}75%{transform:translate(calc(var(--sx) + 12px),36px) scale(.65);opacity:.45}}
+@keyframes ex-ghost{50%{transform:translate(3px,-9px);opacity:.25}}
+@keyframes ex-obsidian-breathe{0%,100%{transform:scale(1) skewX(0)}35%{transform:scale(1.018,.983) skewX(1deg)}70%{transform:scale(.99,1.014) skewX(-.8deg)}}
+@keyframes ex-magma{0%,100%{stroke:#ffb766;transform:translateX(0)}50%{stroke:#ff602d;transform:translateX(.6px)}}
+@keyframes ex-ember{0%{transform:translate(0,6px);opacity:0}15%{opacity:1}100%{transform:translate(var(--drift),-56px);opacity:0}}
+@keyframes ex-ice-grow{50%{transform:scaleY(1.13)}}
+@keyframes ex-ice-shimmer{50%{fill:#e2faff;filter:drop-shadow(0 0 1.5px #a8eeff)}}
+@keyframes ex-treasury-tilt{50%{transform:rotate(5deg) scaleX(.95)}}
+@keyframes ex-tip-dot{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--dx),20px);opacity:0}}
+/* The celestial liquid rolls across the bowl, with a separate counter-wave. */
+.ex-liquid{animation:ex-slosh 2.4s ease-in-out infinite;transform-origin:75px 110px}.ex-liquid-second{animation-direction:reverse;animation-delay:-.6s}
+@keyframes ex-slosh{0%,100%{transform:translate(-7px,2px) rotate(-8deg)}50%{transform:translate(7px,-3px) rotate(8deg)}}
+html[data-setting-motion=true] .crown-art [class*="ex-"],.account-reduced-motion .crown-art [class*="ex-"]{animation:none!important}
+@media(prefers-reduced-motion:reduce){.crown-art [class*="ex-"]{animation:none!important}}
