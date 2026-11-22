@@ -28,7 +28,9 @@ test('jukebox picks songs, pauses, mutes, stops, and restores game music', async
     expect(card.path.length).toBeGreaterThan(30);
     expect(previous.some(old => old.motif === card.motif || old.path === card.path)).toBe(false);
   }
-  await page.locator('#difficulty-choices').screenshot({ path: testInfo.outputPath('song-cards.png') });
+  // Capture the visible cards: the full mobile song catalog exceeds Chromium's image limits.
+  await page.locator('.song-card').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('song-cards.png') });
   for (const id of ['arcade', 'pumpkin', 'singularity', 'boss_mean', 'rock_afterburn', 'starlight_soda', 'aurora_afterparty', ...journeySongs]) {
     await page.locator(`[data-difficulty="${id}"]`).click();
     await expect.poll(() => page.evaluate(() => musicPlayer.track)).toBe(id);

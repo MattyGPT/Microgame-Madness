@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test('every Cubie Custom has a portable arena sprite and equipped skins appear in Geomayhem',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await openGame(page);
+  await openGame(page);await page.evaluate(()=>accountApp.ready);
   const failed=await page.evaluate(async()=>{
     const failed=[];
     for(const item of CubieCustoms.catalog) {

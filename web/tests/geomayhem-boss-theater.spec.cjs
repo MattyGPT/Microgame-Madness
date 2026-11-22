@@ -24,7 +24,7 @@ test('all 20 bosses load with cinematics and three real attack previews',async({
 });
 test('campaign boss introduction freezes combat, skips, and keeps a named health bar',async({page})=>{
   await page.route('**/app.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('handle = pyodide.globals.get("handle");','window.bossRuntime=pyodide; handle = pyodide.globals.get("handle");')})});
-  await openGame(page);
+  await openGame(page);await page.evaluate(()=>accountApp.ready);
   await page.evaluate(()=>{selectGame('geomayhem');startGame('level_1');window.bossRuntime.runPython('from bridge import session\nsession.game.wave=20\nsession.game.break_left=0\nsession.game.spawned=0\nsession.game._spawn()');});
   await expect(page.locator('#boss-cinema')).toBeVisible();
   await page.evaluate(()=>setSoundEnabled(true));

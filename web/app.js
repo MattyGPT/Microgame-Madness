@@ -1689,7 +1689,7 @@ function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
     `${modes[mode]?.difficulties[difficulty]?.[0] || (difficulty === "standard" ? "Standard" : difficulty.replace("level_", "Arena "))} ×${multiplier}`);
-  const scoring={balloon:'Completed run points × difficulty: Normal 1, Hard 2, Merciless 3, Impossible 4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
+  const scoring={balloon:'Completed run points × difficulty: Normal ×1, Hard ×2, Merciless ×3, Impossible ×4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
   $("leaderboard-multipliers").textContent = scoring[mode] || (mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · "));
 }
 function initializeGlobalLeaderboards() {

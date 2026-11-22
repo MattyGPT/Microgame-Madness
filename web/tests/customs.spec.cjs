@@ -241,7 +241,7 @@ test('Cubie Shop earns Cash once, buys and equips exclusive Customs, and persist
   };
   await leaveFullscreen(page);
   await page.locator('[data-game="shop"]').click();
-  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(174);
+  await expect(page.locator('#shop-grid .custom-tile')).toHaveCount(175);
   await checkPriceOrder();
   await expect(page.locator('#shop-balance')).toHaveText('0 Cubie Cash');
   const mint = page.locator('#shop-grid [data-custom="shop_blue_mint"]');

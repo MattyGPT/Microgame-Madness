@@ -105,7 +105,7 @@ test('global rankings have one combined board per game without a difficulty filt
     await page.locator('#leaderboard-game').selectOption(mode);
     await expect(page.locator('#leaderboard-status')).toHaveText('No scores yet. Set the first record!');
     await expect.poll(() => service.requested.has(mode)).toBe(true);
-    await expect(page.locator('#leaderboard-multipliers')).toContainText(['coindrop','nanolab','treasure','tearesseract'].includes(mode) ? '1 point' : '×1');
+    await expect(page.locator('#leaderboard-multipliers')).toContainText(['pool','coindrop','nanolab','treasure','tearesseract'].includes(mode) ? '1 point' : '×1');
   }
   await expect(page.locator('#leaderboard-difficulty')).toHaveCount(0);
   expect([...service.requested].sort()).toEqual(Object.keys(modes).sort());
