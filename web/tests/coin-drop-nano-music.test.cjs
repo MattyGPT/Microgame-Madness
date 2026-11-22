@@ -7,10 +7,10 @@ function context(){
  const ctx={state:'running',currentTime:0,destination:{},starts:[],stops:0,createGain(){return {gain:param(),connect(){},disconnect(){}};},createOscillator(){return {frequency:param(),connect(){},disconnect(){},start(at){ctx.starts.push(at);},stop(){ctx.stops++;}};}};
  return ctx;
 }
-test('all 300 games receive stable, short and musically distinct original phrases',()=>{
- const songs=nanogames.map(Music.score);assert.equal(songs.length,300);
+test('all 3000 games receive stable, short and musically distinct original phrases',()=>{
+ const songs=nanogames.map(Music.score);assert.equal(songs.length,3000);
  const melodies=songs.map(s=>{const notes=s.beats.map(b=>b[0]?.midi??null),root=notes[0];return JSON.stringify(notes.map(n=>n===null?null:n-root));});
- assert.equal(new Set(melodies).size,300,'melodies must differ even without transposition');
+ assert.equal(new Set(melodies).size,3000,'melodies must differ even without transposition');
  for(const [i,s] of songs.entries()){
   assert.strictEqual(Music.score(nanogames[i]),s);assert.ok(s.duration<=nanogames[i].seconds&&s.duration<=5.6);assert.equal(s.beats.length,16);
   for(const note of s.beats.flat()){assert.ok(note.midi>=24&&note.midi<=96);assert.ok(note.duration>0&&note.duration<1);assert.ok(note.volume>0&&note.volume<=.25);}

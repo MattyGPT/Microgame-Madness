@@ -16,6 +16,15 @@ export const server=http.createServer(async(req,res)=>{
    let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('Too large');}
    const b=JSON.parse(raw);let result;
    if(b.action==='status')result={moderator:true,label:'Nate, the creator'};
+   else if(b.action==='discussion'){
+    const operation=['list','create','like','delete'].includes(b.operation)?b.operation:'invalid';
+    if(operation==='create'&&(typeof b.body!=='string'||b.body.length>1000))throw Error('Invalid comment');
+    const rows=await query(`select news_private.discussion(${quote(operation)},${uuid(b.id)},${b.body===undefined?'null':quote(b.body)},${b.parent?uuid(b.parent):'null'},${quote(b.kind||'suggestion')},null,true) data`);result=rows[0].data;
+   }
+   else if(b.action==='reply'||b.action==='deleteReply'){
+    if(b.action==='reply'&&(typeof b.body!=='string'||!b.body.trim()||b.body.length>1000))throw Error('Invalid reply');
+    result=await query(`select news_private.reply_action(${quote(b.action==='reply'?'create':'delete')},${uuid(b.id)},${b.action==='reply'?quote(b.body):'null'},null,true)`);
+   }
    else if(b.action==='suggestionLike') {await query(`select news_private.toggle_suggestion(${uuid(b.id)},null,true)`);result={};}
    else if(b.action==='suggestionLikes') {result=await query("select comment from news_private.suggestion_likes where actor='local_creator'");}
    else if(b.action==='chat'){

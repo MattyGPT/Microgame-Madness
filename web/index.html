@@ -29,6 +29,7 @@
     <script src="./jackpot-slots.js" defer></script>
     <script src="./shop.js" defer></script>
     <script src="./coin-drop-expansion.js" defer></script>
+    <script src="./coin-drop-frontier.js" defer></script>
     <script src="./coin-drop-nanogames.js" defer></script>
     <script src="./coin-drop-nano-music.js" defer></script>
     <script src="./coin-drop-lessons.js" defer></script>
@@ -45,9 +46,9 @@
     <script src="./jukebox-archive.js" defer></script>
     <script src="./music.js" defer></script>
     <script src="./jukebox-search.js" defer></script>
-    <script src="./crown-packs.js" defer></script>
+    <script defer src="./exclusive-polish.js"></script><script src="./crown-packs.js" defer></script>
     <script src="./collections.js" defer></script>
-    <script src="./account-rules.js" defer></script>
+    <script src="./geomayhem-progress.js" defer></script><script src="./account-rules.js" defer></script>
     <script src="./accounts/store.js" defer></script>
     <script src="./accounts/session.js" defer></script>
     <script src="./accounts/sync.js" defer></script>
@@ -55,12 +56,12 @@
     <script src="./accounts/welcome.js" defer></script>
     <script id="chaos-bootstrap" type="application/json"><!-- CHAOS_BOOTSTRAP --></script>
     <script src="./chaos-art.js"></script>
-    <script src="./geomayhem-progress.js" defer></script>
+
     <script src="./app.js" defer></script>
     <script src="./news.js" defer></script>
     <script src="./autumn-room.js" defer></script>
     <link rel="stylesheet" href="./autumn-room.css" />
-  </head>
+  <link rel="stylesheet" href="./game-dialog.css"><script defer src="./game-dialog.js"></script><link rel="stylesheet" href="./settings.css"><script defer src="./settings.js"></script><link rel="stylesheet" href="./exclusive-polish.css"></head>
   <body>
     <div id="now-playing" class="now-playing" role="status" aria-live="polite" hidden></div>
     <div id="achievement-toast" data-fullscreen-overlay class="achievement-toasts" role="status" aria-live="polite" aria-atomic="false" aria-relevant="additions" hidden></div>
@@ -127,7 +128,7 @@
           data-game="hangman"
           aria-pressed="true"
           style="--accent: #c6f783"
-        >
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span>
           <span class="hangman-matrix" aria-hidden="true"><span class="matrix-stream" style="--column:0;--fall:5.8s;--offset:0.00s">A
 M
 0
@@ -817,7 +818,7 @@ A
           data-game="keyboard"
           aria-pressed="false"
           style="--accent: #b9a5f5"
-        ><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#b49bef">
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#b49bef">
  <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width=".65">
  <defs><radialGradient id="scene-keyboard-light"><stop stop-color="#b49bef" stop-opacity=".2"/><stop offset="1" stop-color="#b49bef" stop-opacity="0"/></radialGradient></defs>
  <ellipse cx="120" cy="75" rx="112" ry="85" fill="url(#scene-keyboard-light)" stroke="none"/>
@@ -886,7 +887,7 @@ A
           data-game="dodge"
           aria-pressed="false"
           style="--accent: #88dce7"
-        ><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#68c5f1">
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#68c5f1">
  <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width=".65">
  <defs><radialGradient id="scene-dodge-light"><stop stop-color="#68c5f1" stop-opacity=".2"/><stop offset="1" stop-color="#68c5f1" stop-opacity="0"/></radialGradient></defs>
  <ellipse cx="120" cy="75" rx="112" ry="85" fill="url(#scene-dodge-light)" stroke="none"/><defs><symbol id="ocean-reef-fish" viewBox="0 0 40 28"><path d="M7 14Q19 2 32 14Q19 26 7 14L1 7V21Z M18 8L15 3L25 8" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-angelfish" viewBox="0 0 40 28"><path d="M12 14L24 1L29 14L24 27Z M12 14L3 8V20Z" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-butterflyfish" viewBox="0 0 40 28"><path d="M9 14Q12 2 24 4Q34 14 24 24Q12 26 9 14L2 7V21Z M20 6V22" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-clownfish" viewBox="0 0 40 28"><path d="M8 14Q19 3 31 14Q19 25 8 14L2 8V20Z M13 9V19M22 8V20" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-tang" viewBox="0 0 40 28"><path d="M8 14Q16 0 29 8L33 14L29 20Q16 28 8 14L1 8V20Z M27 11L30 14L27 17" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-lionfish" viewBox="0 0 40 28"><path d="M9 14Q21 5 31 14Q21 23 9 14L2 9V19Z M12 10L9 1M17 8L17 0M23 9L27 1M12 18L8 27M19 20L20 28M25 18L30 26" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-pufferfish" viewBox="0 0 40 28"><path d="M10 14A10 10 0 1 0 30 14A10 10 0 1 0 10 14M10 14L3 9V19Z M15 5L13 1M21 4V0M27 6L30 2M15 23L13 27M23 24V28M29 20L33 23" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-parrotfish" viewBox="0 0 40 28"><path d="M7 14Q14 3 27 7L34 12L31 15L33 18Q15 27 7 14L1 9V19Z M31 12L27 15L31 18" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-needlefish" viewBox="0 0 40 28"><path d="M4 13L29 10L40 13L29 15L5 16L0 21L1 9Z M22 11L18 6" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-seahorse" viewBox="0 0 40 28"><path d="M25 6Q20 0 16 5Q13 9 18 12Q29 23 18 26Q9 27 14 21Q18 18 20 22M18 12L11 15L15 7M20 4L30 7L29 10L22 9" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-jellyfish" viewBox="0 0 40 28"><path d="M8 13Q8 0 20 1Q32 0 32 13Z M11 13Q6 19 12 26M17 13Q23 19 17 28M24 13Q18 21 25 26M29 13Q35 20 30 25" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-octopus" viewBox="0 0 40 28"><path d="M13 13Q8 0 20 1Q32 0 27 13M13 13Q5 10 3 18Q1 24 7 22M15 13Q10 19 12 26M18 14Q18 24 15 26M22 14Q22 26 26 25M25 13Q31 26 34 20M27 13Q36 10 38 18" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-squid" viewBox="0 0 40 28"><path d="M10 12L24 2L35 12L24 22Z M10 12Q4 6 1 9M10 12Q2 13 0 17M12 15Q7 23 2 21M14 17Q10 28 6 25" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-cuttlefish" viewBox="0 0 40 28"><path d="M7 14Q7 1 26 5Q39 14 26 23Q7 27 7 14Z M9 11L1 7M8 14H0M9 17L1 22M14 8Q25 5 29 14Q25 23 14 20" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-sea-turtle" viewBox="0 0 40 28"><path d="M11 8Q22 3 29 10V18Q22 25 11 20Z M29 12Q38 8 38 14Q38 20 29 17M16 8L9 2L7 5L11 11M16 21L8 27L6 24L11 18M25 9L27 3L30 5L28 11M25 20L28 25L31 23L28 17 M15 11L23 10L26 15L22 20L15 18Z" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-manta-ray" viewBox="0 0 40 28"><path d="M20 10Q12 1 1 4L10 18L20 20L30 18L39 4Q28 1 20 10Z M20 20L17 28" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-stingray" viewBox="0 0 40 28"><path d="M20 4L35 14L22 23L5 14Z M22 23Q33 23 39 28" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-shark" viewBox="0 0 40 28"><path d="M3 15Q15 7 23 10L26 3L29 11L38 15L28 19L22 19L18 25L16 18L6 17L1 23L2 13L0 5Z" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-hammerhead" viewBox="0 0 40 28"><path d="M4 14L23 9L29 10L29 4H35V24H29V18L24 19L14 18L10 23L9 17L1 21L3 14L0 7Z M20 10L19 4L25 10" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-dolphin" viewBox="0 0 40 28"><path d="M2 15Q17 4 29 10L33 12L39 14L32 16Q24 22 14 18L12 25L9 18L1 22L3 15L0 9Z M19 9L21 3L25 10" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-whale" viewBox="0 0 40 28"><path d="M5 13Q12 1 29 7Q38 12 34 20Q19 27 9 19L5 22L0 19L5 16L0 11Z M20 20L16 26L27 21" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-seal" viewBox="0 0 40 28"><path d="M4 17Q13 10 24 15Q25 4 31 5Q38 8 33 15L30 20Q15 27 6 20L1 24L0 19Z M23 20L20 26L29 22" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-lobster" viewBox="0 0 40 28"><path d="M13 14Q20 8 27 14L33 20L28 25L21 20L14 19Z M14 14L8 7L4 9L2 4M8 7L9 2M15 17L5 17L2 23M5 17L1 15M20 15L20 7M24 17L27 9M20 20L17 26M25 22L25 28" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><symbol id="ocean-crab" viewBox="0 0 40 28"><path d="M10 13Q20 6 30 13V20H10Z M10 13L5 7L2 9L0 4M5 7L7 1M30 13L35 7L38 9L40 4M35 7L33 1M10 16L3 15M10 19L3 23M30 16L37 15M30 19L37 23M16 10V6M24 10V6" fill="currentColor" fill-opacity=".35" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></symbol><linearGradient id="ocean-ray-light" x2="0" y2="1"><stop stop-color="#9ee8ff" stop-opacity=".12"/><stop offset="1" stop-color="#8acbff" stop-opacity="0"/></linearGradient></defs>
@@ -1089,7 +1090,7 @@ A
           data-game="boss"
           aria-pressed="false"
           style="--accent: #f29d9e"
-        >
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span>
           <span class="boss-card-scene" aria-hidden="true">
             <svg viewBox="0 0 240 200" preserveAspectRatio="xMidYMid slice" fill="none">
               <defs>
@@ -1201,7 +1202,7 @@ A
           data-game="pumpkin"
           aria-pressed="false"
           style="--accent: #f8b36b"
-        >
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span>
           <span class="pumpkin-card-scene" aria-hidden="true">
             <svg viewBox="0 0 240 200" preserveAspectRatio="xMidYMid slice" fill="none">
               <defs>
@@ -1303,7 +1304,7 @@ A
           data-game="wrath"
           aria-pressed="false"
           style="--accent: #ffe066"
-        ><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#e6b45d">
+         data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#e6b45d">
  <svg viewBox="0 0 240 180" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width=".65">
  <defs><radialGradient id="scene-wrath-light"><stop stop-color="#e6b45d" stop-opacity=".2"/><stop offset="1" stop-color="#e6b45d" stop-opacity="0"/></radialGradient></defs>
  <ellipse cx="120" cy="75" rx="112" ry="85" fill="url(#scene-wrath-light)" stroke="none"/>
@@ -1370,7 +1371,7 @@ A
           <span class="card-title">The King's Wrath <span>↗</span></span>
           <span class="card-description">Your attack. Your rematch.</span>
         </button>
-        <button id="singularity-rift" class="game-card singularity-rift" type="button" aria-label="Disturb the rift">
+        <button id="singularity-rift" class="game-card singularity-rift" type="button" aria-label="Disturb the rift" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span>
           <svg viewBox="0 0 240 180" fill="none" focusable="false" aria-hidden="true">
             <defs>
               <radialGradient id="rift-violet-haze">
@@ -1426,7 +1427,7 @@ A
           </svg>
         </button>
         <button class="game-card singularity-card" data-game="singularity"
-          aria-pressed="false" style="--accent: #65f5ff" hidden><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#779fea">
+          aria-pressed="false" style="--accent: #65f5ff" hidden data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#779fea">
  <svg class="core-cosmos" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" fill="none" stroke="none">
  <defs>
   <radialGradient id="cosmos-cloud-blue"><stop stop-color="#529acb" stop-opacity=".46"/><stop offset=".4" stop-color="#394f9c" stop-opacity=".28"/><stop offset="1" stop-color="#16234c" stop-opacity="0"/></radialGradient>
@@ -1605,7 +1606,7 @@ A
           <span class="card-title">Singularity Core <span>↗</span></span>
           <span class="card-description">15 protocols. One final shot.</span>
         </button>
-        <button class="game-card" data-game="jukebox" aria-pressed="false" style="--accent: #f5a5dc"><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#e493cc">
+        <button class="game-card" data-game="jukebox" aria-pressed="false" style="--accent: #f5a5dc" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="arcade-card-scene" aria-hidden="true" style="--scene-color:#e493cc">
  <svg class="jukebox-studio-scene" viewBox="0 0 240 180" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs>
   <radialGradient id="jukebox-stage-glow"><stop stop-color="#bd67a8" stop-opacity=".26"/><stop offset="1" stop-color="#352442" stop-opacity="0"/></radialGradient>
@@ -1673,10 +1674,10 @@ A
           <span class="card-title">Arcade Jukebox <span>↗</span></span>
           <span class="card-description">Your songs. On repeat.</span>
         </button>
-<button class="game-card collection-game-card" data-game="turtles" aria-pressed="false" style="--accent:#77efcf"><span class="card-art" aria-hidden="true">♧</span><span class="card-title">Custom Turtles <span>↗</span></span><span class="card-description">Elemental shells. Crowned champions.</span></button>
-<button class="game-card collection-game-card" data-game="trails" aria-pressed="false" style="--accent:#d6a3ff"><span class="card-art" aria-hidden="true">✧</span><span class="card-title">Turtle Trails <span>↗</span></span><span class="card-description">Find your own dazzling wake.</span></button>
-<button class="game-card" data-game="treasure" aria-pressed="false" style="--accent:#ffda83"><span class="card-art" aria-hidden="true"></span><span class="card-title">Treasure Trove <span>↗</span></span><span class="card-description">Follow the chest. Find your fortune.</span></button>
-        <button class="game-card" data-game="customs" aria-pressed="false" style="--accent: #c6f783"><span class="arcade-card-scene cubie-atelier" aria-hidden="true">
+<button class="game-card collection-game-card" data-game="turtles" aria-pressed="false" style="--accent:#77efcf" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="card-art" aria-hidden="true">♧</span><span class="card-title">Custom Turtles <span>↗</span></span><span class="card-description">Elemental shells. Crowned champions.</span></button>
+<button class="game-card collection-game-card" data-game="trails" aria-pressed="false" style="--accent:#d6a3ff" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="card-art" aria-hidden="true">✧</span><span class="card-title">Turtle Trails <span>↗</span></span><span class="card-description">Find your own dazzling wake.</span></button>
+<button class="game-card" data-game="treasure" aria-pressed="false" style="--accent:#ffda83" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-art" aria-hidden="true"></span><span class="card-title">Treasure Trove <span>↗</span></span><span class="card-description">Follow the chest. Find your fortune.</span></button>
+        <button class="game-card" data-game="customs" aria-pressed="false" style="--accent: #c6f783" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="arcade-card-scene cubie-atelier" aria-hidden="true">
  <svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs>
   <radialGradient id="atelier-room"><stop stop-color="#285e55"/><stop offset=".5" stop-color="#142f35"/><stop offset="1" stop-color="#10181f"/></radialGradient>
@@ -1736,7 +1737,7 @@ A
           <span class="card-title">Custom Cubie <span>↗</span></span>
           <span class="card-description">Big achievements. Little outfits.</span>
         </button>
-        <button class="game-card" data-game="shop" aria-pressed="false" style="--accent: #80b9ff"><span class="arcade-card-scene shop-vault" aria-hidden="true">
+        <button class="game-card" data-game="shop" aria-pressed="false" style="--accent: #80b9ff" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="arcade-card-scene shop-vault" aria-hidden="true">
  <svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs>
   <radialGradient id="vault-room"><stop stop-color="#254a65"/><stop offset=".57" stop-color="#142d43"/><stop offset="1" stop-color="#101823"/></radialGradient>
@@ -1895,7 +1896,7 @@ A
           <span class="card-title">Cubie Shop <span>↗</span></span>
           <span class="card-description">Play. Earn. Find a new you.</span>
         </button>
-        <button class="game-card geomayhem-card" data-game="geomayhem" aria-pressed="false" style="--accent: #71f5d2"><span class="arcade-card-scene geo2-arena" aria-hidden="true"><svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
+        <button class="game-card geomayhem-card" data-game="geomayhem" aria-pressed="false" style="--accent: #71f5d2" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="arcade-card-scene geo2-arena" aria-hidden="true"><svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs><radialGradient id="geo2-space"><stop stop-color="#163f49"/><stop offset=".6" stop-color="#162238"/><stop offset="1" stop-color="#111923"/></radialGradient><linearGradient id="geo2-neon"><stop stop-color="#71f5d2"/><stop offset=".5" stop-color="#6bbdff"/><stop offset="1" stop-color="#c194ff"/></linearGradient><linearGradient id="geo2-dark" x2="0" y2="1"><stop offset=".5" stop-color="#101923" stop-opacity="0"/><stop offset="1" stop-color="#101923" stop-opacity=".95"/></linearGradient></defs>
  <path d="M0 0H300V220H0Z" fill="url(#geo2-space)"/>
  <g stroke="url(#geo2-neon)" stroke-width=".6" opacity=".25"><path d="M0 200L150 85L300 200M20 220L150 85L280 220M80 220L150 85L220 220M125 220L150 85L175 220M0 115H300M0 133H300M0 158H300M0 192H300"/><path d="M0 76H14V46H31V85H43V62H56V94M244 94V60H257V82H269V39H285V68H300" fill="#172e42"/></g>
@@ -1965,7 +1966,7 @@ A
           <span class="card-title">Geomayhem <span>↗</span></span>
           <span class="card-description">One Cubie. Build your own mayhem.</span>
         </button>
-        <button class="game-card" data-game="guide" aria-pressed="false" style="--accent: #c7a6ff"><span class="arcade-card-scene guide-lab" aria-hidden="true">
+        <button class="game-card" data-game="guide" aria-pressed="false" style="--accent: #c7a6ff" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="arcade-card-scene guide-lab" aria-hidden="true">
  <svg viewBox="0 0 300 220" preserveAspectRatio="xMidYMid slice" fill="none">
  <defs>
   <radialGradient id="guide-lab-room" cx=".25" cy=".42" r=".85"><stop stop-color="#28334b"/><stop offset=".48" stop-color="#202038"/><stop offset="1" stop-color="#101723"/></radialGradient>
@@ -2008,7 +2009,7 @@ A
           <span class="card-title">Block Guide <span>↗</span></span>
           <span class="card-description">Know your blocks. Survive the chaos.</span>
         </button>
-<button class="game-card coin-drop-card" data-game="coindrop" aria-pressed="false" style="--accent:#8acaff"><span class="card-top">13 / PEGBOARD ADVENTURE</span><span class="card-art" aria-hidden="true"><svg class="cd-card-coin" viewBox="0 0 86 86">
+<button class="game-card coin-drop-card" data-game="coindrop" aria-pressed="false" style="--accent:#8acaff" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-top">13 / PEGBOARD ADVENTURE</span><span class="card-art" aria-hidden="true"><svg class="cd-card-coin" viewBox="0 0 86 86">
                   <defs>
                     <linearGradient id="cd-card-metal" x2=".8" y2="1"><stop stop-color="#83bfff"/><stop offset=".42" stop-color="#255ca7"/><stop offset="1" stop-color="#102c68"/></linearGradient>
                     <linearGradient id="cd-card-rim" x2=".8" y2="1"><stop stop-color="#d0eaff"/><stop offset=".5" stop-color="#6ba9ed"/><stop offset="1" stop-color="#285693"/></linearGradient>
@@ -2019,10 +2020,10 @@ A
                   <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#082960" stroke-width="7" transform="translate(1 2)"/>
                   <path d="M54 31a17 17 0 1 0 0 24" fill="none" stroke="#c3e2ff" stroke-width="7"/>
                   <path d="M16 27a32 32 0 0 1 38-14" fill="none" stroke="#d8efff" opacity=".45" stroke-width="2" stroke-linecap="round"/>
-                </svg></span><span class="card-title">Coin Drop</span><span class="card-description">100 worlds. One extraordinary coin.</span></button>
-        <button class="game-card nano-lab-card" data-game="nanolab" aria-pressed="false" style="--accent:#cfadff"><span class="card-top">14 / NANOGAME PRACTICE</span><span class="card-art" aria-hidden="true">⚗</span><span class="card-title">Nano Lab</span><span class="card-description">Practice all 300 nanogames. No rewards saved.</span></button>
-        <a class="game-card tearesseract-card" href="./tearesseract.html" style="--accent:#76ffe1;text-decoration:none"><span class="card-top">15 / EXTREME BOSS ENCOUNTER</span><span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 100" width="120" height="100" fill="none" stroke-linejoin="round"><g stroke="#76ffe1" stroke-width="1.7"><path d="M23 23 76 12 102 35 48 47Z M23 23V68L48 90 102 77V35 M48 47V90 M76 12V57L23 68 M76 57 102 77"/><path d="M42 36 69 30 83 43 56 49Z M42 36V60L56 73 83 67V43 M56 49V73 M69 30V54L42 60 M69 54 83 67"/><path d="M23 23 42 36 M76 12 69 30 M102 35 83 43 M48 47 56 49 M23 68 42 60 M76 57 69 54 M102 77 83 67 M48 90 56 73" opacity=".5"/></g><circle cx="62" cy="51" r="4" fill="#d9fff6" stroke="none"/></svg></span><span class="card-title">Tearesseract</span><span class="card-description">30 attacks. A shield. An impossible machine.</span></a>
-        <button id="news-open" class="game-card news-card" aria-haspopup="dialog" aria-controls="news-dialog">
+                </svg></span><span class="card-title">Coin Drop</span><span class="card-description">1,000 worlds. One extraordinary coin.</span></button>
+        <button class="game-card nano-lab-card" data-game="nanolab" aria-pressed="false" style="--accent:#cfadff" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-top">14 / NANOGAME PRACTICE</span><span class="card-art" aria-hidden="true">⚗</span><span class="card-title">Nano Lab</span><span class="card-description">Practice all 3,000 nanogames. Earn rewards.</span></button>
+        <a class="game-card tearesseract-card" href="./tearesseract.html" style="--accent:#76ffe1;text-decoration:none" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-top">15 / EXTREME BOSS ENCOUNTER</span><span class="card-art" aria-hidden="true"><svg viewBox="0 0 120 100" width="120" height="100" fill="none" stroke-linejoin="round"><g stroke="#76ffe1" stroke-width="1.7"><path d="M23 23 76 12 102 35 48 47Z M23 23V68L48 90 102 77V35 M48 47V90 M76 12V57L23 68 M76 57 102 77"/><path d="M42 36 69 30 83 43 56 49Z M42 36V60L56 73 83 67V43 M56 49V73 M69 30V54L42 60 M69 54 83 67"/><path d="M23 23 42 36 M76 12 69 30 M102 35 83 43 M48 47 56 49 M23 68 42 60 M76 57 69 54 M102 77 83 67 M48 90 56 73" opacity=".5"/></g><circle cx="62" cy="51" r="4" fill="#d9fff6" stroke="none"/></svg></span><span class="card-title">Tearesseract</span><span class="card-description">30 attacks. A shield. An impossible machine.</span></a>
+        <button id="news-open" class="game-card news-card" aria-haspopup="dialog" aria-controls="news-dialog" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span>
           <span class="news-card-grid" aria-hidden="true"></span>
           <span class="news-card-copy">
             <span class="card-top"><span class="news-on-air" aria-hidden="true"></span> THE ARCADE DISPATCH</span>
@@ -2076,7 +2077,7 @@ A
           </span>
           <span class="news-card-open" aria-hidden="true">OPEN DISPATCH <span>↗</span></span>
         </button>
-        <button id="autumn-open" class="game-card autumn-card" hidden aria-haspopup="dialog" aria-controls="autumn-room"><span class="autumn-card-moon" aria-hidden="true">☾</span><span class="card-top">THE CREATORS’ CHAT · PRIVATE ROOM</span><span class="card-title">The Autumn Room <span>↗</span></span><span class="card-description">Purple skies. Falling leaves. A little lo-fi, a little conversation.</span><span class="autumn-card-leaves" aria-hidden="true">❧ &nbsp; ❧ &nbsp; ❧</span></button>
+        <button id="autumn-open" class="game-card autumn-card" hidden aria-haspopup="dialog" aria-controls="autumn-room" data-card-kind="utility"><span class="card-kind-label" data-label="UTILITY"><span>UTILITY</span></span><span class="autumn-card-moon" aria-hidden="true">☾</span><span class="card-top">THE CREATORS’ CHAT · PRIVATE ROOM</span><span class="card-title">The Autumn Room <span>↗</span></span><span class="card-description">Purple skies. Falling leaves. A little lo-fi, a little conversation.</span><span class="autumn-card-leaves" aria-hidden="true">❧ &nbsp; ❧ &nbsp; ❧</span></button>
         <script src="./chaos-preview.js"></script>
       </nav>
       <section class="play-section" aria-labelledby="game-title">
@@ -2426,14 +2427,14 @@ A
     <div id="gaster-blackout" data-fullscreen-overlay aria-hidden="true" hidden></div>
     <dialog id="news-dialog" class="news-dialog" aria-labelledby="news-heading">
       <div class="news-heading"><div><p class="eyebrow">THE COMMUNITY NOTICEBOARD</p><h2 id="news-heading">Microgame News</h2></div><button id="news-close" aria-label="Close news">✕</button></div>
-      <div class="news-tabs" role="tablist" aria-label="Community"><button id="news-posts" role="tab" aria-selected="true" aria-controls="news-list">News</button><button id="news-suggestions" role="tab" aria-selected="false" aria-controls="news-list">Suggestions</button><button id="news-refresh" role="button">Refresh</button></div>
+      <div class="news-tabs" role="tablist" aria-label="Community"><button id="news-posts" role="tab" aria-selected="true" aria-controls="news-list">News <span id="news-posts-badge" class="news-count" hidden></span></button><button id="news-suggestions" role="tab" aria-selected="false" aria-controls="news-list">Suggestions <span id="news-suggestions-badge" class="news-count" hidden></span></button><button id="news-refresh" role="button">Refresh</button></div>
       <p class="news-intro">From the creators’ desk to your next big idea. Catch up, share a suggestion, and help shape the arcade.</p>
       <div class="news-tools"><label>Search the board<input id="news-search" type="search" maxlength="120" placeholder="Find an update or idea…"></label><label>Sort by<select id="news-sort"><option value="newest">Newest first</option><option value="popular">Most liked</option></select></label><label>Show<select id="news-filter"><option value="all">Everything</option><option value="unread">Unread news</option><option value="creator">Creator-liked ideas</option></select></label></div>
       <div class="news-feed-meta"><span id="news-results" aria-live="polite"></span><span id="news-updated"></span></div>
       <p id="news-status" role="status"></p>
       <div id="news-scroll" class="news-scroll"><div id="news-list" role="tabpanel"></div></div>
       <section id="news-reward" class="news-reward" hidden aria-label="News Cubie achievement"><span id="news-reward-art" aria-hidden="true"></span><div><strong>FRONT-PAGE THINKER</strong><p id="news-reward-copy"></p><progress id="news-reward-progress" max="10" value="0" aria-label="Creator-approved suggestions"></progress></div></section>
-      <form id="news-compose" hidden><label for="news-comment">Your next big idea</label><textarea id="news-comment" maxlength="1000" required placeholder="A new game? A tiny improvement? Share your idea…"></textarea><small>Sign in to comment. Your name, equipped Cubie, and top-three game placements appear with your idea. Kind words only. One suggestion every 30 seconds.</small><p><button type="submit">Post suggestion</button></p></form>
+      <form id="news-compose" hidden><label for="news-comment">Your next big idea</label><textarea id="news-comment" maxlength="1000" required placeholder="A new game? A tiny improvement? Share your idea…"></textarea><small>Sign in to comment. Your name, equipped Cubie, and top-three game placements appear with your idea. Kind words only. One suggestion every 3 seconds.</small><p><button type="submit">Post suggestion</button></p></form>
       <form id="news-publish" hidden><h3 id="news-creator-label">Nate’s creator desk</h3><label for="news-title">Post title</label><input id="news-title" maxlength="120" required><label for="news-body">Update or bug fix</label><textarea id="news-body" maxlength="4000" required></textarea><button type="submit">Publish news for everyone</button></form>
       <div id="news-moderation" hidden><button id="news-blocked">Manage blocked players</button><div id="news-block-list"></div></div>
     </dialog>

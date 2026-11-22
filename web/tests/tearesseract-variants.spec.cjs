@@ -5,7 +5,7 @@ test('revised attacks and complete destruction render without errors',async({pag
   await page.route('**/tearesseract.js*',async route=>{
     const response=await route.fetch();const source=await response.text();
     await route.fulfill({response,body:source.replace(/\}\)\(\);\s*$/,`window.reviewEncounter=(n,seconds,ending=false)=>{
-      round=n;hp=12;inv=0;paused=false;enter(ending?'ending':'attack');document.querySelector('#practice-safe').checked=true;
+      if(!document.querySelector('#practice-safe')){const safe=document.createElement('input');safe.id='practice-safe';safe.type='checkbox';safe.hidden=true;document.body.append(safe);}round=n;hp=20;inv=0;paused=false;enter(ending?'ending':'attack');document.querySelector('#practice-safe').checked=true;
       for(let i=0;i<Math.round(seconds*120);i++)update(1/120);draw();
       return {phase,holes:blackHoles.length,fragments:debris.length,mist:prismMist.length,chaos:chaosSlashes.length,shocks:bullets.filter(b=>!b.chaosShard).length,shards:bullets.filter(b=>b.chaosShard).length,shieldOff:chaosPhase(),shield:shieldProfile(),horizontal:lasers.some(l=>l.axis==='horizontal')};
     };})();`)});

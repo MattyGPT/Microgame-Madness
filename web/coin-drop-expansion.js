@@ -50,8 +50,8 @@ const CoinDropExpansion = (() => {
       default:throw new Error(`Unknown expedition challenge: ${game.variant}`);
     }
   }
-  function create(game,host,finish,random=Math.random){
-    const state={...puzzle(game,random),elapsed:0,index:0,ended:false};
+  function create(game,host,finish,random=Math.random,puzzleFactory=puzzle){
+    const state={...puzzleFactory(game,random),elapsed:0,index:0,ended:false};
     const done=won=>{if(!state.ended){state.ended=true;finish(won);}};
     const el=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
     host.replaceChildren();const prompt=el('p',game.rules,'cd-nano-prompt'),area=el('div',undefined,'cd-nano-choices cd-expansion-grid'),status=el('p','','cd-pack-status');host.append(prompt,area,status);

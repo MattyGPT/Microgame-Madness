@@ -4,6 +4,7 @@ const CoinDrop = (() => {
   const NanoMusic = typeof CoinDropNanoMusic !== 'undefined' ? CoinDropNanoMusic : require('./coin-drop-nano-music.js');
   const Lessons = typeof CoinDropLessons !== 'undefined' ? CoinDropLessons : require('./coin-drop-lessons.js');
   const Expansion = typeof CoinDropExpansion !== 'undefined' ? CoinDropExpansion : require('./coin-drop-expansion.js');
+  const Frontier = typeof CoinDropFrontier !== 'undefined' ? CoinDropFrontier : require('./coin-drop-frontier.js');
   const LIMIT = 1e300;
   const MAX_RANK = 1e250;
   const BOARD = Object.freeze({width:840, height:1320, pocketY:1275, slotWidth:120});
@@ -32,8 +33,17 @@ const CoinDrop = (() => {
     ['Starfall Engine','Cosmic bumpers shower the board in starlight.', '#8bdaff','fan',-85,.65,30],
     ['Cubie Crown','The first crown: arches, portals and ruby rain.', '#ffe4a1','arches',70,1.05,34],
   ];
-  recipes.push(...Expansion.worlds);
-  const maps = recipes.map((r,i) => ({id:i,name:r[0],hint:r[1],color:r[2],layout:r[3],wind:r[4],gravity:r[5],motion:r[6],goal:i>=20?1e89*1.75**(i-20):720*Math.round(250*1.75**i),value:1.24**i,portal:[8,16,19].includes(i)||(i>=20&&i%4===0)}));
+  recipes.push(...Expansion.worlds,...Frontier.worlds);
+  // Keep the original opening campaign; thereafter match the 24% growth in coin
+  // value, with a gradual increase in work (one extra base unit per 40 worlds).
+  // No expedition boundary introduces a currency cliff or depends on forge use.
+  const openingGoal = i => 720*Math.round(250*1.75**i);
+  function worldGoal(i){
+    if(i<20)return openingGoal(i);
+    const distance=i-19;
+    return Math.round(openingGoal(19)*1.24**distance*(1+distance/40));
+  }
+  const maps = recipes.map((r,i) => ({id:i,name:r[0],hint:r[1],color:r[2],layout:r[3],wind:r[4],gravity:r[5],motion:r[6],goal:worldGoal(i),value:1.24**i,portal:[8,16,19].includes(i)||(i>=20&&i%4===0)}));
   const nanogames = [
     {id:'timing',title:'Golden Stop',rules:'Stop the moving marker inside the gold zone. You have 8 seconds.',seconds:8},
     {id:'memory',title:'Ruby Recall',rules:'Remember four symbols, then repeat them in order. Study for 3 seconds, then answer.',seconds:15,ruby:1},
@@ -47,6 +57,7 @@ const CoinDrop = (() => {
     {id:'rhythm',title:'Triple Chime',rules:'Stop the marker in gold three times. Wait for the next pass between hits.',seconds:12},
     ...NanoPack.games,
     ...Expansion.games,
+    ...Frontier.games,
   ];
   const branchData = [
     ['mint','Mint','●','#8bc9ff','All dot payouts +12% per rank.',['Polished Faces','Blue Alloy','Deep Stamping','Cash Resonance','Royal Mint','Diamond Dies','Celestial Press','Infinite Treasury']],
@@ -61,7 +72,7 @@ const CoinDrop = (() => {
     ['prism','Prisms','◇','#d5b5ff','Critical pocket chance +1% per rank (up to 60%); critical pays ×3.',['Lucky Glint','Mirror Finish','Split Light','Spectrum','Aurora Glass','Rainbow Engine','Supernova','Infinite Brilliance']],
   ];
   branchData.push(
-    ['expedition','Expedition','✧','#a8f0ff','Dot payouts, including the condenser, multiply by 1.5 per rank (up to 150 ranks).',['Frontier Charter','Deep Survey','Trade Winds','World Network','Stellar Routes','Galactic Exchange','Crown Commerce','Beyond the Horizon']],
+    ['expedition','Expedition','✧','#a8f0ff','Dot payouts multiply by 1.5 per rank (up to 150 ranks).',['Frontier Charter','Deep Survey','Trade Winds','World Network','Stellar Routes','Galactic Exchange','Crown Commerce','Beyond the Horizon']],
     ['pocket','Pocketcraft','◎','#ffda93','Pocket landing dots +20% per rank.',['Soft Landing','Gold Lining','Wide Vault','Pocket Dividend','Rich Reservoir','Royal Catch','Star Basin','Infinity Bowl']],
     ['nano','Nano Mastery','⚗','#d9b4ff','Nanogame win dots +25% per rank.',['First Victory','Practice Pays','Bonus Cache','Master Medal','Pocket Champion','Streak Treasury','Challenge Crown','Nano Legend']],
     ['bank','Bankworks','▣','#9aebc5','DOT-bank rewards +20% and pocket bonus +5 percentage points per rank.',['Bank Teller','Double Ledger','Capital Reserve','Green Vault','Dividend Engine','Central Reserve','Crown Bond','Endless Credit']],
@@ -76,9 +87,13 @@ const CoinDrop = (() => {
   const branchNodes = Object.fromEntries(branches.map(b=>[b.id,nodes.filter(n=>n.branch===b.id)]));
   function restore(raw) {
     const n = (v,max=LIMIT) => Number.isFinite(v) ? clamp(Math.floor(v),0,max) : 0;
-    const p = {dots:n(raw?.dots),rubies:n(raw?.rubies),scrap:n(raw?.scrap),cleared:n(raw?.cleared,maps.length),map:n(raw?.map,maps.length-1),levels:{},earned:Array.from({length:maps.length},(_,i)=>n(raw?.earned?.[i])),drops:n(raw?.drops),boosts:n(raw?.boosts)};
+    const p = {dots:n(raw?.dots),rubies:n(raw?.rubies),scrap:n(raw?.scrap),cleared:n(raw?.cleared,maps.length),map:n(raw?.map,maps.length-1),levels:{},earned:Array.from({length:maps.length},(_,i)=>n(raw?.earned?.[i])),drops:n(raw?.drops),boosts:n(raw?.boosts),magnets:n(raw?.magnets),forgeCrafts:{}};
     p.map=Math.min(p.map,p.cleared,maps.length-1);
+    for(const kind of ['boost','ruby','magnet'])p.forgeCrafts[kind]=n(raw?.forgeCrafts?.[kind],MAX_RANK);
     for(const node of nodes) p.levels[node.id]=n(raw?.levels?.[node.id],MAX_RANK);
+    // Honor previously earned progress after target reductions, awarding the
+    // current frontier's clear bonus once. Wallet balance itself is not progress.
+    if(p.cleared<maps.length&&p.earned[p.cleared]>=maps[p.cleared].goal)award(p,p.cleared,0);
     return p;
   }
   // Saturate positive payout products before floating-point overflow can turn rewards into zero.
@@ -88,18 +103,27 @@ const CoinDrop = (() => {
     return Math.min(LIMIT,total);
   }
   function rank(p,branch) { return (branchNodes[branch]||[]).reduce((s,n)=>s+(p.levels[n.id]||0)*(1+n.tier*.25),0); }
-  const FORGE_PRICES = Object.freeze({boost:20,ruby:60,dots:50});
+  const FORGE_PRICES = Object.freeze({boost:20,ruby:60,magnet:50});
   const BASE_AMOUNTS = Object.freeze([1,5,10,25,50,100,250,500,1000,2500,5000,...[1e4,1e5,1e6,1e7,1e8].flatMap(n=>[n,n*2.5,n*5]),1e9,1e10,5e10]);
   const FORGE_AMOUNTS = BASE_AMOUNTS;
   const BUY_AMOUNTS = Object.freeze([...BASE_AMOUNTS,1e11,1e12,1e15,1e20,1e25,1e30,1e40,1e50,1e75,1e100,1e125,1e150,1e175,1e200]);
-  function rankCost(node,level) { return Math.min(1e12,Math.ceil((node.currency==='rubies'? 6*2**(node.tier-6):node.currency==='scrap'?30*2**(node.tier-8):35*2.65**node.tier)*1.48**Math.min(100,level))); }
+  function rankBase(node) { return Math.ceil(node.currency==='rubies'?6*2**(node.tier-6):node.currency==='scrap'?30*2**(node.tier-8):35*2.65**node.tier); }
+  // Sum each successive rank's price in constant time, without a flat-price cap.
+  // Rank 1 costs base, rank 2 costs 4×base, rank 3 costs 9×base, and so on.
   function cost(p,node,amount=1) {
     const level=p.levels[node.id]||0;
     if(!BUY_AMOUNTS.includes(amount)||level+amount>MAX_RANK||level+amount===level)return Infinity;
-    // Only the first 100 ranks can vary; every later rank has the same capped price.
-    const rising=Math.min(amount,Math.max(0,100-level));
-    let total=0;for(let i=0;i<rising;i++)total+=rankCost(node,level+i);
-    return total+(amount-rising)*rankCost(node,100);
+    const first=level+1;
+    const total=rankBase(node)*(amount*first*first+first*amount*(amount-1)+amount*(amount-1)*(2*amount-1)/6);
+    return Number.isFinite(total)&&total<=LIMIT?total:Infinity;
+  }
+  // Each recipe costs 10% of its initial price more per previous craft.
+  function forgeCost(p,kind,amount=1){
+    if(!Object.hasOwn(FORGE_PRICES,kind)||!FORGE_AMOUNTS.includes(amount))return Infinity;
+    const count=p.forgeCrafts[kind]||0;
+    if(count+amount===count||count+amount>MAX_RANK)return Infinity;
+    const base=FORGE_PRICES[kind],total=base*amount+(base/10)*(amount*count+amount*(amount-1)/2);
+    return Number.isFinite(total)&&total<=LIMIT?total:Infinity;
   }
   function unlocked(p,node) { return !node.requires || p.levels[node.requires]>0; }
   function buy(p,id,amount=1) { const node=nodes.find(n=>n.id===id); if(!node||!unlocked(p,node)||p.levels[id]>=MAX_RANK) return false; const price=cost(p,node,amount); if(!Number.isFinite(price)||p[node.currency]<price) return false; p[node.currency]-=price;p.levels[id]+=amount;return true; }
@@ -218,8 +242,8 @@ const CoinDrop = (() => {
       <div class="cd-table-tools"><span>3× playfield · ${nanogames.length} unique nanogames</span><button id="cd-reset-balls" title="Return active coins to the launcher; keep progress and collected rewards">Reset balls</button><button id="cd-zoom" aria-pressed="false">Zoom table</button></div><div class="cd-board-wrap"><canvas id="cd-board" width="840" height="1320" tabindex="0" aria-label="Coin Drop board. Left and right arrows aim; Space drops a coin. Use the aim slider and Drop button on touchscreens."></canvas><div id="cd-banner" hidden></div></div>
       <div class="cd-controls"><label>Aim <input id="cd-aim" type="range" min="30" max="810" value="420" aria-label="Coin launch position"></label><button id="cd-drop">Drop coin <span>Space</span></button></div><div class="cd-legend"><span>◎ Pop bumpers</span><span>↗ Slingshots</span><span>✳ Spinners</span><span>▰ Timed gates</span><span>DOT Bonus banks</span><span>◉ Nanogame pockets</span></div></section>
       <section data-panel="maps" hidden><h4>Your ${maps.length}-world expedition</h4><p>Clear each dot target to unlock the next world. Revisit cleared worlds to collect more resources. Switching worlds retires unfinished drops and keeps all collected rewards.</p><div id="cd-maps" class="cd-maps"></div></section>
-      <section data-panel="tree" hidden><h4>A little coin. An enormous future.</h4><p>${branches.length} branches · ${nodes.length} connected discoveries · repeatable ranks. Buy any node once to open the next. Later tiers give stronger ranks; deeper nodes cost Ruby Shards or minicoin scrap.</p><div class="cd-buy-all"><h4>Buy all categories</h4><p>Buy one batch of the highest unlocked, affordable tier in each category. Categories are visited in their displayed order using your remaining currency; unaffordable categories are skipped.</p><div class="cd-buy-amounts" role="group" aria-label="Buy all purchase amount">${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-all-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><button type="button" id="cd-buy-all">Buy all</button><p id="cd-buy-all-summary" aria-live="polite"></p><details><summary>Preview upgrades</summary><ul id="cd-buy-all-preview"></ul></details></div><div class="cd-buy-amounts" role="group" aria-label="Upgrade purchase amount"><span>Buy ranks</span>${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Prices include every rank’s increasing cost. Buy the full amount at once.</p><div id="cd-branches" class="cd-branches"></div><div id="cd-tree" class="cd-tree"></div></section>
-      <section data-panel="forge" hidden><h4>Small coins. Big ideas.</h4><p>Unlock Tiny Friends in the Minicoins branch. Their pocket landings create scrap as well as dots. Turn that scrap into useful machinery.</p><div class="cd-buy-amounts" role="group" aria-label="Forge purchase amount"><span>Craft batches</span>${FORGE_AMOUNTS.map(n=>`<button type="button" data-craft-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Each recipe describes one craft. Buttons show the total scrap cost for your selected batch.</p><div class="cd-recipes"><article><span>ϟ</span><h4>Overdrive capsule</h4><p>At least double dots for your next 10 drops. Overdrive upgrades increase the multiplier.</p><button data-craft="boost">Craft · 20 scrap</button></article><article><span>◆</span><h4>Ruby synthesis</h4><p>Compress 60 minicoin scrap into 3 rare Ruby Shards.</p><button data-craft="ruby">Synthesize · 60 scrap</button></article><article><span>●</span><h4>Dot condenser</h4><p>Convert 50 scrap into 2% of this world's target, multiplied by Expedition upgrades.</p><button data-craft="dots">Condense · 50 scrap</button></article></div><p id="cd-boosts"></p></section>
+      <section data-panel="tree" hidden><h4>A little coin. An enormous future.</h4><p>${branches.length} branches · ${nodes.length} connected discoveries · repeatable ranks. Buy any node once to open the next. Later tiers give stronger ranks; deeper nodes cost Ruby Shards or minicoin scrap.</p><div class="cd-buy-all"><h4>Buy all categories</h4><p>Buy one batch of the highest unlocked, affordable tier in each category. Categories are visited in their displayed order using your remaining currency; unaffordable categories are skipped.</p><div class="cd-buy-amounts" role="group" aria-label="Buy all purchase amount">${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-all-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><button type="button" id="cd-buy-all">Buy all</button><p id="cd-buy-all-summary" aria-live="polite"></p><details><summary>Preview upgrades</summary><ul id="cd-buy-all-preview"></ul></details></div><div class="cd-buy-amounts" role="group" aria-label="Upgrade purchase amount"><span>Buy ranks</span>${BUY_AMOUNTS.map(n=>`<button type="button" data-buy-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Each node’s next rank costs its starting price × the new rank squared. Bulk prices include every rank’s increasing cost.</p><div id="cd-branches" class="cd-branches"></div><div id="cd-tree" class="cd-tree"></div></section>
+      <section data-panel="forge" hidden><h4>Small coins. Big ideas.</h4><p>Unlock Tiny Friends in the Minicoins branch. Their pocket landings create scrap as well as dots. Turn that scrap into useful machinery.</p><div class="cd-buy-amounts" role="group" aria-label="Forge purchase amount"><span>Craft batches</span>${FORGE_AMOUNTS.map(n=>`<button type="button" data-craft-amount="${n}" aria-pressed="${n===1}">×${n<10000?n:fmt(n)}</button>`).join('')}</div><p class="cd-note">Each craft raises that recipe’s next price by 10% of its starting cost. Bulk prices include every increase.</p><div class="cd-recipes"><article><span>ϟ</span><h4>Overdrive capsule</h4><p>At least double dots for your next 10 drops. Overdrive upgrades increase the multiplier.</p><button data-craft="boost">Craft · 20 scrap</button></article><article><span>◆</span><h4>Ruby synthesis</h4><p>Craft 3 rare Ruby Shards. Starts at 60 scrap.</p><button data-craft="ruby">Synthesize · 60 scrap</button></article><article><span>⌁</span><h4>Scrap Magnet</h4><p>Double minicoin scrap for your next 10 launches containing minicoins. Starts at 50 scrap.</p><button data-craft="magnet">Assemble · 50 scrap</button></article></div><p id="cd-boosts"></p></section>
       <section data-panel="lab" hidden><span class="cd-kicker">NANO LAB · PLAY & LEARN</span><h4>Nano Lab</h4><p>Learn the skills behind each challenge, then practice. Lessons are untimed. Wins earn achievements, Cubies, and leaderboard points. Your Coin Drop currencies and campaign stay separate.</p><button id="cd-lab-random" type="button">Play random nanogame</button><div class="cd-lab-filters"><label>World <select id="cd-lab-world"><option value="all">All ${maps.length} worlds</option></select></label><label>Find a game <input id="cd-lab-search" type="search" placeholder="Name or challenge…" /></label></div><div id="cd-lab-grid" class="cd-lab-grid"></div></section><p id="cd-lab-result" role="status" aria-live="polite" hidden>Choose any nanogame to practice.</p>
       <p id="cd-status" role="status" aria-live="polite">Aim for the gold. Your first world awaits.</p><p id="cd-save" class="cd-note">Progress saves in this browser for your arcade profile.</p>`;
       this.canvas=root.querySelector('canvas');this.ctx=this.canvas.getContext('2d');
@@ -251,13 +275,16 @@ const CoinDrop = (() => {
     setLabMode(on){
       if(this.nano)this.finishNano(false,'closed');this.labMode=on;this.root.classList.toggle('cd-lab-mode',on);this.setTab(on?'lab':'board');if(on)this.renderLab();
     }
-    renderLab(){
+    renderLab(limit=60){
+      if(typeof limit!=='number')limit=60;
       const world=this.$('cd-lab-world').value,search=this.$('cd-lab-search').value.trim().toLowerCase();
-      this.$('cd-lab-grid').replaceChildren(...nanogames.flatMap((g,i)=>{
-        const map=maps[Math.floor(i/3)];if(world!=='all'&&+world!==map.id||search&&!`${g.title} ${g.rules}`.toLowerCase().includes(search))return [];
+      const matches=nanogames.map((g,i)=>({g,i})).filter(({g,i})=>(world==='all'||+world===Math.floor(i/3))&&(!search||`${g.title} ${g.rules}`.toLowerCase().includes(search)));
+      this.$('cd-lab-grid').replaceChildren(...matches.slice(0,limit).flatMap(({g,i})=>{
+        const map=maps[Math.floor(i/3)];
         const card=document.createElement('article'),tag=document.createElement('small'),title=document.createElement('h4'),rules=document.createElement('p'),button=document.createElement('button');
         tag.textContent=`WORLD ${map.id+1} · POCKET ${i%3+1} · ${g.seconds}s`;title.textContent=g.title;rules.textContent=g.rules;button.textContent='Practice nanogame';button.dataset.nanoTest=g.id;button.onclick=()=>this.startNanoTest(g.id);const learn=document.createElement('button');learn.textContent='Learn how';learn.dataset.nanoLearn=g.id;learn.onclick=()=>this.startNanoTest(g.id,true);const actions=document.createElement('div');actions.className='cd-lab-card-actions';actions.append(learn,button);card.append(tag,title,rules,actions);return [card];
       }));
+      if(matches.length>limit){const more=document.createElement('button');more.type='button';more.textContent=`Show more (${limit} of ${matches.length})`;more.onclick=()=>this.renderLab(limit+60);this.$('cd-lab-grid').append(more);}
       if(!this.$('cd-lab-grid').children.length)this.$('cd-lab-grid').textContent='No nanogames match this search.';
     }
     startNanoTest(id,lesson=false){
@@ -282,19 +309,18 @@ const CoinDrop = (() => {
     }
     craft(kind,amount=1){
       if(this.blocked()||!Object.hasOwn(FORGE_PRICES,kind)||!FORGE_AMOUNTS.includes(amount))return;
-      const price=FORGE_PRICES[kind]*amount;
-      if(this.p.scrap<price){this.message('Collect more minicoin scrap to craft this batch.');return;}
-      this.p.scrap-=price;
+      const price=forgeCost(this.p,kind,amount);
+      if(!Number.isFinite(price)||this.p.scrap<price){this.message('Collect more minicoin scrap or select a smaller batch.');return;}
+      this.p.scrap-=price;this.p.forgeCrafts[kind]+=amount;
       if(kind==='boost')this.p.boosts=Math.min(LIMIT,this.p.boosts+10*amount);
       if(kind==='ruby')this.p.rubies=Math.min(LIMIT,this.p.rubies+3*amount);
-      // Match individual crafts, including per-craft rounding and one-time world-clear rewards.
-      if(kind==='dots')this.reward(Math.round(maps[this.p.map].goal*.02),0,0,amount);
+      if(kind==='magnet')this.p.magnets=Math.min(LIMIT,this.p.magnets+10*amount);
       this.save();this.render();
-      this.message('Crafted! '+({boost:`${10*amount} overdrive drops ready.`,ruby:`${3*amount} Ruby Shards added.`,dots:`${amount} condenser ${amount===1?'payout':'payouts'} collected.`}[kind]));
+      this.message('Crafted! '+({boost:`${10*amount} overdrive drops ready.`,ruby:`${3*amount} Ruby Shards added.`,magnet:`${10*amount} scrap-magnet launches ready.`}[kind]));
       this.tone(880,.2);
     }
-    drop(){if(!this.playable()||this.charge<1||this.coins.length>65)return;this.startAudio();this.charge=0;this.p.drops++;const boost=this.p.boosts>0?2+rank(this.p,'overdrive')*.25:1;if(this.p.boosts>0)this.p.boosts--;const mains=1+Math.min(4,Math.floor(rank(this.p,'launch')/3));const minis=Math.min(8,Math.ceil(rank(this.p,'mini')));
-      for(let i=0;i<mains+minis;i++){const mini=i>=mains;this.coins.push({x:clamp(this.aim+(i-(mains+minis-1)/2)*13,18,822),y:52-(i%3)*12,vx:(Math.random()-.5)*30,vy:10,r:mini?6:12,mini,boost,age:0,hits:new Set(),featureHits:new Set(),banks:new Set(),pocketBonus:1,portal:0,rubyHits:0});}this.save();this.tone(440,.08);this.render();}
+    drop(){if(!this.playable()||this.charge<1||this.coins.length>65)return;this.startAudio();this.charge=0;this.p.drops++;const boost=this.p.boosts>0?2+rank(this.p,'overdrive')*.25:1;if(this.p.boosts>0)this.p.boosts--;const mains=1+Math.min(4,Math.floor(rank(this.p,'launch')/3));const minis=Math.min(8,Math.ceil(rank(this.p,'mini')));const scrapBoost=minis&&this.p.magnets>0?2:1;if(scrapBoost>1)this.p.magnets--;
+      for(let i=0;i<mains+minis;i++){const mini=i>=mains;this.coins.push({x:clamp(this.aim+(i-(mains+minis-1)/2)*13,18,822),y:52-(i%3)*12,vx:(Math.random()-.5)*30,vy:10,r:mini?6:12,mini,boost,scrapBoost,age:0,hits:new Set(),featureHits:new Set(),banks:new Set(),pocketBonus:1,portal:0,rubyHits:0});}this.save();this.tone(440,.08);this.render();}
     reward(dots,rubies=0,scrap=0,quantity=1){const clear=award(this.p,this.p.map,payoutProduct(Math.floor(payoutProduct(dots,1.5**Math.min(150,rank(this.p,'expedition')))),quantity),rubies,scrap);if(clear){this.message(this.p.cleared===maps.length?`CROWN COMPLETE! All ${maps.length} worlds conquered. Keep building your infinite machine.`:`${maps[this.p.map].name} cleared! Bonus dots and ${3+this.p.map} Ruby Shards. Next world unlocked.`);this.burst(420,650,'#ffdc7b',45);this.tone(1046,.5);}return clear;}
     startAudio(){if(!this.sound())return;try{if(!this.audio){this.audio=new (window.AudioContext||window.webkitAudioContext)();this.master=this.audio.createGain();this.master.gain.value=.12;this.master.connect(this.audio.destination);}if(this.audio.state==='suspended')this.audio.resume().catch(()=>{});}catch{}}
     silence(){if(this.master)this.master.gain.value=0;this.nanoMusic?.silence();}
@@ -486,7 +512,7 @@ const CoinDrop = (() => {
         if(c.deepestY===undefined||c.y>c.deepestY+20){c.deepestY=c.y;c.noProgress=0;}else c.noProgress=(c.noProgress||0)+dt;
         if(c.stallTime>1.4||c.noProgress>4.5){c.noProgress=0;c.nudges=(c.nudges||0)+1;c.vx=(c.nudges%2?1:-1)*150;c.vy=-95;c.stallTime=0;}
 
-        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(payoutProduct(mult,8,map.value,1+rank(p,'mint')*.12,combo,c.pocketBonus,1+rank(p,'pocket')*.2,crit?3:1,c.mini?.2*(1+rank(p,'mini')*.1):1,c.boost));const scrap=c.mini?Math.max(1,Math.floor(1+rank(p,'forge')*.2+rank(p,'salvage'))):0;this.reward(val,0,scrap);c.dead=true;if(!c.mini)this.onResult?.(this.identity,'coindrop',{score:1,won:true});changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
+        if(c.y>=BOARD.pocketY){const slot=clamp(Math.floor(c.x/BOARD.slotWidth),0,6),mult=[2,4,8,16,8,4,2][slot];const crit=Math.random()<Math.min(.6,rank(p,'prism')*.01);const combo=Math.min(12,1+c.hits.size*rank(p,'combo')*.01);const val=Math.ceil(payoutProduct(mult,8,map.value,1+rank(p,'mint')*.12,combo,c.pocketBonus,1+rank(p,'pocket')*.2,crit?3:1,c.mini?.2*(1+rank(p,'mini')*.1):1,c.boost));const scrap=c.mini?Math.max(1,Math.floor(payoutProduct(1+rank(p,'forge')*.2+rank(p,'salvage'),c.scrapBoost||1))):0;this.reward(val,0,scrap);c.dead=true;if(!c.mini)this.onResult?.(this.identity,'coindrop',{score:1,won:true});changed=true;this.burst(c.x,1270,crit?'#ff83a7':'#ffdf81',14);this.tone(crit?1320:660,.18);this.particles.push({x:c.x,y:1250,vx:0,vy:-30,life:1.3,color:'#fff1b7',text:`+${fmt(val)}${crit?' CRIT':''}`});}
       }
       this.coins=this.coins.filter(c=>!c.dead);this.particles.forEach(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;});this.particles=this.particles.filter(p=>p.life>0);if(changed){this.save();this.renderStats();}
       this.$('cd-drop').disabled=this.charge<1;this.$('cd-drop').style.setProperty('--charge',`${this.charge*100}%`);
@@ -522,7 +548,7 @@ const CoinDrop = (() => {
       this.$('cd-banner').hidden=!this.paused;this.$('cd-banner').textContent='PAUSED';
     }
     renderStats(){const p=this.p,map=maps[p.map];this.$('cd-dots').textContent=fmt(p.dots);this.$('cd-rubies').textContent=fmt(p.rubies);this.$('cd-scrap').textContent=fmt(p.scrap);this.$('cd-progress-fill').style.width=Math.min(100,p.earned[p.map]/map.goal*100)+'%';this.$('cd-progress-label').textContent=`${fmt(p.earned[p.map])} / ${fmt(map.goal)} dots · ${p.cleared>p.map?'WORLD CLEARED':Math.floor(Math.min(100,p.earned[p.map]/map.goal*100))+'%'}${p.boosts?' · Overdrive: '+p.boosts+' drops':''}`;this.$('cd-prev').disabled=p.map===0;this.$('cd-next').disabled=!(p.cleared>p.map&&p.map<maps.length-1);}
-    render(){if(!this.p)return;this.renderStats();const map=maps[this.p.map];this.root.style.setProperty('--cd-accent',map.color);this.$('cd-map-number').textContent=`WORLD ${String(map.id+1).padStart(2,'0')} / ${maps.length}`;this.$('cd-map-name').textContent=map.name;this.$('cd-hint').textContent=map.hint;this.$('cd-nano-lineup').replaceChildren(...nanogames.slice(map.id*3,map.id*3+3).map((g,i)=>{const chip=document.createElement('span');chip.textContent=`${i+1} · ${g.title}`;chip.title=g.rules;return chip;}));this.$('cd-pause').textContent=this.paused?'Resume':'Pause';this.$('cd-boosts').textContent=`Overdrive reserves: ${this.p.boosts} drops · ${fmt(this.p.drops)} total launches`;
+    render(){if(!this.p)return;this.renderStats();const map=maps[this.p.map];this.root.style.setProperty('--cd-accent',map.color);this.$('cd-map-number').textContent=`WORLD ${String(map.id+1).padStart(2,'0')} / ${maps.length}`;this.$('cd-map-name').textContent=map.name;this.$('cd-hint').textContent=map.hint;this.$('cd-nano-lineup').replaceChildren(...nanogames.slice(map.id*3,map.id*3+3).map((g,i)=>{const chip=document.createElement('span');chip.textContent=`${i+1} · ${g.title}`;chip.title=g.rules;return chip;}));this.$('cd-pause').textContent=this.paused?'Resume':'Pause';this.$('cd-boosts').textContent=`Overdrive: ${fmt(this.p.boosts)} drops · Scrap Magnets: ${fmt(this.p.magnets)} minicoin launches · ${fmt(this.p.drops)} total launches`;
       if(this.tab==='maps')this.$('cd-maps').replaceChildren(...maps.map(m=>{const b=document.createElement('button');b.disabled=m.id>this.p.cleared;b.style.setProperty('--map-color',m.color);b.innerHTML=`<span>${String(m.id+1).padStart(2,'0')} ${m.id<this.p.cleared?'✓':m.id>this.p.cleared?'· LOCKED':''}</span><strong>${m.name}</strong><small>${fmt(m.goal)} dots · ${m.layout}</small><small class="cd-map-nanos">${nanogames.slice(m.id*3,m.id*3+3).map(g=>g.title).join(" · ")}</small>`;b.onclick=()=>this.go(m.id);return b;}));
       if(this.tab==='tree'){
         this.root.querySelectorAll('[data-buy-all-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.buyAllAmount)===this.buyAllAmount)));
@@ -535,13 +561,13 @@ const CoinDrop = (() => {
         this.$('cd-buy-all-preview').replaceChildren(...plan.purchases.map(purchase=>{const node=nodes.find(n=>n.id===purchase.id),item=document.createElement('li');item.dataset.currency=purchase.currency;item.textContent=`${branches[node.bi].name}: ${node.name} (tier ${node.tier+1}) ×${fmt(purchase.amount)} · ${fmt(purchase.price)} ${purchase.currency}`;return item;}));
         this.root.querySelectorAll('[data-buy-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.buyAmount)===this.buyAmount)));
         this.$('cd-branches').replaceChildren(...branches.map(branch=>{const b=document.createElement('button');b.textContent=`${branch.icon} ${branch.name}`;b.setAttribute('aria-pressed',String(this.branch===branch.id));b.onclick=()=>{this.branch=branch.id;this.render();};return b;}));
-        const branch=branches.find(b=>b.id===this.branch);this.$('cd-tree').style.setProperty('--branch-color',branch.color);this.$('cd-tree').replaceChildren(...nodes.filter(n=>n.branch===this.branch).map(n=>{const item=document.createElement('article'),level=this.p.levels[n.id],open=unlocked(this.p,n);item.className='cd-node'+(open?'':' cd-locked');item.dataset.currency=n.currency;item.innerHTML=`<span class="cd-node-icon">${branch.icon}</span><div><small>TIER ${n.tier+1} · RANK ${fmt(level)} · ${n.currency==='rubies'?'RUBY':n.currency==='scrap'?'SCRAP':'DOT'} NODE</small><h4>${n.name}</h4><p>${branch.description} This tier gives ${(1+n.tier*.25).toFixed(2)} ranks per purchase.</p><small>${open?'Repeatable upgrade':`Requires ${nodes.find(x=>x.id===n.requires).name} rank 1`}</small></div>`;const price=cost(this.p,n,this.buyAmount),b=document.createElement('button');b.textContent=!Number.isFinite(price)?(level>=MAX_RANK?'Rank limit':level+this.buyAmount===level?'Choose a larger batch':'Rank limit'):`${level?'Upgrade':'Research'} ×${fmt(this.buyAmount)} · ${fmt(price)} ${n.currency==='rubies'?'◆':n.currency==='scrap'?'◌':'●'}`;b.dataset.currency=n.currency;b.title=Number.isFinite(price)?`${this.buyAmount} ranks for ${price.toLocaleString('en')} ${n.currency}`:(level+this.buyAmount===level?'Select a larger batch to increase this very large rank.':`${fmt(MAX_RANK-level)} ranks remaining; select a smaller amount.`);b.disabled=!open||!Number.isFinite(price)||this.p[n.currency]<price;b.onclick=()=>{if(!this.blocked()&&buy(this.p,n.id,this.buyAmount)){this.save();this.render();this.message(`${n.name}: bought ${this.buyAmount} ${this.buyAmount===1?'rank':'ranks'} · now rank ${this.p.levels[n.id]}.`);this.tone(740,.12);}};item.append(b);return item;}));
+        const branch=branches.find(b=>b.id===this.branch);this.$('cd-tree').style.setProperty('--branch-color',branch.color);this.$('cd-tree').replaceChildren(...nodes.filter(n=>n.branch===this.branch).map(n=>{const item=document.createElement('article'),level=this.p.levels[n.id],open=unlocked(this.p,n);item.className='cd-node'+(open?'':' cd-locked');item.dataset.currency=n.currency;item.innerHTML=`<span class="cd-node-icon">${branch.icon}</span><div><small>TIER ${n.tier+1} · RANK ${fmt(level)} · ${n.currency==='rubies'?'RUBY':n.currency==='scrap'?'SCRAP':'DOT'} NODE</small><h4>${n.name}</h4><p>${branch.description} This tier gives ${(1+n.tier*.25).toFixed(2)} ranks per purchase.</p><small>${open?'Repeatable upgrade':`Requires ${nodes.find(x=>x.id===n.requires).name} rank 1`}</small></div>`;const price=cost(this.p,n,this.buyAmount),b=document.createElement('button');b.textContent=!Number.isFinite(price)?(level>=MAX_RANK?'Rank limit':level+this.buyAmount===level?'Choose a larger batch':'Too expensive'):`${level?'Upgrade':'Research'} ×${fmt(this.buyAmount)} · ${fmt(price)} ${n.currency==='rubies'?'◆':n.currency==='scrap'?'◌':'●'}`;b.dataset.currency=n.currency;b.title=Number.isFinite(price)?`${this.buyAmount} ranks for ${price.toLocaleString('en')} ${n.currency}`:(level+this.buyAmount===level?'Select a larger batch to increase this very large rank.':(level>=MAX_RANK?'Maximum rank reached.':'This batch exceeds the currency limit; select a smaller amount.'));b.disabled=!open||!Number.isFinite(price)||this.p[n.currency]<price;b.onclick=()=>{if(!this.blocked()&&buy(this.p,n.id,this.buyAmount)){this.save();this.render();this.message(`${n.name}: bought ${this.buyAmount} ${this.buyAmount===1?'rank':'ranks'} · now rank ${this.p.levels[n.id]}.`);this.tone(740,.12);}};item.append(b);return item;}));
       }
       this.root.querySelectorAll('[data-craft-amount]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.craftAmount)===this.craftAmount)));
-      this.root.querySelectorAll('[data-craft]').forEach(b=>{const kind=b.dataset.craft,price=FORGE_PRICES[kind]*this.craftAmount;b.disabled=this.p.scrap<price;b.textContent=`${{boost:'Craft',ruby:'Synthesize',dots:'Condense'}[kind]} ×${this.craftAmount} · ${price.toLocaleString('en')} scrap`;});
+      this.root.querySelectorAll('[data-craft]').forEach(b=>{const kind=b.dataset.craft,price=forgeCost(this.p,kind,this.craftAmount);b.disabled=!Number.isFinite(price)||this.p.scrap<price;b.textContent=`${{boost:'Craft',ruby:'Synthesize',magnet:'Assemble'}[kind]} ×${fmt(this.craftAmount)} · ${Number.isFinite(price)?(price<1e15?price.toLocaleString('en'):fmt(price))+' scrap':'Too expensive'}`;b.title=Number.isFinite(price)?`${price.toLocaleString('en')} scrap for ${this.craftAmount} crafts. Crafted so far: ${this.p.forgeCrafts[kind]}.`:'Select a smaller batch.';});
     }
     frame(t){const dt=this.last?Math.min(.05,(t-this.last)/1000):0;this.last=t;if(this.visible&&this.owner()!==this.identity){this.save();this.load();}if(this.nano)this.tickNano(dt);this.syncNanoMusic();const play=this.playable();if(this.master)this.master.gain.value=play && this.sound() ? .12 : 0;if(play){let remaining=dt;while(remaining>0){const step=Math.min(1/120,remaining);this.update(step);remaining-=step;}}if(this.visible&&this.tab==='board')this.draw();requestAnimationFrame(t=>this.frame(t));}
   }
-  return {BOARD,MAX_RANK,BUY_AMOUNTS,FORGE_AMOUNTS,payoutProduct,nanogames,featuresFor,segmentFor,gateOpen,hitSegment,maps,branches,nodes,restore,rank,cost,unlocked,buy,planBuyAll,buyAll,award,pegsFor,Controller};
+  return {BOARD,MAX_RANK,BUY_AMOUNTS,FORGE_AMOUNTS,payoutProduct,forgeCost,nanogames,featuresFor,segmentFor,gateOpen,hitSegment,maps,branches,nodes,restore,rank,cost,unlocked,buy,planBuyAll,buyAll,award,pegsFor,Controller};
 })();
 if(typeof module!=='undefined')module.exports=CoinDrop;

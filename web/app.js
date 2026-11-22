@@ -20,8 +20,8 @@ const modes = {
   treasure: {title:"Treasure Trove",category:"TREASURE TRACKING",art:"◇",heading:"Keep your eyes on the prize.",copy:"One hidden gem. More chests, faster shuffles, and trickier crossings each round.",accent:"#ffda83",controls:"Watch the gem · Follow its chest · Tap, click, or use Tab + Enter to choose",localOnly:true,temporary:true,difficulties:{}},
   turtles: {title:"Custom Turtles",category:"TURTLE WARDROBE",art:"♧",heading:"A shell for every adventure.",copy:"Explore elemental collections and temporary #1 packs.",accent:"#77efcf",controls:"Open a collection · Preview and equip your turtles",localOnly:true,temporary:true,difficulties:{}},
   trails: {title:"Turtle Trails",category:"TRAIL GALLERY",art:"✧",heading:"Leave a little wonder behind.",copy:"Browse glowing wakes by tier, color, and theme.",accent:"#d6a3ff",controls:"Open a collection · Preview and equip your trails",localOnly:true,temporary:true,difficulties:{}},
-  nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 300 nanogames. Win achievements, Cubies, and leaderboard points.", accent:"#cfadff", controls:"Choose a nanogame or play at random · Wins earn rewards · Coin Drop currencies stay separate", localOnly:true, temporary:true, difficulties:{}},
-  coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "100 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
+  nanolab: {title:"Nano Lab", category:"14 / NANOGAME PRACTICE", art:"⚗", heading:"Try every pocket challenge.", copy:"All 3,000 nanogames. Win achievements, Cubies, and leaderboard points.", accent:"#cfadff", controls:"Choose a nanogame or play at random · Wins earn rewards · Coin Drop currencies stay separate", localOnly:true, temporary:true, difficulties:{}},
+  coindrop: {title: "Coin Drop", category: "13 / PEGBOARD ADVENTURE", art: "C", heading: "Drop into possibility.", copy: "1,000 worlds and an enormous upgrade tree.", accent: "#8acaff", controls: "Aim with mouse or arrows · Space drops · Free coins replenish automatically", localOnly: true, temporary: true, difficulties: {}},
   guide: {
     title: "Block Guide", category: "12 / CHAOS FIELD GUIDE", art: "▦",
     heading: "Know what is falling.", copy: "Meet the blocks in Turtle Dodge Chaos.",
@@ -457,6 +457,7 @@ let geomayhemCanvasWidth = 680;
 let geomayhemOfferKey = "";
 let geomayhemLoadoutKey = "";
 const geomayhemStores = new Map();
+const geomayhemImports = new Set();
 let geomayhemRun = null;
 let geomayhemResult = null;
 function geomayhemStore() {
@@ -464,16 +465,23 @@ function geomayhemStore() {
   if (!geomayhemStores.has(owner)) {
     let storage;
     try { storage = window.localStorage; } catch { /* Store reports memory-only mode. */ }
-    geomayhemStores.set(owner, new GeomayhemProgress.Store(owner, storage));
+    const store=new GeomayhemProgress.Store(owner, storage),localRead=store.read.bind(store);
+    store.read=()=>{const current=accountApp?.controller?.state();return current?.owner===owner&&current.profile?.geomayhem?GeomayhemProgress.restore(current.profile.geomayhem):localRead();};
+    geomayhemStores.set(owner,store);
   }
-  return geomayhemStores.get(owner);
+  const current=accountApp?.controller?.state(),store=geomayhemStores.get(owner);
+  if(current?.profile&&!current.profile.geomayhem&&!geomayhemImports.has(owner)){
+    geomayhemImports.add(owner);
+    accountApp.controller.enqueue('arcade',{event:'geomayhem-import',progress:store.read()}).then(()=>{if(accountApp.controller.state().owner===owner)accountApp.applyCurrent();}).catch(error=>{geomayhemImports.delete(owner);accountApp.message(error.message);});
+  }
+  return store;
 }
 function geomutilatorUnlocked() { return !!achievementTracker.data.unlocked.galactic_forge; }
 function starterAllowed(weapon, index, progress) { return weapon.id === "geomutilator" ? geomutilatorUnlocked() : GeomayhemProgress.starterRequirement(index) <= progress.cleared; }
 function renderGeomayhemHub() {
   const store = geomayhemStore(), progress = store.read();
   $("geomayhem-campaign").textContent = `${progress.cleared}/${GeomayhemProgress.arenaCount} arenas cleared · ${progress.shards} shards · ${progress.runs} expeditions. `
-    + (store.available ? "Saved in this browser for this profile." : "Browser storage unavailable: progress lasts only for this visit.");
+    + (store.available ? (store.owner==='guest'?"Saved on this device. Sign in to save progress across devices.":"Saved for this account · syncs across devices when online.") : "Browser storage unavailable: progress lasts only for this visit.");
   const selectedWeapon = $("geomayhem-weapon").value;
   $("geomayhem-weapon").replaceChildren(...geomayhemArmory.map((weapon, index) => {
     const required = GeomayhemProgress.starterRequirement(index);
@@ -493,7 +501,7 @@ function renderGeomayhemHub() {
     button.dataset.workshop = key;
     button.textContent = `${upgrade.name} ${tier}/3 · ${tier === 3 ? "MAX" : `${cost} shards${progress.cleared < required ? ` · Clear arena ${required}` : ""}`} — ${upgrade.description}`;
     button.disabled = tier === 3 || progress.shards < cost || progress.cleared < required;
-    button.onclick = () => { geomayhemStore().purchase(key); renderGeomayhemHub(); showScores(); };
+    button.onclick = async () => { button.disabled=true;try{await accountApp.controller.enqueue('arcade',{event:'geomayhem-upgrade',upgrade:key});accountApp.applyCurrent();}catch(error){accountApp.message(error.message);}renderGeomayhemHub();showScores(); };
     return button;
   }));
   document.querySelectorAll("[data-difficulty]").forEach(button => {
@@ -546,8 +554,8 @@ function renderGeomayhem(s) {
     $("boss-cinema").setAttribute("aria-label",defeat?"Boss defeat cinematic":"Boss introduction");
     $("boss-cinema-skip").textContent=defeat?"Continue →":"Skip introduction →";
     const cinemaContext=$("boss-cinema-canvas").getContext("2d");
-    if(defeat)BossDefeat.draw(cinemaContext,s.level,defeat.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
-    else GeomayhemBosses.cinematic(cinemaContext,s.level,s.boss_intro.time,trailReducedMotion.matches||!!saved.preferences?.reducedMotion);
+    if(defeat)BossDefeat.draw(cinemaContext,s.level,defeat.time,trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")));
+    else GeomayhemBosses.cinematic(cinemaContext,s.level,s.boss_intro.time,trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")));
     if(s.boss_intro?.time>10.8) {
       cinemaContext.save();cinemaContext.translate(115,425);cinemaContext.scale(1.8,1.8);
       drawGeomayhemCubie(cinemaContext,{coords:[0,0],face:[1,0],time:0});
@@ -1681,11 +1689,11 @@ function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
     `${modes[mode]?.difficulties[difficulty]?.[0] || (difficulty === "standard" ? "Standard" : difficulty.replace("level_", "Arena "))} ×${multiplier}`);
-  const scoring={geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
+  const scoring={balloon:'Completed run points × difficulty: Normal 1, Hard 2, Merciless 3, Impossible 4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
   $("leaderboard-multipliers").textContent = scoring[mode] || (mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · "));
 }
 function initializeGlobalLeaderboards() {
-  $("leaderboard-game").replaceChildren(...Object.entries(Leaderboards.difficulties).map(([mode])=>[mode,{title:modes[mode]?.title||'Tearesseract'}]).map(([value, config]) => {
+  $("leaderboard-game").replaceChildren(...Object.entries(Leaderboards.difficulties).map(([mode])=>[mode,{title:modes[mode]?.title||(mode==='pool'?'Penguin Pool':mode==='balloon'?'Balloon Pop':'Tearesseract')}]).map(([value, config]) => {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = config.title;
@@ -1761,10 +1769,10 @@ async function loadGlobalScores() {
       portrait.className = "global-cubie";
       portrait.title = cubie.name;
       portrait.setAttribute("aria-hidden", "true");
-      portrait.innerHTML = CubieCustoms.svg(cubie);
+      portrait.innerHTML = CubieCustoms.thumbnail(cubie);
       name.classList.add("global-player-name");
       name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
-      score.textContent = `${entry.score}${({keyboard:" rounds",coindrop:" coins",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
+      score.textContent = `${entry.score}${({pool:" wins",keyboard:" rounds",coindrop:" coins",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(rank, portrait, name, score);
       $("global-scores").append(row);
@@ -1900,7 +1908,7 @@ let chaosGuideCanvases = [], chaosGuideVisible = new Set(), chaosGuideObserver =
 let chaosGuideBlocks = [], chaosGuideIcon = null, chaosGuideLastChange = 0, chaosGuideScanner = null;
 function animateChaosGuide(now, initial = false) {
   if (selected === 'guide' && !document.hidden && now-chaosGuideFrame >= 1000/30) {
-    const age = trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : now/1000;
+    const age = trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")) ? 0 : now/1000;
     for (const entry of chaosGuideCanvases) if (chaosGuideVisible.has(entry.canvas)) {
       ChaosArt.drawPreview(entry.context, entry.block, age, chaosGuideBlocks);
     }
@@ -1909,7 +1917,7 @@ function animateChaosGuide(now, initial = false) {
   if (!chaosGuideScanner || document.hidden || (!initial &&
       (!visibleGameCards.has(guideCard) || guideCard.classList.contains('card-effects-paused')))) return;
   chaosGuideScanner.lastChange = chaosGuideLastChange;
-  chaosGuideScanner.tick(now, trailReducedMotion.matches || !!saved.preferences?.reducedMotion
+  chaosGuideScanner.tick(now, trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))
     || guideCard.classList.contains('card-effects-paused'), initial);
   chaosGuideLastChange = chaosGuideScanner.lastChange;
 }
@@ -2416,7 +2424,7 @@ function updateChaosEffects(s) {
   $("chaos-frost").hidden = !frost;
   $("arena").classList.toggle("chaos-haste", !!haste);
   $("arena").classList.toggle("chaos-frozen", !!frost);
-  const reduced = trailReducedMotion.matches || !!saved.preferences?.reducedMotion;
+  const reduced = trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"));
   document.body.classList.toggle("chaos-motion-off", reduced);
 }
 function render() {
@@ -2582,7 +2590,7 @@ function drawGeomayhemCubie(context, command) {
   const [x,y]=command.coords;
   context.save();
   const tier=Math.max(0,Object.keys(CubieCustoms.tierLabels).indexOf(item.tier));
-  const reduced=trailReducedMotion.matches||!!saved.preferences?.reducedMotion;
+  const reduced=trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"));
   const time=reduced?0:(command.time||0);
   const accent=tier>=6?'#a9ffe0':tier===5?'#e6baff':'#c7edff';
   if(tier>=3) {
@@ -2635,7 +2643,7 @@ function drawGeomayhemCommand(context, command) {
   const c = command.coords;
   context.globalAlpha = command.opacity ?? 1;
   context.setLineDash(command.dash || []);
-  if (command.kind === "geomayhem_boss") { GeomayhemBosses.drawCommand(context,command,trailReducedMotion.matches||!!saved.preferences?.reducedMotion); return; }
+  if (command.kind === "geomayhem_boss") { GeomayhemBosses.drawCommand(context,command,trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))); return; }
   if (command.kind === "geomayhem_cubie") { drawGeomayhemCubie(context,command); return; }
   if (command.kind === "geomayhem_polygon") {
     paintGeomayhemPolygon(context,c[0],c[1],command.radius,command.sides,command.fill,command.outline,
@@ -2743,9 +2751,9 @@ function draw(s) {
     ctx.drawImage(geomayhemBackdrop,left,-top,right-left,top-bottom);
   if (s.mode === "geomayhem" && s.boss?.hp > 0)
     BossArena.draw(ctx,{level:s.level,bounds:s.bounds,time:s.fight_elapsed,phase:s.boss.phase,radius:s.boss_arena_radius,
-      reduced:trailReducedMotion.matches||!!saved.preferences?.reducedMotion});
+      reduced:trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))});
   for (const command of s.commands) {
-    if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || saved.preferences?.reducedMotion))
+    if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))))
       turtleTrailField.draw(ctx, TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned));
     const turtleCustom = command.role === "player" && TurtleTrails.allowedModes.has(s.mode)
       ? TurtleCustoms.selected(CrownPacks.equipped("turtle", saved.turtleCustom), saved.shop.owned) : null;
@@ -2753,7 +2761,7 @@ function draw(s) {
       TurtleCustoms.draw(ctx, turtleCustom, s.player.x, -s.player.y,
         s.paused ? 0 : performance.now() / 1000,
         s.mode === "dodge" && s.difficulty === "chaos" ? chaosTurtleAngle : 0,
-        trailReducedMotion.matches || !!saved.preferences?.reducedMotion);
+        trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")));
       continue;
     }
     const c = command.coords;
@@ -2783,12 +2791,12 @@ function draw(s) {
     }
     if (command.chaos_kind) {
       ChaosArt.tile(ctx, command.chaos_kind, c[0], c[1], c[2]-c[0], command.fill || command.outline, command.ghost,
-        trailReducedMotion.matches || saved.preferences?.reducedMotion ? command.fill || command.outline : command.fill_color);
+        trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")) ? command.fill || command.outline : command.fill_color);
       continue;
     }
     if (command.kind === "block_icon") {
       ChaosArt.draw(ctx, command.block, c[0], c[1], command.size, command.ghost, command.color,
-        trailReducedMotion.matches || saved.preferences?.reducedMotion ? 0 : command.age, command.cannons);
+        trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")) ? 0 : command.age, command.cannons);
       continue;
     }
     if (s.mode === "geomayhem") {
@@ -2947,17 +2955,17 @@ function frame(now) {
         const dx = snapshot.player.x - previousPlayer.x, dy = snapshot.player.y - previousPlayer.y;
         if (Math.hypot(dx, dy) > .001) chaosTurtleTarget = Math.atan2(dx, dy);
         const difference = Math.atan2(Math.sin(chaosTurtleTarget - chaosTurtleAngle), Math.cos(chaosTurtleTarget - chaosTurtleAngle));
-        chaosTurtleAngle += difference * (trailReducedMotion.matches || saved.preferences?.reducedMotion ? 1 : 1 - Math.exp(-14 * Math.min(.1, Math.max(0, (now - lastFrame) / 1000))));
+        chaosTurtleAngle += difference * (trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")) ? 1 : 1 - Math.exp(-14 * Math.min(.1, Math.max(0, (now - lastFrame) / 1000))));
       }
       turtleTrailField.update((now - lastFrame) / 1000, snapshot,
-        TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned), trailReducedMotion.matches || !!saved.preferences?.reducedMotion, selected === "dodge" && selectedDifficulty === "chaos" ? chaosTurtleAngle : 0);
+        TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned), trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")), selected === "dodge" && selectedDifficulty === "chaos" ? chaosTurtleAngle : 0);
       render();
     } catch (error) {
       fail(error);
     }
   }
   if (!active && ready && snapshot?.over && !snapshot.won && !document.hidden
-      && !gasterActive && !coreOrigin?.open && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
+      && !gasterActive && !coreOrigin?.open && !(trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")))
       && ["boss", "pumpkin", "wrath"].includes(selected)) {
     try {
       snapshot = send("defeat_frame", { dt: (now - lastFrame) / 1000 });
@@ -2966,7 +2974,7 @@ function frame(now) {
   }
   if (jukeboxNote) {
     const pulse = soundOn && !document.hidden && visibleGameCards.has(jukeboxCard)
-      && !jukeboxCard.classList.contains('card-effects-paused') && !(trailReducedMotion.matches || saved.preferences?.reducedMotion)
+      && !jukeboxCard.classList.contains('card-effects-paused') && !(trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")))
       ? musicPlayer?.melodyPulse() || 0 : 0;
     const transform = `scale(${1 + pulse * .275})`;
     if (jukeboxNote.style.transform !== transform) jukeboxNote.style.transform = transform;
@@ -2984,7 +2992,7 @@ for (const letter of "abcdefghijklmnopqrstuvwxyz") {
   button.onclick = () => guess(letter);
   $("alphabet").append(button);
 }
-const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn && !$("autumn-room")?.open, blocked: () => !!accountApp?.blocked,onResult:(owner,mode,result)=>recordSideResult(owner,mode,result)});
+const coinDropGame = new CoinDrop.Controller($("coin-drop-room"), {owner: () => accountApp?.controller?.state().owner || "guest", sound: () => soundOn && !$("autumn-room")?.open && !$("news-dialog")?.open, blocked: () => !!accountApp?.blocked,onResult:(owner,mode,result)=>recordSideResult(owner,mode,result)});
 document
   .querySelectorAll("[data-game]")
   .forEach(
@@ -3471,7 +3479,7 @@ function setSoundEnabled(value) {
   if (audioMaster && audioContext.state !== "closed") {
     if (audioMaster.gain.cancelAndHoldAtTime) audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
     else audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
-    audioMaster.gain.linearRampToValueAtTime(soundOn ? 1 : 0, audioContext.currentTime + .02);
+    audioMaster.gain.linearRampToValueAtTime(soundOn ? (globalThis.ArcadeSettings?.get("volume") ?? 100)/100 : 0, audioContext.currentTime + .02);
   }
   syncMusic();
   initializeAudio();
@@ -3492,17 +3500,19 @@ function syncBossJukebox(track,playing){
   else if(track||changed)bossAudioDirector?.stop();
 }
 function syncMusic() {
+  const newsOpen = !!$("news-dialog")?.open;
+  const newsVideoPlaying = newsOpen && [...$("news-dialog").querySelectorAll('video')].some(video => !video.paused && !video.ended);
   if (selected === "jukebox") renderJukebox();
   if (sequencePlayer) {
     const kind = snapshot?.dying ? "death" : snapshot?.laser_firing ? "finale" : null;
     sequencePlayer.sync(active ? kind : null, kind === "death" ? snapshot.death_age : snapshot?.cinematic_age,
-      soundOn && !$("autumn-room")?.open && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
+      soundOn && !newsOpen && !$("autumn-room")?.open && !snapshot?.paused && !document.hidden && !gasterActive && !coreOrigin?.open && !loadFailed);
   }
   if (!musicPlayer) return;
   const welcoming = !!document.querySelector("#welcome-dialog")?.open;
-  const jukeboxBoss = !welcoming&&!coreAftermath&&selected==='jukebox'?geomayhemBossSongs.find(track=>track.id===selectedDifficulty):null;
+  const jukeboxBoss = !newsOpen&&!welcoming&&!coreAftermath&&selected==='jukebox'?geomayhemBossSongs.find(track=>track.id===selectedDifficulty):null;
   const state = {
-    theme: jukeboxBoss ? 'arcade' : welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
+    theme: newsOpen ? 'news_broadcast' : jukeboxBoss ? 'arcade' : welcoming ? "cubie_hello" : coreAftermath ? "core_aftermath" : selected === "jukebox" && selectedDifficulty ? `jukebox:${selectedDifficulty}`
       : selected === "treasure" ? "treasure_trove"
       : active && ["singularity", "core_practice"].includes(selected) ? "singularity"
       : active && ["pumpkin", "wrath"].includes(selected) ? "pumpkin"
@@ -3512,10 +3522,10 @@ function syncMusic() {
       : active && selected === "dodge" && selectedDifficulty === "chaos" ? "chaos_carnival"
       : active && selected === "dodge" ? `dodge_${selectedDifficulty}`
       : active && selected === "boss" ? `boss_${selectedDifficulty}` : "arcade",
-    playing: soundOn && !$("autumn-room")?.open && !["coindrop", "nanolab"].includes(selected) && !document.querySelector("#galactic-forge") && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
-      && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused),
+    playing: soundOn && !$("autumn-room")?.open && !document.hidden && (newsOpen ? !newsVideoPlaying && globalThis.ArcadeSettings?.get("newsMusic") !== false : (!["coindrop", "nanolab"].includes(selected) && !document.querySelector("#galactic-forge") && !gasterActive && !coreOrigin?.open && !nameSurpriseActive && !$("cubie-hint").open && !document.hidden && !snapshot?.paused && !loadFailed
+      && (welcoming || coreAftermath || selected !== "jukebox" || !!selectedDifficulty && !jukeboxPaused))),
   };
-  const bossActive = active && selected === "geomayhem" && (snapshot?.boss?.hp > 0 || snapshot?.boss_defeat) && !snapshot?.over;
+  const bossActive = !newsOpen && active && selected === "geomayhem" && (snapshot?.boss?.hp > 0 || snapshot?.boss_defeat) && !snapshot?.over;
   syncBossJukebox(jukeboxBoss,state.playing);
   if(!jukeboxBoss)bossAudioDirector?.sync({level: bossActive ? snapshot.level : null,
     mode: snapshot?.boss_defeat ? 'defeat' : snapshot?.boss_intro ? 'intro' : 'battle',
@@ -3523,13 +3533,15 @@ function syncMusic() {
     phase: snapshot?.boss?.phase ?? 1, move: snapshot?.boss?.move ?? '',
     playing: state.playing && bossActive && !snapshot?.offers?.length && !welcoming});
   if (bossActive || jukeboxBoss) state.playing = false;
-  if (pendingRockSong && !welcoming) {
+  if(newsOpen) musicPlayer.oneShot = null;
+  if (pendingRockSong && !welcoming && !newsOpen) {
     musicPlayer.playOnce(pendingRockSong, state);
     pendingRockSong = null;
   } else musicPlayer.setState(state);
   renderNowPlaying();
 }
 document.addEventListener("autumn-room-state", syncMusic);
+document.addEventListener("news-room-state", syncMusic);
 function renderNowPlaying() {
   const indicator = $("now-playing");
   const track = bossJukebox.playing?bossJukebox.track:jukeboxTracks.find(track => track.id === musicPlayer?.current?.track);
@@ -3619,8 +3631,10 @@ function initializeAudio() {
       const context = new AudioContext();
       try {
         const master = context.createGain();
+        master.gain.value=(globalThis.ArcadeSettings?.get("volume") ?? 100)/100;
         master.connect(context.destination);
         const musicGain = context.createGain();
+        musicGain.gain.value=(globalThis.ArcadeSettings?.get("musicVolume") ?? 100)/100;
         musicGain.connect(master);
         const music = new ArcadeMusic.Player(context, musicGain);
         const sequence = new ArcadeEffects.SequencePlayer(context, master);
@@ -3964,7 +3978,7 @@ async function initialize() {
   }
 }
 coreOrigin = new CoreOrigin.Film($("core-origin"), {
-  reducedMotion: () => !!saved.preferences?.reducedMotion,
+  reducedMotion: () => !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")),
   audio: () => ({ context: audioContext, destination: audioMaster, enabled: soundOn }),
   toggleSound: () => $("sound").click(),
   onChange: open => { coreAftermath = !open; clearKeys(); syncMusic(); },
@@ -4005,7 +4019,7 @@ function applyAccountProfile(profile) {
     syncSingularityCard();
     const desiredSound = localSoundPreference ?? (saved.preferences?.soundOn !== false);
     if (!pendingSoundChoice && soundOn !== desiredSound) setSoundEnabled(desiredSound);
-    document.documentElement.classList.toggle("account-reduced-motion", !!saved.preferences?.reducedMotion);
+    document.documentElement.classList.toggle("account-reduced-motion", !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")));
     renderAchievements(); applyCubieCustom(); showScores();
     if (selected === "shop") renderShop();
     if (selected === "customs") renderCustoms();
@@ -4155,7 +4169,7 @@ if (!storageAvailable)
     "Storage is unavailable. Scores and achievements last for this visit only.";
 const jackpotMachine = new JackpotSlots.Controller({
   equipped: () => CrownPacks.equipped("cubie",saved.cubieCustom),
-  reducedMotion: () => trailReducedMotion.matches || !!saved.preferences?.reducedMotion,
+  reducedMotion: () => trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")),
   onResult: symbols => updateAchievements(achievementTracker.slotResult(symbols, CrownPacks.equipped("cubie",saved.cubieCustom), true)),
 });
 requestAnimationFrame(frame);
@@ -4417,7 +4431,7 @@ function openGalacticForge() {
       const p = position(now);
       if (p === null) return;
       marker.style.left = `${p*100}%`;
-      if (!trailReducedMotion.matches && !saved.preferences?.reducedMotion)
+      if (!trailReducedMotion.matches && !(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")))
         hammer.style.transform = `translateY(${p*10+40}px) rotate(${25+(p-.5)*8}deg)`;
     }
     frame = requestAnimationFrame(animate);
@@ -4438,7 +4452,7 @@ function openGalacticForge() {
     forgeAudio.effect('hit', strikes);
     dialog.querySelectorAll('.forge-rounds span')[strikes-1].classList.add('forged');
     dialog.querySelector('#forge-heat').textContent = `CORE TEMPERATURE · ${strikes*10}%`;
-    if (!trailReducedMotion.matches && !saved.preferences?.reducedMotion) {
+    if (!trailReducedMotion.matches && !(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))) {
       // Swing down from the upper-left ready pose and level the head at contact.
       // Its bottom is y=88; +89 lands on the y=177 anvil with the handle clear.
       const readyPose = hammer.style.transform || 'translateY(45px) rotate(25deg)';
@@ -4575,9 +4589,24 @@ setInterval(()=>{
 
 // SMIL wire deformation respects the same motion and offscreen rules as CSS art.
 setInterval(()=>{
-  const reduced=trailReducedMotion.matches||!!saved.preferences?.reducedMotion;
+  const reduced=trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"));
   for(const svg of document.querySelectorAll('svg[data-custom="shop_dbtv"]')){
     const pause=reduced||document.hidden||!!svg.closest('[hidden],.decoration-paused,.shop-art-paused');
     if(pause!==svg.animationsPaused())pause?svg.pauseAnimations():svg.unpauseAnimations();
   }
 },500);
+
+document.addEventListener('click',event=>{
+ const svg=event.target.closest('svg[data-custom="shop_dbtv"]');
+ if(!svg||svg.closest('#cube'))return;
+ svg.classList.add('blushing');setTimeout(()=>svg.classList.remove('blushing'),1800);
+});
+
+// Device-local settings never alter account permissions or scoring.
+document.addEventListener('arcade-settings-change',()=>{
+ if(audioContext&&audioContext.state!=='closed'){
+  audioMaster?.gain.setTargetAtTime(soundOn?(ArcadeSettings.get('volume')/100):0,audioContext.currentTime,.03);
+  musicOutput?.gain.setTargetAtTime(ArcadeSettings.get('musicVolume')/100,audioContext.currentTime,.03);
+ }
+ syncMusic();
+});

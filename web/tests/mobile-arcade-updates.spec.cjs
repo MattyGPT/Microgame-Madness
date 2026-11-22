@@ -37,3 +37,16 @@ test('Coin Drop instructions are above the board and Signal Recognized is secret
   const secret=await page.evaluate(()=>({secret:Achievements.catalog.find(a=>a.id==='gaster_remix').secret,redacted:achievementCards.get('gaster_remix').classList.contains('redacted')}));
   expect(secret).toEqual({secret:true,redacted:true});
 });
+test('DBTV reacts to clicks and DBTH has its custom symbol, smile and four wire hands',async({page},info)=>{
+ await openGame(page);await leaveFullscreen(page);await page.evaluate(()=>selectGame('shop'));
+ await page.locator('#shop-search').fill('DBTV');
+ const tv=page.locator('#shop-grid svg[data-custom="shop_dbtv"]');await tv.click();
+ await expect(tv.locator('.dbtv-happy')).toBeVisible();
+ await expect(tv.locator('.dbtv-smile')).toBeHidden();
+ await expect(tv.locator('.cubie-blush')).toHaveCSS('opacity','0.95');
+ await page.locator('#shop-search').fill('DBTH');
+ const hacker=page.locator('#shop-grid svg[data-custom="shop_dbth"]');
+ await expect(hacker).toBeVisible();await expect(hacker.locator('.dbth-arm')).toHaveCount(4);
+ await expect(hacker.locator('.dbth-symbol')).toHaveCount(1);await expect(hacker.locator('.dbth-smile')).toHaveCount(1);
+ await hacker.locator('xpath=ancestor::article').screenshot({path:info.outputPath('dbth.png')});
+});

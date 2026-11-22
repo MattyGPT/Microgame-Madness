@@ -426,22 +426,24 @@ class PackagingTests(unittest.TestCase):
     def test_package_contains_only_allowlisted_browser_files(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
-            with patch("scripts.build_web.OUTPUT", output):
+            with patch("scripts.build_web.OUTPUT", output), patch.dict("os.environ", {"CI": "1"}):
                 build()
                 files = {str(p.relative_to(output)) for p in output.rglob("*") if p.is_file()}
                 expected = {"index.html", "style.css", "app.js", "jackpot-slots.js", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "trails.js", "trails.css", "leaderboards.js", "usage.js", "leaderboard-config.json", "favicon.svg", ".nojekyll", "python-files.json"}
                 expected |= {f"python/{name}" for name in (*PYTHON_SOURCES, "bridge.py")}
                 expected |= {"account-rules.js", "accounts/profile.css", "turtle-customs.js", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "coin-drop.js", "coin-drop.css", "coin-drop-lessons.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-nano-music.js", "boss-audio.js", "boss-arena.js", "regent-art.js"}
                 expected |= {"tearesseract-theme.mp3", "tearesseract-prelude.mp3", "jukebox-archive.js", "jukebox-search.js", "tearesseract-icon.js", "tearesseract.js", "tearesseract-progress.js", "tearesseract-death.js", "tearesseract.html"}
-                expected |= {"news.js", "news.css", "autumn-room.js", "autumn-room.css"}
-                expected |= {"crown-packs.js", "collections.js", "treasure-trove.js", "treasure-trove.css"}
+                expected |= {"exclusive-polish.js", "exclusive-polish.css", "game-dialog.js", "game-dialog.css", "settings.js", "settings.css", "news.js", "news.css", "autumn-room.js", "autumn-room.css"}
+                expected |= {"coin-drop-frontier.js", "crown-packs.js", "collections.js", "treasure-trove.js", "treasure-trove.css"}
                 expected |= {f"accounts/{name}.js" for name in ("store", "session", "sync", "app", "welcome")}
                 expected |= {f"accounts/tours/{game}.{ext}" for game in ("hangman", "keyboard", "dodge", "boss", "pumpkin", "wrath", "geomayhem") for ext in ("webm", "webp")}
                 expected |= {f"ops/usage.{ext}" for ext in ("html", "css", "js")}
                 expected |= {"media/billiards-and-balloons-preview.mp4", "media/billiards-and-balloons-preview.jpg", "media/balloon-pop-preview.mp4", "media/balloon-pop-preview.jpg"}
+                expected |= {f"{game}/{asset}" for game in ("balloon-pop", "pool") for asset in ("index.html", "game.js", "model.js", "style.css")}
+                expected |= {"pool/progress.js", "balloon-pop/progress.js"}
                 self.assertEqual(files, expected)
-                self.assertFalse((output / "balloon-pop").exists())
-                self.assertNotIn('balloon-pop/index.html', (output / "index.html").read_text())
+                self.assertTrue((output / "balloon-pop").exists())
+                self.assertIn('balloon-pop/index.html', (output / "index.html").read_text())
                 for name in PYTHON_SOURCES:
                     self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
 

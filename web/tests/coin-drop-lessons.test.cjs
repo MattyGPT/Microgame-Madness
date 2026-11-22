@@ -2,8 +2,8 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const Lessons=require('../coin-drop-lessons.js');
 const {nanogames}=require('../coin-drop.js');
-test('all 300 nanogames have a specific lesson and worked example',()=>{
- const lessons=nanogames.map(Lessons.get);assert.equal(lessons.length,300);assert.equal(new Set(lessons.map(l=>l.key)).size,300);
+test('all 3000 nanogames have a specific lesson and worked example',()=>{
+ const lessons=nanogames.map(Lessons.get);assert.equal(lessons.length,3000);assert.equal(new Set(lessons.map(l=>l.key)).size,3000);
  for(const lesson of lessons){assert.equal(lesson.steps.length,2);assert.ok(lesson.steps.every(s=>s.trim().length>0));assert.ok(lesson.example.trim().length>0,lesson.key);}
 });
 test('binary switches cover all four-bit numbers and Roman key is correct',()=>{

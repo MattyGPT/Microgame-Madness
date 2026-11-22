@@ -4,6 +4,7 @@
 // same catalogs and achievement tracker; the database owns operation receipts.
 const AccountRules = (() => {
   const isNode = typeof module !== 'undefined' && module.exports;
+  const geomayhem = isNode ? require('../web/geomayhem-progress.js') : globalThis.GeomayhemProgress;
   const achievements = isNode ? require('../web/achievements.js') : globalThis.Achievements;
   const shop = isNode ? require('../web/shop.js') : globalThis.CubieShop;
   const customs = isNode ? require('../web/customs.js') : globalThis.CubieCustoms;
@@ -12,6 +13,8 @@ const AccountRules = (() => {
   const catalog = [...customs.catalog, ...trails.catalog, ...turtles.catalog];
   const modes = Object.fromEntries(Object.entries(shop.rates).map(([mode, rate]) => [mode, Object.keys(rate.modes)]));
   modes.core_practice = achievements.attackRewards.filter(a => a.family === 'core').map(a => a.key);
+  modes.pool = ['standard'];
+  modes.balloon=['normal','hard','merciless','impossible'];
   modes.geomayhem = Array.from({length:20}, (_,i) => `level_${i+1}`);
   for(const game of achievements.sideGames)modes[game.mode]=['standard'];
   const clone = value => JSON.parse(JSON.stringify(value));
@@ -42,7 +45,7 @@ const AccountRules = (() => {
       shop: { units: 0, owned: [] }, cubieCustom: 'classic', turtleTrail: null, turtleCustom: null,
       unlocks: { singularity: false }, minigamesCompleted: 0, cubieHintShown: false, testerTon618: false,
       preferences: { soundOn: true, reducedMotion: false }, privacy: { leaderboard: true, publicProfile: true },
-      preferenceRevisions: {}, streams: {}, runs: {}, timeIntervals: [], baselineClosed: false };
+      geomayhem: null, preferenceRevisions: {}, streams: {}, runs: {}, timeIntervals: [], baselineClosed: false };
   }
   function validMode(mode, difficulty) { return Object.hasOwn(modes, mode) && modes[mode].includes(difficulty); }
   function scoreValid(mode, difficulty, score) {
@@ -58,6 +61,7 @@ const AccountRules = (() => {
     clean.shop = shop.restore(value.shop, catalog);
     clean.shop.owned = clean.shop.owned.filter(id => !catalog.find(item => item.id === id)?.serverReward);
     clean.unlocks.singularity = value.unlocks?.singularity === true;
+    if(object(value.geomayhem))clean.geomayhem=geomayhem.restore(value.geomayhem);
     clean.testerTon618 = value.testerTon618 === true;
     clean.minigamesCompleted = integer(value.minigamesCompleted) ? Math.min(20, value.minigamesCompleted) : 0;
     clean.cubieHintShown = value.cubieHintShown === true;
@@ -258,6 +262,7 @@ const AccountRules = (() => {
           shop.reward(state.shop, run.mode, run.difficulty, score);
           addBest(state, run.mode, run.difficulty, run.player, score);
         }
+        if(run.mode==='geomayhem'){state.geomayhem=geomayhem.finish(state.geomayhem,runId,{mode:'geomayhem',level:observation.geo_level??Number(run.difficulty.slice(6)),cleared:observation.geo_waves||0,kills:observation.geo_kills||0,over:completed,won:observation.won}).state;}
         if (completed && !['core_practice','geomayhem'].includes(run.mode)) state.minigamesCompleted = Math.min(20, state.minigamesCompleted+1);
         const finishedAt = new Date(Math.max(Date.parse(run.startedAt), Date.parse(occurredAt))).toISOString();
         Object.assign(run, { finished: true, outcome: payload.outcome, score, finishedAt,
@@ -272,7 +277,24 @@ const AccountRules = (() => {
           eligible: run.eligible, provenance: run.provenance, timeSource: run.timeSource, timeAdjusted: run.timeAdjusted };
       }
     } else if (operation.kind === 'arcade') {
-      if(payload.event==='side-result') {
+      if(payload.event==='geomayhem-import'){
+        // One-time adoption of this account's existing device save. Later devices cannot overwrite it.
+        if(!state.geomayhem)state.geomayhem=geomayhem.restore(payload.progress);
+      } else if(payload.event==='geomayhem-upgrade'){
+        requireValue(Object.hasOwn(geomayhem.upgrades,payload.upgrade),'Unknown workshop upgrade.');
+        const before=geomayhem.restore(state.geomayhem),after=geomayhem.purchase(before,payload.upgrade);
+        requireValue(after.workshop[payload.upgrade]>before.workshop[payload.upgrade],'Not enough shards or arena progress for this upgrade.');
+        state.geomayhem=after;
+      } else if(payload.event==='balloon-result'){
+        requireValue(validMode('balloon',payload.difficulty)&&integer(payload.score,1000000000),'Invalid Balloon Pop result.');
+        addBest(state,'balloon',payload.difficulty,state.player,payload.score);
+        finishedRun={id:operation.id,mode:'balloon',difficulty:payload.difficulty,outcome:'loss',score:payload.score,startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:payload.score>0,provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};
+      } else if(payload.event==='pool-result'){
+        requireValue(typeof payload.won==='boolean','Invalid pool result.');
+        const score=payload.won?1:0;
+        addBest(state,'pool','standard',state.player,score);
+        finishedRun={id:operation.id,mode:'pool',difficulty:'standard',outcome:payload.won?'win':'loss',score,startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};
+      } else if(payload.event==='side-result') {
         const {mode,score,level=0,won=false}=payload;
         requireValue(achievements.sideGames.some(game=>game.mode===mode),'Unknown side game.');
         requireValue(integer(score,mode==='tearesseract'?30:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');

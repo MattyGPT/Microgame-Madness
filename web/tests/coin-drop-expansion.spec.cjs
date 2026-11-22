@@ -57,10 +57,10 @@ test('100-world progression, 320 upgrades and fivefold nanogame bonuses persist'
  });
  expect(data.prize).toBe(Math.ceil(data.expected));expect(data.bonusRubies).toBe(5);expect(data.cleared).toBe(100);
  await page.locator('#cd-lab-result').getByRole('button',{name:'Dismiss'}).click();
- await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(100);
+ await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(1000);
  await page.locator('[data-tab="tree"]').click();await expect(page.locator('#cd-branches button')).toHaveCount(16);await expect(page.locator('.cd-node')).toHaveCount(20);
  await page.screenshot({path:info.outputPath('expanded-upgrades.png')});
  await page.reload();await expect(page.locator('#runtime-status')).toContainText('All games ready');await page.locator('[data-game="coindrop"]').click();
- expect(await page.evaluate(()=>({map:coinDropGame.p.map,cleared:coinDropGame.p.cleared,earned:coinDropGame.p.earned.length,expedition:coinDropGame.p.levels['expedition-0']}))).toEqual({map:99,cleared:100,earned:100,expedition:1});
- await expect(page.locator('#cd-map-name')).toHaveText('Eternal Throne');await expect(page.locator('#cd-next')).toBeDisabled();
+ expect(await page.evaluate(()=>({map:coinDropGame.p.map,cleared:coinDropGame.p.cleared,earned:coinDropGame.p.earned.length,expedition:coinDropGame.p.levels['expedition-0']}))).toEqual({map:99,cleared:100,earned:1000,expedition:1});
+ await expect(page.locator('#cd-map-name')).toHaveText('Eternal Throne');await expect(page.locator('#cd-next')).toBeEnabled();
 });

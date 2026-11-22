@@ -2,7 +2,8 @@ const { leaveFullscreen } = require('./fixtures/game.cjs');
 const { test, expect, openGame } = require('./fixtures/game.cjs');
 test.use({ deterministicMusic: true });
 const key = 'microgame-madness.geomayhem.v1:guest';
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, info) => {
+  if(info.title.startsWith('a completed ten-arena'))await page.addInitScript(key=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({cleared:10,shards:420,runs:37,workshop:{power:3},best:{10:20}}));},key);
   await page.route('**/app.js*', async route => {
     const response = await route.fetch();
     await route.fulfill({ response, body: (await response.text()).replace(
@@ -14,7 +15,7 @@ test.beforeEach(async ({ page }) => {
   await page.locator('[data-game="geomayhem"]').click();
 });
 const model = (page, code) => page.evaluate(code => window.geomayhemRuntime.runPython(code), `from bridge import session\n${code}`);
-const saved = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+const saved = page => page.evaluate(() => accountApp.controller.state().profile.geomayhem);
 
 test('fresh campaign locks arenas, saves a clear, buys permanent upgrades and resets defeated runs', async ({ page }, testInfo) => {
   await expect(page.locator('[data-difficulty="level_1"]')).toBeEnabled();
@@ -80,8 +81,6 @@ test('rerolls are limited and relics change the build without occupying weapon s
 
 
 test('a completed ten-arena save continues through arena twenty and survives reload', async ({ page }) => {
-  await page.evaluate(key => localStorage.setItem(key, JSON.stringify({ cleared: 10, shards: 420,
-    runs: 37, workshop: { power: 3 }, best: { 10: 20 } })), key);
   await page.reload();
   await expect(page.locator('#runtime-status')).toContainText('All games ready');
   await leaveFullscreen(page);

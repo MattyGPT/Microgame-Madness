@@ -607,6 +607,9 @@ const CubieCustoms = (() => {
   shopCustoms.push(["dbtv","DBTV Cubie",3000,"rainbow","#ffffff","A little broadcast from a very friendly frequency.",
     '<path d="M60 28V18M60 18 37 4M60 18 83 4" fill="none" stroke="#13131d" stroke-width="4" stroke-linecap="round"/><rect x="27" y="35" width="34" height="18" rx="2" fill="#f7f7fb" stroke="#14141d" stroke-width="2"/><path d="M44 35v18M33 39h5m-2.5 0v10M33 49h5" stroke="#11111c" stroke-width="2"/><circle class="dbtv-record" cx="53" cy="44" r="4" fill="#f42d48"/>',
     {back:'<g class="dbtv-wires" fill="none" stroke="#090912" stroke-width="5" stroke-linecap="round">'+Array.from({length:6},(_,i)=>`<path class="dbtv-wire" style="--wire-delay:${-i*.3}s" d="M${30+i*12} 99c-16 10 18 24 -4 34"><animate attributeName="d" dur="${2.1+i*.17}s" begin="${-i*.38}s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.25;.5;.75;1" keySplines=".4 0 .6 1;.4 0 .6 1;.4 0 .6 1;.4 0 .6 1" values="M${30+i*12} 99c-16 10 18 24 -4 34;M${30+i*12} 99c-7 16 -21 22 -12 36;M${30+i*12} 99c16 10 -18 24 4 34;M${30+i*12} 99c7 16 21 22 12 36;M${30+i*12} 99c-16 10 18 24 -4 34"/></path>`).join('')+'</g>'}]);
+  shopCustoms.push(["dbth","DBTH Cubie",3000,"rainbow","#ffffff","Death By Triple Hacker · gmaster32’s OC from Nate’s Death By universe.",
+    '<path d="M60 29V17M60 17 30 0M60 17V7M60 17 90 0" fill="none" stroke="#191923" stroke-width="3.5" stroke-linecap="round"/><g class="cubie-motion motion-hover dbth-symbol" style="transform-origin:60px 58px;animation-duration:3s"><path d="M45 43h13v13H45Z" fill="#f25022"/><path d="M61 43h13v13H61Z" fill="#7fba00"/><path d="M45 59h13v13H45Z" fill="#00a4ef"/><path d="M61 59h13v13H61Z" fill="#ffb900"/></g>',
+    {back:'<g fill="none" stroke="#222231" stroke-width="3" stroke-linecap="round">'+[[20,28,-2,47],[100,28,122,47],[20,108,-2,118],[100,108,122,118]].map(([x,y,hx,hy],i)=>`<g class="dbth-arm cubie-motion motion-sway" style="transform-origin:${x}px ${y}px;animation-delay:${-i*.5}s;animation-duration:${2.4+i*.2}s"><path d="M${x} ${y}C${hx} ${y-12} ${hx+(i%2?18:-18)} ${hy-8} ${hx} ${hy}"/><rect x="${hx-6}" y="${hy-3}" width="12" height="12" rx="1" fill="#ef3549" stroke="#9e233d" stroke-width="1.5"/><path d="M${hx-3} ${hy}h5" stroke="#ffadb3" stroke-width="1.5"/></g>`).join('')+'</g>'}]);
   for (const [id, name, price, tier, color, flavor, detail, layers = {}] of shopCustoms)
     add(`shop_${id}`, name, null, color, detail, square, { price, tier, flavor, ...layers });
   add("shop_toasted_marshmallow", "Toasted Marshmallow Cubie", null, "#fff0d7",
@@ -1130,7 +1133,8 @@ const CubieCustoms = (() => {
 
   function animatedArt(item, uid) {
     if(item.rewardMode)return sideRewardArt(item,uid);
-    if(item.id==='shop_dbtv')return {detail:item.detail,back:item.back,eyes:'<g class="dbtv-no-eyes"/>',mouth:'<path class="dbtv-smile" d="M54 84q0 14 10 14 8 0 9-10 1 10 9 10 10 0 10-14" fill="none" stroke="#14141d" stroke-width="4" stroke-linecap="round"/>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
+    if(item.id==='shop_dbth')return {detail:item.detail,back:item.back,eyes:'<g class="dbth-no-eyes"/>',mouth:'<path class="dbth-smile" d="M38 84q0 13 8 13t8-13q0 13 8 13t8-13q0 13 8 13t8-13" fill="none" stroke="#191923" stroke-width="3.5" stroke-linecap="round"/>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
+    if(item.id==='shop_dbtv')return {detail:item.detail,back:item.back,eyes:'<g class="dbtv-no-eyes"/>',mouth:'<path class="dbtv-smile" d="M54 84q0 14 10 14 8 0 9-10 1 10 9 10 10 0 10-14" fill="none" stroke="#14141d" stroke-width="4" stroke-linecap="round"/><g class="dbtv-happy"><path d="M54 84q9 8 19 1 10 7 19-1-2 23-19 23T54 84Z" fill="#402033" stroke="#14141d" stroke-width="3"/><path d="M62 101q11-9 22 0-10 9-22 0" fill="#fa91ae"/></g>',shadowOffset:12,sideOffset:6,sideColor:'#d8d9e4'};
     if (item.id === 'news_anchor') {
       const id=name=>`news-${uid}-${name}`, paint=name=>`url(#${id(name)})`;
       const defs=`<defs>
@@ -2002,7 +2006,7 @@ const CubieCustoms = (() => {
       detail: `<g clip-path="${url('body')}">${shell}</g>${detail}${finish}<g class="attack-fine-detail">${extra}</g>` };
   }
   function faceBlush(item) {
-    if(item.id==='shop_dbtv')return '';
+    if(item.id==='shop_dbtv')return '<g class="cubie-blush" fill="#f17f99"><ellipse cx="44" cy="85" rx="8" ry="5"/><ellipse cx="101" cy="85" rx="7" ry="5"/></g>';
     const [left, right, y, rx, ry] = item.id === 'golden_hand' ? [50, 101, 113, 9, 5]
       : ['diamond', 'star'].includes(item.id) ? [36, 109, 84, 10, 6]
       : item.id === 'shop_space_junk' ? [40, 103, 84, 8, 5]
@@ -2095,6 +2099,13 @@ const CubieCustoms = (() => {
       '<path class="cubie-smile" d="M52 90h9v7h23v-7h9v14H52Z" fill="#263c22"/>' +
       '<g class="cubie-blush" fill="#f17f99"><ellipse cx="30" cy="86" rx="14.5" ry="8"/><ellipse cx="115" cy="86" rx="14.5" ry="8"/></g></g></g></svg>';
   }
+  function thumbnail(item) {
+    if (!['shop_disco','shop_puzzle_cube'].includes(item.id)) return svg(item);
+    const uid=`portrait-${++artId}`,colors=['#e9d6ff','#b5e7f0','#f5cfdf','#c1c5ed','#eaeffc','#a9b9d2'];
+    const tiles=Array.from({length:64},(_,i)=>`<rect x="${18+i%8*14}" y="${18+Math.floor(i/8)*14}" width="13" height="13" rx="1" fill="${colors[(i*7+Math.floor(i/8))%colors.length]}"/>`).join('');
+    const body=item.id==='shop_disco'?`<defs><clipPath id="${uid}"><circle cx="74" cy="74" r="55"/></clipPath><radialGradient id="${uid}-light" cx=".3" cy=".2"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#172c50" stop-opacity=".6"/></radialGradient></defs><g clip-path="url(#${uid})">${tiles}</g><circle cx="74" cy="74" r="55" fill="url(#${uid}-light)" stroke="#e3efff" stroke-width="2"/>`:`<path d="M20 36 61 16 126 33 86 56Z" fill="#f4cd72"/><path d="M86 56 126 33v70l-40 25Z" fill="#e47c83"/><path d="M20 36 86 56v72l-66-22Z" fill="#83caac"/><path d="m42 26 65 18m-44-27 43 16M42 43v70m22-63v70M20 60l66 21m-66 3 66 21m14-58v72m13-80v72M86 80l40-25m-40 49 40-25" stroke="#24354a" stroke-width="3"/>`;
+    return `<svg class="cubie-thumbnail" data-custom="${item.id}" viewBox="0 0 145 145" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body}<g fill="#1c2b40"><rect x="45" y="62" width="10" height="16" rx="3"/><rect x="85" y="62" width="10" height="16" rx="3"/></g><path d="M56 91q15 15 30 0" fill="none" stroke="#1c2b40" stroke-width="5" stroke-linecap="round"/></svg>`;
+  }
   function svg(item) {
     if(item.id==='shop_invisible')return '<svg class="cubie-custom-art" data-custom="shop_invisible" viewBox="0 0 145 145" xmlns="http://www.w3.org/2000/svg"><g class="cubie-eyes" fill="#e5fff5"><rect x="35" y="48" width="17" height="26"/><rect x="93" y="48" width="17" height="26"/></g></svg>';
     if(item.id==='shop_retro')return '<svg class="cubie-custom-art retro-cubie" data-custom="shop_retro" viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path d="M4 2h24v2h2v24h-2v2H4v-2H2V4h2Z" fill="#0f380f"/><path d="M5 4h22v2h1v20h-2v2H5v-2H4V6h1Z" fill="#8bac0f"/><path d="M6 6h20v17H6Z" fill="#9bbc0f"/><path class="cubie-eyes" d="M8 10h4v7H8ZM21 10h4v7h-4Z" fill="#0f380f"/><path class="cubie-smile" d="M12 20h3v2h6v-2h3v4H12Z" fill="#0f380f"/><path d="M6 26h20M6 8h2M25 22h2" stroke="#306230" stroke-width="2"/></svg>';
@@ -2157,7 +2168,7 @@ const CubieCustoms = (() => {
   // Flat, static arena art: reuse every Custom's silhouette and identifying trim,
   // Keep effects bounded to the arena sprite and rasterize its static detail once.
   function gameSvg(item) {
-    if(['shop_dbtv','shop_invisible','shop_retro'].includes(item.id))return svg(item);
+    if(['shop_dbtv','shop_dbth','shop_invisible','shop_retro'].includes(item.id))return svg(item);
     const [x,y,w,h]=bodyBounds[item.id] || [20,28,80,80];
     const scale=28/Math.max(w,h);
     const fit=`translate(22 22) scale(${scale}) translate(${-x-w/2} ${-y-h/2})`;
@@ -2190,7 +2201,7 @@ const CubieCustoms = (() => {
     const trim=tier>=2?`<g clip-path="url(#${uid}-clip)"><path d="M${x+5} ${y+h-8}V${y+8}Q${x+5} ${y+5} ${x+10} ${y+5}H${x+w-9}" fill="none" stroke="${rim}" stroke-width="${tier>=4?2:1.3}" stroke-linecap="round" opacity=".8"/></g>`:'';
     return `<svg xmlns="http://www.w3.org/2000/svg" width="176" height="176" viewBox="0 0 44 44"><g transform="${fit}" stroke-linejoin="round">${defs}${back}${item.underBody||''}<g fill="#102136" opacity=".65" transform="translate(2 3)">${body}</g><g fill="${item.color}" stroke="${rim}" stroke-width="1.1">${body}</g><g fill="url(#${uid}-shade)">${body}</g>${detail}${trim}<g fill="none" stroke="url(#${uid}-shine)" stroke-width="${tier>=3?1.8:1}">${body}</g></g></svg>`;
   }
-  return { catalog, tierLabels, unlocked, selected, svg, gameSvg, testerCodeActive, redeemTesterCode, wildCardSymbols, nextWildCardSymbol };
+  return { catalog, tierLabels, unlocked, selected, svg, thumbnail, gameSvg, testerCodeActive, redeemTesterCode, wildCardSymbols, nextWildCardSymbol };
 })();
 if (typeof module !== "undefined") module.exports = CubieCustoms;
 

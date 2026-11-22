@@ -43,3 +43,46 @@ test('official gameplay preview renders as a controlled video without allowing a
  const video=page.locator('#news-list video');await expect(video).toHaveCount(1);await expect(video).toHaveAttribute('controls','');await expect(video).toHaveAttribute('playsinline','');await expect(video).not.toHaveAttribute('autoplay','');
  await expect(page.locator('#news-list')).toContainText('See ya round!');await expect(page.locator('#news-list script')).toHaveCount(0);
 });
+
+test('news broadcast music yields to video audio and returns after pause or close',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('**/__news',r=>r.fulfill({status:404,json:{}}));
+ await page.route('https://news.test/**',r=>r.fulfill({json:{posts:[{id:'music-preview',title:'Preview',body:'https://microgame-madness.com/media/balloon-pop-preview.mp4',created_at:'2026-11-20',likes:0}],comments:[]}}));
+ await page.route('https://microgame-madness.com/media/balloon-pop-preview.mp4',r=>r.fulfill({path:require('node:path').resolve(__dirname,'../media/balloon-pop-preview.mp4'),contentType:'video/mp4'}));
+ await page.goto('/');await page.locator('#news-open').click();
+ await expect.poll(()=>page.evaluate(()=>musicPlayer?.theme)).toBe('news_broadcast');await expect.poll(()=>page.evaluate(()=>musicPlayer?.playing)).toBe(true);
+ const video=page.locator('#news-list video');await video.evaluate(async v=>{v.muted=true;await v.play();});
+ await expect.poll(()=>page.evaluate(()=>musicPlayer?.playing)).toBe(false);
+ await video.evaluate(v=>v.pause());await expect.poll(()=>page.evaluate(()=>musicPlayer?.playing)).toBe(true);await expect.poll(()=>page.evaluate(()=>musicPlayer?.theme)).toBe('news_broadcast');
+ await video.evaluate(v=>v.play());await expect.poll(()=>page.evaluate(()=>musicPlayer?.playing)).toBe(false);
+ await page.locator('#news-close').click();await expect.poll(()=>video.evaluate(v=>v.paused)).toBe(true);await expect.poll(()=>page.evaluate(()=>musicPlayer?.theme)).not.toBe('news_broadcast');
+});
+
+
+test('compact suggestions open comments with creator bling, replies, likes and saved drafts',async({page})=>{
+ const replies=[{id:'mod',body:'Great idea!',label:'Aidan',creator:true,created_at:'2026-11-20',likes:0}];
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('https://news.test/**',r=>r.fulfill({json:{posts:[],comments:[{id:'idea',body:'Add more balloons',name:'Player',cubie:'classic',medals:[],created_at:'2026-11-20',replies}]}}));
+ await page.route('**/__news',r=>{const b=r.request().postDataJSON();if(b.action==='status')return r.fulfill({json:{moderator:true}});if(b.action==='discussion'){if(b.operation==='create')replies.push({id:'reply-one',body:b.body,parent:b.parent,label:'Nate',creator:true,created_at:'2026-11-21',likes:0});if(b.operation==='like'){replies[0].likes=1;replies[0].liked=true;}return r.fulfill({json:b.operation==='list'?replies:{}});}return r.fulfill({json:[]});});
+ await page.goto('/');await expect(page.locator('#autumn-open')).toBeVisible();await page.locator('#news-open').click();await page.locator('#news-suggestions').click();
+ expect((await page.locator('.news-avatar').boundingBox()).width).toBeLessThanOrEqual(28);
+ await expect(page.locator('#news-list .news-reply')).toHaveCount(0);
+ await page.locator('[data-discussion="idea"]').click();
+ await expect(page.locator('.news-reply-aidan')).toContainText('CREATOR');
+ await page.locator('[data-comment-reply="mod"]').click();await expect(page.locator('#discussion-parent')).toContainText('Aidan');
+ const input=page.locator('#discussion-body');await input.fill('Thanks! <b>More ideas</b>');
+ await page.locator('#discussion-close').click();await page.locator('[data-discussion="idea"]').click();await expect(input).toHaveValue('Thanks! <b>More ideas</b>');
+ await page.locator('[data-comment-reply="mod"]').click();await page.locator('#discussion-form [type=submit]').click();
+ await expect(page.locator('.news-reply-nate')).toContainText('Thanks! <b>More ideas</b>');await expect(page.locator('.news-reply b')).toHaveCount(0);
+ await expect(page.locator('.news-discussion-child')).toContainText('Replying to Aidan');
+ await page.locator('[data-comment-like="mod"]').click();await expect(page.locator('[data-comment-like="mod"]')).toHaveAttribute('aria-pressed','true');
+});
+test('tab badges separate news from suggestion replies and show creator names',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('https://news.test/**',r=>r.fulfill({json:r.request().url().endsWith('news_discussion')?[{id:'reply',body:'Great idea',label:'Player',created_at:'2026-11-22',likes:2,creator_likes:['Aidan','Nate']}]:{posts:[{id:'post',title:'Update',body:'Hello',created_at:'2026-11-22',seen:false,likes:0}],comments:[{id:'suggestion',body:'More penguins',name:'Player',cubie:'classic',medals:[],created_at:'2026-11-22',likes:2,creator_likes:['Aidan','Nate'],unread_count:2,replies:[{},{}]}]}}));
+ await page.goto('/');await expect(page.locator('#news-badge')).toHaveText('3');await page.locator('#news-open').click();await expect(page.locator('#news-posts-badge')).toHaveText('1');await expect(page.locator('#news-suggestions-badge')).toHaveText('2');await page.locator('#news-suggestions').click();await expect(page.locator('.news-creator-like')).toHaveText('★ Liked by 2 creators (Aidan, Nate)');
+ const comments=page.locator('[data-discussion="suggestion"]');await expect(comments).toContainText('2 new');expect((await comments.boundingBox()).height).toBeGreaterThanOrEqual(46);await comments.click();await expect(page.locator('#discussion-list')).toContainText('Liked by 2 creators (Aidan, Nate)');
+});

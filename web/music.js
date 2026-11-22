@@ -44,6 +44,16 @@ const ArcadeMusic = (() => {
         [79, 0, 77, 74, 71, 74, 79, 0], [76, 74, 72, 0, 67, 71, 72, 0],
       ],
     },
+    news_broadcast: song("Live from Cubie’s Desk", 148, "Dm7 G7 Cmaj7 A7 Dm7 G7 Cmaj7 C7 Fmaj7 Fm Cmaj7 A7 Dm7 G7 Cmaj7 G7", [
+      "D5 - A5 F5 E5 F5 A5 -", "B4 D5 G5 - A5 G5 F5 D5",
+      "E5 G5 - B5 C6 G5 E5 -", "C#5 E5 A5 G5 E5 - C#5 E5",
+      "F5 A5 D6 - C6 A5 F5 E5", "D5 G5 B5 A5 - G5 D5 B4",
+      "C5 E5 G5 B5 - G5 E5 D5", "E5 G5 Bb5 - A5 G5 E5 -",
+      "A5 - C6 A5 G5 A5 C6 -", "Ab5 C6 - Ab5 F5 Eb5 C5 -",
+      "G5 B5 E6 D6 B5 G5 E5 -", "C#5 E5 G5 A5 C6 A5 G5 E5",
+      "D5 F5 A5 C6 - A5 F5 D5", "B4 D5 F5 G5 B5 A5 G5 D5",
+      "E5 G5 C6 - B5 G5 E5 C5", "D5 G5 B5 D6 C6 B5 G5 -",
+    ], {groove:"skip", lead:"square", swing:.08, gate:.62}),
     cubie_hello: song("Hello, New Friend!", 116, "C Am F G C Em F G Am Dm G C F C G C", [
       "E5 - G5 A5 G5 E5 D5 C5", "C5 E5 A5 - G5 E5 C5 -",
       "F5 - A5 C6 A5 G5 F5 E5", "D5 G5 B5 A5 G5 - D5 -",
@@ -845,7 +855,7 @@ const ArcadeMusic = (() => {
   for (const [id, title, bpm, progression, bars, options] of arcadeJourneys) {
     scores[id] = song(title, bpm, progression, bars, options);
   }
-  const loopThemes = ["treasure_trove", "cubie_hello", "chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
+  const loopThemes = ["news_broadcast", "treasure_trove", "cubie_hello", "chaos_carnival", "core_aftermath", "pumpkin", "singularity", "keyrush", "hangman",
     ...dodgeTracks.map(track => track.id), ...bossTracks.map(track => track.id),
     ...geomayhemTracks.map(track => track.id)];
   const tracks = Object.freeze(Object.entries(scores).filter(([id]) => !loopThemes.includes(id))
@@ -1702,6 +1712,26 @@ const ArcadeMusic = (() => {
           const wave = track === "christmas_99" && (voice === "lead" || voice === "pad")
             ? (Math.sin(t * frequency * Math.PI * 2) + .3 * Math.sin(t * frequency * Math.PI * 5.52)) * Math.exp(-t * 4)
             : triangle ? 1 - 4 * Math.abs(phase - .5) : table[Math.floor(phase * table.length)];
+          if(track==='news_broadcast') {
+            // Glassy FM electric keys distinguish this melody from Treasure Trove's reeds.
+            if(voice==='lead'||voice==='answer'){
+              const phase=2*Math.PI*frequency*t,index=1.5*Math.exp(-t*8);
+              const keys=Math.sin(phase+index*Math.sin(phase*2))+.16*Math.sin(phase*3)*Math.exp(-t*10);
+              const envelope=Math.max(0,Math.min(1,t/.006,(duration-t)/.045))*Math.exp(-t*1.3);
+              data[i]=keys*amplitude*envelope*1.35;continue;
+            }
+            const brass=voice==='lead'||voice==='answer',bass=voice==='bass';
+            const vibrato=brass?.0028*Math.sin(t*2*Math.PI*5.2)*(1-Math.exp(-t*15)):0;
+            const fundamental=2*Math.PI*frequency*t+vibrato*frequency;
+            let acoustic=0;
+            for(let h=1;h<=8;h++){
+              if(frequency*h>sampleRate*.46)break;
+              const partial=brass?Math.pow(h,-1.25)*Math.exp(-t*h*.55):bass?Math.exp(-t*(3+h))/Math.pow(h,1.7):Math.exp(-t*(2.2+h*.8))/Math.pow(h,1.55);
+              acoustic+=Math.sin(fundamental*h*(brass||bass?1:1+h*h*.00009))*partial;
+            }
+            const envelope=Math.max(0,Math.min(1,t/(brass?.022:bass?.006:.003),(duration-t)/(brass?.05:.035)));
+            data[i]=acoustic*amplitude*envelope*(brass?.9:1.1);continue;
+          }
           if(track==='treasure_trove') {
             // Bowed strings, mandolin harmonics, double bass and reed chords; no pulse oscillator.
             const bowed=voice==='lead'||voice==='answer',plucked=voice==='arp',bass=voice==='bass';
@@ -1727,7 +1757,7 @@ const ArcadeMusic = (() => {
     }
     let seed = 7341;
     function drum(start, kind, volume = 1) {
-      const duration = track === "treasure_trove" ? (kind === "kick" ? .38 : .14) : kind === "hat" ? .035 : .13;
+      const duration = track === "news_broadcast" ? (kind === "kick" ? .25 : kind === "snare" ? .18 : .055) : track === "treasure_trove" ? (kind === "kick" ? .38 : .14) : kind === "hat" ? .035 : .13;
       const offset = Math.round(start * sampleRate);
       let previousNoise = 0;
       for (let i = 0; i < duration * sampleRate && offset + i < samples.length; i++) {
@@ -1738,7 +1768,8 @@ const ArcadeMusic = (() => {
         const wave = kind === "kick" ? Math.sin(2 * Math.PI * (58 * t + 5 * (1 - Math.exp(-t * 35))))
           : kind === "hat" ? (noise - previousNoise) * .18 : noise * .5;
         const deck=kind==='kick'?(Math.sin(2*Math.PI*(72*t+1.4*(1-Math.exp(-t*22))))+.35*Math.sin(2*Math.PI*117*t)+.2*Math.sin(2*Math.PI*186*t))*Math.exp(-t*5):kind==='snare'?.35*noise*Math.exp(-t*24)+.45*Math.sin(2*Math.PI*310*t)*Math.exp(-t*35):.3*Math.sin(2*Math.PI*1350*t)*Math.exp(-t*65)+.1*noise;
-        samples[offset + i] += (track==='treasure_trove'?deck:wave) * envelope * (kind === "kick" ? .3 : .2) * volume;
+        const studio=kind==='kick'?Math.sin(2*Math.PI*(48*t+1.7*(1-Math.exp(-t*30))))*Math.exp(-t*9):kind==='snare'?(noise*.48+Math.sin(2*Math.PI*185*t)*.35*Math.exp(-t*35)):(noise-previousNoise)*.18;
+        samples[offset + i] += (track==='news_broadcast'?studio:track==='treasure_trove'?deck:wave) * envelope * (kind === "kick" ? .3 : .2) * volume;
         previousNoise = noise;
       }
     }
@@ -1764,8 +1795,9 @@ const ArcadeMusic = (() => {
         start + position * beat, beat * (score.bassGate || (score.groove === "hush" ? .85 : .4)), .24, "bass"));
       for (let n = 0; n < groove.hats; n++)
         drum(start + (n + (n % 2 ? score.swing || 0 : 0)) * 4 * beat / groove.hats, "hat", score.groove === "hush" ? .55 : 1);
-      for (let n = 0; n < (track==='treasure_trove'?8:16); n++)
-        tone(root + 24 + chord[[0, 1, 2, chord.length === 4 ? 3 : 1][n % 4]], start + n * beat / (track==='treasure_trove'?2:4), beat * (track==='treasure_trove'?.8:.18), track==='treasure_trove'?.09:.065, "arp");
+      for (let n = 0; n < (['treasure_trove','news_broadcast'].includes(track)?8:16); n++)
+        tone(root + 24 + chord[[0, 1, 2, chord.length === 4 ? 3 : 1][n % 4]], start + n * beat / (['treasure_trove','news_broadcast'].includes(track)?2:4), beat * (track==='news_broadcast'?.65:track==='treasure_trove'?.8:.18), track==='treasure_trove'?.09:.065, "arp");
+      if(track==='news_broadcast')for(const position of [.5,2.5])for(const interval of chord)tone(root+24+interval,start+position*beat,beat*.7,.065,'pad');
       if(track==='treasure_trove')for(const position of [1,3])for(const interval of chord)tone(root+24+interval,start+position*beat,beat*.8,.045,'pad');
       for (const position of groove.kicks) drum(start + position * beat, "kick");
       for (const position of [1, 3]) drum(start + position * beat, "snare", score.groove === "hush" ? .45 : 1);
@@ -1776,6 +1808,12 @@ const ArcadeMusic = (() => {
         if (bar % 4 === 3) drum(start + beat * 3.75, "snare", .4);
       }
       if (track === "pumpkin") drum(start + beat * 2.75, "kick");
+    }
+    if(track==='news_broadcast'){
+      const dry=samples.slice();
+      for(const [delay,level] of [[.037,.12],[.079,.075],[.127,.04]]){
+        const offset=Math.round(delay*sampleRate);for(let i=offset;i<samples.length;i++)samples[i]+=dry[i-offset]*level;
+      }
     }
     // Leave headroom for the mix and end long notes quietly at a song boundary.
     let peak = 0;
@@ -1975,7 +2013,7 @@ const ArcadeMusic = (() => {
       source.buffer = buffer;
       source.loop = this.theme.startsWith("jukebox:") || loopThemes.includes(this.theme);
       gain.gain.setValueAtTime(0, this.context.currentTime);
-      gain.gain.linearRampToValueAtTime(this.track === "core_aftermath" ? .36 : .22, this.context.currentTime + .18);
+      gain.gain.linearRampToValueAtTime(this.track === "news_broadcast" ? .34 : this.track === "core_aftermath" ? .36 : .22, this.context.currentTime + .18);
       source.connect(gain);
       gain.connect(this.destination);
       const voice = { source, gain, track: this.track, offset: this.offset, started: this.context.currentTime };

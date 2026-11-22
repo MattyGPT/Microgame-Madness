@@ -88,6 +88,7 @@ const CoinDropNanoPack = (() => {
   }
   const neighbors=i=>[i,...[i%2?i-1:i+1,i<2?i+2:i-2]];
   function create(game,host,finish,random=Math.random){
+    if(game.kind==='frontier'){const frontier=typeof CoinDropFrontier!=='undefined'?CoinDropFrontier:require('./coin-drop-frontier.js');return frontier.create(game,host,finish,random);}
     if(game.kind==='expedition'){const expansion=typeof CoinDropExpansion!=='undefined'?CoinDropExpansion:require('./coin-drop-expansion.js');return expansion.create(game,host,finish,random);}
     const state={elapsed:0,ended:false,index:0,variant:game.variant,kind:game.kind};
     const win=ok=>{if(state.ended)return;state.ended=true;finish(ok);};

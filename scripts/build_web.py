@@ -110,7 +110,7 @@ def build():
     finally:
         sys.path.pop(0)
     html = html.replace('<!-- CHAOS_BOOTSTRAP -->', bootstrap)
-    for name in ("news.js", "news.css", "autumn-room.js", "autumn-room.css", "tearesseract-theme.mp3", "tearesseract-prelude.mp3", "tearesseract-death.js", "jukebox-archive.js", "jukebox-search.js", "tearesseract-icon.js", "tearesseract.html", "tearesseract.js", "tearesseract-progress.js", "style.css", "crown-packs.js", "treasure-trove.js", "treasure-trove.css", "collections.js", "app.js", "coin-drop.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-nano-music.js", "coin-drop-lessons.js", "coin-drop.css", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
+    for name in ("exclusive-polish.js", "exclusive-polish.css", "game-dialog.js", "game-dialog.css", "settings.js", "settings.css", "news.js", "news.css", "autumn-room.js", "autumn-room.css", "tearesseract-theme.mp3", "tearesseract-prelude.mp3", "tearesseract-death.js", "jukebox-archive.js", "jukebox-search.js", "tearesseract-icon.js", "tearesseract.html", "tearesseract.js", "tearesseract-progress.js", "style.css", "crown-packs.js", "treasure-trove.js", "treasure-trove.css", "collections.js", "app.js", "coin-drop.js", "coin-drop-nanogames.js", "coin-drop-expansion.js", "coin-drop-frontier.js", "coin-drop-nano-music.js", "coin-drop-lessons.js", "coin-drop.css", "geomayhem-progress.js", "chaos-art.js", "chaos-preview.js", "achievements.js", "customs-expansion.js", "customs.js", "jackpot-slots.js", "shop.js", "music.js", "effects.js", "core-origin.js", "core-origin.css", "geomayhem-bosses.js", "playtest-progress.html", "boss-film.js", "boss-defeat.js", "boss-audio.js", "boss-arena.js", "regent-art.js", "trails.js", "turtle-customs.js", "trails.css", "leaderboards.js", "usage.js", "favicon.svg"):
         shutil.copy2(ROOT / "web" / name, OUTPUT / name)
         version = hashlib.sha256((OUTPUT / name).read_bytes()).hexdigest()[:12]
         html = html.replace(f'"./{name}"', f'"./{name}?v={version}"')
@@ -155,6 +155,17 @@ def build():
     (OUTPUT / "python-files.json").write_text(json.dumps([*PYTHON_SOURCES, "bridge.py"]) + "\n")
     chart = language_chart(OUTPUT, (ROOT / "web" / "index.html").read_text())
     html = html.replace("<!-- LANGUAGE_BREAKDOWN -->", chart)
+    # Released games ship in workspace and CI builds.
+    for slug, number, title, accent in (("balloon-pop",16,"Balloon Pop","#f5a5c7"),("pool",17,"Penguin Pool","#69e8be")):
+        source = ROOT / "web" / slug
+        if (source / "index.html").exists():
+            (OUTPUT / slug).mkdir()
+            for asset in ("index.html", "game.js", "model.js", "style.css", "progress.js"):
+                if (source / asset).exists():
+                    shutil.copy2(source / asset, OUTPUT / slug / asset)
+            art = '🎈' if number == 16 else '<svg viewBox="0 0 80 80" width="72" height="72" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="penguin-card-ice" cx=".3" cy=".2" r=".8"><stop stop-color="#fff"/><stop offset=".4" stop-color="#b9f0ff"/><stop offset="1" stop-color="#3575aa"/></radialGradient></defs><circle cx="40" cy="40" r="30" fill="url(#penguin-card-ice)" stroke="#e5fcff" stroke-width="2"/><path d="m18 31 12-9 9 9-5 12 14 11 14-5M30 22l3-9m6 18 18-8m-9 31 1 15" fill="none" stroke="#efffff" stroke-opacity=".8"/><circle cx="40" cy="40" r="13" fill="#f6fdff" stroke="#9bcde0"/><text x="40" y="47" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#285e85">8</text><path d="M21 25q7-12 18-10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>'
+            card = f'<a class="game-card" href="./{slug}/index.html" style="--accent:{accent};text-decoration:none" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-top">{number} / {title.upper()}</span><span class="card-art" aria-hidden="true">{art}</span><span class="card-title">{title} ↗</span><span class="card-description">Billiards and Balloons · mmu1.5</span></a>'
+            html = html.replace('<button id="news-open"', card + '<button id="news-open"')
     (OUTPUT / "index.html").write_text(html)
     (OUTPUT / ".nojekyll").touch()
     print(f"Built browser game in {OUTPUT}")

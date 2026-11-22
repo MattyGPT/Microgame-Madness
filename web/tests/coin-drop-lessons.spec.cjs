@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{await openGame(page);await page.locator('[data-game="nanolab"]').click();});
 test('binary lesson teaches place values interactively without running timer or music',async({page},info)=>{
- await expect(page.locator('[data-nano-learn]')).toHaveCount(300);
+ await expect(page.locator('[data-nano-learn]')).toHaveCount(60);
  const before=await page.evaluate(()=>JSON.stringify(coinDropGame.p));
  await page.locator('#cd-lab-search').fill('binary');await page.locator('[data-nano-learn="nano_binary"]').click();
  await expect(page.locator('#cd-nano-lesson')).toHaveAttribute('open','');
@@ -17,7 +17,7 @@ test('Roman key and all other lessons are accessible before a test, but absent i
  await page.locator('[data-nano-learn="nano_roman"]').click();await expect(page.locator('.cd-roman-key tbody tr')).toHaveCount(10);
  await expect(page.locator('.cd-roman-key')).toContainText('IV');await expect(page.locator('.cd-lesson-example')).toContainText('IX = 10 − 1 = 9');
  await page.locator('.cd-nano').screenshot({path:info.outputPath('roman-key.png')});await page.locator('#cd-nano-skip').click();
- const missing=await page.evaluate(()=>{const g=coinDropGame,missing=[];for(const game of CoinDrop.nanogames){g.startNanoTest(game.id,true);if(!document.querySelector('#cd-nano-lesson').open||document.querySelectorAll('#cd-nano-lesson-body li').length!==2)missing.push(game.id);g.finishNano(false);}return missing;});expect(missing).toEqual([]);
+ const missing=await page.evaluate(()=>{const host=document.createElement('div'),missing=[];for(const game of CoinDrop.nanogames){CoinDropLessons.render(host,game);if(host.querySelectorAll('li').length!==2||!host.querySelector('.cd-lesson-example')?.textContent)missing.push(game.id);}return missing;});expect(missing).toEqual([]);
  await page.locator('[data-nano-test="nano_roman"]').click();await expect(page.locator('#cd-nano-lesson')).not.toHaveAttribute('open','');await page.locator('#cd-nano-lesson summary').click();await expect(page.locator('.cd-roman-key')).toBeVisible();await page.locator('#cd-nano-skip').click();
  await page.locator('[data-game="coindrop"]').click();await page.evaluate(()=>{const g=coinDropGame;g.drop();g.enterNano(g.coins[0],g.features.find(f=>f.type==='nano'));});await expect(page.locator('#cd-nano-lesson')).toBeHidden();
 });

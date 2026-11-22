@@ -5002,7 +5002,7 @@ html.account-reduced-motion .regent-song::after{opacity:0}
 #global-scores li { display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 8px;border-radius:12px;position:relative;isolation:isolate; }
 #global-scores .global-player-name { text-align:left;overflow-wrap:anywhere;min-width:0;padding:4px 0;font:inherit;line-height:1.5; }
 #global-scores .global-cubie { width:48px;height:48px;display:block;position:relative; }
-#global-scores .global-cubie svg { display:block;width:100%;height:100%;position:static; }
+#global-scores .global-cubie > svg { display:block;width:100%;height:100%;position:static;overflow:hidden;contain:paint; }
 #global-scores .global-cubie * { animation:none!important; }
 #global-scores .global-rank { display:grid;place-items:center;font-weight:800;font-size:11px;font-variant-numeric:tabular-nums; }
 #global-scores li[data-podium] { border:1px solid color-mix(in srgb,var(--medal) 42%,transparent);margin:6px 0;background:linear-gradient(115deg,color-mix(in srgb,var(--medal) 14%,#111817),#111817 76%);box-shadow:inset 0 1px 0 #ffffff16,0 4px 16px #0003; }
@@ -5101,3 +5101,98 @@ html.account-reduced-motion .crown-dimension{animation:none}
 @keyframes news-anchor-sheen {0%,20%{transform:translateX(-40px)}65%,100%{transform:translateX(155px)}}
 @media(prefers-reduced-motion:reduce){.news-anchor-sheen{animation:none;opacity:0}}
 .account-reduced-motion .news-anchor-sheen{animation:none;opacity:0}
+
+.dbtv-happy{display:none}.blushing .dbtv-happy{display:inline}.blushing .dbtv-smile{display:none}
+
+svg.blushing .cubie-blush{opacity:.95}
+
+/* Selection frames: bright crystal green for games, pink metal for utilities. */
+.game-grid > .game-card {
+  --selection-edge: #66e9ad;
+  --selection-glow: #41e99b26;
+  --selection-frame: linear-gradient(135deg,
+    #e2fff1 0%, #43c88c 13%, #baffdc 22%, #27865e 24%,
+    #8dffbd 47%, #ebfff4 49%, #26936a 52%, #caffdf 75%, #48d797 100%);
+  border-color: var(--selection-edge);
+  box-shadow: 0 0 14px var(--selection-glow), inset 0 0 0 1px #dfffee20;
+}
+.game-grid > .game-card:is(
+  [data-game="jukebox"], [data-game="customs"], [data-game="turtles"],
+  [data-game="trails"], [data-game="shop"], [data-game="guide"],
+  #news-open, #autumn-open
+) {
+  --selection-edge: #f38fc6;
+  --selection-glow: #f57bbb26;
+  --selection-frame: linear-gradient(125deg,
+    #ffe5f4 0%, #c86da5 14%, #f6add6 29%, #fff0fa 40%,
+    #df7cb7 44%, #a64f88 49%, #ffd0eb 64%, #e889c0 81%, #ffe1f3 100%);
+}
+.game-grid > .game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--selection-frame);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.game-grid > .game-card:is(:hover, .selected, [aria-pressed="true"]) {
+  border-color: var(--selection-edge);
+  box-shadow: 0 0 16px var(--selection-glow), inset 0 0 0 1px #ffffff45;
+}
+.game-grid > .game-card:is(.selected, [aria-pressed="true"], :focus-visible) {
+  outline: 1.5px solid var(--selection-edge);
+  outline-offset: 3px;
+}
+
+/* Reserve a footer so category labels never cover titles or descriptions. */
+.game-grid > .game-card { padding-bottom: 43px; }
+.game-grid > .game-card > .card-kind-label {
+  position: absolute;
+  left: 14px;
+  bottom: 11px;
+  z-index: 6;
+  isolation: isolate;
+  pointer-events: none;
+  font: 900 12px/1.4 "DM Sans", sans-serif;
+  letter-spacing: 1px;
+  color: #80e8aa;
+  background: linear-gradient(145deg, #baffd3 8%, #55d991 34%, #effff5 39%, #70e3a3 43%, #b3ffd1 74%, #4ed98e 78%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: .8px #11161a;
+  paint-order: stroke fill;
+}
+.game-grid > .game-card > .card-kind-label::before {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: #f5f7f5;
+  -webkit-text-fill-color: #f5f7f5;
+  -webkit-text-stroke: 2px #f5f7f5;
+  paint-order: stroke fill;
+}
+.game-grid > .game-card[data-card-kind="utility"] > .card-kind-label {
+  color: #f299ce;
+  background-image: linear-gradient(175deg, #ffd4ee 5%, #ef89c3 32%, #fff0fa 43%, #db6bad 49%, #ffc0e4 74%, #f18fc7 100%);
+}
+@media (max-width: 600px) {
+  .game-grid > .game-card > .card-kind-label { left: 11px; font-size: 11px; letter-spacing: .8px; }
+}
+
+.game-grid > .game-card > .card-kind-label > span {
+  position: relative;
+  z-index: 1;
+  background-image: inherit;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  paint-order: stroke fill;
+}

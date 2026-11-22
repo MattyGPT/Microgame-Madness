@@ -1,0 +1,13 @@
+'use strict';
+globalThis.PoolProgress=(()=>{
+ let controller,client,session,initialized=false;
+ const note=t=>{const n=document.getElementById('pool-cloud-status');if(n)n.textContent=t;};
+ async function board(){try{const rows=await client.listGame('pool',{offset:0,season:null});document.getElementById('pool-leaderboard').replaceChildren(...rows.slice(0,5).map(r=>{const li=document.createElement('li');li.textContent='#'+r.rank+' '+r.player+' · '+r.score+' wins';return li;}));}catch{note('Leaderboard unavailable. Completed matches remain saved locally.');}}
+ const ready=(async()=>{const config=await fetch('../leaderboard-config.json').then(r=>r.json());session=new AccountSession.Client(config);const store=new AccountStore.Store({rules:AccountRules});controller=new AccountSync.Controller({config,store,session,rules:AccountRules});await controller.initialize(AccountRules.initial());await controller.claimStream(crypto.randomUUID());client=new Leaderboards.Client(config);client.accountSession=session;
+ client.beforeFlush=async()=>{const state=controller.state(),generation=controller.generation;if(state.owner!=='guest'||!state.profile.privacy.leaderboard)throw Error('Leaderboard sharing is disabled.');await session.ensureAnonymous();const token=await session.token();if(generation!==controller.generation)throw Error('Profile changed');const visible=await client.request('/rest/v1/rpc/set_guest_leaderboard_visibility',{p_visible:true},token);if(!visible)throw Error('Leaderboard sharing is disabled.');};
+ initialized=true;note('Public ranking: match wins. Hold first place to equip Golden Rack from the arcade’s Exclusive collection.');await board();
+ })().catch(()=>note('Sign in from the arcade to save matches online.'));
+ async function begin(){await ready;if(!initialized||controller.state().importRequired)return null;return{id:crypto.randomUUID(),owner:controller.state().owner,generation:controller.generation,saved:false};}
+ async function finish(pending,won){const run=await pending;if(!run||run.saved||run.owner!==controller.state().owner||run.generation!==controller.generation)return;run.saved=true;try{await controller.enqueue('arcade',{event:'pool-result',won},{id:run.id});if(run.owner!=='guest')await controller.flush();else if(won&&controller.state().profile.privacy.leaderboard)await client.submit({mode:'pool',difficulty:'standard',score:1,player:controller.state().profile.player,runId:run.id});note(won?'Match won! Leaderboard win saved.':'Match recorded. Win a rack to earn a leaderboard point.');await board();}catch{note('Match saved locally; online sync needs attention in the arcade.');}}
+ return{begin,finish};
+})();

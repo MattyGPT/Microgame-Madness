@@ -75,4 +75,5 @@ const GeomayhemProgress = (() => {
   }
   return { arenaCount, Store, restore, finish, purchase, unlocked, starterRequirement, cost, requiredClear, upgrades, keyPrefix };
 })();
+globalThis.GeomayhemProgress = GeomayhemProgress;
 if (typeof module !== 'undefined') module.exports = GeomayhemProgress;

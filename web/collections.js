@@ -18,7 +18,7 @@ const CosmeticCollections = (() => {
       ['ember','Ember',/ember|fire|flame|phoenix|lava|inferno|cinder/i],
       ['cosmic','Cosmic',/space|astral|cosmic|star|lunar|moon|galact|celestial|orbit|eclipse|singularity/i],
       ['nature','Nature',/fern|leaf|garden|forest|flower|rose|sakura|vine|thorn/i],
-      ['arcade','Arcade & Machines',/keyboard|keymaster|retro|pixel|circuit|robot|disco|dbtv|clock|steampunk|signal/i],
+      ['arcade','Arcade & Machines',/keyboard|keymaster|retro|pixel|circuit|robot|disco|dbtv|dbth|clock|steampunk|signal/i],
     ])add(id,title,i=>pattern.test(text(i)));
     for(const [name,lo,hi] of [['Red',345,375],['Orange',15,50],['Yellow',50,75],['Green',65,165],['Cyan',165,200],['Blue',200,260],['Violet',260,290],['Pink',290,345]]) {
       add(`color-${name.toLowerCase()}`,`${name} Color`,i=>[i.color,...(i.colors||[])].filter(Boolean).some(c=>{

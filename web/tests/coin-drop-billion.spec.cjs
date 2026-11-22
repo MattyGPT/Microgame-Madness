@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test('billion-size upgrades, buy all and forge batches remain usable and persist',async({page},info)=>{
  await openGame(page);await page.locator('[data-game="coindrop"]').click();
- await page.evaluate(()=>{coinDropGame.p=CoinDrop.restore({dots:1e25,scrap:1e12});coinDropGame.render();});
+ await page.evaluate(()=>{coinDropGame.p=CoinDrop.restore({dots:1e40,scrap:1e25});coinDropGame.render();});
  await page.locator('[data-tab="tree"]').click();
  for(const label of ['Upgrade purchase amount','Buy all purchase amount'])await expect(page.getByRole('group',{name:label}).locator('button')).toHaveCount(43);
  await page.locator('[data-buy-amount="1000000000"]').click();await page.locator('.cd-node button').first().click();
@@ -10,8 +10,11 @@ test('billion-size upgrades, buy all and forge batches remain usable and persist
  expect(await page.evaluate(()=>coinDropGame.p.levels['mint-1'])).toBe(1e9);
  expect(await page.evaluate(()=>coinDropGame.p.levels['salvage-0'])).toBe(1e9);
  await page.locator('[data-tab="forge"]').click();await page.locator('[data-craft-amount="1000000000"]').click();
- await expect(page.locator('[data-craft="boost"]')).toContainText('20,000,000,000 scrap');await page.locator('[data-craft="boost"]').click();await page.locator('[data-craft="ruby"]').click();await page.locator('[data-craft="dots"]').click();
- expect(await page.evaluate(()=>coinDropGame.p.boosts)).toBe(1e10);expect(await page.evaluate(()=>coinDropGame.p.scrap)).toBe(870e9);
+ const starting=await page.evaluate(()=>coinDropGame.p.scrap);
+ const total=await page.evaluate(()=>['boost','ruby','magnet'].reduce((sum,kind)=>sum+CoinDrop.forgeCost(coinDropGame.p,kind,1e9),0));
+ for(const kind of ['boost','ruby','magnet'])await page.locator(`[data-craft="${kind}"]`).click();
+ expect(await page.evaluate(()=>coinDropGame.p.boosts)).toBe(1e10);expect(await page.evaluate(()=>coinDropGame.p.scrap)).toBeCloseTo(starting-total,-10);
+ expect(await page.evaluate(()=>coinDropGame.p.magnets)).toBe(1e10);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('billion-forge.png')});
  await page.reload();await expect(page.locator('#runtime-status')).toContainText('All games ready');

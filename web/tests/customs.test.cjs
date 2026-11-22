@@ -3,14 +3,14 @@ const assert = require('node:assert/strict');
 const Customs = require('../customs.js');
 const { catalog: achievements } = require('../achievements.js');
 
-test('328 distinct Customs use achievements, shop purchases, or server rewards and retain Cubie’s face', () => {
-  assert.equal(Customs.catalog.length, 328);
-  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 328);
-  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 328);
+test('329 distinct Customs use achievements, shop purchases, or server rewards and retain Cubie’s face', () => {
+  assert.equal(Customs.catalog.length, 329);
+  assert.equal(new Set(Customs.catalog.map(item => item.id)).size, 329);
+  assert.equal(new Set(Customs.catalog.map(item => item.body + item.detail)).size, 329);
   for (const item of Customs.catalog) {
     for (const id of item.achievements) assert.ok(achievements.some(a => a.id === id), id);
-    if(item.id==='shop_dbtv'){
-      assert.doesNotMatch(Customs.svg(item),/class="cubie-eyes"/);assert.match(Customs.svg(item),/class="dbtv-smile"/);
+    if(['shop_dbtv','shop_dbth'].includes(item.id)){
+      assert.doesNotMatch(Customs.svg(item),/class="cubie-eyes"/);assert.match(Customs.svg(item),/class="dbt[vh]-smile"/);
     }else if(item.id==='shop_invisible'){
       assert.match(Customs.svg(item),/class="cubie-eyes"/);assert.doesNotMatch(Customs.svg(item),/cubie-smile/);
     }else{

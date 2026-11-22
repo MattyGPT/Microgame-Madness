@@ -37,7 +37,9 @@ test('global rows show saved Cubies and award metallic bling only to absolute ra
       {rank:1,player:'Golden player',score:900,cubie:'shop_retro'},
       {rank:2,player:'Silver player',score:800,cubie:'shop_dbtv'},
       {rank:3,player:'Bronze player',score:700,cubie:'shop_invisible',is_you:true},
-      {rank:12,player:'<img src=x onerror=alert(1)>',score:600,cubie:'unknown-future-cubie'}
+      {rank:12,player:'<img src=x onerror=alert(1)>',score:600,cubie:'unknown-future-cubie'},
+      {rank:13,player:'Disco player',score:500,cubie:'shop_disco'},
+      {rank:14,player:'Puzzle player',score:400,cubie:'shop_puzzle_cube'}
     ];
     document.getElementById('global-panel').hidden=false;
     await loadGlobalScores();
@@ -50,6 +52,7 @@ test('global rows show saved Cubies and award metallic bling only to absolute ra
   await expect(rows.nth(3)).not.toHaveAttribute('data-podium');
   await expect(rows.nth(3).locator('.global-cubie svg')).toHaveAttribute('data-custom','classic');
   await expect(rows.nth(3).locator('img')).toHaveCount(0);
+  for(const i of [4,5]){const icon=rows.nth(i).locator('.global-cubie');await expect(icon.locator('foreignObject')).toHaveCount(0);const box=await icon.boundingBox(),svg=await icon.locator('svg').boundingBox();expect(svg.width).toBeLessThanOrEqual(box.width);expect(svg.height).toBeLessThanOrEqual(box.height);}
   expect(await rows.evaluateAll(nodes=>nodes.every(n=>n.scrollWidth<=n.clientWidth+1))).toBe(true);
   await page.locator('#global-scores').screenshot({path:info.outputPath('podium-cubies.png')});
 });

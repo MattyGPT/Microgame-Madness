@@ -21,7 +21,7 @@ const TearesseractProgress=(()=>{
     };
     window.addEventListener('online',()=>{if(controller.state().owner==='guest')client.flush().catch(()=>{});});
     initialized=true;
-    note('Full encounters earn achievements, Cubies, and leaderboard points. Practice tools earn no ranked rewards.');
+    note('Full encounters earn achievements, Cubies, and leaderboard points. Start with 20 HP.');
   })().catch(()=>note('Progress storage is unavailable. Return to the arcade and try again.'));
   async function begin(){
     await ready;

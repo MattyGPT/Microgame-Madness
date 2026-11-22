@@ -313,7 +313,7 @@ class Geomayhem:
             x = self.left + 50 if self.x >= 0 else self.right - 50
             y = self.bottom + 45 if self.y >= 0 else self.top - 45
         kind = ("boss" if self.wave == 20 else "elite") if not reinforcement and self.spawned == 0 and self.wave % 5 == 0 else self.rng.choice(
-            ["chaser", "chaser", "runner"] + (["tank"] if self.wave >= 4 else []) + (["shooter"] if self.wave >= 7 else [])
+            ["chaser", "chaser", "runner"] + (["tank"] if self.wave >= 4 else []) + (["shooter"] if self.wave >= (11 if self.level == 1 else 7) else [])
             + (["flanker"] if self.wave >= 6 else []) + (["flanker", "shooter"] if self.level >= 6 and self.wave >= 4 else []))
         hp, speed, radius = {"chaser": (9, 42, 11), "runner": (6, 75, 8), "tank": (25, 28, 17),
                              "shooter": (12, 30, 12), "flanker": (14, 95, 10),
@@ -714,9 +714,15 @@ class Geomayhem:
                         offsets = tuple(i*math.tau/count+self.elapsed*.2-a for i in range(count))
                     elif phase2:
                         offsets = (-.5,-.25,0,.25,.5)
+                    if self.level == 1:
+                        # Starter gear gets readable, sparse volleys and room to learn.
+                        enemy.attack_in *= 1.65
+                        offsets = (-.22, .22) if phase2 else (0,)
                     for offset in offsets:
-                        if len(self.hazards) < 70:
+                        if len(self.hazards) < (16 if self.level == 1 else 70):
                             velocity = pressure["projectile_speed"] if enemy.kind=="boss" else 155+self.level*4
+                            if self.level == 1:
+                                velocity *= .75
                             self.hazards.append([enemy.x, enemy.y, math.cos(a + offset) * velocity, math.sin(a + offset) * velocity, 5.0])
         if not self.alive:
             return

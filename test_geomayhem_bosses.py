@@ -162,9 +162,10 @@ class BossUpgradeTests(unittest.TestCase):
                 game.update(.01,set())
                 pressure=boss_pressure(level,phase)
                 self.assertTrue(game.hazards)
-                self.assertAlmostEqual(boss.attack_in,pressure['volley_interval'])
+                self.assertAlmostEqual(boss.attack_in,pressure['volley_interval']*(1.65 if level==1 else 1))
+                if level==1: self.assertEqual(len(game.hazards),1 if phase==1 else 2)
                 for hazard in game.hazards:
-                    self.assertAlmostEqual(math.hypot(hazard[2],hazard[3]),pressure['projectile_speed'])
+                    self.assertAlmostEqual(math.hypot(hazard[2],hazard[3]),pressure['projectile_speed']*(.75 if level==1 else 1))
 
     def test_boss_contact_deals_thirty_once_per_invulnerability_window(self):
         for level in (1,10,20):

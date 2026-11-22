@@ -5,6 +5,7 @@ import '../../../web/customs.js';
 import '../../../web/shop.js';
 import '../../../web/trails.js';
 import '../../../web/turtle-customs.js';
+import '../../../web/geomayhem-progress.js';
 import '../../../shared/account-rules.js';
 import { createHandler } from './handler.mjs';
 

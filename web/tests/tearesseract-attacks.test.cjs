@@ -362,3 +362,4 @@ test('Double Jeopardy is attack 28, Final Appeal is 29, and Overdrive remains 30
   game.load(24);game.seek(9.99);game.step(.02);assert.equal(game.read().phase,'heal');
   game.load(18);game.seek(16.24);game.step(.02);assert.equal(game.read().phase,'counter');
 });
+test('normal encounter initializes with twenty HP',()=>{assert.equal(encounter().read().hp,20);});

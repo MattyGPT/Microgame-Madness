@@ -143,3 +143,35 @@ and redeployment of the `accounts` function with the updated shared rules and
 catalogs. Local profile rewards work without a configured leaderboard service.
 
 Suggestions support one like per signed-in account, plus Nate’s private localhost like. Ten distinct suggestions liked by Nate or Aidan earn the Empyrorite Front-Page Thinker achievement and permanently unlock News Cubie. Both creators liking the same suggestion counts only once. Ordinary player likes do not count toward this reward. Approval counts follow current likes until the reward is earned; unliking or deleting a suggestion does not revoke an earned Cubie. The database protects this reward from imported saves. Never make moderator access public or expose the localhost moderator server.
+
+### Billiards and Balloons (mmu1.5)
+
+Balloon Pop and Penguin Pool ship from `web/balloon-pop` and `web/pool` in every
+build, as games 16 and 17. Use `npm run accounts:build-preview` for the configured
+local preview at http://localhost:8777/. Only game assets are packaged; tests,
+moderator tooling, environment files and credentials are excluded.
+
+Penguin Pool uses ten-minute 8-ball matches against Penguin, called balls and pockets, solids/stripes, fouls, and ball-in-hand. The break uses a stated house rule: illegal breaks give ball-in-hand and potted 8 balls are spotted. No pocket or combo bonuses apply. Direct mouse/touch dragging sets power; release shoots. Rolling friction, small physics steps and lossy collisions control motion. Untimed practice never ranks. Public leaderboard scoring counts match wins; the Golden Rack exclusive pack is granted only while holding verified first place and expires with the other live crowns.
+
+### Device settings utility
+
+The Settings button opens searchable categories and subsections for appearance,
+main arcade audio, pointer/navigation preferences, community display, and settings
+export/import. Preferences live in `microgame.settings.v1` on this browser; they
+are not cloud account settings. Import accepts only known preference keys and
+clamps numeric values. Restoring defaults affects these preferences only, never
+progress, purchases, moderation, or account data. Separate game pages keep their
+own audio controls. Ctrl/Command + comma opens the utility when enabled.
+
+The mmu1.5 release includes a public Balloon Pop leaderboard (raw points weighted
+once by difficulty: ×1, ×2, ×3, ×4). Its Diamond Sky Sovereign #1 pack contains a
+Cubie, Turtle and Trail. All 13 first-place packs use the same verified entitlement,
+revocation, and once-per-ownership celebration flow. Nanoverse Luminary is the Nano
+Lab pack. Rich SVG effects respect reduced motion.
+
+Suggestion discussions are public to read and open to every signed-in player to
+comment, reply and like. Per-account read receipts identify new replies to your
+own suggestions. News and Suggestions have separate badges; creator likes show
+both the count and names. Geomayhem arena progression and workshop purchases now
+use the account operation journal and cloud sync, with a one-time adoption of the
+current account's existing local campaign. Other accounts cannot overwrite it.

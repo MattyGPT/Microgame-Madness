@@ -365,3 +365,24 @@ test('News Cubie is Empyrorite, equips from trusted ownership, and cannot be bou
  assert.equal(Rules.sanitizeLegacy(state).achievements.unlocked.news_ideas_10,undefined);assert.equal(Rules.sanitizeLegacy(state).achievements.stats.creatorApprovedIdeas,0);
  assert.equal(Shop.buy({units:1000000000,owned:[]},item),false);
 });
+
+test('Penguin Pool awards only one leaderboard point per win and none for losses',()=>{
+ for(const won of[true,false]){const result=apply(Rules.initial(),'arcade',{event:'pool-result',won,score:999999});assert.equal(result.run.score,won?1:0);assert.equal(result.run.mode,'pool');}
+ assert.throws(()=>apply(Rules.initial(),'arcade',{event:'pool-result',won:'yes'}));
+});
+test('Geomayhem adopts an account save once and syncs progression and workshop across streams',()=>{
+ let state=apply(Rules.initial(),'arcade',{event:'geomayhem-import',progress:{cleared:1,shards:80,runs:1,best:{1:20}}}).state;
+ state=apply(state,'arcade',{event:'geomayhem-upgrade',upgrade:'vitality'},null,'device-two').state;
+ assert.equal(state.geomayhem.shards,50);assert.equal(state.geomayhem.workshop.vitality,1);
+ state=apply(state,'arcade',{event:'geomayhem-import',progress:{cleared:20,shards:1000}},null,'device-three').state;
+ assert.equal(state.geomayhem.cleared,1);assert.equal(state.geomayhem.shards,50);
+ state=start(state,'geomayhem','level_2','geo-cloud','device-two');
+ state=complete(state,'geo-cloud',{geo_level:2,geo_waves:20,geo_kills:30},'device-two').state;
+ assert.equal(state.geomayhem.cleared,2);assert.equal(state.geomayhem.best[2],20);assert.equal(state.geomayhem.shards,153);
+ const repeated=complete(state,'geo-cloud',{geo_level:2,geo_waves:20,geo_kills:30},'device-two');assert.equal(repeated.state.geomayhem.shards,153);
+ assert.equal(Rules.initial().geomayhem,null);assert.throws(()=>apply(state,'arcade',{event:'geomayhem-upgrade',upgrade:'constructor'}));
+});
+test('Balloon Pop stores raw run points once; leaderboard applies difficulty weight separately',()=>{
+ const result=apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'impossible',score:250});assert.equal(result.run.mode,'balloon');assert.equal(result.run.difficulty,'impossible');assert.equal(result.run.score,250);assert.equal(result.run.eligible,true);
+ assert.throws(()=>apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'fake',score:250}));assert.throws(()=>apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'normal',score:-1}));
+});

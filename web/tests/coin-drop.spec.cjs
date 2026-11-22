@@ -17,7 +17,7 @@ test('flat coin physics, keyboard aim, pause, map clear and reload persistence',
  expect(errors).toEqual([]);
 });
 test('upgrade dependencies, minicoins, forge and map locking',async({page},info)=>{
- await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(100);await expect(page.locator('#cd-maps button').nth(1)).toBeDisabled();
+ await page.locator('[data-tab="maps"]').click();await expect(page.locator('#cd-maps button')).toHaveCount(1000);await expect(page.locator('#cd-maps button').nth(1)).toBeDisabled();
  await page.evaluate(()=>{coinDropGame.p.dots=10000;coinDropGame.render();});await page.locator('[data-tab="tree"]').click();await expect(page.locator('.cd-node')).toHaveCount(20);await expect(page.locator('.cd-node button').nth(1)).toBeDisabled();await page.locator('.cd-node button').first().click();await expect(page.locator('.cd-node button').nth(1)).toBeEnabled();
  await page.getByRole('button',{name:'◌ Minicoins',exact:true}).click();await page.locator('.cd-node button').first().click();
  await page.screenshot({path:info.outputPath('coin-drop-tree.png'),fullPage:true});

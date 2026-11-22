@@ -1,7 +1,7 @@
 const {test,expect,openGame}=require('./fixtures/game.cjs');
 test.beforeEach(async({page})=>{await openGame(page);await page.locator('[data-game="nanolab"]').click();});
-test('Nano Lab lists all 300 tests, filters worlds, and leaves campaign untouched',async({page},info)=>{
- await expect(page.locator('[data-nano-test]')).toHaveCount(300);
+test('Nano Lab initially lists 60 tests, filters worlds, and leaves campaign untouched',async({page},info)=>{
+ await expect(page.locator('[data-nano-test]')).toHaveCount(60);
  await page.locator('#cd-lab-world').selectOption('19');await expect(page.locator('[data-nano-test]')).toHaveCount(3);
  await page.locator('#coin-drop-room').screenshot({path:info.outputPath('nano-lab.png')});
  await page.locator('#cd-lab-world').selectOption('all');await page.locator('#cd-lab-search').fill('Vault Code');await expect(page.locator('[data-nano-test]')).toHaveCount(1);

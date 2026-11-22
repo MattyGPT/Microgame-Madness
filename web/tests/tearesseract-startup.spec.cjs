@@ -25,17 +25,16 @@ test('slow soundtrack downloads show an animated loader, then the intro advances
   expect(errors).toEqual([]);
 });
 
-test('failed audio cannot prevent the intro or a selected practice attack',async({page})=>{
+test('failed audio cannot prevent the intro and practice controls are removed',async({page})=>{
   await page.route('**/tearesseract-theme.mp3*',route=>route.abort());
   await page.goto('/tearesseract.html',{waitUntil:'domcontentloaded'});
   await page.locator('#start').click();
   await expect(page.locator('#fight')).toHaveAttribute('data-phase','intro');
   await expect(page.locator('#status')).toContainText('AUDIO UNAVAILABLE');
   await expect(page.locator('#fight-loading')).toBeHidden();
-  await page.locator('#attack-loader').selectOption('6');
-  await page.locator('#load-attack').click();
-  await expect(page.locator('#fight')).toHaveAttribute('data-phase','attack');
-  await expect(page.locator('#status')).toContainText('PRISM CROSSCURRENT');
+  await expect(page.locator('#attack-loader')).toHaveCount(0);
+  await expect(page.locator('#load-attack')).toHaveCount(0);
+
 });
 
 test('stalled audio starts silently within six seconds without a fake 90 percent',async({page})=>{

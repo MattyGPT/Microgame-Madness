@@ -94,8 +94,8 @@ def boss_attack(game, enemy, phase):
             circle(x+math.cos(a)*radius,y+math.sin(a)*radius,32+phase*3,n*.08)
     level=game.level
     if level==1:
-        for n in range(3):
-            gx=-260+n*260
+        for n in range(2):
+            gx=-160+n*320
             if cast==0: beam(gx,-300,gx,300,24,n*.2)
             elif cast==1: beam(-430,-180+n*180,430,-180+n*180,24,n*.3)
             else: beam(gx,-280,x,y,20,n*.25)

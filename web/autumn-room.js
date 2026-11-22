@@ -29,12 +29,13 @@
  }
  async function refresh(manual=false){if(!room.open||document.hidden||!allowed||loading)return;loading=true;$('autumn-refresh').disabled=true;$('autumn-refresh').textContent='↻ Refreshing…';const version=generation;try{const rows=await api().chat();if(version!==generation||!room.open)return;render(rows);$('autumn-status').textContent=manual===true?'Room refreshed · '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';}catch(e){if(version===generation)$('autumn-status').textContent=e.message;}finally{loading=false;$('autumn-refresh').disabled=false;$('autumn-refresh').textContent='↻ Refresh the room';}}
  window.addEventListener('news-access',e=>{allowed=e.detail.allowed;$('autumn-open').hidden=!allowed;if(!allowed||e.detail.identityChanged){generation++;room.close();$('autumn-messages').replaceChildren();$('autumn-message').value='';lastIds=null;stopMusic();}});
- $('autumn-open').onclick=()=>{if(!allowed)return;room.showModal();document.dispatchEvent(new Event('autumn-room-state'));startMusic().catch(()=>{stopMusic();$('autumn-status').textContent='Tap Play lo-fi to start the music.';});refresh();clearInterval(timer);timer=setInterval(refresh,5000);};
+ $('autumn-open').onclick=()=>{if(!allowed)return;room.showModal();document.dispatchEvent(new Event('autumn-room-state'));if(globalThis.ArcadeSettings?.get("autumnAutoplay")!==false)startMusic().catch(()=>{stopMusic();$('autumn-status').textContent='Tap Play lo-fi to start the music.';});refresh();clearInterval(timer);timer=setInterval(refresh,5000);};
  $('autumn-refresh').onclick=()=>refresh(true);
  $('autumn-close').onclick=()=>room.close();
  room.addEventListener('close',()=>{generation++;clearInterval(timer);stopMusic();document.dispatchEvent(new Event('autumn-room-state'));});
  document.addEventListener('visibilitychange',()=>{if(document.hidden)stopMusic();else refresh();});
  $('autumn-music').onclick=async()=>{try{if(audio)stopMusic();else await startMusic();}catch{stopMusic();$('autumn-status').textContent='Could not start audio. Please try again.';}};
+ document.addEventListener('arcade-settings-change',()=>{$('autumn-volume').value=ArcadeSettings.get('autumnVolume');$('autumn-volume').oninput?.();});
  $('autumn-volume').oninput=()=>{if(master&&audio)master.gain.setTargetAtTime(Number($('autumn-volume').value)/100*.45,audio.currentTime,.08);};
  $('autumn-compose').onsubmit=async e=>{
   e.preventDefault();if(!allowed)return;const button=e.submitter,version=generation;button.disabled=true;
