@@ -26,17 +26,17 @@ test('every exclusive Custom Turtle has turtle anatomy and a distinct shell embl
     const gallery=document.createElement('div');gallery.id='crown-turtle-gallery';gallery.style='position:fixed;inset:0;z-index:99999;overflow:auto;background:#101321;display:grid;grid-template-columns:repeat(3,1fr);align-content:start;color:white';
     gallery.innerHTML=CrownPacks.games.map(g=>`<article style="text-align:center"><div>${CrownPacks.art({crown:g.mode,id:`crown_${g.mode}_turtle`},'turtle')}</div>${g.game}</article>`).join('');document.body.append(gallery);
   });
-  await expect(page.locator('#crown-turtle-gallery .crown-turtle')).toHaveCount(11);
+  await expect(page.locator('#crown-turtle-gallery .crown-turtle')).toHaveCount(13);
   expect(await page.locator('#crown-turtle-gallery').innerHTML()).not.toContain('undefined');
   await page.locator('#crown-turtle-gallery').screenshot({path:info.outputPath('exclusive-turtles.png')});
 });
 test('Tearesseract saves full encounters to the same profile but excludes practice',async({page})=>{
   await page.route('**/tearesseract-theme.mp3*',route=>route.abort());
-  await page.route('**/tearesseract.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('previewMusic();\n})();',"window.teaResult=(score,won)=>{rankedClears=score;enter(won?'ending':'dead');};\npreviewMusic();\n})();")});});
+  await page.route('**/tearesseract.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('previewMusic();\n})();',"window.teaPractice=()=>start(0);window.teaResult=(score,won)=>{rankedClears=score;enter(won?'ending':'dead');};\npreviewMusic();\n})();")});});
   await openGame(page);await page.evaluate(()=>accountApp.ready);
   await page.goto('/tearesseract.html');await page.locator('#start').click();await expect(page.locator('#fight')).toHaveAttribute('data-phase','intro');
   await page.evaluate(()=>window.teaResult(3,false));await expect(page.locator('#tea-progress')).toContainText('3 attacks cleared');
-  await page.locator('#load-attack').focus();await page.locator('#load-attack').press('Enter');await expect(page.locator('#fight')).toHaveAttribute('data-phase','attack');await page.evaluate(()=>window.teaResult(30,true));
+  await page.evaluate(()=>window.teaPractice());await expect(page.locator('#fight')).toHaveAttribute('data-phase','attack');await page.evaluate(()=>window.teaResult(30,true));
   await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready');await page.evaluate(()=>accountApp.ready);
   expect(await page.evaluate(()=>achievementTracker.data.stats.teaAttacksBest)).toBe(3);expect(await page.evaluate(()=>achievementTracker.data.stats.teaWins)).toBe(0);
 });
