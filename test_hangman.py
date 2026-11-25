@@ -75,7 +75,7 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual(load_scores(self.path), {"Ada": 8, "Ben": 0})
 
     def test_corrupt_scores_are_not_overwritten(self):
-        for data in ('broken json', '[]', '{"Ada": "5"}', '{"Ada": true}', '{"Ada": -1}'):
+        for data in ('broken json', '[]', '{"Ada": "5"}', '{"Ada": true}', '{"Ada": -1}', '{"   ": 5}'):
             with self.subTest(data=data):
                 self.path.write_text(data, encoding="utf-8")
                 with self.assertRaises(ScoreError):
@@ -83,11 +83,20 @@ class ScoreTests(unittest.TestCase):
                 self.assertEqual(self.path.read_text(encoding="utf-8"), data)
 
     def test_save_score_rejects_invalid_types_and_values(self):
-        for bad_player, bad_score in (("", 5), (123, 5), ("Ada", True), ("Ada", 1.5), ("Ada", -1)):
+        for bad_player, bad_score in (("", 5), ("   ", 5), (123, 5), ("Ada", True), ("Ada", 1.5), ("Ada", -1)):
             with self.subTest(player=bad_player, score=bad_score):
                 with self.assertRaises(ScoreError):
                     save_score(bad_player, bad_score, self.path)
         self.assertEqual(load_scores(self.path), {})
+
+    def test_dodge_impossible_high_scores_uses_isolated_score_file(self):
+        from unittest.mock import call
+        with patch("builtins.input", side_effect=["7", "3"]), \
+             patch("hangman.dodge_score_file", return_value=self.path) as lookup, \
+             redirect_stdout(io.StringIO()):
+            main_menu()
+        self.assertIn(call("dodge_impossible"), lookup.call_args_list)
+        self.assertEqual(lookup.call_args_list.count(call("impossible")), 1)
 
 
 if __name__ == "__main__":

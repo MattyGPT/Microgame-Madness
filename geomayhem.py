@@ -653,9 +653,9 @@ class Geomayhem:
             trigger = bool(self.enemies) if automatic else "f" in keys
             if trigger and self.cooldowns[weapon_id] <= 0:
                 self.fire(weapon_id)
-        if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
-            self.start_boss_defeat()
-            return
+                if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
+                    self.start_boss_defeat()
+                    return
         if self.break_left > 0:
             self.break_left = max(0, self.break_left - dt)
         else:
@@ -685,6 +685,10 @@ class Geomayhem:
             enemy.slow = max(0, enemy.slow - dt)
             enemy.frozen = max(0, enemy.frozen - dt)
             enemy.control_guard = max(0, enemy.control_guard - dt)
+        if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
+            self.start_boss_defeat()
+            return
+        for enemy in self.enemies:
             if enemy.hp <= 0:
                 continue
             distance = math.hypot(self.x - enemy.x, self.y - enemy.y)

@@ -28,6 +28,8 @@ class DrawCanvas:
 
     def create(self, kind, coords, options):
         item = len(self.items) + 1
+        if "dash" in options and not options["dash"]:
+            options = {k: v for k, v in options.items() if k != "dash"}
         self.items[item] = {"kind": kind, "coords": coords, **options}
         self.order[item] = None
         return item

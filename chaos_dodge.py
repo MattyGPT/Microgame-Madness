@@ -1017,7 +1017,10 @@ class ChaosRules:
                         block.velocity_x *= -1
                     if block.kind != 'horizontal':
                         block.x = max(self.left+block.cell_size/2, min(self.right-block.cell_size/2-width, block.x))
+                was_mystery = block.kind == 'mystery'
                 self.reveal_mystery(block)
+                if was_mystery and block.kind in PASS_THROUGH_SPEEDS and block.kind.startswith('elite_'):
+                    elite_speed_blocks.append(block)
                 self.update_blaster(block, step)
                 self.apply_chaos_aura(block)
                 self.update_thunder(block)
@@ -1077,5 +1080,6 @@ class ChaosRules:
                     self.dodged += 1
                 else: remaining.append(block)
             self.blocks = (remaining+children)[:80]
-            self.update_pellets(step, elite_speed_blocks)
+            active_elite_speed = [b for b in self.blocks if b.kind in PASS_THROUGH_SPEEDS and b.kind.startswith('elite_')]
+            self.update_pellets(step, active_elite_speed)
             self.check_chaos_edges()

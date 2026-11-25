@@ -589,16 +589,20 @@ class GeomayhemTests(unittest.TestCase):
     def test_split_shards_do_not_rehit_primary_target_and_beam_boss_kill_wins_immediately(self):
         game = self.game()
         first = enemy(80, hp=1000, identity=1)
-        game.enemies = [first]
+        second = enemy(92, hp=1000, identity=2)
+        game.enemies = [first, second]
         game._hit(first, Shot(80, 0, 0, 0, 10, "needle", 5, {"split"}))
         self.assertEqual(len(game.shots), 3)
         self.assertTrue(all(first.id in s.hits for s in game.shots))
-        game._update_shots(.01)
+        game._update_shots(.03)
         self.assertEqual(first.hp, 990)
+        self.assertLess(second.hp, 1000)
 
         boss_game = self.game(level=1, weapon="laser")
         boss_game.wave = 20
         boss_game.boss_intro_seen = True
+        boss_game.loadout["drone"] = 1
+        boss_game.cooldowns["drone"] = 0
         boss = Enemy(99, 100, 0, 1, 0, 20, "boss", 20)
         escort = Enemy(100, boss_game.x, boss_game.y, 50, 0, 15, "chaser", 50)
         boss_game.lives = 1
@@ -607,6 +611,20 @@ class GeomayhemTests(unittest.TestCase):
         boss_game.update(.016, {"f"}, aim=(100, 0))
         self.assertTrue(boss_game.alive)
         self.assertGreater(boss_game.boss_defeat_left, 0)
+        self.assertEqual(boss_game.shots_fired, 1)
+
+        burn_game = self.game(level=1, weapon="needle")
+        burn_game.wave = 20
+        burn_game.boss_intro_seen = True
+        burn_game.lives = 1
+        burn_game.enemies = [
+            Enemy(99, 100, 0, 0.01, 0, 20, "boss", 20, burn=1.0),
+            Enemy(100, burn_game.x, burn_game.y, 50, 0, 15, "chaser", 50),
+        ]
+        burn_game.update(.016, set())
+        self.assertTrue(burn_game.alive)
+        self.assertGreater(burn_game.boss_defeat_left, 0)
+
         with self.assertRaises(ValueError):
             Geomayhem(True)
 
