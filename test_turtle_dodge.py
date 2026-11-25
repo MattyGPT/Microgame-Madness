@@ -319,9 +319,18 @@ class CountdownTests(unittest.TestCase):
             self.app.game = DodgeGame(difficulty=mode)
             self.app.state = "over"
             self.app.space()
+            self.assertIsInstance(self.app.game, DodgeGame)
             self.assertEqual(self.app.game.difficulty, mode)
             self.assertTrue(self.app.game.alive)
             self.assertEqual(self.app.game.score, 0)
+
+    def test_concave_player_polygon_does_not_hit_side_indentation(self):
+        from dodge_model import PLAYER_POLYGON, polygon_touches_rectangle
+        # (-8, 0) sits outside the turtle shell between the front and rear flippers.
+        self.assertFalse(polygon_touches_rectangle(PLAYER_POLYGON, -8, -8, 0, 0))
+        self.assertFalse(polygon_touches_rectangle(PLAYER_POLYGON, -8.5, -7.5, -0.5, 0.5))
+        # Center of the shell must still register contact.
+        self.assertTrue(polygon_touches_rectangle(PLAYER_POLYGON, 0, 0, 0, 0))
 
 
 if __name__ == "__main__":

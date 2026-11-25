@@ -20,29 +20,6 @@ DODGE_SCORE_FILE = SCORE_FILE.with_name("turtle_scores.json")
 CANVAS_WIDTH, CANVAS_HEIGHT = 680, 660
 
 
-def register_pumpkin_shape(turtle, screen, name="white_jack_o_lantern", eye_color="#111827"):
-    """A carved white face inside the boss's unchanged rectangular silhouette."""
-    shape = turtle.Shape("compound")
-    half_w, half_h = BOSS_WIDTH / 2, BOSS_HEIGHT / 2
-    shape.addcomponent(((-half_w, -half_h), (half_w, -half_h),
-                        (half_w, half_h), (-half_w, half_h)), "#ffffff", "#ffffff")
-    for x in (-28, -8, 8, 28):
-        shape.addcomponent(((x, -18), (x + 1.5, -18), (x + 1.5, 18), (x, 18)),
-                           "#d5d8df", "#d5d8df")
-    features = (
-        ((-25, 3), (-10, 5), (-17, 15)),
-        ((10, 5), (25, 3), (17, 15)),
-        ((-4, 0), (4, 0), (0, 6)),
-        ((-25, -5), (-18, -8), (-14, -4), (-8, -8), (0, -5),
-         (8, -8), (14, -4), (18, -8), (25, -5), (22, -15),
-         (14, -12), (8, -16), (0, -12), (-8, -16), (-14, -12), (-22, -15)),
-    )
-    for index, polygon in enumerate(features):
-        color = eye_color if index < 2 else "#111827"
-        shape.addcomponent(polygon, color, color)
-    screen.register_shape(name, shape)
-
-
 def create_game(difficulty):
     if difficulty == "dodge_impossible":
         return DodgeGame(difficulty="impossible")
@@ -163,8 +140,6 @@ class TurtleDodge:
         self.blocks.shapesize(BLOCK_SIZE * getattr(self.game.rules, "block_scale", 1) / 20, outline=BLOCK_OUTLINE_WIDTH)
         self.boss = self.pen()
         self.boss.shape("square")
-        register_pumpkin_shape(turtle, self.screen)
-        register_pumpkin_shape(turtle, self.screen, "white_jack_o_lantern_hit", "#ffdf00")
         self.lunge_warning = self.pen()
         self.hud = self.pen()
         self.message = self.pen()
@@ -190,7 +165,8 @@ class TurtleDodge:
             self.screen.onkeypress(lambda k=key: self.keys.add(k.lower() if len(k) == 1 else k), key)
             self.screen.onkeyrelease(lambda k=key: self.keys.discard(k.lower() if len(k) == 1 else k), key)
         self.screen.onkeypress(self.space, "space")
-        self.screen.onkeyrelease(self.toggle_pause, "d")
+        for key in ("d", "D"):
+            self.screen.onkeyrelease(self.toggle_pause, key)
         self.screen.onkeypress(self.close, "Escape")
         canvas = self.screen.getcanvas()
         canvas.bind("<FocusOut>", lambda event: self.pause(), add="+")
@@ -222,7 +198,12 @@ class TurtleDodge:
             self.countdown_number = 3
             self.set_message("GET READY\n\n3")
             return
-        self.game = create_game(self.game.difficulty)
+        restart_key = (
+            "dodge_impossible"
+            if isinstance(self.game, DodgeGame) and self.game.difficulty == "impossible"
+            else self.game.difficulty
+        )
+        self.game = create_game(restart_key)
         self.saved = False
         self.death_started = None
         self.death_particles.clearstamps()
@@ -285,6 +266,8 @@ class TurtleDodge:
             self.player.color("#ffffff" if game.invulnerable > 0 else "#b7f7cc",
                               "#ffffff" if game.invulnerable > 0 else "#4ade80")
             return
+        self.boss.clearstamps()
+        self.king_view.draw_boss(game)
         self.lunge_warning.clear()
         if game.lunge_state == "warning" and game.alive and not game.won:
             x, y = game.lunge_target
@@ -292,8 +275,6 @@ class TurtleDodge:
                 self.lunge_warning.color(color)
                 self.lunge_warning.goto(x + offset, min(game.top - 48, y + 16))
                 self.lunge_warning.write("!", align="center", font=("Arial", 32, "bold"))
-        self.boss.clearstamps()
-        self.king_view.draw_boss(game)
         self.boss.shape("square")
         self.boss.setheading(0)
         self.boss.color("#374151")
@@ -361,7 +342,10 @@ class TurtleDodge:
                 self.finish_round()
         elif self.state == "dying" and now-self.death_started >= DEATH_DURATION:
             self.finish_round()
+        if isinstance(self.game, BossCrush) and not self.game.alive and not getattr(self.game, "won", False):
+            self.game.defeat_laugh_age = getattr(self.game, "defeat_laugh_age", 0) + dt
         if isinstance(self.game, DodgeGame) and self.game.difficulty == 'chaos':
+            self.game.chaos_sound_events.clear()
             bounds = (self.game.left, self.game.right, self.game.bottom, self.game.top)
             border_state = (bounds, bool(self.game.danger_edge_left))
             if border_state != self.arena_border_state:
@@ -500,7 +484,7 @@ class TurtleDodge:
                 self.hud.goto(0, -308)
                 self.hud.color("#4ade80")
                 self.hud.write("Green +: +1 HP • every 16s • lasts 9s", align="center", font=("Arial", 10, "normal"))
-        if isinstance(self.game, PumpkinKing) and self.state != "playing":
+        if isinstance(self.game, BossCrush) and self.state != "playing":
             for item in self.message.items:
                 self.screen.getcanvas().tag_raise(item)
         self.screen.update()
@@ -518,7 +502,7 @@ def main():
     try:
         difficulty = sys.argv[2] if len(sys.argv) > 2 else "easy"
         if difficulty not in (*DIFFICULTIES, "dodge_impossible", *BOSS_DIFFICULTIES, *PUMPKIN_DIFFICULTIES):
-            print("Unknown difficulty. Choose easy, normal, hard, merciless, dodge_impossible, mean, cruel, nightmare, impossible, phase2, coward, baby, or come_on.")
+            print("Unknown difficulty. Choose easy, normal, hard, merciless, dodge_impossible, chaos, mean, cruel, nightmare, impossible, phase2, coward, baby, or come_on.")
             return 1
         app = TurtleDodge(turtle, sys.argv[1] if len(sys.argv) > 1 else "Player", difficulty)
         app.root.mainloop()

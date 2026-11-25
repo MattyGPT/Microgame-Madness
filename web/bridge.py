@@ -1,13 +1,14 @@
 """Browser adapter. Game rules live in the shared root Python modules."""
 
+from collections import OrderedDict
 import json
 import random
 from chaos_dodge import elite_fill_color, FIELD_RADII, FIELD_LABELS, field_mode, block_is_solid, FIRE_PATTERNS
-from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, CATALOG as CHAOS_BLOCKS, catalog as chaos_catalog
+from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, catalog as chaos_catalog
 
 from hangman_model import DIFFICULTY, HangmanGame, hangman_picture
 from keyboard_model import KeyboardRound, make_round
-from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_SIZE, BLOCK_OUTLINE_WIDTH, block_outline_color
+from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_OUTLINE_WIDTH, block_outline_color
 from boss_crush import BossCrush
 from pumpkin_king import PumpkinKing
 from kings_wrath import KingsWrath
@@ -23,12 +24,12 @@ class DrawCanvas:
     """Small Tk Canvas protocol adapter for the existing Pumpkin King renderer."""
     def __init__(self):
         self.items = {}
-        self.order = []
+        self.order = OrderedDict()
 
     def create(self, kind, coords, options):
         item = len(self.items) + 1
         self.items[item] = {"kind": kind, "coords": coords, **options}
-        self.order.append(item)
+        self.order[item] = None
         return item
 
     def create_rectangle(self, *coords, **options):
@@ -50,15 +51,16 @@ class DrawCanvas:
         self.items[item]["coords"] = coords
 
     def itemconfigure(self, item, **options):
+        if "dash" in options and not options["dash"]:
+            options = {k: v for k, v in options.items() if k != "dash"}
+            self.items[item].pop("dash", None)
         self.items[item].update(options)
 
     def tag_raise(self, item):
-        self.order.remove(item)
-        self.order.append(item)
+        self.order.move_to_end(item)
 
     def tag_lower(self, item):
-        self.order.remove(item)
-        self.order.insert(0, item)
+        self.order.move_to_end(item, last=False)
 
     def commands(self):
         return [self.items[item].copy() for item in self.order
@@ -164,7 +166,8 @@ class BrowserGame:
                 if self.game.retry_boss():
                     self.geomayhem_background_pending = True
         elif action == "guess" and self.mode == "hangman":
-            result = self.game.guess(request["key"])
+            key = request.get("key")
+            result = self.game.guess(key if isinstance(key, str) else "")
             self.message = {"correct": "Nice guess!", "wrong": "Not this time.",
                             "repeated": "Already guessed.", "invalid": "Choose a letter."}.get(result, "")
         elif action in ("tick", "key") and self.mode == "keyboard":
@@ -337,7 +340,6 @@ class BrowserGame:
                         if game.difficulty == "chaos":
                             commands[-1].update(chaos_kind=block.kind, ghost=ghost, fill_color=elite_fill_color(block))
                     if game.difficulty == "chaos":
-                        info = CHAOS_BLOCKS[block.kind]
                         commands.append({"kind": "block_icon", "coords": [block.x, -block.y],
                                          "block": block.kind, "size": block.size*.82,
                                          "ghost": ghost, "color": block.color, "age": block.age,

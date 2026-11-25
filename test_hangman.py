@@ -82,6 +82,13 @@ class ScoreTests(unittest.TestCase):
                     save_score("Ada", 10, self.path)
                 self.assertEqual(self.path.read_text(encoding="utf-8"), data)
 
+    def test_save_score_rejects_invalid_types_and_values(self):
+        for bad_player, bad_score in (("", 5), (123, 5), ("Ada", True), ("Ada", 1.5), ("Ada", -1)):
+            with self.subTest(player=bad_player, score=bad_score):
+                with self.assertRaises(ScoreError):
+                    save_score(bad_player, bad_score, self.path)
+        self.assertEqual(load_scores(self.path), {})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -586,6 +586,30 @@ class GeomayhemTests(unittest.TestCase):
         self.assertEqual(self.game().relics, set())
         self.assertEqual(self.game().rerolls, 2)
 
+    def test_split_shards_do_not_rehit_primary_target_and_beam_boss_kill_wins_immediately(self):
+        game = self.game()
+        first = enemy(80, hp=1000, identity=1)
+        game.enemies = [first]
+        game._hit(first, Shot(80, 0, 0, 0, 10, "needle", 5, {"split"}))
+        self.assertEqual(len(game.shots), 3)
+        self.assertTrue(all(first.id in s.hits for s in game.shots))
+        game._update_shots(.01)
+        self.assertEqual(first.hp, 990)
+
+        boss_game = self.game(level=1, weapon="laser")
+        boss_game.wave = 20
+        boss_game.boss_intro_seen = True
+        boss = Enemy(99, 100, 0, 1, 0, 20, "boss", 20)
+        escort = Enemy(100, boss_game.x, boss_game.y, 50, 0, 15, "chaser", 50)
+        boss_game.lives = 1
+        boss_game.enemies = [boss, escort]
+        boss_game.cooldowns["laser"] = 0
+        boss_game.update(.016, {"f"}, aim=(100, 0))
+        self.assertTrue(boss_game.alive)
+        self.assertGreater(boss_game.boss_defeat_left, 0)
+        with self.assertRaises(ValueError):
+            Geomayhem(True)
+
 
 if __name__ == "__main__":
     unittest.main()

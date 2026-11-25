@@ -114,25 +114,63 @@ class Block:
         return [(self.x + x * self.cell_size, self.y + y * self.cell_size) for x, y in self.cells]
 
 
+def _point_in_polygon(px, py, polygon):
+    inside = False
+    x1, y1 = polygon[-1]
+    for x2, y2 in polygon:
+        if min(x1, x2) - 1e-9 <= px <= max(x1, x2) + 1e-9 and min(y1, y2) - 1e-9 <= py <= max(y1, y2) + 1e-9:
+            cross = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)
+            if abs(cross) <= 1e-9 * (abs(x2 - x1) + abs(y2 - y1) + 1):
+                return True
+        if (y1 > py) != (y2 > py):
+            x_int = x1 + (py - y1) * (x2 - x1) / (y2 - y1)
+            if px <= x_int:
+                inside = not inside
+        x1, y1 = x2, y2
+    return inside
+
+
+def _segment_touches_rectangle(x1, y1, x2, y2, left, right, bottom, top):
+    dx, dy = x2 - x1, y2 - y1
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, x1 - left), (dx, right - x1), (-dy, y1 - bottom), (dy, top - y1)):
+        if p == 0:
+            if q < 0:
+                return False
+        else:
+            t = q / p
+            if p < 0:
+                if t > t1:
+                    return False
+                if t > t0:
+                    t0 = t
+            else:
+                if t < t0:
+                    return False
+                if t < t1:
+                    t1 = t
+    return t0 <= t1
+
+
 def polygon_touches_rectangle(polygon, left, right, bottom, top):
-    """Clip the turtle outline to a square; a nonempty result means contact."""
-    for axis, boundary, direction in ((0, left, 1), (0, right, -1),
-                                      (1, bottom, 1), (1, top, -1)):
-        if not polygon:
-            return False
-        clipped = []
-        previous = polygon[-1]
-        previous_inside = (previous[axis] - boundary) * direction >= 0
-        for current in polygon:
-            inside = (current[axis] - boundary) * direction >= 0
-            if inside != previous_inside:
-                fraction = (boundary - previous[axis]) / (current[axis] - previous[axis])
-                clipped.append(tuple(previous[i] + fraction * (current[i] - previous[i]) for i in (0, 1)))
-            if inside:
-                clipped.append(current)
-            previous, previous_inside = current, inside
-        polygon = clipped
-    return bool(polygon)
+    """Exact contact test between any simple polygon (convex or concave) and an axis-aligned rectangle."""
+    if not polygon or right < left or top < bottom:
+        return False
+    min_x = max_x = polygon[0][0]
+    min_y = max_y = polygon[0][1]
+    for x, y in polygon[1:]:
+        if x < min_x: min_x = x
+        elif x > max_x: max_x = x
+        if y < min_y: min_y = y
+        elif y > max_y: max_y = y
+    if max_x < left or min_x > right or max_y < bottom or min_y > top:
+        return False
+    x1, y1 = polygon[-1]
+    for x2, y2 in polygon:
+        if _segment_touches_rectangle(x1, y1, x2, y2, left, right, bottom, top):
+            return True
+        x1, y1 = x2, y2
+    return _point_in_polygon(left, bottom, polygon)
 
 
 def polygon_touches_triangle(polygon, triangle):

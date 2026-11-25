@@ -1,7 +1,9 @@
 """Read and save personal bests alongside the game, regardless of launch directory."""
 
 import json
+import os
 from pathlib import Path
+import tempfile
 
 SCORE_FILE = Path(__file__).resolve().with_name("scores.json")
 
@@ -28,14 +30,29 @@ def load_scores(path=SCORE_FILE):
 
 
 def save_score(player, score, path=SCORE_FILE):
+    if not isinstance(player, str) or not player or type(score) is not int or score < 0:
+        raise ScoreError("Player must be a non-empty string and score must be a non-negative integer.")
     path = Path(path)
     scores = load_scores(path)  # Never overwrite unreadable existing scores.
     scores[player] = max(score, scores.get(player, 0))
-    temporary = path.with_suffix(".json.tmp")
+    tmp_path = None
     try:
-        with temporary.open("w", encoding="utf-8") as file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as file:
+            tmp_path = Path(file.name)
             json.dump(scores, file, indent=2)
             file.write("\n")
-        temporary.replace(path)
+            file.flush()
+            os.fsync(file.fileno())
+        os.replace(tmp_path, path)
+        tmp_path = None
     except OSError as exc:
         raise ScoreError(f"Could not save scores to {path}: {exc}") from exc
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
