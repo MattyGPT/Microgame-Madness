@@ -20,13 +20,13 @@ export const server=http.createServer(async(req,res)=>{
  if(req.url.startsWith('/__news')) {
   if(req.method!=='POST'||req.headers.origin!==`http://${req.headers.host}`||req.headers['content-type']!=='application/json')return reply(403,{error:'Same-origin JSON required'});
   try {
-   let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>12000)throw Error('Too large');}
-   const b=JSON.parse(raw);let result;
+   const chunks=[];let size=0;for await(const chunk of req){const buf=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);size+=buf.length;if(size>12000)throw Error('Too large');chunks.push(buf);}
+   const b=JSON.parse(Buffer.concat(chunks).toString('utf8'));let result;
    if(b.action==='status')result={moderator:true,label:'Nate, the creator'};
    else if(b.action==='discussion'){
     const operation=['list','create','like','delete'].includes(b.operation)?b.operation:'invalid';
     if(operation==='create'&&(typeof b.body!=='string'||b.body.length>1000))throw Error('Invalid comment');
-    const rows=await query(`select news_private.discussion(${quote(operation)},${uuid(b.id)},${b.body===undefined?'null':quote(b.body)},${b.parent?uuid(b.parent):'null'},${quote(b.kind||'suggestion')},null,true) data`);result=rows[0].data;
+    const rows=await query(`select news_private.discussion(${quote(operation)},${uuid(b.id)},${b.body==null?'null':quote(b.body)},${b.parent?uuid(b.parent):'null'},${quote(b.kind||'suggestion')},null,true) data`);result=rows[0].data;
    }
    else if(b.action==='reply'||b.action==='deleteReply'){
     if(b.action==='reply'&&(typeof b.body!=='string'||!b.body.trim()||b.body.length>1000))throw Error('Invalid reply');

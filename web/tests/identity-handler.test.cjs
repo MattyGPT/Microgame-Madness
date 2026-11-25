@@ -6,7 +6,7 @@ const json=(value,status=200)=>new Response(JSON.stringify(value),{status});
 async function fixture(options={}){
  const {createIdentityHandler}=await import('../../supabase/functions/identity/handler.mjs');
  let identity=options.registered?{owner,handle:'player_1',provider_identifier:'opaque@accounts.invalid',active:true}:null;
- let password='correct password',recoveryHash,mutation,revocations=0;
+ let password='correct password',recoveryHash,pendingHash=null,mutation,revocations=0;
  const calls=[];
  const transport=async(url,request={})=>{
   const body=request.body?JSON.parse(request.body):{};calls.push({url,body});
@@ -18,14 +18,16 @@ async function fixture(options={}){
   if(name==='identity_session_active')return json(!options.revoked);
   if(name==='identity_lookup')return json(identity);
   if(name==='identity_register_begin'){
-   identity={owner,handle:body.p_handle,provider_identifier:body.p_identifier,active:false};recoveryHash=body.p_recovery_hash;mutation=body.p_mutation;return json(identity);
+   identity={owner,handle:body.p_handle,provider_identifier:body.p_identifier,active:false};pendingHash=body.p_recovery_hash;mutation=body.p_mutation;return json(identity);
   }
+  if(url.includes('/auth/v1/logout'))return new Response(null,{status:204});
   if(name==='identity_mutation_begin'){
    if(body.p_recovery_hash && body.p_recovery_hash!==recoveryHash)return json({message:'invalid_credentials'},400);
-   recoveryHash=body.p_new_recovery_hash||recoveryHash;mutation=body.p_mutation;return json(identity);
+   pendingHash=body.p_new_recovery_hash||null;mutation=body.p_mutation;return json(identity);
   }
+  if(name==='identity_mutation_abort'){if(body.p_mutation===mutation){pendingHash=null;mutation=null;return json(true);}return json(false);}
   if(name==='identity_revoke_sessions'){revocations++;return json(true);}
-  if(name==='identity_mutation_finish'){identity.active=true;return json(body.p_mutation===mutation);}
+  if(name==='identity_mutation_finish'){if(body.p_mutation!==mutation)return json(false);identity.active=true;recoveryHash=pendingHash||recoveryHash;pendingHash=null;mutation=null;return json(true);}
   throw new Error(name);
  };
  const handler=createIdentityHandler({url:'https://test.supabase.co',serviceKey:'server-secret',fetch:transport,allowedOrigins:['https://arcade.example']});
@@ -71,9 +73,44 @@ test('validation rejects contact fields, password truncation, oversized bodies, 
  assert.equal((await f.request({action:'login',handle:'player_1',password:'correct password'},{origin:'https://other.example'})).status,403);
 });
 
-test('registration response-loss retry proves credentials when Auth rejects the revoked anonymous session',async()=>{
+ test('registration response-loss retry proves credentials when Auth rejects the revoked anonymous session',async()=>{
  const f=await fixture({registered:true,providerRevoked:true});
  let r=await f.request({action:'register',handle:'player_1',password:'wrong password'});assert.equal(r.status,401);
+ r=await f.request({action:'register',handle:'player_1',password:'short'});assert.equal(r.status,400);
  r=await f.request({action:'register',handle:'player_1',password:'correct password'});assert.equal(r.status,200);
  const data=await r.json();assert.equal(data.session.user.id,owner);assert.match(data.recoveryCode,/^[a-f0-9]{64}$/);
+});
+
+test('failed provider update during recover aborts mutation and preserves original recovery code',async()=>{
+ const f=await fixture();let r=await f.request({action:'register',handle:'player_1',password:'correct password'});const original=await r.json();
+ // Force one provider failure, then retry with the same original recovery code.
+ let failOnce=true;
+ const {createIdentityHandler}=await import('../../supabase/functions/identity/handler.mjs');
+ const calls=[];let recoveryHash=null,pendingHash=null,mutation=null,password='correct password';
+ const identity={owner,handle:'player_1',provider_identifier:'opaque@accounts.invalid',active:true};
+ const cryptoMod=require('node:crypto');
+ recoveryHash=cryptoMod.createHash('sha256').update(original.recoveryCode).digest('hex');
+ const handler=createIdentityHandler({url:'https://test.supabase.co',serviceKey:'server-secret',allowedOrigins:['https://arcade.example'],fetch:async(url,req={})=>{
+  const body=req.body?JSON.parse(req.body):{};calls.push({url,body});
+  if(url.includes('/auth/v1/admin/users/')){if(failOnce){failOnce=false;return json({},500);}password=body.password;return json({id:owner});}
+  if(url.includes('/auth/v1/token?'))return body.password===password?json({access_token:token,refresh_token:'refresh',expires_in:3600,user:{id:owner,is_anonymous:false}}):json({},401);
+  const name=url.split('/').at(-1);
+  if(name==='identity_rate_limit')return json(true);
+  if(name==='identity_lookup')return json(identity);
+  if(name==='identity_mutation_begin'){if(body.p_recovery_hash!==recoveryHash)return json({message:'invalid_credentials'},400);pendingHash=body.p_new_recovery_hash;mutation=body.p_mutation;return json(identity);}
+  if(name==='identity_revoke_sessions')return json(true);
+  if(name==='identity_mutation_abort'){pendingHash=null;mutation=null;return json(true);}
+  if(name==='identity_mutation_finish'){recoveryHash=pendingHash;pendingHash=null;mutation=null;return json(true);}
+  throw new Error(name);
+ }});
+ const send=body=>handler(new Request('https://test/functions/v1/identity',{method:'POST',headers:{origin:'https://arcade.example'},body:JSON.stringify(body)}));
+ assert.equal((await send({action:'recover',handle:'player_1',recoveryCode:original.recoveryCode,newPassword:'replacement password'})).status,503);
+ assert.ok(calls.some(c=>c.url.endsWith('/identity_mutation_abort')));
+ const retry=await send({action:'recover',handle:'player_1',recoveryCode:original.recoveryCode,newPassword:'replacement password'});
+ assert.equal(retry.status,200);
+ // Rate limit must check narrowest buckets (handle, ip) before global.
+ const rateCalls=calls.filter(c=>c.url.endsWith('/identity_rate_limit'));
+ assert.equal(rateCalls[0].body.p_limit,12);
+ assert.equal(rateCalls[1].body.p_limit,40);
+ assert.equal(rateCalls[2].body.p_limit,1000);
 });

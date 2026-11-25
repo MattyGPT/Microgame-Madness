@@ -54,9 +54,16 @@ export function identityProvider({url,serviceKey,fetch:transport=globalThis.fetc
     return result;
   };
   const rate=async(request,action,handle='')=>{
-    const ip=(request.headers.get('x-forwarded-for') || 'unknown').split(',').at(-1).trim().slice(0,128);
+    const ip=(request.headers.get('cf-connecting-ip')
+      || request.headers.get('x-real-ip')
+      || (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0]
+      || 'unknown').trim().slice(0,128) || 'unknown';
+    // Check narrowest buckets first so a single IP or handle cannot exhaust the global quota.
     // Salted hashes keep IP/handle text out of this short-lived abuse table.
-    for(const [key,limit,seconds] of [[`global:${action}`,1000,60],[`ip:${ip}:${action}`,action==='register'?10:40,60],[`handle:${handle}:${action}`,action==='register'?5:12,60]]){
+    const buckets=[];
+    if(handle)buckets.push([`handle:${handle}:${action}`,action==='register'?5:12,60]);
+    buckets.push([`ip:${ip}:${action}`,action==='register'?10:40,60],[`global:${action}`,1000,60]);
+    for(const [key,limit,seconds] of buckets){
       if(!await rpc('identity_rate_limit',{p_bucket:await sha256(`${serviceKey}:${key}`),p_limit:limit,p_seconds:seconds}))throw fault('rate_limited','Too many attempts. Wait a minute and try again.',429);
     }
   };

@@ -22,6 +22,8 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
       if (data?.message?.includes('account_deleted')) throw safeError('account_deleted', 'This account has been deleted.', 410);
       if (data?.message?.includes('rate_limited')) throw safeError('rate_limited', 'Too many updates. Please try again shortly.', 429);
       if (data?.message?.includes('submissions_restricted')) throw safeError('restricted', 'Account submissions are restricted.', 403);
+      if (data?.message?.includes('run_conflict')) throw safeError('run_conflict', 'This run ID was already submitted with a different result.', 409);
+      if (data?.message?.includes('invalid_score')) throw safeError('invalid', 'Invalid game score.', 400);
       throw safeError('unavailable', 'The account change could not be saved. Please retry.', 503);
     }
     return data;
