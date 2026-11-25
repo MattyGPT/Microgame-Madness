@@ -58,8 +58,19 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
         if (rejected.status === 'revision_conflict') continue;
         return rejected;
       }
-      const receipt = await rpc('account_commit', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
-        p_expected_revision: current.revision, p_state: next.state, p_result: next.result, p_run: next.run || null, p_kind: operation.kind });
+      let receipt;
+      try {
+        receipt = await rpc('account_commit', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
+          p_expected_revision: current.revision, p_state: next.state, p_result: next.result, p_run: next.run || null, p_kind: operation.kind });
+      } catch (error) {
+        if (error.code === 'run_conflict' || error.code === 'invalid') {
+          const rejected = await rpc('account_reject', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
+            p_expected_revision: current.revision, p_error: { code: error.code, message: error.message } });
+          if (rejected.status === 'revision_conflict') continue;
+          return rejected;
+        }
+        throw error;
+      }
       if (receipt.status !== 'revision_conflict') return receipt;
     }
     throw safeError('busy', 'Your account changed on another device. Please retry this update.', 409);

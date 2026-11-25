@@ -427,7 +427,7 @@ test('Coin Drop rankings use highest world rather than summed receipts',async t=
 });
 
 test('per-mode score caps apply to guest RPCs and account_commit, and restricted accounts cannot write rejections',async t=>{
-  const {db,role,call,read}=await setup(t);
+  const {db,role,call,read,apply}=await setup(t);
   await role('authenticated',first);
   await assert.rejects(call('submit_leaderboard_run',['bad-pool','pool','standard','Cheater',2]),{code:'22023'});
   await assert.rejects(call('submit_leaderboard_run',['bad-tea','tearesseract','standard','Cheater',466]),{code:'22023'});
@@ -441,4 +441,13 @@ test('per-mode score caps apply to guest RPCs and account_commit, and restricted
   await role('service_role');
   await call('account_moderate',[second,true,'restricted']);
   await assert.rejects(call('account_reject',[second,'denied-while-restricted','0'.repeat(64),state.revision,JSON.stringify({code:'invalid',message:'no'})]),{code:'42501'});
+  await call('account_moderate',[second,false,'restored']);
+  // Reusing an already-finalized run_id on run.start (e.g. after pruning state.runs) must be rejected with run_conflict.
+  await apply(second,op('s-once','run.start',{mode:'hangman',difficulty:'easy'},'done-run'));
+  await apply(second,op('f-once','run.finish',{snapshot:{over:true,won:true,score:5},outcome:'win'},'done-run'));
+  const cur=await read(second);
+  const pruned={...cur.state,runs:{}};
+  const restarted=Rules.apply(pruned,op('s-reuse','run.start',{mode:'hangman',difficulty:'easy'},'done-run'),{now:Date.now()});
+  await role('service_role');
+  await assert.rejects(call('account_commit',[second,'s-reuse','f'.repeat(64),cur.revision,JSON.stringify(restarted.state),JSON.stringify(restarted.result),null,'run.start']),/run_conflict/);
 });

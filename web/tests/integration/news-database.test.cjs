@@ -205,7 +205,11 @@ test('non-creator suggestion likes do not bump author profile revision and profa
  for(const safe of ['I wish it had more arenas','Let us finish it together','This boss is a bit challenging','Can we crush it on hard?','Do not pass hole 8']){
   assert.equal((await db.query('select news_private.unkind($1) bad',[safe])).rows[0].bad,false,safe);
  }
- for(const bad of ['f.u.c.k','f u c k','fuuuuck','sh!t','shiiit','a$$hole','kill yourself']){
+ for(const bad of ['f.u.c.k','f.u.c.k!','f u c k','f u u c k','fuck!','shit!','sh!t','sh!t!','shiiit','a$$hole','kill yourself','kill yourself!']){
   assert.equal((await db.query('select news_private.unkind($1) bad',[bad])).rows[0].bad,true,bad);
  }
+ // Deleted accounts cannot participate in discussions even before Auth deletion finishes.
+ await db.query('insert into accounts_private.deleted_accounts(owner) values($1)',[fan]);
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[fan]);await db.exec('set role authenticated');
+ await assert.rejects(db.query("select public.news_discussion('create',$1,'After delete',null,'post')",[post]),{code:'42501'});
 });

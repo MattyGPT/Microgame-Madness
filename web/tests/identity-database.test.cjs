@@ -23,6 +23,10 @@ test('handle reservation is unique, owner stable, and credentials require a fres
  const {db,rpc,begin}=await setup(t);
  assert.equal((await begin()).owner,owner);
  await assert.rejects(rpc('identity_register_begin',[other,'player_1','d'.repeat(64)+'@accounts.invalid',hash,next]),/handle_unavailable/);
+ // Aborting a fresh registration must not allow 0-second hijacking before the 15-minute reservation window expires.
+ assert.equal(await rpc('identity_mutation_abort',[owner,mutation]),true);
+ await assert.rejects(rpc('identity_register_begin',[other,'player_1','d'.repeat(64)+'@accounts.invalid',hash,next]),/handle_unavailable/);
+ assert.equal((await begin()).owner,owner);
  await assert.rejects(begin(),/identity_busy/);
  await assert.rejects(db.query('update auth.users set email=$1,encrypted_password=$2 where id=$3',[identifier,'provider-hash',owner]),/use_handle_credentials/);
  // Mirrors Auth's admin API: password, then email, then app_metadata in one transaction.
@@ -46,6 +50,7 @@ test('recovery consumption is single use, mutation tickets fence races, and revo
  assert.equal(await rpc('identity_session_active',[other,sid]),false);
  await assert.rejects(rpc('identity_mutation_begin',[owner,newHash,hash,next]),/invalid_credentials/);
  await rpc('identity_mutation_begin',[owner,hash,newHash,next]);
+ await assert.rejects(rpc('identity_mutation_begin',[owner,newHash,hash,mutation]),/invalid_credentials/);
  await assert.rejects(rpc('identity_mutation_begin',[owner,hash,newHash,mutation]),/identity_busy/);
  assert.equal(await rpc('identity_mutation_finish',[owner,mutation]),false);
  assert.equal(await rpc('identity_revoke_sessions',[owner,mutation]),false);

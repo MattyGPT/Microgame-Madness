@@ -215,12 +215,11 @@ const AccountRules = (() => {
     }
     const after = merged.reduce((sum,[a,b]) => sum+b-a,0);
     if (merged.length > MAX_TIME_INTERVALS) {
-      // Collapse oldest intervals into one synthetic carried span so array size stays bounded.
+      // Collapse oldest intervals into negative timestamp space so carried time never overlaps real timestamps (start >= 0).
       const overflow = merged.length - MAX_TIME_INTERVALS + 1;
       const collapsed = merged.slice(0, overflow).reduce((sum, [a, b]) => sum + b - a, 0);
       const tail = merged.slice(overflow);
-      const anchor = Math.max(0, tail[0][0] - collapsed - 1);
-      state.timeIntervals = [[anchor, anchor + collapsed], ...tail];
+      state.timeIntervals = [[-collapsed - 1, -1], ...tail];
     } else {
       state.timeIntervals = merged;
     }
@@ -243,7 +242,12 @@ const AccountRules = (() => {
     const occurredAt = new Date(clockAdjusted ? Date.parse(now) : reported).toISOString();
     const timeSource = operation.occurredAt === undefined || clockAdjusted ? 'server-received' : 'client-reported';
     const result = { earned: [], cashUnits: 0 };
-    if (!Object.hasOwn(state.streams, streamId)) state.streams[streamId] = {};
+    if (!Object.hasOwn(state.streams, streamId)) {
+      if (Object.keys(state.streams).length >= MAX_STREAMS) pruneState(state);
+      if (operation.kind === 'run.start' && Object.keys(state.streams).length >= MAX_STREAMS)
+        fail('conflict', 'Too many active device streams.');
+      state.streams[streamId] = {};
+    }
     const stream = state.streams[streamId];
     const tracker = trackerFor(state, stream);
     const beforeUnits = state.shop.units;

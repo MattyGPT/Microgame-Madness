@@ -38,7 +38,11 @@ export function identityProvider({url,serviceKey,fetch:transport=globalThis.fetc
   };
   const auth=async(path,{method='POST',body,token,credentials=false}={})=>{
     const response=await transport(`${base}/auth/v1/${path}`,{method,headers:{apikey:serviceKey,Authorization:`Bearer ${token || serviceKey}`,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(15000)});
-    if(!response.ok){if(credentials)throw genericCredentials();throw fault('unavailable','Account service is temporarily unavailable.',503);}
+    if(!response.ok){
+      const err=credentials?genericCredentials():fault('unavailable','Account service is temporarily unavailable.',503);
+      err.providerStatus=response.status;
+      throw err;
+    }
     return response.status===204?null:response.json();
   };
   const authenticate=async bearer=>{
@@ -56,7 +60,7 @@ export function identityProvider({url,serviceKey,fetch:transport=globalThis.fetc
   const rate=async(request,action,handle='')=>{
     const ip=(request.headers.get('cf-connecting-ip')
       || request.headers.get('x-real-ip')
-      || (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0]
+      || (request.headers.get('x-forwarded-for') || 'unknown').split(',').at(-1)
       || 'unknown').trim().slice(0,128) || 'unknown';
     // Check narrowest buckets first so a single IP or handle cannot exhaust the global quota.
     // Salted hashes keep IP/handle text out of this short-lived abuse table.

@@ -33,10 +33,24 @@ begin
   if exists(select 1 from accounts_private.deleted_accounts where owner = p_owner) then
     raise exception 'account_deleted';
   end if;
-  -- Reclaim abandoned inactive handle reservations after 15 minutes so failed signups cannot squat handles forever.
-  delete from accounts_private.identities
-    where handle = p_handle and owner <> p_owner and not active
-      and (mutation_until is null or mutation_until < now() - interval '15 minutes');
+  -- Reclaim abandoned inactive handle reservations after 15 minutes only if Auth has not already assigned credentials.
+  if exists(select 1 from information_schema.columns where table_schema = 'auth' and table_name = 'users' and column_name = 'email') then
+    execute $q$
+      delete from accounts_private.identities i
+      where i.handle = $1 and i.owner <> $2 and not i.active
+        and i.created_at < now() - interval '15 minutes'
+        and (i.mutation_until is null or i.mutation_until < now() - interval '15 minutes')
+        and not exists(
+          select 1 from auth.users u
+          where u.id = i.owner and (coalesce(u.email, '') <> '' or coalesce(u.encrypted_password, '') <> '')
+        )
+    $q$ using p_handle, p_owner;
+  else
+    delete from accounts_private.identities
+      where handle = p_handle and owner <> p_owner and not active
+        and created_at < now() - interval '15 minutes'
+        and (mutation_until is null or mutation_until < now() - interval '15 minutes');
+  end if;
   insert into accounts_private.identities(owner, handle, provider_identifier) values(p_owner, p_handle, p_identifier)
     on conflict(owner) do nothing;
   select * into r from accounts_private.identities where owner = p_owner for update;
@@ -57,11 +71,10 @@ begin
     raise exception 'account_deleted';
   end if;
   select * into r from accounts_private.identities where owner = p_owner and active for update;
-  if not found then raise exception 'invalid_credentials'; end if;
-  if r.mutation_until > now() then raise exception 'identity_busy'; end if;
-  if p_recovery_hash is not null and r.recovery_hash is distinct from p_recovery_hash then
+  if not found or (p_recovery_hash is not null and r.recovery_hash is distinct from p_recovery_hash) then
     raise exception 'invalid_credentials';
   end if;
+  if r.mutation_until > now() then raise exception 'identity_busy'; end if;
   -- Stage the replacement verifier until the external Auth update completes so a provider failure cannot lock out the account.
   update accounts_private.identities
     set pending_recovery_hash = p_new_recovery_hash, mutation_id = p_mutation, mutation_until = now() + interval '60 seconds'
@@ -169,6 +182,13 @@ begin
   if new_units is null or new_units < 0 or new_units > 9007199254740991
       or new_name is null or char_length(new_name) not between 1 and 24 or new_name ~ '[[:cntrl:]]' then
     raise exception 'invalid_state' using errcode = '22023';
+  end if;
+  if p_kind = 'run.start' and exists(
+    select 1 from jsonb_each(coalesce(p_state->'runs', '{}'::jsonb)) r
+    where not coalesce((r.value->>'finished')::boolean, false)
+      and exists(select 1 from accounts_private.runs prev where prev.owner = p_owner and prev.run_id = r.key)
+  ) then
+    raise exception 'run_conflict';
   end if;
   if p_run is not null and p_run <> 'null'::jsonb then
     run_mode := p_run->>'mode'; run_difficulty := p_run->>'difficulty'; run_score := (p_run->>'score')::integer;
@@ -302,9 +322,6 @@ begin
   if to_regclass('news_private.discussion_clock') is not null then
     delete from news_private.discussion_clock where actor = p_owner::text;
   end if;
-  if to_regclass('auth.sessions') is not null then
-    execute 'delete from auth.sessions where user_id = $1' using p_owner;
-  end if;
   return jsonb_build_object('deleted', true);
 end $$;
 
@@ -390,10 +407,85 @@ begin
   return '{}'::jsonb;
 end $$;
 
+create or replace function news_private.discussion(action text, target uuid, body text, reply_parent uuid, kind text, who uuid, local_creator boolean default false)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare is_mod boolean := false; author text; actor_key text; person news_private.people; selected_reply news_private.replies; until_time timestamptz; last_post timestamptz; result uuid;
+begin
+  select split_part(t.label, ',', 1) into author
+  from news_private.team t
+  join accounts_private.identities i on i.owner = t.owner and i.active
+  where t.owner = who and not exists(select 1 from accounts_private.deleted_accounts d where d.owner = t.owner);
+  is_mod := local_creator or author is not null;
+  actor_key := case when local_creator then 'local_creator' else who::text end;
+  if action = 'list' then
+    return coalesce((select jsonb_agg(to_jsonb(item) order by item.created_at, item.id) from (
+      select r.id, r.body, r.label, r.creator, r.parent, r.created_at,
+        (select count(*) from news_private.reply_likes l where l.reply = r.id) likes,
+        exists(select 1 from news_private.reply_likes l where l.reply = r.id and l.actor = actor_key) liked,
+        coalesce((select jsonb_agg(name order by name) from (select distinct news_private.creator_label(l.actor, l.owner) name from news_private.reply_likes l where l.reply = r.id) creators where name is not null), '[]'::jsonb) creator_likes,
+        is_mod or r.owner = who can_delete
+      from news_private.replies r where (kind = 'suggestion' and r.comment = target) or (kind = 'post' and r.post = target)
+      order by r.created_at, r.id limit 200
+    ) item), '[]'::jsonb);
+  end if;
+  if not local_creator and (
+    who is null
+    or exists(select 1 from accounts_private.deleted_accounts where owner = who)
+    or not exists(select 1 from accounts_private.identities where owner = who and active)
+  ) then
+    raise exception 'Sign in to join the discussion' using errcode = '42501';
+  end if;
+  if action in ('like', 'delete') then
+    select * into selected_reply from news_private.replies where id = target for update;
+    if not found then raise exception 'Comment no longer exists'; end if;
+    if action = 'delete' then
+      if not is_mod and selected_reply.owner is distinct from who then raise exception 'Cannot delete this comment' using errcode = '42501'; end if;
+      delete from news_private.replies where id = target;
+    else
+      delete from news_private.reply_likes where reply = target and actor = actor_key;
+      if not found then insert into news_private.reply_likes values(target, actor_key, case when local_creator then null else who end); end if;
+    end if;
+    return '{}'::jsonb;
+  end if;
+  if action <> 'create' then raise exception 'Unknown discussion action'; end if;
+  if body is null or length(btrim(body)) not between 1 and 1000 then raise exception 'Write between 1 and 1000 characters'; end if;
+  insert into news_private.discussion_clock(actor) values(actor_key) on conflict do nothing;
+  select posted_at into last_post from news_private.discussion_clock where actor = actor_key for update;
+  if not local_creator then
+    insert into news_private.people(owner) values(who) on conflict do nothing;
+    select * into person from news_private.people where owner = who for update;
+    if person.blocked then return jsonb_build_object('error', 'Commenting has been blocked by the moderator.'); end if;
+    if person.banned_until > now() then return jsonb_build_object('error', 'Commenting is temporarily paused.', 'until', person.banned_until); end if;
+  end if;
+  if news_private.unkind(body) then
+    if local_creator then return jsonb_build_object('error', 'Kind Words Only'); end if;
+    until_time := now() + case when person.strikes + 1 >= 5 then interval '24 hours' else interval '10 minutes' end;
+    update news_private.people set strikes = strikes + 1, banned_until = until_time where owner = who;
+    return jsonb_build_object('kind', true, 'hours', person.strikes + 1 >= 5, 'until', until_time);
+  end if;
+  if greatest(last_post, person.last_comment) > now() - interval '3 seconds' then return jsonb_build_object('error', 'Please wait 3 seconds between comments.'); end if;
+  if kind = 'suggestion' then perform 1 from news_private.comments where id = target for update;
+  elsif kind = 'post' then perform 1 from news_private.posts where id = target for update;
+  else raise exception 'Invalid discussion'; end if;
+  if not found then raise exception 'This discussion no longer exists'; end if;
+  if reply_parent is not null and not exists(select 1 from news_private.replies r where r.id = reply_parent and ((kind = 'suggestion' and r.comment = target) or (kind = 'post' and r.post = target))) then raise exception 'Reply must belong to this discussion'; end if;
+  if (select count(*) from news_private.replies r where (kind = 'suggestion' and r.comment = target) or (kind = 'post' and r.post = target)) >= 200 then raise exception 'This discussion is full'; end if;
+  if local_creator then author := 'Nate'; end if;
+  if author is null then select handle into author from accounts_private.identities where owner = who; end if;
+  insert into news_private.replies(comment, post, parent, owner, label, creator, body) values(case when kind = 'suggestion' then target end, case when kind = 'post' then target end, reply_parent, case when local_creator then null else who end, author, is_mod, btrim(body)) returning id into result;
+  update news_private.discussion_clock set posted_at = now() where actor = actor_key;
+  if not local_creator then update news_private.people set last_comment = now() where owner = who; end if;
+  return jsonb_build_object('id', result);
+end $$;
+
 create or replace function news_private.unkind(body text) returns boolean
 language sql immutable set search_path = '' as $$
   with clean as (
-    select translate(lower(coalesce(body, '')), '013457@$!', 'oieastasi') as txt
+    -- Only translate '!' to 'i' when embedded inside a word (e.g. "sh!t"), never trailing punctuation ("fuck!", "f.u.c.k!").
+    select translate(
+      regexp_replace(lower(coalesce(body, '')), '([a-z0-9@$])!([a-z0-9@$])', '\1i\2', 'g'),
+      '013457@$', 'oieastas'
+    ) as txt
   ),
   tokens as (
     select regexp_replace(tok, '[^a-z]', '', 'g') as w
@@ -417,7 +509,7 @@ language sql immutable set search_path = '' as $$
   )
   or exists(
     select 1 from singles
-    where run ~ '(fuck|shit|bitch|cunt|nigger|nigga|faggot|retard|killyourself|motherfucker|asshole|bastard|whore|slut|chink|kike|tranny)'
+    where run ~ '(f+u+c+k+|s+h+i+t+|b+i+t+c+h+|c+u+n+t+|n+i+g{2,}e+r+|n+i+g{2,}a+|f+a+g{2,}o+t+|r+e+t+a+r+d+|k+i+l+l+y+o+u+r+s+e+l+f+|m+o+t+h+e+r+f+u+c+k+e+r+|a+s{2,}h+o+l+e+|b+a+s+t+a+r+d+|w+h+o+r+e+|s+l+u+t+|c+h+i+n+k+|k+i+k+e+|t+r+a+n{2,}y+)'
   )
   or exists(
     select 1 from clean
