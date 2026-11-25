@@ -1936,7 +1936,8 @@ const ArcadeMusic = (() => {
       const now = this.context.currentTime;
       if (voice.stopAt && voice.stopAt <= now + fade) return;
       voice.stopAt = now + fade;
-      voice.gain.gain.cancelAndHoldAtTime(now);
+      if (voice.gain.gain.cancelAndHoldAtTime) voice.gain.gain.cancelAndHoldAtTime(now);
+      else { voice.gain.gain.cancelScheduledValues(now); voice.gain.gain.setValueAtTime(voice.gain.gain.value, now); }
       voice.gain.gain.setTargetAtTime(0, now, fade / 4);
       voice.source.stop(voice.stopAt);
     }

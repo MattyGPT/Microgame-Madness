@@ -444,6 +444,12 @@ class PackagingTests(unittest.TestCase):
                 self.assertEqual(files, expected)
                 self.assertTrue((output / "balloon-pop").exists())
                 self.assertIn('balloon-pop/index.html', (output / "index.html").read_text())
+                for slug in ("balloon-pop", "pool"):
+                    sub_html = (output / slug / "index.html").read_text()
+                    self.assertIn('href="../"', sub_html)
+                    self.assertNotIn('href="/"', sub_html)
+                    for asset in ("style.css", "model.js", "progress.js", "game.js", "../leaderboards.js", "../accounts/sync.js"):
+                        self.assertRegex(sub_html, rf'"{re.escape(asset)}\?v=[a-f0-9]{{12}}"')
                 for name in PYTHON_SOURCES:
                     self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
 

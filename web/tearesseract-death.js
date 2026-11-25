@@ -18,7 +18,7 @@ const TearesseractDeath=(()=>{
     }
     return data;
   }
-  function distort(started,home,context,muted){
+  function distort(started,home,context,muted,ready=null){
     if(running)return;running=true;
     const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     const style=document.createElement('style');style.textContent=`html.tea-breach{scroll-behavior:auto!important}html.tea-breach body{filter:drop-shadow(14px 0 #e859a6) drop-shadow(-14px 0 #48d8e5) saturate(1.8)}.tea-breach-overlay{position:fixed;inset:0;z-index:2147483647;pointer-events:none;background:repeating-linear-gradient(0deg,#09051433 0 3px,transparent 3px 8px);color:#dca7ed;font:bold 22px monospace;display:grid;place-items:center;text-shadow:3px 0 #743d94,-3px 0 #155b6e}.tea-breach-tear{position:absolute;left:-5%;width:110%;height:5%;background:linear-gradient(90deg,#4ddaff20,#d07aff38,transparent);border-top:2px solid #82e8fa77;backdrop-filter:invert(.12) hue-rotate(75deg);box-shadow:0 5px 0 #06041480;transform:skewX(-14deg)}.tea-breach-overlay span{position:relative;z-index:1;background:#080612de;padding:20px;border:1px solid #bb78dd}`;
@@ -28,8 +28,8 @@ const TearesseractDeath=(()=>{
     let sound=context;
     if(!muted)try{
       sound??=new (window.AudioContext||window.webkitAudioContext)();sound.resume().catch(()=>{});
-      const duration=Math.max(.01,(started+3000-Date.now())/1000),buffer=sound.createBuffer(1,Math.ceil(sound.sampleRate*duration),sound.sampleRate),data=buffer.getChannelData(0);
-      data.set(scream(sound.sampleRate,duration,(Date.now()-started)/1000));
+      const duration=Math.min(3,Math.max(.01,(started+3000-Date.now())/1000)),buffer=sound.createBuffer(1,Math.ceil(sound.sampleRate*duration),sound.sampleRate),data=buffer.getChannelData(0);
+      data.set(scream(sound.sampleRate,duration,Math.max(0,(Date.now()-started)/1000)));
       const source=sound.createBufferSource(),gain=sound.createGain();source.buffer=buffer;gain.gain.value=.9;source.connect(gain).connect(sound.destination);source.start();
     }catch{}
     const timer=setInterval(()=>{
@@ -38,10 +38,18 @@ const TearesseractDeath=(()=>{
       if(!reduced){document.body?.style.setProperty('translate',`${Math.round((Math.random()-.5)*64)}px ${Math.round((Math.random()-.5)*28)}px`);document.body?.style.setProperty('transform',`skewX(${(Math.random()-.5)*3}deg) scale(1.025)`);overlay.style.clipPath=`inset(${Math.random()*3}% 0 ${Math.random()*3}% 0)`;for(const tear of tears){tear.style.top=`${Math.random()*100}%`;tear.style.height=`${1+Math.random()*9}%`;tear.style.translate=`${(Math.random()-.5)*90}px 0`;}if(home)scrollTo({top:Math.random()*Math.max(0,document.documentElement.scrollHeight-innerHeight),behavior:'instant'});}
       overlay.querySelector('span').textContent=elapsed%400<150?'TEARESSERACT // SIGNAL CORRUPTED':'CONNECTION SEVERED // REALITY BREACH';
     },45);
-    if(!home)setTimeout(()=>{location.replace(`./?tearesseract-breach=${started}${muted?'&breach-muted=1':''}`);},950);
+    if(!home){
+      const navigate=()=>location.replace(`./?tearesseract-breach=${started}${muted?'&breach-muted=1':''}`);
+      if(ready){
+        Promise.all([
+          new Promise(resolve=>setTimeout(resolve,950)),
+          Promise.race([Promise.resolve(ready).catch(()=>{}),new Promise(resolve=>setTimeout(resolve,2500))]),
+        ]).then(navigate);
+      }else setTimeout(navigate,950);
+    }
   }
-  function start(context,muted=false){distort(Date.now(),false,context,muted);}
-  const query=new URLSearchParams(location.search),stamp=Number(query.get('tearesseract-breach'));
-  if(stamp>0&&Date.now()-stamp<10000)distort(stamp,true,null,query.has('breach-muted'));
+  function start(context,muted=false,ready=null){distort(Date.now(),false,context,muted,ready);}
+  const query=new URLSearchParams(location.search),stamp=Number(query.get('tearesseract-breach')),age=Date.now()-stamp;
+  if(Number.isFinite(stamp)&&stamp>0&&age>=0&&age<10000)distort(stamp,true,null,query.has('breach-muted'));
   return {start,scream};
 })();

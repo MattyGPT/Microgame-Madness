@@ -910,8 +910,10 @@ function persist() {
   if (!applyingAccountProfile) accountApp?.preferences(saved);
   try {
     const json = JSON.stringify(saved);
-    if (!accountApp?.accountBound) localStorage.setItem(storageKey, json);
-    persistedProfileJSON = json;
+    if (!accountApp?.accountBound) {
+      localStorage.setItem(storageKey, json);
+      persistedProfileJSON = json;
+    }
     storageAvailable = true;
   } catch {
     storageAvailable = false;
@@ -1787,7 +1789,7 @@ async function loadGlobalScores() {
   }
 }
 async function publishGlobalScore(entry) {
-  if (modes[entry.mode]?.localOnly) return;
+  if (!Leaderboards.difficulties[entry.mode]) return;
   if (accountApp?.controller) {
     if (!accountApp.controller.state().profile.privacy?.leaderboard) {
       if (!accountApp.accountBound) {
@@ -2180,7 +2182,7 @@ function selectGame(mode) {
   setLocked(false);
   if (mode === "geomayhem") renderGeomayhemHub();
   showScores();
-  if (!config.localOnly) {
+  if (Leaderboards.difficulties[mode]) {
     $("leaderboard-game").value = mode;
     updateGlobalMultipliers();
     if (!$("global-panel").hidden) loadGlobalScores();
@@ -4139,7 +4141,7 @@ function saveWebsiteTime() {
   // A timer/pagehide save must not replace a newer profile written by another
   // tab or an import with this page's older in-memory copy.
   try {
-    if (storageAvailable && localStorage.getItem(storageKey) !== persistedProfileJSON) {
+    if (!accountApp?.accountBound && storageAvailable && localStorage.getItem(storageKey) !== persistedProfileJSON) {
       websiteTimeCheckpoint = now;
       return;
     }
@@ -4229,7 +4231,9 @@ const cardDecorationObserver = new IntersectionObserver(entries => {
   }
   syncCardDecorationVisibility();
 });
-animatedGameCards.forEach(card => {
+function registerAnimatedGameCard(card) {
+  if (!card?.classList?.contains("game-card") || animatedGameCards.includes(card)) return;
+  animatedGameCards.push(card);
   cardDecorationObserver.observe(card);
   card.addEventListener('animationstart', event => {
     if (active) return;
@@ -4237,7 +4241,21 @@ animatedGameCards.forEach(card => {
       if (animation.animationName === event.animationName && animation.playbackRate !== cardPlaybackRate)
         animation.updatePlaybackRate(cardPlaybackRate);
   });
-});
+}
+animatedGameCards.splice(0).forEach(registerAnimatedGameCard);
+const animatedGameGrid = document.querySelector(".game-grid");
+if (animatedGameGrid) {
+  new MutationObserver(records => {
+    let added = false;
+    for (const record of records)
+      for (const node of record.addedNodes)
+        if (node.nodeType === 1 && node.classList?.contains("game-card")) {
+          registerAnimatedGameCard(node);
+          added = true;
+        }
+    if (added) syncCardDecorationVisibility();
+  }).observe(animatedGameGrid, { childList: true });
+}
 document.addEventListener("visibilitychange", syncCardDecorationVisibility);
 syncCardDecorationVisibility();
 
