@@ -82,7 +82,7 @@ class Geomayhem:
     left, right, bottom, top = -465, 465, -352.5, 352.5
 
     def __init__(self, level=1, weapon="needle", rng=None, campaign=None):
-        if not isinstance(level, int) or not 1 <= level <= len(LEVELS):
+        if type(level) is not int or not 1 <= level <= len(LEVELS):
             raise ValueError(f"Choose a level from 1 to {len(LEVELS)}")
         if weapon not in ARMORY:
             raise ValueError("Unknown Geomayhem weapon")
@@ -454,7 +454,8 @@ class Geomayhem:
         if "split" in shot.traits:
             for angle in (shot.angle - .7, shot.angle, shot.angle + .7):
                 self._add_shot(Shot(enemy.x, enemy.y, math.cos(angle) * 280, math.sin(angle) * 280,
-                                    shot.damage * .45, shot.weapon, shot.stars, {"pierce"}, ttl=.65, angle=angle))
+                                    shot.damage * .45, shot.weapon, shot.stars, {"pierce"},
+                                    ttl=.65, hits={enemy.id}, angle=angle))
 
     def _add_shot(self, shot):
         if len(self.shots) < MAX_SHOTS:
@@ -652,6 +653,9 @@ class Geomayhem:
             trigger = bool(self.enemies) if automatic else "f" in keys
             if trigger and self.cooldowns[weapon_id] <= 0:
                 self.fire(weapon_id)
+                if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
+                    self.start_boss_defeat()
+                    return
         if self.break_left > 0:
             self.break_left = max(0, self.break_left - dt)
         else:
@@ -681,6 +685,10 @@ class Geomayhem:
             enemy.slow = max(0, enemy.slow - dt)
             enemy.frozen = max(0, enemy.frozen - dt)
             enemy.control_guard = max(0, enemy.control_guard - dt)
+        if any(e.kind == "boss" and e.hp <= 0 for e in self.enemies):
+            self.start_boss_defeat()
+            return
+        for enemy in self.enemies:
             if enemy.hp <= 0:
                 continue
             distance = math.hypot(self.x - enemy.x, self.y - enemy.y)

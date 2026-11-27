@@ -80,7 +80,7 @@ class KingAudio:
     """Short original growls and impacts, generated locally without extra packages."""
     def __init__(self, effects=None):
         self.player = shutil.which("paplay")
-        self.directory = tempfile.TemporaryDirectory(prefix="pumpkin-king-audio-")
+        self.directory = tempfile.TemporaryDirectory(prefix="pumpkin-king-audio-") if self.player else None
         self.processes = []
         self.paths = {}
         if self.player:
@@ -113,12 +113,25 @@ class KingAudio:
                     output.writeframes(samples)
                 self.paths[name] = path
 
+    @staticmethod
+    def _stop_process(process):
+        if process.poll() is not None:
+            return
+        process.terminate()
+        try:
+            process.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            try:
+                process.wait(timeout=1.0)
+            except subprocess.TimeoutExpired:
+                pass
+
     def play(self, name):
         self.processes = [p for p in self.processes if p.poll() is None]
         if name == "turtle_death":
             for process in self.processes:
-                process.terminate()
-                process.wait()
+                self._stop_process(process)
             self.processes.clear()
         if self.player and name in self.paths and len(self.processes) < 3:
             self.processes.append(subprocess.Popen([self.player, str(self.paths[name])],
@@ -126,10 +139,10 @@ class KingAudio:
 
     def close(self):
         for process in self.processes:
-            if process.poll() is None:
-                process.terminate()
-                process.wait()
-        self.directory.cleanup()
+            self._stop_process(process)
+        self.processes.clear()
+        if self.directory is not None:
+            self.directory.cleanup()
 
 
 class KingView:
@@ -137,6 +150,7 @@ class KingView:
         self.canvas = canvas
         self.items = {}
         self.previous = set()
+        self.dashed = set()
         self.audio = KingAudio() if audio else None
 
     def item(self, kind, coords, **options):
@@ -146,8 +160,14 @@ class KingView:
         if key not in self.items:
             self.items[key] = getattr(self.canvas, "create_"+kind)(*coords, **options)
         else:
+            if key in self.dashed and "dash" not in options:
+                options["dash"] = ()
             self.canvas.coords(self.items[key], *coords)
             self.canvas.itemconfigure(self.items[key], state="normal", **options)
+        if options.get("dash"):
+            self.dashed.add(key)
+        else:
+            self.dashed.discard(key)
         self.used.add(key)
         self.canvas.tag_raise(self.items[key])
         return self.items[key]

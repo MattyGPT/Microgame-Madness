@@ -301,6 +301,26 @@ class BrowserAdapterTests(unittest.TestCase):
         self.assertTrue(any(c["kind"] == "oval" for c in result["commands"]))
         json.dumps(result)
 
+    def test_draw_canvas_order_dash_normalization_and_hangman_bad_keys(self):
+        from web.bridge import DrawCanvas
+
+        canvas = DrawCanvas()
+        first = canvas.create_rectangle(0, 0, 10, 10, fill="a", dash=())
+        second = canvas.create_rectangle(0, 0, 10, 10, fill="b", dash=(2, 2))
+        third = canvas.create_rectangle(0, 0, 10, 10, fill="c")
+        self.assertNotIn("dash", canvas.items[first])
+        canvas.itemconfigure(second, dash=())
+        self.assertNotIn("dash", canvas.items[second])
+        canvas.tag_raise(first)
+        canvas.tag_lower(third)
+        self.assertEqual([c["fill"] for c in canvas.commands()], ["c", "b", "a"])
+
+        self.start("hangman")
+        before = self.session.snapshot()
+        for bad in ({"action": "guess"}, {"action": "guess", "key": None}, {"action": "guess", "key": 123}):
+            after = self.session.dispatch(bad)
+            self.assertEqual(after["remaining"], before["remaining"])
+
 
 class PackagingTests(unittest.TestCase):
     def test_changed_client_uses_a_new_url_instead_of_a_cached_old_script(self):

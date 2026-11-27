@@ -541,9 +541,13 @@ class ChaosRules:
             if self.chaos_damage(effect['damage'], kind):
                 for attribute, duration in effect.get('timers', {}).items():
                     setattr(self, attribute, max(getattr(self, attribute), duration))
-                if effect.get('burn'): self.burn_ticks, self.burn_in = effect['burn'], 2
-                if effect.get('poison'): self.poison_ticks, self.poison_in = effect['poison'], 3
-                if effect.get('regen'): self.regen_in = effect['regen']
+                if effect.get('burn'):
+                    if not self.burn_ticks: self.burn_in = 2
+                    self.burn_ticks = max(self.burn_ticks, effect['burn'])
+                if effect.get('poison'):
+                    if not self.poison_ticks: self.poison_in = 3
+                    self.poison_ticks = max(self.poison_ticks, effect['poison'])
+                if effect.get('regen'): self.regen_in = max(self.regen_in, effect['regen'])
             return
         if kind in MOTION_BLOCKS:
             self.chaos_damage(MOTION_BLOCKS[kind]['damage'], kind)
@@ -610,18 +614,28 @@ class ChaosRules:
             self.lives, self.alive, self.death_cause = 0, False, 'doom'
             return
         if self.chaos_damage(7 if kind == 'wild_seven' else 3 if kind in ('meteor', 'boulder') else 2 if kind in ('heavy', 'bomb', 'venom_fang', 'ember', 'frostbite', 'crossfire', 'drill', 'rocket') else 1, kind):
-            if kind == 'vertigo': self.vertigo_left = 3
+            if kind == 'vertigo': self.vertigo_left = max(self.vertigo_left, 3)
             if kind == 'tar': self.frost_left = max(self.frost_left, 4)
             if kind == 'frostbite': self.frost_left = max(self.frost_left, 1.5)
-            if kind in ('ember', 'crossfire'): self.burn_ticks, self.burn_in = 1, 2
-            if kind == 'crossfire': self.poison_ticks, self.poison_in = 1, 3
+            if kind in ('ember', 'crossfire'):
+                if not self.burn_ticks: self.burn_in = 2
+                self.burn_ticks = max(self.burn_ticks, 1)
+            if kind == 'crossfire':
+                if not self.poison_ticks: self.poison_in = 3
+                self.poison_ticks = max(self.poison_ticks, 1)
             if kind == 'rust': self.haste_left = self.slowfall_left = self.stasis_left = 0
-            if kind == 'drain': self.regen_in = 12
-            if kind == 'fire': self.burn_ticks, self.burn_in = 2, 2
-            if kind == 'venom_fang': self.poison_ticks, self.poison_in = 2, 3
-            if kind == 'poison': self.poison_ticks, self.poison_in = 3, 3
-            if kind == 'thorn': self.regen_in = 8
-            if kind == 'frost': self.frost_left = 2.5
+            if kind == 'drain': self.regen_in = max(self.regen_in, 12)
+            if kind == 'fire':
+                if not self.burn_ticks: self.burn_in = 2
+                self.burn_ticks = max(self.burn_ticks, 2)
+            if kind == 'venom_fang':
+                if not self.poison_ticks: self.poison_in = 3
+                self.poison_ticks = max(self.poison_ticks, 2)
+            if kind == 'poison':
+                if not self.poison_ticks: self.poison_in = 3
+                self.poison_ticks = max(self.poison_ticks, 3)
+            if kind == 'thorn': self.regen_in = max(self.regen_in, 8)
+            if kind == 'frost': self.frost_left = max(self.frost_left, 2.5)
 
     def push_player(self, block, movement):
         """Separate solid contact; only a block moving into a wall can crush."""
@@ -644,7 +658,7 @@ class ChaosRules:
         if blocked and dx*movement[0]+dy*movement[1] > 1e-9:
             self.chaos_damage(1 if block.kind == 'spike' else 3, block.kind)
 
-    def chaos_fall_speed(self, block):
+    def chaos_fall_speed(self, block, overlap_factor=None):
         if self.stasis_left and block.kind != 'horizontal': return 0
         easy_base = min(340, 100 + self.elapsed * 2.5)
         if block.kind == 'anvil':
@@ -667,7 +681,8 @@ class ChaosRules:
             base = easy_base / 3
         else:
             base = min(640, self.speed * block.speed_multiplier)
-        return base * (.6 if self.slowfall_left else 1) * (1.4 if self.curse_left else 1) * self.overlap_speed(block)
+        factor = self.overlap_speed(block) if overlap_factor is None else overlap_factor
+        return base * (.6 if self.slowfall_left else 1) * (1.4 if self.curse_left else 1) * factor
 
     def prepare_field(self, block):
         cycle = int((block.age + 1e-9) // 4)
@@ -675,13 +690,18 @@ class ChaosRules:
             block.field_order = tuple(self.rng.sample(FIELD_MODES, len(FIELD_MODES)))
             block.field_cycle = cycle
 
-    def overlap_speed(self, target):
-        from dodge_model import touches_block
+    def overlap_speed(self, target, sources=None):
+        candidates = self.blocks if sources is None else sources
+        if not candidates:
+            return 1
+        touches_block = None
         factors = set()
-        for source in self.blocks:
+        for source in candidates:
             if source is target or source.kind not in PASS_THROUGH_SPEEDS:
                 continue
             if target is self:
+                if touches_block is None:
+                    from dodge_model import touches_block
                 overlapping = touches_block(self.x, self.y, source)
             elif source.kind.startswith('elite_'):
                 half = (source.size+target.size)/2
@@ -690,7 +710,7 @@ class ChaosRules:
             else:
                 continue
             if overlapping: factors.add(PASS_THROUGH_SPEEDS[source.kind])
-        return math.prod(factors)
+        return math.prod(factors) if factors else 1
 
     def cannon_angles(self, block):
         return tuple(angle+block.age*block.rotation_speed for angle in block.cannons)
@@ -705,16 +725,20 @@ class ChaosRules:
             angle = self.rng.randrange(8)*math.pi/4
             block.cannons = (angle-math.pi/4, angle, angle+math.pi/4)
         for angle in self.cannon_angles(block):
+            if len(self.pellets) >= 240:
+                break
             dx, dy = math.cos(angle), math.sin(angle)
             self.pellets.append(Block(block.x+dx*block.size*.8, block.y+dy*block.size*.8,
                                       ((0, 0),), '#ffe394', cell_size=7, kind='blaster_pellet',
                                       velocity_x=dx*240, velocity_y=dy*240))
 
-    def update_pellets(self, step):
+    def update_pellets(self, step, elite_sources=None):
+        if not self.pellets:
+            return
         from dodge_model import touches_block
         remaining = []
         for pellet in self.pellets:
-            scale = 0 if self.pellet_freeze_left else self.overlap_speed(pellet)
+            scale = 0 if self.pellet_freeze_left else self.overlap_speed(pellet, elite_sources)
             pellet.x += pellet.velocity_x*step*scale
             pellet.y += pellet.velocity_y*step*scale
             if pellet.kind != 'reflected_pellet' and touches_block(self.x, self.y, pellet):
@@ -949,9 +973,11 @@ class ChaosRules:
                 self.spawn_chaos()
                 self.spawn_in += self.spawn_interval
             remaining, children = [], []
+            elite_speed_blocks = [b for b in self.blocks if b.kind in PASS_THROUGH_SPEEDS and b.kind.startswith('elite_')]
             for block in self.blocks:
                 old_x, old_y = block.x, block.y
-                movement_step = step*self.overlap_speed(block)
+                speed_factor = self.overlap_speed(block, elite_speed_blocks)
+                movement_step = step * speed_factor
                 if block.kind == 'boomerang' and not block.bounced and block.age >= 1:
                     block.bounced, block.rise_left = True, 1.2
                 if block.kind == 'rewind' and not block.bounced and block.age >= 1.2:
@@ -962,17 +988,18 @@ class ChaosRules:
                     fx, fy = block_forces.get(id(block), (0, 0))
                     block.x += fx * movement_step
                     block.y += fy * movement_step
+                    fall_speed = self.chaos_fall_speed(block, speed_factor)
                     if block.kind == 'horizontal':
-                        block.x += block.velocity_x*self.chaos_fall_speed(block)*step
+                        block.x += block.velocity_x*fall_speed*step
                     elif block.kind == 'anti_gravity':
-                        block.y += self.chaos_fall_speed(block)*step
+                        block.y += fall_speed*step
                     elif block.kind == 'corkscrew':
                         vertical = -.6 if int((block.age+1e-9)*2) % 2 else 1.6
-                        block.y -= self.chaos_fall_speed(block) * vertical * step
+                        block.y -= fall_speed * vertical * step
                     elif block.rise_left > 0:
-                        block.y += self.chaos_fall_speed(block) * step
+                        block.y += fall_speed * step
                         block.rise_left = max(0, block.rise_left-(0 if self.stasis_left else step))
-                    else: block.y -= self.chaos_fall_speed(block) * step
+                    else: block.y -= fall_speed * step
                     direction = (-1 if int((block.age+1e-9)*2) % 2 else 1) if block.kind == 'zigzag' else 1
                     if block.kind == 'sawtooth': direction = -1 if int((block.age+1e-9)*4)%2 else 1
                     if block.kind != 'horizontal': block.x += block.velocity_x * direction * movement_step
@@ -990,7 +1017,10 @@ class ChaosRules:
                         block.velocity_x *= -1
                     if block.kind != 'horizontal':
                         block.x = max(self.left+block.cell_size/2, min(self.right-block.cell_size/2-width, block.x))
+                was_mystery = block.kind == 'mystery'
                 self.reveal_mystery(block)
+                if was_mystery and block.kind in PASS_THROUGH_SPEEDS and block.kind.startswith('elite_'):
+                    elite_speed_blocks.append(block)
                 self.update_blaster(block, step)
                 self.apply_chaos_aura(block)
                 self.update_thunder(block)
@@ -1000,7 +1030,8 @@ class ChaosRules:
                     if block.flame_stage == 3: continue
                     if self.touches_fire_pattern(block):
                         if self.chaos_damage(3, block.kind):
-                            self.burn_ticks, self.burn_in = 1, 2
+                            if not self.burn_ticks: self.burn_in = 2
+                            self.burn_ticks = max(self.burn_ticks, 1)
                         if not self.alive: return
                 if block.kind in ('splitter', 'iceburst', 'firecracker') and block.age >= 1.4:
                     shard_kind = {'iceburst': 'frost', 'firecracker': 'fire'}.get(block.kind, 'normal')
@@ -1049,5 +1080,6 @@ class ChaosRules:
                     self.dodged += 1
                 else: remaining.append(block)
             self.blocks = (remaining+children)[:80]
-            self.update_pellets(step)
+            active_elite_speed = [b for b in self.blocks if b.kind in PASS_THROUGH_SPEEDS and b.kind.startswith('elite_')]
+            self.update_pellets(step, active_elite_speed)
             self.check_chaos_edges()

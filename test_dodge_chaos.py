@@ -1658,4 +1658,42 @@ class ChaosTests(unittest.TestCase):
             self.assertFalse(classic.alive)
             self.assertFalse(hasattr(classic, 'lives'))
 
+    def test_pellet_cap_debuff_monotonicity_and_exited_elite_speed_cleanup(self):
+        game = self.game()
+        blaster = Block(0, 100, ((0, 0),), CATALOG['blaster']['color'], kind='blaster', cannons=(0, 1, 2, 3), shot_in=0)
+        game.pellets = [Block(0, 120, ((0, 0),), '#ffe394', cell_size=7, kind='blaster_pellet') for _ in range(239)]
+        game.update_blaster(blaster, .01)
+        self.assertEqual(len(game.pellets), 240)
+
+        # Weaker burn/poison/frost/vertigo/regen hits must not downgrade stronger active timers.
+        game = self.game()
+        game.burn_ticks, game.burn_in = 4, 0.4
+        game.poison_ticks, game.poison_in = 5, 0.3
+        game.frost_left, game.vertigo_left, game.regen_in = 9.0, 9.0, 15.0
+        game.chaos_contact(self.block(game, 'fire'))
+        self.assertEqual((game.burn_ticks, game.burn_in), (4, 0.4))
+        game.invulnerable = 0
+        game.chaos_contact(self.block(game, 'poison'))
+        self.assertEqual((game.poison_ticks, game.poison_in), (5, 0.3))
+        game.invulnerable = 0
+        game.chaos_contact(self.block(game, 'frost'))
+        self.assertEqual(game.frost_left, 9.0)
+        game.invulnerable = 0
+        game.chaos_contact(self.block(game, 'vertigo'))
+        self.assertEqual(game.vertigo_left, 9.0)
+        game.invulnerable = 0
+        game.chaos_contact(self.block(game, 'thorn'))
+        self.assertEqual(game.regen_in, 15.0)
+
+        # An elite_turbo exiting below bottom on the current substep must not boost pellets.
+        game = self.game()
+        game.x, game.y = -200, 100
+        turbo = Block(0, game.bottom - 14, ((0, 0),), CATALOG['elite_turbo']['color'], kind='elite_turbo')
+        pellet = Block(0, game.bottom - 9, ((0, 0),), '#ffe394', cell_size=7, kind='blaster_pellet', velocity_x=100, velocity_y=0)
+        game.blocks = [turbo]
+        game.pellets = [pellet]
+        game.update(1 / 120, set())
+        self.assertEqual(game.blocks, [])
+        self.assertAlmostEqual(pellet.x, 100 / 120, places=4)
+
 if __name__ == '__main__': unittest.main()

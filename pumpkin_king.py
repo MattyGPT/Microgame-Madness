@@ -353,8 +353,13 @@ class PumpkinKing(BossCrush):
         self.heal_in -= step
         if self.heal_in <= 1e-9:
             self.heal_in += HEAL_EVERY
-            self.healing_pickups.append(CandyPickup(self.rng.uniform(-250, 250),
-                                                    self.rng.uniform(-200, 30), HEAL_LASTS,
+            hazards = tuple(self.contact_rectangles())
+            for _ in range(24):
+                px, py = self.rng.uniform(-250, 250), self.rng.uniform(-200, 30)
+                if not any(abs(px - hx) < (hw + 16) / 2 + 8 and abs(py - hy) < (hh + 16) / 2 + 8
+                           for hx, hy, hw, hh in hazards):
+                    break
+            self.healing_pickups.append(CandyPickup(px, py, HEAL_LASTS,
                                                     self.candy_rng.choice(CANDY_VARIANTS)))
 
     def update(self, dt, keys):

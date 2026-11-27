@@ -105,7 +105,8 @@ def main_menu():
             start_turtle_dodge()
         elif choice == "7":
             for difficulty in DIFFICULTIES:
-                show_scores(dodge_score_file(difficulty), f"TURTLE DODGE: {difficulty.upper()}")
+                score_key = "dodge_impossible" if difficulty == "impossible" else difficulty
+                show_scores(dodge_score_file(score_key), f"TURTLE DODGE: {difficulty.upper()}")
             for difficulty in BOSS_DIFFICULTIES:
                 show_scores(dodge_score_file(difficulty), f"BOSS CRUSH: {difficulty.upper()}")
             show_scores(dodge_score_file(PHASE_TWO), "IMPOSSIBLE PHASE 2: THE PUMPKIN KING")

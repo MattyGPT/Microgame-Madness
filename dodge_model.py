@@ -114,46 +114,109 @@ class Block:
         return [(self.x + x * self.cell_size, self.y + y * self.cell_size) for x, y in self.cells]
 
 
+def _point_in_polygon(px, py, polygon):
+    inside = False
+    x1, y1 = polygon[-1]
+    for x2, y2 in polygon:
+        if min(x1, x2) - 1e-9 <= px <= max(x1, x2) + 1e-9 and min(y1, y2) - 1e-9 <= py <= max(y1, y2) + 1e-9:
+            cross = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1)
+            if abs(cross) <= 1e-9 * (abs(x2 - x1) + abs(y2 - y1) + 1):
+                return True
+        if (y1 > py) != (y2 > py):
+            x_int = x1 + (py - y1) * (x2 - x1) / (y2 - y1)
+            if px <= x_int:
+                inside = not inside
+        x1, y1 = x2, y2
+    return inside
+
+
+def _segment_touches_rectangle(x1, y1, x2, y2, left, right, bottom, top):
+    dx, dy = x2 - x1, y2 - y1
+    t0, t1 = 0.0, 1.0
+    for p, q in ((-dx, x1 - left), (dx, right - x1), (-dy, y1 - bottom), (dy, top - y1)):
+        if p == 0:
+            if q < 0:
+                return False
+        else:
+            t = q / p
+            if p < 0:
+                if t > t1:
+                    return False
+                if t > t0:
+                    t0 = t
+            else:
+                if t < t0:
+                    return False
+                if t < t1:
+                    t1 = t
+    return t0 <= t1
+
+
 def polygon_touches_rectangle(polygon, left, right, bottom, top):
-    """Clip the turtle outline to a square; a nonempty result means contact."""
-    for axis, boundary, direction in ((0, left, 1), (0, right, -1),
-                                      (1, bottom, 1), (1, top, -1)):
-        if not polygon:
-            return False
-        clipped = []
-        previous = polygon[-1]
-        previous_inside = (previous[axis] - boundary) * direction >= 0
-        for current in polygon:
-            inside = (current[axis] - boundary) * direction >= 0
-            if inside != previous_inside:
-                fraction = (boundary - previous[axis]) / (current[axis] - previous[axis])
-                clipped.append(tuple(previous[i] + fraction * (current[i] - previous[i]) for i in (0, 1)))
-            if inside:
-                clipped.append(current)
-            previous, previous_inside = current, inside
-        polygon = clipped
-    return bool(polygon)
+    """Exact contact test between any simple polygon (convex or concave) and an axis-aligned rectangle."""
+    if not polygon or right < left or top < bottom:
+        return False
+    min_x = max_x = polygon[0][0]
+    min_y = max_y = polygon[0][1]
+    for x, y in polygon[1:]:
+        if x < min_x: min_x = x
+        elif x > max_x: max_x = x
+        if y < min_y: min_y = y
+        elif y > max_y: max_y = y
+    if max_x < left or min_x > right or max_y < bottom or min_y > top:
+        return False
+    x1, y1 = polygon[-1]
+    for x2, y2 in polygon:
+        if _segment_touches_rectangle(x1, y1, x2, y2, left, right, bottom, top):
+            return True
+        x1, y1 = x2, y2
+    return _point_in_polygon(left, bottom, polygon)
+
+
+def _segments_touch(ax, ay, bx, by, cx, cy, dx, dy):
+    if max(ax, bx) < min(cx, dx) - 1e-9 or max(cx, dx) < min(ax, bx) - 1e-9:
+        return False
+    if max(ay, by) < min(cy, dy) - 1e-9 or max(cy, dy) < min(ay, by) - 1e-9:
+        return False
+    o1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+    o2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax)
+    o3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx)
+    o4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx)
+    if (o1 > 0 and o2 < 0 or o1 < 0 and o2 > 0) and (o3 > 0 and o4 < 0 or o3 < 0 and o4 > 0):
+        return True
+    eps_ab = 1e-9 * (abs(bx - ax) + abs(by - ay) + 1)
+    eps_cd = 1e-9 * (abs(dx - cx) + abs(dy - cy) + 1)
+    return (
+        (abs(o1) <= eps_ab and min(ax, bx) - 1e-9 <= cx <= max(ax, bx) + 1e-9 and min(ay, by) - 1e-9 <= cy <= max(ay, by) + 1e-9)
+        or (abs(o2) <= eps_ab and min(ax, bx) - 1e-9 <= dx <= max(ax, bx) + 1e-9 and min(ay, by) - 1e-9 <= dy <= max(ay, by) + 1e-9)
+        or (abs(o3) <= eps_cd and min(cx, dx) - 1e-9 <= ax <= max(cx, dx) + 1e-9 and min(cy, dy) - 1e-9 <= ay <= max(cy, dy) + 1e-9)
+        or (abs(o4) <= eps_cd and min(cx, dx) - 1e-9 <= bx <= max(cx, dx) + 1e-9 and min(cy, dy) - 1e-9 <= by <= max(cy, dy) + 1e-9)
+    )
 
 
 def polygon_touches_triangle(polygon, triangle):
-    for a, b in zip(triangle, triangle[1:] + triangle[:1]):
-        if not polygon:
-            return False
-        def distance(point):
-            return (b[0]-a[0])*(point[1]-a[1])-(b[1]-a[1])*(point[0]-a[0])
-        clipped = []
-        previous = polygon[-1]
-        before = distance(previous)
-        for current in polygon:
-            after = distance(current)
-            if (before >= 0) != (after >= 0):
-                fraction = before/(before-after)
-                clipped.append(tuple(previous[i]+fraction*(current[i]-previous[i]) for i in (0, 1)))
-            if after >= 0:
-                clipped.append(current)
-            previous, before = current, after
-        polygon = clipped
-    return bool(polygon)
+    """Exact contact test between any simple polygon (convex or concave) and a triangle."""
+    if not polygon or len(triangle) < 3:
+        return False
+    p_min_x = p_max_x = polygon[0][0]
+    p_min_y = p_max_y = polygon[0][1]
+    for x, y in polygon[1:]:
+        if x < p_min_x: p_min_x = x
+        elif x > p_max_x: p_max_x = x
+        if y < p_min_y: p_min_y = y
+        elif y > p_max_y: p_max_y = y
+    t0, t1, t2 = triangle[0], triangle[1], triangle[2]
+    if (p_max_x < min(t0[0], t1[0], t2[0]) or p_min_x > max(t0[0], t1[0], t2[0])
+            or p_max_y < min(t0[1], t1[1], t2[1]) or p_min_y > max(t0[1], t1[1], t2[1])):
+        return False
+    t_edges = ((t0, t1), (t1, t2), (t2, t0))
+    x1, y1 = polygon[-1]
+    for x2, y2 in polygon:
+        for (tx1, ty1), (tx2, ty2) in t_edges:
+            if _segments_touch(x1, y1, x2, y2, tx1, ty1, tx2, ty2):
+                return True
+        x1, y1 = x2, y2
+    return _point_in_polygon(t0[0], t0[1], polygon) or _point_in_polygon(polygon[0][0], polygon[0][1], triangle)
 
 
 def fan_blades(block):

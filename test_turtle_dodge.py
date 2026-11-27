@@ -319,9 +319,48 @@ class CountdownTests(unittest.TestCase):
             self.app.game = DodgeGame(difficulty=mode)
             self.app.state = "over"
             self.app.space()
+            self.assertIsInstance(self.app.game, DodgeGame)
             self.assertEqual(self.app.game.difficulty, mode)
             self.assertTrue(self.app.game.alive)
             self.assertEqual(self.app.game.score, 0)
+
+    def test_concave_player_polygon_does_not_hit_side_indentation(self):
+        from dodge_model import PLAYER_POLYGON, polygon_touches_rectangle, polygon_touches_triangle
+        # (-8, 0) sits outside the turtle shell between the front and rear flippers.
+        self.assertFalse(polygon_touches_rectangle(PLAYER_POLYGON, -8, -8, 0, 0))
+        self.assertFalse(polygon_touches_rectangle(PLAYER_POLYGON, -8.5, -7.5, -0.5, 0.5))
+        # Center of the shell must still register contact.
+        self.assertTrue(polygon_touches_rectangle(PLAYER_POLYGON, 0, 0, 0, 0))
+        # Concave side pockets must also reject both CCW and CW triangles.
+        ccw_pocket = ((-7.5, -0.5), (-7.5, 0.5), (-8.5, 0.0))
+        cw_pocket = tuple(reversed(ccw_pocket))
+        self.assertFalse(polygon_touches_triangle(PLAYER_POLYGON, ccw_pocket))
+        self.assertFalse(polygon_touches_triangle(PLAYER_POLYGON, cw_pocket))
+        self.assertTrue(polygon_touches_triangle(PLAYER_POLYGON, ((-2, -2), (2, -2), (0, 2))))
+        self.assertTrue(polygon_touches_triangle(PLAYER_POLYGON, ((0, 2), (2, -2), (-2, -2))))
+
+    def test_desktop_chaos_sound_drain_and_boss_defeat_laugh_progression(self):
+        from boss_crush import BossCrush
+        self.app.arena_border_state = None
+        for name in ("arena_border", "draw_arena", "draw_boss", "chaos_view", "canvas"):
+            setattr(self.app, name, Mock())
+        self.app.message.items = []
+        self.app.game = DodgeGame(difficulty="chaos")
+        self.app.game.chaos_sound_events.append("boom")
+        self.app.state = "playing"
+        self.app.last_time = 10.0
+        with patch("turtle_dodge.time.monotonic", return_value=10.02):
+            self.app.tick()
+        self.assertEqual(self.app.game.chaos_sound_events, [])
+
+        boss = BossCrush(difficulty="mean")
+        boss.alive = False
+        self.app.game = boss
+        self.app.state = "over"
+        self.app.last_time = 20.0
+        with patch("turtle_dodge.time.monotonic", return_value=20.25):
+            self.app.tick()
+        self.assertGreater(boss.defeat_laugh_age, 0)
 
 
 if __name__ == "__main__":

@@ -125,3 +125,56 @@ class WrathThemeArtTests(unittest.TestCase):
             view.draw(game)
             marks = [c for c in view.canvas.commands() if c.get('text') == '!']
             self.assertEqual(len(marks), 8 if getattr(game, 'variant', None) == 'hard' else 4)
+
+    def test_update_healing_avoids_all_contact_hazards_across_retries(self):
+        from kings_wrath import KingsWrath
+        from unittest.mock import patch
+
+        class RiggedRng:
+            def __init__(self, coords):
+                self.coords = iter(coords)
+            def uniform(self, a, b):
+                return next(self.coords)
+
+        game = KingsWrath("royal_loom", rng=random.Random(1))
+        game.update(1.5, set())
+        hazards = tuple(game.contact_rectangles())
+        self.assertGreater(len(hazards), 2)
+        last_hx, last_hy = hazards[-1][0], min(30, max(-200, hazards[-1][1]))
+        first_hx, first_hy = hazards[0][0], min(30, max(-200, hazards[0][1]))
+        game.rng = RiggedRng([last_hx, last_hy, first_hx, first_hy, -240.0, -190.0])
+        game.healing_pickups.clear()
+        game.heal_in = 0
+        game.update_healing(.01)
+        self.assertEqual((game.healing_pickups[0].x, game.healing_pickups[0].y), (-240.0, -190.0))
+
+        for seed in range(50):
+            wrath = KingsWrath("royal_loom", rng=random.Random(seed))
+            wrath.update(1.5, set())
+            wrath.healing_pickups.clear()
+            wrath.heal_in = 0
+            wrath.update_healing(.01)
+            candy = wrath.healing_pickups[0]
+            self.assertFalse(any(
+                abs(candy.x - hx) < (hw + 16) / 2 + 8 and abs(candy.y - hy) < (hh + 16) / 2 + 8
+                for hx, hy, hw, hh in wrath.contact_rectangles()
+            ), f"Seed {seed} spawned overlapping candy at {(candy.x, candy.y)}")
+
+    def test_king_view_clears_sticky_dash_on_reuse_and_audio_tempdir_is_lazy(self):
+        from pumpkin_king_view import KingAudio
+        from unittest.mock import patch
+
+        canvas = DrawCanvas()
+        view = KingView(canvas, audio=False)
+        view.counts, view.used = {}, set()
+        dashed_id = view.item("line", (0, 0, 10, 10), fill="#fff", dash=(4, 4))
+        self.assertEqual(canvas.items[dashed_id].get("dash"), (4, 4))
+        view.counts, view.used = {}, set()
+        reused_id = view.item("line", (0, 0, 10, 10), fill="#fff")
+        self.assertEqual(reused_id, dashed_id)
+        self.assertNotIn("dash", canvas.items[reused_id])
+
+        with patch("pumpkin_king_view.shutil.which", return_value=None):
+            audio = KingAudio()
+            self.assertIsNone(audio.directory)
+            audio.close()
