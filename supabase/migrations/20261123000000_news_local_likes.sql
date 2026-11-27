@@ -1,5 +1,5 @@
 -- Local creator likes are written only by the private loopback server.
-alter table news_private.posts add column if not exists local_liked boolean not null default false;
+alter table news_private.posts add column local_liked boolean not null default false;
 create or replace function public.news_feed() returns jsonb language sql stable security definer set search_path='' as $$
  with totals as (
  select s.player_id,s.mode,round(sum(s.total::numeric*leaderboard_private.weight_quarters(s.mode,s.difficulty))/4) score,max(s.achieved_at) achieved
