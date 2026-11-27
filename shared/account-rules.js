@@ -114,7 +114,7 @@ const AccountRules = (() => {
       const value = raw[key];
       if (value === undefined || value === null) continue;
       requireValue(typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1000000000, `Invalid ${key}.`);
-      if (['rounds_completed','score','mistakes','remaining','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
+      if (['rounds_completed','score','mistakes','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
         requireValue(Number.isSafeInteger(value), `Invalid ${key}.`);
       clean[key] = value;
     }
@@ -144,7 +144,7 @@ const AccountRules = (() => {
     if (run.mode === 'hangman') {
       const maxAttempts = ({ easy: 10, medium: 7, hard: 5 })[run.difficulty];
       if (clean.mistakes !== undefined) requireValue(clean.mistakes <= maxAttempts, 'Invalid mistakes.');
-      if (clean.remaining !== undefined) requireValue(clean.remaining <= maxAttempts, 'Invalid remaining.');
+      if (clean.remaining !== undefined) requireValue(integer(clean.remaining, maxAttempts), 'Invalid remaining.');
       if (clean.mistakes !== undefined && clean.remaining !== undefined)
         requireValue(clean.mistakes + clean.remaining <= maxAttempts, 'Attempts exceed difficulty limit.');
     }
