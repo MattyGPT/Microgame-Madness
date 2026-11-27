@@ -405,3 +405,17 @@ test('expanded games use atomic score receipts and support nearby rankings',asyn
   await role('authenticated',first);
   const geo=(await db.query("select * from public.get_game_leaderboard('geomayhem')")).rows;assert.equal(geo[0].score,300);
 });
+
+test('Coin Drop rankings use highest world rather than summed receipts',async t=>{
+ const {db,role,apply}=await setup(t);
+ for(const [i,world] of [25,25,10,40].entries()){
+  await apply(first,op(`world_${i}`,'arcade',{event:'side-result',mode:'coindrop',score:world,highestUnlockedWorld:world,bankedCoins:1,won:true}));
+ }
+ await role('authenticated',first);
+ assert.equal((await db.query("select * from public.get_game_leaderboard('coindrop')")).rows[0].score,40);
+ await role('postgres');
+ const lifetime=(await db.query("select score,total from leaderboard_private.scores where mode='coindrop'")).rows;
+ assert.equal(Number(lifetime[0].total),40);
+ const seasons=(await db.query("select score,total from accounts_private.season_scores where mode='coindrop'")).rows;
+ for(const row of seasons){assert.equal(row.score,40);assert.equal(Number(row.total),40);}
+});

@@ -23,7 +23,7 @@ test('welcome is awarded once, points derive from medals, and saved profiles are
     assert.deepEqual(ids(clean.visit()), ['welcome']);
   }
   assert.equal(new Set(catalog.map(item => item.id)).size, catalog.length);
-  assert.equal(catalog.length, 302);
+  assert.equal(catalog.length, 303);
 });
 
 test('Determination combines losses across all seven minigames and awards crystal once at fifty', () => {
@@ -660,3 +660,14 @@ test('Endurance cannot unlock Key Rush medals or Cubies, including through resto
  const item=catalog.find(a=>a.id==='news_ideas_10');assert.equal(item.target,10);assert.equal(item.tier,'empyrorite');
  const tracker=new Tracker({stats:{creatorApprovedIdeas:10}});tracker.visit();assert.equal(tracker.data.unlocked.news_ideas_10,undefined);
  });
+
+ test('No Hands uses the rendered drawing stage across all difficulties',()=>{
+ for(const [difficulty,limit] of [['easy',10],['medium',7],['hard',5]]){
+  for(let mistakes=0;mistakes<limit;mistakes++){
+   const tracker=new Tracker();
+   const earned=ids(finish(tracker,'hangman',difficulty,{mistakes,remaining:limit-mistakes}));
+   assert.equal(earned.includes('hangman_no_hands'),Math.floor(mistakes*6/limit)<3);
+  }
+ }
+ assert.equal(catalog.find(x=>x.id==='hangman_no_hands').tier,'silver');
+});

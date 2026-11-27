@@ -1689,7 +1689,7 @@ function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
     `${modes[mode]?.difficulties[difficulty]?.[0] || (difficulty === "standard" ? "Standard" : difficulty.replace("level_", "Arena "))} ×${multiplier}`);
-  const scoring={balloon:'Completed run points × difficulty: Normal ×1, Hard ×2, Merciless ×3, Impossible ×4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
+  const scoring={balloon:'Completed run points × difficulty: Normal ×1, Hard ×2, Merciless ×3, Impossible ×4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'Score is your highest unlocked world (1–1,000). Replaying worlds does not add ranking points.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
   $("leaderboard-multipliers").textContent = scoring[mode] || (mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · "));
 }
 function initializeGlobalLeaderboards() {
@@ -1772,7 +1772,7 @@ async function loadGlobalScores() {
       portrait.innerHTML = CubieCustoms.thumbnail(cubie);
       name.classList.add("global-player-name");
       name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
-      score.textContent = `${entry.score}${({pool:" wins",keyboard:" rounds",coindrop:" coins",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
+      score.textContent = `${entry.score}${({pool:" wins",keyboard:" rounds",coindrop:" world",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(rank, portrait, name, score);
       $("global-scores").append(row);
@@ -1787,7 +1787,7 @@ async function loadGlobalScores() {
   }
 }
 async function publishGlobalScore(entry) {
-  if (modes[entry.mode]?.localOnly) return;
+  if (!Leaderboards.difficulties[entry.mode]) return;
   if (accountApp?.controller) {
     if (!accountApp.controller.state().profile.privacy?.leaderboard) {
       if (!accountApp.accountBound) {

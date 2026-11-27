@@ -295,14 +295,14 @@ const AccountRules = (() => {
         addBest(state,'pool','standard',state.player,score);
         finishedRun={id:operation.id,mode:'pool',difficulty:'standard',outcome:payload.won?'win':'loss',score,startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};
       } else if(payload.event==='side-result') {
-        const {mode,score,level=0,won=false}=payload;
+        const {mode,score,level=0,won=false,highestUnlockedWorld,bankedCoins}=payload;
         requireValue(achievements.sideGames.some(game=>game.mode===mode),'Unknown side game.');
-        requireValue(integer(score,mode==='tearesseract'?30:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
-        if(mode==='coindrop')requireValue(score===1&&won,'Only banked coins count.');
+        requireValue(integer(score,mode==='coindrop'?1000:mode==='tearesseract'?30:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
+        if(mode==='coindrop')requireValue(won && (highestUnlockedWorld===undefined ? score===1 : integer(highestUnlockedWorld,1000)&&highestUnlockedWorld>=1&&score===highestUnlockedWorld&&integer(bankedCoins,1)), 'Invalid highest unlocked world.');
         if(mode==='nanolab'||mode==='treasure')requireValue(score===(won?1:0),'Score does not match the result.');
         if(mode==='treasure')requireValue(level>=1,'A treasure round is required.');
         if(mode==='tearesseract'&&won)requireValue(score===30,'A victory requires all 30 attacks.');
-        tracker.sideResult(mode,{score,level,won});
+        tracker.sideResult(mode,{score,level,won,bankedCoins:mode==='coindrop'?(highestUnlockedWorld===undefined?1:bankedCoins):undefined});
         addBest(state,mode,'standard',state.player,score);
         finishedRun={id:operation.id,mode,difficulty:'standard',outcome:won?'win':'loss',score,
           startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,

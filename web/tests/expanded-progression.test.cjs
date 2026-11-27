@@ -26,3 +26,23 @@ test('completed Geomayhem expeditions are ranked, exits are not',()=>{
     const exit=Rules.apply(state,{...start,id:'exit',kind:'run.finish',payload:{outcome:'exit',snapshot:{score:20,over:false}}});assert.equal(exit.run.eligible,false);
   }
 });
+
+test('Coin Drop world scores retain personal best and count banked coins separately',()=>{
+ let state=Rules.initial();
+ for(const [i,world,coins] of [[0,25,0],[1,25,1],[2,10,1],[3,1000,0]]){
+  const result=Rules.apply(state,operation(`world-${i}`,'coindrop',world,{highestUnlockedWorld:world,bankedCoins:coins}));
+  state=result.state;
+  assert.equal(result.run.score,world);
+  assert.equal(state.scores['coindrop:standard'][0].score,i===3?1000:25);
+ }
+ assert.equal(state.achievements.stats.coinBanked,2);
+ for(const world of [0,1001,2.5])assert.throws(()=>Rules.apply(state,operation('bad','coindrop',world,{highestUnlockedWorld:world,bankedCoins:0})));
+});
+
+test('Coin Drop reports unlocked frontier rather than selected world, capped at 1000',()=>{
+ const C=require('../coin-drop.js'),g=Object.create(C.Controller.prototype),results=[];
+ g.identity='guest';g.onResult=(owner,mode,result)=>results.push(result);
+ for(const cleared of [0,24,999,1000]){g.p={map:0,cleared};g.reportWorld();}
+ assert.deepEqual(results.map(r=>r.score),[1,25,1000,1000]);
+ assert.ok(results.every(r=>r.bankedCoins===0&&r.highestUnlockedWorld===r.score));
+});
