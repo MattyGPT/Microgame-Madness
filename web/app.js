@@ -910,8 +910,10 @@ function persist() {
   if (!applyingAccountProfile) accountApp?.preferences(saved);
   try {
     const json = JSON.stringify(saved);
-    if (!accountApp?.accountBound) localStorage.setItem(storageKey, json);
-    persistedProfileJSON = json;
+    if (!accountApp?.accountBound) {
+      localStorage.setItem(storageKey, json);
+      persistedProfileJSON = json;
+    }
     storageAvailable = true;
   } catch {
     storageAvailable = false;
@@ -1689,7 +1691,7 @@ function updateGlobalMultipliers() {
   const mode = $("leaderboard-game").value;
   const labels = Object.entries(Leaderboards.multipliers[mode]).map(([difficulty, multiplier]) =>
     `${modes[mode]?.difficulties[difficulty]?.[0] || (difficulty === "standard" ? "Standard" : difficulty.replace("level_", "Arena "))} ×${multiplier}`);
-  const scoring={balloon:'Completed run points × difficulty: Normal ×1, Hard ×2, Merciless ×3, Impossible ×4.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'1 point per banked non-mini coin. Upgrade currency is separate.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'1 point per correctly found treasure. All rounds count.',tearesseract:'1 point per attack cleared in completed full encounters. Practice earns nothing.'};
+  const scoring={balloon:'Completed run points × difficulty: Normal ×1, Hard ×3, Merciless ×5, Impossible ×7.5.',pool:'1 point per completed 8-ball win against Penguin. Practice never ranks.',geomayhem:'Total expedition points from completed runs. All arenas ×1.',coindrop:'Score is your highest unlocked world (1–1,000). Replaying worlds does not add ranking points.',nanolab:'1 point per Nano Lab win. Closing a game earns nothing.',treasure:'Each cleared round awards its round number: 1 + 2 + … + 6 = 21 points.',tearesseract:'Each cleared attack awards its sequence number: 6 clears = 21 points. Practice earns nothing.',keyboard:'Round totals: 1 + 2 + … + 6 = 21 points. Progressive ×1 · Endurance ×0.5.'};
   $("leaderboard-multipliers").textContent = scoring[mode] || (mode === "wrath" ? "Easy ×0.5 · Normal ×1 · Hard ×2." : labels.join(" · "));
 }
 function initializeGlobalLeaderboards() {
@@ -1772,7 +1774,7 @@ async function loadGlobalScores() {
       portrait.innerHTML = CubieCustoms.thumbnail(cubie);
       name.classList.add("global-player-name");
       name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
-      score.textContent = `${entry.score}${({pool:" wins",keyboard:" rounds",coindrop:" coins",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
+      score.textContent = mode === "coindrop" ? `World ${entry.score}` : `${entry.score}${({pool:" wins",nanolab:" wins"})[mode] || " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(rank, portrait, name, score);
       $("global-scores").append(row);
@@ -1787,7 +1789,7 @@ async function loadGlobalScores() {
   }
 }
 async function publishGlobalScore(entry) {
-  if (modes[entry.mode]?.localOnly) return;
+  if (!Leaderboards.difficulties[entry.mode]) return;
   if (accountApp?.controller) {
     if (!accountApp.controller.state().profile.privacy?.leaderboard) {
       if (!accountApp.accountBound) {
@@ -2180,7 +2182,7 @@ function selectGame(mode) {
   setLocked(false);
   if (mode === "geomayhem") renderGeomayhemHub();
   showScores();
-  if (!config.localOnly) {
+  if (Leaderboards.difficulties[mode]) {
     $("leaderboard-game").value = mode;
     updateGlobalMultipliers();
     if (!$("global-panel").hidden) loadGlobalScores();
@@ -2477,7 +2479,7 @@ function render() {
       }),
     );
     $("typing-feedback").textContent =
-      `${s.mistakes} mistakes · ${s.score} rounds completed`;
+      `${s.mistakes} mistakes · ${s.rounds_completed ?? s.score} rounds completed · ${s.score} points`;
     setTextIfChanged("metric", `${s.remaining.toFixed(1)}s`);
     $("timer-bar").style.width =
       `${Math.max(0, Math.min(100, (s.remaining / s.time_limit) * 100))}%`;
@@ -2509,7 +2511,7 @@ function render() {
       copy = `The word was ${s.word.replaceAll(" ", "")}.${s.random_mode ? ` Difficulty: ${modes.hangman.difficulties[s.difficulty][0]}.` : ""} Score: ${s.score}.`;
     if (selected === "keyboard") {
       title = "Time’s up!";
-      copy = `${s.score} rounds completed. Your fingers earned a rematch.`;
+      copy = `${s.rounds_completed ?? s.score} rounds completed · ${s.score} points. Your fingers earned a rematch.`;
     }
     if (lastCashReward) copy += ` +${(lastCashReward / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 })} Cubie Cash earned.`;
     if (selected === "core_practice") {
@@ -2753,6 +2755,7 @@ function draw(s) {
     BossArena.draw(ctx,{level:s.level,bounds:s.bounds,time:s.fight_elapsed,phase:s.boss.phase,radius:s.boss_arena_radius,
       reduced:trailReducedMotion.matches||!!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))});
   for (const command of s.commands) {
+    const turtleAngle = s.player?.angle ?? (s.mode === "dodge" && s.difficulty === "chaos" ? chaosTurtleAngle : 0);
     if (command.role === "player" && TurtleTrails.allowedModes.has(s.mode) && !(trailReducedMotion.matches || (saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion"))))
       turtleTrailField.draw(ctx, TurtleTrails.selected(CrownPacks.equipped("trail", saved.turtleTrail), saved.shop.owned));
     const turtleCustom = command.role === "player" && TurtleTrails.allowedModes.has(s.mode)
@@ -2760,7 +2763,7 @@ function draw(s) {
     if (turtleCustom && s.player?.visible) {
       TurtleCustoms.draw(ctx, turtleCustom, s.player.x, -s.player.y,
         s.paused ? 0 : performance.now() / 1000,
-        s.mode === "dodge" && s.difficulty === "chaos" ? chaosTurtleAngle : 0,
+        turtleAngle,
         trailReducedMotion.matches || !!(saved.preferences?.reducedMotion || globalThis.ArcadeSettings?.get("motion")));
       continue;
     }
@@ -2803,11 +2806,11 @@ function draw(s) {
       drawGeomayhemCommand(ctx,command);
       continue;
     }
-    const turningTurtle = command.role === "player" && s.mode === "dodge" && s.difficulty === "chaos";
+    const turningTurtle = command.role === "player" && turtleAngle !== 0;
     if (turningTurtle) {
       ctx.save();
       ctx.translate(s.player.x, -s.player.y);
-      ctx.rotate(chaosTurtleAngle);
+      ctx.rotate(turtleAngle);
       ctx.translate(-s.player.x, s.player.y);
     }
     ctx.beginPath();
@@ -3478,7 +3481,10 @@ function setSoundEnabled(value) {
   $("sound").setAttribute("aria-pressed", String(soundOn));
   if (audioMaster && audioContext.state !== "closed") {
     if (audioMaster.gain.cancelAndHoldAtTime) audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
-    else audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
+    else {
+      audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
+      audioMaster.gain.setValueAtTime(audioMaster.gain.value, audioContext.currentTime);
+    }
     audioMaster.gain.linearRampToValueAtTime(soundOn ? (globalThis.ArcadeSettings?.get("volume") ?? 100)/100 : 0, audioContext.currentTime + .02);
   }
   syncMusic();
@@ -4136,10 +4142,14 @@ let websiteTimeCheckpoint = performance.now();
 function saveWebsiteTime() {
   if (accountApp?.resetting) return;
   const now = performance.now();
+  if (accountApp?.blocked || (accountApp?.accountBound && !accountApp.signedIn)) {
+    websiteTimeCheckpoint = now;
+    return;
+  }
   // A timer/pagehide save must not replace a newer profile written by another
   // tab or an import with this page's older in-memory copy.
   try {
-    if (storageAvailable && localStorage.getItem(storageKey) !== persistedProfileJSON) {
+    if (!accountApp?.accountBound && storageAvailable && localStorage.getItem(storageKey) !== persistedProfileJSON) {
       websiteTimeCheckpoint = now;
       return;
     }
@@ -4229,7 +4239,9 @@ const cardDecorationObserver = new IntersectionObserver(entries => {
   }
   syncCardDecorationVisibility();
 });
-animatedGameCards.forEach(card => {
+function registerAnimatedGameCard(card) {
+  if (!card?.classList?.contains("game-card") || animatedGameCards.includes(card)) return;
+  animatedGameCards.push(card);
   cardDecorationObserver.observe(card);
   card.addEventListener('animationstart', event => {
     if (active) return;
@@ -4237,7 +4249,21 @@ animatedGameCards.forEach(card => {
       if (animation.animationName === event.animationName && animation.playbackRate !== cardPlaybackRate)
         animation.updatePlaybackRate(cardPlaybackRate);
   });
-});
+}
+animatedGameCards.splice(0).forEach(registerAnimatedGameCard);
+const animatedGameGrid = document.querySelector(".game-grid");
+if (animatedGameGrid) {
+  new MutationObserver(records => {
+    let added = false;
+    for (const record of records)
+      for (const node of record.addedNodes)
+        if (node.nodeType === 1 && node.classList?.contains("game-card")) {
+          registerAnimatedGameCard(node);
+          added = true;
+        }
+    if (added) syncCardDecorationVisibility();
+  }).observe(animatedGameGrid, { childList: true });
+}
 document.addEventListener("visibilitychange", syncCardDecorationVisibility);
 syncCardDecorationVisibility();
 
@@ -4529,7 +4555,7 @@ function showCrownCelebration() {
   if(!dialog){
     dialog=document.createElement('dialog');dialog.id='crown-celebration';dialog.className='account-dialog crown-celebration';
     dialog.setAttribute('aria-labelledby','crown-celebration-title');dialog.setAttribute('aria-describedby','crown-celebration-note');
-    dialog.innerHTML='<div class="crown-celebration-emblem" aria-hidden="true"><svg viewBox="0 0 80 64" width="80" height="64"><path d="M9 13l17 14L40 6l14 21 17-14-9 38H18Z" fill="#ffdc78" stroke="#fff1bd" stroke-width="2"/><path d="M20 44h40M20 56h40" stroke="#b98236" stroke-width="5"/><path d="m40 26 6 8-6 8-6-8Z" fill="#fff8dc"/></svg></div><p class="crown-celebration-kicker">EXCLUSIVE · LEADERBOARD CHAMPION</p><h2 id="crown-celebration-title">You’re #1!</h2><p id="crown-celebration-note">Your crown packs are ready to equip. Each includes an exclusive Cubie, turtle, and turtle trail. Keep first place to keep using them!</p><div id="crown-celebration-packs"></div><div class="crown-celebration-actions"><button id="crown-celebration-view" type="button">View Exclusive packs</button><button id="crown-celebration-close" type="button" autofocus>Keep playing</button></div>';
+    dialog.innerHTML='<div class="crown-celebration-emblem" aria-hidden="true"><svg viewBox="0 0 80 64" width="80" height="64"><path d="M9 13l17 14L40 6l14 21 17-14-9 38H18Z" fill="#ffdc78" stroke="#fff1bd" stroke-width="2"/><path d="M20 44h40M20 56h40" stroke="#b98236" stroke-width="5"/><path d="m40 26 6 8-6 8-6-8Z" fill="#fff8dc"/></svg></div><p class="crown-celebration-kicker">EXCLUSIVE · LEADERBOARD CHAMPION</p><h2 id="crown-celebration-title">You’re #1!</h2><p id="crown-celebration-note">Your crown packs are ready to equip. Each includes an exclusive Cubie, turtle, and turtle trail. Keep first place to keep using them!</p><div id="crown-celebration-packs"></div><p id="crown-celebration-status" role="status"></p><div class="crown-celebration-actions"><button id="crown-celebration-view" type="button">View Exclusive packs</button><button id="crown-celebration-close" type="button" autofocus>Keep playing</button></div>';
     document.body.append(dialog);
     $('crown-celebration-close').onclick=()=>dialog.close();
     $('crown-celebration-view').onclick=()=>{dialog.close();selectGame('customs');$('customs-search').value='';cubieGroup='exclusive';updateCustomsSearch();$('cubie-groups-back').focus();};
@@ -4543,8 +4569,29 @@ function showCrownCelebration() {
       const figure=document.createElement('figure');figure.innerHTML=CrownPacks.art({crown:pack.mode,id:`crown_${pack.mode}_${kind}`},kind);
       const caption=document.createElement('figcaption');caption.textContent=label;figure.append(caption);art.append(figure);
     }
-    card.append(title,name,art);return card;
+    const equip=document.createElement('button');equip.type='button';equip.className='crown-celebration-equip';equip.dataset.mode=pack.mode;
+    equip.setAttribute('aria-label',`Equip ${pack.name} pack`);
+    equip.onclick=()=>{
+      if(accountApp?.controller?.state().owner!==owner||!CrownPacks.has(pack.mode)){dialog.close();return;}
+      for(const slot of ['cubie','turtle','trail'])CrownPacks.equip(slot,`crown_${pack.mode}_${slot}`);
+      applyCubieCustom();persist();
+      if(selected==='customs')renderCustoms();
+      if(['turtles','trails'].includes(selected))renderEquipmentCollection();
+      updateEquipButtons();
+      $('crown-celebration-status').textContent=`${pack.name} equipped: Cubie, turtle, and turtle trail.`;
+    };
+    card.append(title,name,art,equip);return card;
   }));
+  function updateEquipButtons(){
+    for(const button of dialog.querySelectorAll('.crown-celebration-equip')){
+      const pack=packs.find(p=>p.mode===button.dataset.mode);
+      const wearing=['cubie','turtle','trail'].every(slot=>CrownPacks.equipped(slot,null)===`crown_${button.dataset.mode}_${slot}`);
+      button.textContent=wearing?'Equipped ✓':'Equip pack';button.disabled=wearing;
+      if(pack)button.setAttribute('aria-label',wearing?`${pack.name} pack equipped`:`Equip ${pack.name} pack`);
+    }
+  }
+  updateEquipButtons();
+  $('crown-celebration-status').textContent='';
   dialog.dataset.owner=owner;dialog.dataset.modes=JSON.stringify(packs.map(g=>g.mode));
   dialog.showModal();
   CrownPacks.acknowledge(packs.map(g=>g.mode));

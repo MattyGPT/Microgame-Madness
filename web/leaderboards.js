@@ -10,7 +10,7 @@ const Leaderboards = (() => {
     wrath: ['color_memory', 'bone_gauntlet', 'rotating_rings', 'magenta_fingers', 'chaos', 'royal_slams', 'haunted_quadrants', 'starfall_verdict', 'pendulum_court', 'crown_chess', 'mirror_lances', 'briar_pursuit', 'eclipse_waltz', 'resonant_bells', 'royal_loom', 'random_order'].flatMap(attack => [attack, `${attack}__easy`, `${attack}__hard`]),
   });
   const multipliers = Object.freeze({
-    geomayhem:Object.fromEntries(Array.from({length:20},(_,i)=>[`level_${i+1}`,1])),balloon:{normal:1,hard:2,merciless:3,impossible:4},pool:{standard:1},coindrop:{standard:1},nanolab:{standard:1},tearesseract:{standard:1},treasure:{standard:1},
+    geomayhem:Object.fromEntries(Array.from({length:20},(_,i)=>[`level_${i+1}`,1])),balloon:{normal:1,hard:3,merciless:5,impossible:7.5},pool:{standard:1},coindrop:{standard:1},nanolab:{standard:1},tearesseract:{standard:1},treasure:{standard:1},
     hangman: { easy: 1, medium: 2.5, hard: 4 },
     keyboard: { progressive: 1, endurance: .5 },
     dodge: { easy: 1, normal: 1.75, chaos: 2.5, hard: 3.5, merciless: 4.75, impossible: 5.5 },
@@ -23,7 +23,8 @@ const Leaderboards = (() => {
       && typeof entry.player === 'string' && entry.player.trim().length >= 1
       && entry.player.length <= 24 && !/[\x00-\x1f\x7f]/.test(entry.player)
       && Number.isSafeInteger(entry.score) && entry.score >= 0 && entry.score <= 1000000000
-      && (entry.mode !== 'hangman' || entry.score <= ({ easy: 10, medium: 7, hard: 5 })[entry.difficulty]);
+      && (entry.mode !== 'hangman' || entry.score <= ({ easy: 10, medium: 7, hard: 5 })[entry.difficulty])
+      && (entry.mode !== 'coindrop' || (entry.score >= 1 && entry.score <= 1000));
   }
   class Client {
     constructor(config = {}, { storage, fetch = globalThis.fetch, now = Date.now } = {}) {

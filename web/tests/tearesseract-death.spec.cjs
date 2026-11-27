@@ -25,3 +25,13 @@ test('death glitches the encounter, returns to the arcade, and reloads once afte
   expect(requests).toHaveLength(2);
   expect(errors).toEqual([]);
 });
+
+test('future breach timestamp is ignored without locking the arcade', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => localStorage.setItem('microgame-madness.welcome.v1', 'complete'));
+  await page.goto('/?tearesseract-breach=99999999999999');
+  await expect(page.locator('.tea-breach-overlay')).toHaveCount(0);
+  await expect(page.locator('html')).not.toHaveClass(/tea-breach/);
+  expect(errors).toEqual([]);
+});

@@ -27,7 +27,13 @@ const JackpotSlots = (() => {
     }
   }
   function inView(element) {
-    if (document.hidden || !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    if (document.hidden) return false;
+    if (typeof element.checkVisibility === 'function') {
+      if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
+    } else {
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) <= 0) return false;
+    }
     const r = element.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return false;
     const x = r.left + r.width / 2, y = r.top + r.height / 2;

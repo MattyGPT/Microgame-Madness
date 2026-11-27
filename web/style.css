@@ -5116,11 +5116,7 @@ svg.blushing .cubie-blush{opacity:.95}
   border-color: var(--selection-edge);
   box-shadow: 0 0 14px var(--selection-glow), inset 0 0 0 1px #dfffee20;
 }
-.game-grid > .game-card:is(
-  [data-game="jukebox"], [data-game="customs"], [data-game="turtles"],
-  [data-game="trails"], [data-game="shop"], [data-game="guide"],
-  #news-open, #autumn-open
-) {
+.game-grid > .game-card[data-card-kind="utility"] {
   --selection-edge: #f38fc6;
   --selection-glow: #f57bbb26;
   --selection-frame: linear-gradient(125deg,
@@ -5196,3 +5192,49 @@ svg.blushing .cubie-blush{opacity:.95}
   -webkit-text-fill-color: transparent;
   paint-order: stroke fill;
 }
+
+/* Glossy rainbow balloon with a gentle tethered drift. */
+.balloon-card-logo { overflow: visible; filter: drop-shadow(0 3px 5px #16112355); }
+.balloon-card-float { transform-origin: 50px 74px; animation: balloon-card-drift 4.8s ease-in-out infinite; }
+.balloon-card-string { transform-origin: 50px 76px; animation: balloon-card-string 4.8s ease-in-out infinite; }
+.balloon-card-shadow { transform-origin: 50px 104px; animation: balloon-card-shadow 4.8s ease-in-out infinite; }
+@keyframes balloon-card-drift {
+  0%, 100% { transform: translate(0, 1px) rotate(-4deg); }
+  50% { transform: translate(2px, -4px) rotate(4deg); }
+}
+@keyframes balloon-card-string {
+  0%, 100% { transform: skewX(5deg); }
+  50% { transform: skewX(-8deg); }
+}
+@keyframes balloon-card-shadow {
+  0%, 100% { transform: scaleX(1); opacity: .28; }
+  50% { transform: scaleX(.8); opacity: .17; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balloon-card-logo * { animation: none !important; }
+}
+html.account-reduced-motion .balloon-card-logo * { animation: none !important; }
+
+/* Nano Lab: glass, luminous reagent, and a slow stream of bubbles. */
+.nano-lab-logo { overflow: visible; filter: drop-shadow(0 4px 5px #110a2455); }
+.nano-bubble { animation: nano-bubble-rise 3.4s ease-in infinite; }
+.nano-bubble-two { animation-delay: -1.5s; animation-duration: 4s; }
+.nano-bubble-three { animation-delay: -2.4s; animation-duration: 3s; }
+.nano-lab-spark { animation: nano-spark-glow 3s ease-in-out infinite; }
+@keyframes nano-bubble-rise {
+  0% { transform: translateY(3px); opacity: 0; }
+  20% { opacity: .85; }
+  80% { opacity: .65; }
+  100% { transform: translateY(-24px); opacity: 0; }
+}
+@keyframes nano-spark-glow { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .nano-lab-logo * { animation: none !important; }
+}
+html.account-reduced-motion .nano-lab-logo * { animation: none !important; }
+
+.crown-celebration-equip{margin-top:16px;min-height:44px;padding:10px 22px;border:1px solid #ffe5a2;border-radius:10px;background:#ffdc78;color:#282013;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.crown-celebration-equip:hover:not(:disabled){background:#ffe9ad}
+.crown-celebration-equip:disabled{background:#332e28;color:#f5dfab;border-color:#88764c;cursor:default}
+#crown-celebration-status{font-size:13px;color:#ffe6a6}
+#crown-celebration-status:empty{display:none}

@@ -35,8 +35,8 @@ test('Tearesseract saves full encounters to the same profile but excludes practi
   await page.route('**/tearesseract.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:(await response.text()).replace('previewMusic();\n})();',"window.teaPractice=()=>start(0);window.teaResult=(score,won)=>{rankedClears=score;enter(won?'ending':'dead');};\npreviewMusic();\n})();")});});
   await openGame(page);await page.evaluate(()=>accountApp.ready);
   await page.goto('/tearesseract.html');await page.locator('#start').click();await expect(page.locator('#fight')).toHaveAttribute('data-phase','intro');
-  await page.evaluate(()=>window.teaResult(3,false));await expect(page.locator('#tea-progress')).toContainText('3 attacks cleared');
+  await page.evaluate(()=>window.teaResult(6,false));await expect(page.locator('#tea-progress')).toContainText('6 attacks cleared · 21 points');
   await page.evaluate(()=>window.teaPractice());await expect(page.locator('#fight')).toHaveAttribute('data-phase','attack');await page.evaluate(()=>window.teaResult(30,true));
   await page.goto('/');await expect(page.locator('#runtime-status')).toContainText('All games ready');await page.evaluate(()=>accountApp.ready);
-  expect(await page.evaluate(()=>achievementTracker.data.stats.teaAttacksBest)).toBe(3);expect(await page.evaluate(()=>achievementTracker.data.stats.teaWins)).toBe(0);
+  expect(await page.evaluate(()=>achievementTracker.data.stats.teaAttacksBest)).toBe(6);expect(await page.evaluate(()=>achievementTracker.data.stats.teaWins)).toBe(0);
 });

@@ -6,7 +6,7 @@
  function stopMusic(){clearInterval(musicTimer);musicTimer=null;if(audio){audio.close().catch(()=>{});audio=null;master=null;}$('autumn-music').textContent='♫ Play lo-fi';$('autumn-music').setAttribute('aria-pressed','false');}
  async function startMusic(){
   const Context=window.AudioContext||window.webkitAudioContext;if(!Context)throw Error('Audio is unavailable in this browser.');
-  const started=audio=new Context();await started.resume();if(audio!==started||!room.open)return;
+  const started=audio=new Context();await started.resume();if(audio!==started||!room.open){started.close().catch(()=>{});if(audio===started)audio=null;return;}
   master=audio.createGain();master.gain.value=Number($('autumn-volume').value)/100*.45;
   const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=2600;master.connect(filter);filter.connect(audio.destination);
   const chords=[[48,55,59,62,67],[45,52,55,59,64],[41,48,52,57,60],[43,50,53,57,62]];
@@ -38,8 +38,8 @@
  document.addEventListener('arcade-settings-change',()=>{$('autumn-volume').value=ArcadeSettings.get('autumnVolume');$('autumn-volume').oninput?.();});
  $('autumn-volume').oninput=()=>{if(master&&audio)master.gain.setTargetAtTime(Number($('autumn-volume').value)/100*.45,audio.currentTime,.08);};
  $('autumn-compose').onsubmit=async e=>{
-  e.preventDefault();if(!allowed)return;const button=e.submitter,version=generation;button.disabled=true;
+  e.preventDefault();if(!allowed)return;const button=e.submitter||$('autumn-compose').querySelector('[type=submit]'),version=generation;if(button)button.disabled=true;
   try{const rows=await api().chat($('autumn-message').value);if(version!==generation)return;render(rows);$('autumn-message').value='';$('autumn-status').textContent='';$('autumn-messages').scrollTop=$('autumn-messages').scrollHeight;}
-  catch(err){if(version===generation)$('autumn-status').textContent=err.message;}finally{button.disabled=false;}
+  catch(err){if(version===generation)$('autumn-status').textContent=err.message;}finally{if(button)button.disabled=false;}
  };
 })();

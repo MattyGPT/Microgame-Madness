@@ -19,7 +19,7 @@ test('Endurance plays six-character rounds with a fixed timer on keyboard and to
         await page.getByRole('button', { name: `Type ${letter}`, exact: true }).tap();
       }
     } else await page.keyboard.type(sequence);
-    await expect(page.locator('#score')).toHaveText(String(round + 1));
+    await expect(page.locator('#score')).toHaveText(String((round + 1) * (round + 2) / 2));
     expect(await page.evaluate(() => snapshot.time_limit)).toBe(8);
   }
   const medals = await page.evaluate(() => achievementTracker.data.unlocked);

@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 import json
+import math
 import random
 from chaos_dodge import elite_fill_color, FIELD_RADII, FIELD_LABELS, field_mode, block_is_solid, FIRE_PATTERNS
 from chaos_dodge import AURA_EFFECTS, AURA_RADIUS, catalog as chaos_catalog
@@ -12,7 +13,7 @@ from dodge_model import DodgeGame, PLAYER_POLYGON, BLOCK_OUTLINE_WIDTH, block_ou
 from boss_crush import BossCrush
 from pumpkin_king import PumpkinKing
 from kings_wrath import KingsWrath
-from singularity_core import ATTACKS, SingularityCore
+from singularity_core import ATTACKS, BOX_CENTER, SingularityCore
 from singularity_practice import PRACTICE_ATTACKS, SingularityCutscene, SingularityPractice
 from singularity_core_view import draw_core
 from pumpkin_king_view import KingView
@@ -214,7 +215,7 @@ class BrowserGame:
                           remaining=game.max_attempts-game.mistakes,
                           picture=hangman_picture(game.mistakes, game.max_attempts))
         elif self.mode == "keyboard":
-            result.update(over=game.result is not None, won=False, score=self.completed,
+            result.update(over=game.result is not None, won=False, score=self.completed*(self.completed+1)//2, rounds_completed=self.completed,
                           sequence=game.sequence, matched=game.matched, mistakes=game.mistakes,
                           remaining=game.remaining(self.now), time_limit=self.round_seconds, level=self.completed+1)
         else:
@@ -363,6 +364,10 @@ class BrowserGame:
                                  "fill": "#ffffff" if getattr(game, "invulnerable", 0) else "#a3ff80"})
             result["player"] = {"x": game.x, "y": game.y,
                                 "visible": self.death_age is None and not result.get("arena_shattered", False)}
+            if isinstance(game, SingularityCore):
+                # Presentation only: face outward from the teleport grid's center.
+                dx, dy = game.x - BOX_CENTER[0], game.y - BOX_CENTER[1]
+                result["player"]["angle"] = math.atan2(dx, dy) if dx or dy else 0
             result["commands"] = commands
         return result
 

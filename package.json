@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Browser interface tests for the shared Python game collection",
   "scripts": {
+    "preview": "npm run accounts:build-preview && node --env-file=.env.supabase scripts/serve_news.mjs",
     "build": "python3 scripts/build_web.py",
     "pretest": "npm run build",
     "test": "node --test web/tests/*.test.cjs web/pool/model.test.cjs web/balloon-pop/model.test.cjs web/tests/integration/*.test.cjs",

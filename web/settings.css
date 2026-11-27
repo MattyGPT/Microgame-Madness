@@ -3,3 +3,15 @@ html{font-size:calc(16px * var(--settings-text,1))}body p{line-height:var(--sett
 @media(max-width:600px){#settings-dialog{padding:18px}.settings-row{gap:10px}.settings-control input[type=range]{width:95px}#settings-dialog header{align-items:flex-start}#settings-dialog footer{align-items:flex-start;flex-direction:column}#settings-dialog h2{font-size:26px}.settings-row>span:first-child{max-width:55%}}
 body .card-description,body .news-body,body .intro-copy{font-size:calc(15px * var(--settings-text,1))}#settings-dialog .settings-row,#settings-dialog>p{font-size:calc(16px * var(--settings-text,1))}
 .settings-card{background:radial-gradient(ellipse at 25% 20%,#5b4a82,#1b263b 70%);text-align:left;display:flex;flex-direction:column;gap:12px;color:#f0edff;border-color:#b8a1ed;min-height:220px}.settings-card-art{font:80px/1 system-ui;color:#dac6ff;position:relative;width:100px;text-shadow:0 0 30px #b99afa66}.settings-card-art i{position:absolute;right:0;top:0;font:24px system-ui;color:#ffdf8d}.settings-card-tag{font-size:10px;letter-spacing:.15em;color:#c5bcdf;margin-top:auto}
+
+.settings-slider{animation:settings-slider-drift 4.6s ease-in-out infinite}
+.settings-slider-2{animation-duration:5.7s;animation-delay:-2.1s;animation-direction:reverse}
+.settings-slider-3{animation-duration:3.9s;animation-delay:-1.2s}
+@keyframes settings-slider-drift{0%,100%{transform:translateX(-4px)}50%{transform:translateX(4px)}}
+@media(prefers-reduced-motion:reduce){.settings-slider{animation:none!important}}
+html.account-reduced-motion .settings-slider{animation:none!important}
+
+.settings-logo-sparkle{transform-box:fill-box;transform-origin:center;animation:settings-sparkle-twinkle 3.2s ease-in-out infinite}
+@keyframes settings-sparkle-twinkle{0%,100%{opacity:.65;transform:scale(.9) rotate(-8deg)}50%{opacity:1;transform:scale(1.12) rotate(8deg)}}
+@media(prefers-reduced-motion:reduce){.settings-logo-sparkle{animation:none!important}}
+html.account-reduced-motion .settings-logo-sparkle{animation:none!important}

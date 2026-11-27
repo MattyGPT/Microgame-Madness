@@ -71,7 +71,7 @@ def start_keyboard_challenge():
     print("Type each sequence exactly, in order. No Enter needed; case matters.")
     print("Each round gets harder: letters, numbers, capitals, then symbols.")
     print("Wrong keys cost 0.5 seconds. The timer resets each round.")
-    print("Escape ends the challenge. Your score is the number of rounds completed.")
+    print("Escape ends the challenge. Each round awards its round number: six completed rounds score 21.")
     player = input("Enter your name: ").strip()
     while not player:
         player = input("Please enter a nonempty name: ").strip()
@@ -92,7 +92,7 @@ def start_keyboard_challenge():
 
     print(f"Rounds completed: {completed}")
     try:
-        save_score(player, completed, KEYBOARD_SCORE_FILE)
+        save_score(player, completed*(completed+1)//2, KEYBOARD_SCORE_FILE)
     except ScoreError as exc:
         print(str(exc))
     else:

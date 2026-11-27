@@ -277,7 +277,9 @@
     syncSound() {
       if (this.source) {
         const source = this.source, gain = this.audioGain, now = source.context.currentTime;
-        gain.gain.cancelAndHoldAtTime(now); gain.gain.linearRampToValueAtTime(0, now + .012);
+        if (gain.gain.cancelAndHoldAtTime) gain.gain.cancelAndHoldAtTime(now);
+        else { gain.gain.cancelScheduledValues(now); gain.gain.setValueAtTime(gain.gain.value, now); }
+        gain.gain.linearRampToValueAtTime(0, now + .012);
         source.stop(now + .015); source.onended = () => { source.disconnect(); gain.disconnect(); };
         this.source = null; this.audioGain = null;
       }

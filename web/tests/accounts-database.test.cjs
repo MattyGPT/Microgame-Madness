@@ -15,7 +15,7 @@ async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!(legacy || withoutCombined) || !f.includes('penguin_pool_rankings') && !f.includes('balloon_rankings')) && (!(legacy || withoutCombined) || !/_(news|local_creator_chat)/.test(f)) && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks')))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!(legacy || withoutCombined) || !f.includes('penguin_pool_rankings') && !f.includes('balloon_rankings') && !f.includes('balloon_multipliers') && !f.includes('coindrop_world_rankings')) && (!(legacy || withoutCombined) || !/_(news|local_creator_chat)/.test(f)) && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -404,4 +404,24 @@ test('expanded games use atomic score receipts and support nearby rankings',asyn
   await apply(first,op('geo_finish','run.finish',{outcome:'loss',snapshot:{mode:'geomayhem',difficulty:'level_20',geo_level:20,geo_waves:4,score:300,over:true,won:false}},'geo_ranked'));
   await role('authenticated',first);
   const geo=(await db.query("select * from public.get_game_leaderboard('geomayhem')")).rows;assert.equal(geo[0].score,300);
+});
+
+test('Coin Drop rankings use highest world rather than summed receipts',async t=>{
+ const {db,role,call,apply}=await setup(t);
+ await role('service_role');
+ await call('account_set_season',['world-season','World season',new Date(Date.now()-86400000).toISOString(),new Date(Date.now()+86400000).toISOString(),'1']);
+ for(const [i,world] of [25,25,10,40].entries()){
+  await apply(first,op(`world_${i}`,'arcade',{event:'side-result',mode:'coindrop',score:world,highestUnlockedWorld:world,bankedCoins:1,won:true}));
+ }
+ await role('authenticated',first);
+ assert.equal((await db.query("select * from public.get_game_leaderboard('coindrop')")).rows[0].score,40);
+ await role('authenticated',second);
+ await assert.rejects(call('submit_leaderboard_run',['bad-world-0','coindrop','standard','Guest',0]),{code:'22023'});
+ await assert.rejects(call('submit_leaderboard_run',['bad-world-1001','coindrop','standard','Guest',1001]),{code:'22023'});
+ await role('postgres');
+ const lifetime=(await db.query("select score,total from leaderboard_private.scores where mode='coindrop'")).rows;
+ assert.equal(Number(lifetime[0].total),40);
+ const seasons=(await db.query("select score,total from accounts_private.season_scores where mode='coindrop'")).rows;
+ assert.equal(seasons.length,1);
+ assert.equal(seasons[0].score,40);assert.equal(Number(seasons[0].total),40);
 });

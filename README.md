@@ -68,12 +68,14 @@ Apply migrations and run the connected local creator preview:
 
 ```sh
 npm run accounts:migrate
-npm run accounts:build-preview
-node --env-file=.env.supabase scripts/serve_news.mjs
+npm run preview
 ```
 
 Visit http://localhost:8777/ and open **Microgame News**. The creator desk publishes
-updates to the shared backend. Suggestions have delete-for-everyone and block
+updates and lets you comment on news and suggestions as **Nate** without signing in.
+Use **Comments** on a post or suggestion to join its discussion. Starting a new
+suggestion still requires a player account. Updates are saved to the shared
+backend. Suggestions have delete-for-everyone and block
 controls, plus a blocked-player list for unblocking. Public hosting includes only
 `dist`; configure its browser-safe backend URL and publishable key to use the same
 feed. A plain static local server supports reading but cannot moderate.
@@ -128,10 +130,17 @@ Geomayhem retains its existing achievement and Cubie rewards and now ranks total
 points from completed expeditions across all 20 arenas. Coin Drop, Nano Lab,
 Treasure Trove, and Tearesseract add 30 achievements and 28 permanent Cubies.
 
-- Coin Drop: one leaderboard point per banked non-mini coin; upgrade currencies stay separate.
+- Coin Drop: leaderboard scores track the highest unlocked world (1–1,000); banked-coin achievements and upgrade currencies stay separate.
 - Nano Lab: one point per win. Closing a challenge or reading a lesson earns no points. The random button selects from all 300 nanogames.
-- Treasure Trove: one point per correct treasure; achievements use the highest round won.
-- Tearesseract: cleared attacks from full encounters that end in defeat or victory. Attack loading, ending previews, and any use of invincibility disqualify that encounter.
+- Treasure Trove: each correct treasure awards its round number; six rounds total 21 points. Achievements use the highest round won.
+- Key Rush: completed rounds total 1 + 2 + … + n points in both modes; existing difficulty multipliers still apply to rankings and Cubie Cash.
+- Tearesseract: cleared attacks total 1 + 2 + … + n points (465 for all 30) from full encounters that end in defeat or victory. Achievements count attacks, not points. Attack loading, ending previews, and any use of invincibility disqualify that encounter.
+
+Round-sum scoring applies to new play. On November 24, retained Key Rush and
+Tearesseract history was converted using `scripts/backfill_round_scores.mjs`;
+the script keeps private backups and refuses a second conversion. Original
+receipts remain unchanged for retry compatibility. Historical Treasure Trove
+totals and Key Rush balances without reconstructable history remain unchanged.
 
 All five games have temporary #1 Cubie, Turtle, and Trail packs. Crown ownership
 is checked against the all-time combined leaderboard and expires when unverified
