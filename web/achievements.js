@@ -588,7 +588,8 @@ const Achievements = (() => {
         }
         if (s.mode === "hangman") {
           stats.hangmanWins++;
-          if (Number.isInteger(s.mistakes) && s.mistakes >= 0 && Number.isInteger(s.remaining) && s.remaining > 0 && Math.floor(s.mistakes * 6 / (s.mistakes + s.remaining)) < 3) stats.noHandsWins++;
+          const limit = ({ easy: 10, medium: 7, hard: 5 })[s.difficulty] || (s.mistakes + s.remaining);
+          if (Number.isInteger(s.mistakes) && s.mistakes >= 0 && Number.isInteger(s.remaining) && s.remaining > 0 && limit > 0 && Math.floor(s.mistakes * 6 / limit) < 3) stats.noHandsWins++;
           if (s.difficulty === "hard") stats.hardWins++;
           if (s.mistakes === 0) stats.perfectWins++;
           if (s.difficulty === "hard" && s.mistakes === 0) stats.hardPerfectWins++;

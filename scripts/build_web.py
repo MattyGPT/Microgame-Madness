@@ -172,7 +172,7 @@ def build():
                 target = (OUTPUT / slug / ref).resolve()
                 if target.is_file() and (target == output_root or output_root in target.parents):
                     version = hashlib.sha256(target.read_bytes()).hexdigest()[:12]
-                    sub_html = sub_html.replace(f'"{ref}"', f'"{ref}?v={version}"')
+                    sub_html = re.sub(rf'((?:src|href)="){re.escape(ref)}"', rf'\g<1>{ref}?v={version}"', sub_html)
             sub_path.write_text(sub_html)
             art = (source / ("card-balloon.svg" if number == 16 else "card-ice.svg")).read_text()
             card = f'<a class="game-card" href="./{slug}/index.html" style="--accent:{accent};text-decoration:none" data-card-kind="microgame"><span class="card-kind-label" data-label="MICROGAME"><span>MICROGAME</span></span><span class="card-top">{number} / {title.upper()}</span><span class="card-art" aria-hidden="true">{art}</span><span class="card-title">{title} ↗</span><span class="card-description">Billiards and Balloons · mmu1.5</span></a>'

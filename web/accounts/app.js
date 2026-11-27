@@ -438,8 +438,7 @@ const AccountApp = (() => {
       $('account-delete').onclick = () => this.action(async () => {
         if ($('account-delete-confirm').value !== 'DELETE') throw new Error('Type DELETE to confirm account deletion.');
         if (!$('account-delete-password').reportValidity()) return;
-        const passwordKey = this.passwordKey();
-        try { await this.controller.deleteAccount($('account-delete-password').value); localStorage.removeItem(passwordKey); } finally { AuthUI.clear(dialog); }
+        try { await this.controller.deleteAccount($('account-delete-password').value); } finally { AuthUI.clear(dialog); }
         $('account-delete-confirm').value = '';
         this.applyCurrent(); this.render(true); await this.loadHistory(); this.message('Your account was deleted. Guest play is available.');
       });

@@ -32,14 +32,18 @@ const TearesseractDeath=(()=>{
       data.set(scream(sound.sampleRate,duration,Math.max(0,(Date.now()-started)/1000)));
       const source=sound.createBufferSource(),gain=sound.createGain();source.buffer=buffer;gain.gain.value=.9;source.connect(gain).connect(sound.destination);source.start();
     }catch{}
+    let navigated=false;
+    const navigate=()=>{if(navigated)return;navigated=true;clearInterval(timer);location.replace(`./?tearesseract-breach=${started}${muted?'&breach-muted=1':''}`);};
     const timer=setInterval(()=>{
       const elapsed=Date.now()-started;
-      if(elapsed>=3000){clearInterval(timer);document.documentElement.classList.remove('tea-breach');overlay.remove();style.remove();const url=new URL(location.href);url.searchParams.delete('tearesseract-breach');url.searchParams.delete('breach-muted');history.replaceState(null,'',url);location.reload();return;}
+      if(elapsed>=3000){
+        if(!home){navigate();return;}
+        clearInterval(timer);document.documentElement.classList.remove('tea-breach');overlay.remove();style.remove();const url=new URL(location.href);url.searchParams.delete('tearesseract-breach');url.searchParams.delete('breach-muted');history.replaceState(null,'',url);location.reload();return;
+      }
       if(!reduced){document.body?.style.setProperty('translate',`${Math.round((Math.random()-.5)*64)}px ${Math.round((Math.random()-.5)*28)}px`);document.body?.style.setProperty('transform',`skewX(${(Math.random()-.5)*3}deg) scale(1.025)`);overlay.style.clipPath=`inset(${Math.random()*3}% 0 ${Math.random()*3}% 0)`;for(const tear of tears){tear.style.top=`${Math.random()*100}%`;tear.style.height=`${1+Math.random()*9}%`;tear.style.translate=`${(Math.random()-.5)*90}px 0`;}if(home)scrollTo({top:Math.random()*Math.max(0,document.documentElement.scrollHeight-innerHeight),behavior:'instant'});}
       overlay.querySelector('span').textContent=elapsed%400<150?'TEARESSERACT // SIGNAL CORRUPTED':'CONNECTION SEVERED // REALITY BREACH';
     },45);
     if(!home){
-      const navigate=()=>location.replace(`./?tearesseract-breach=${started}${muted?'&breach-muted=1':''}`);
       if(ready){
         Promise.all([
           new Promise(resolve=>setTimeout(resolve,950)),

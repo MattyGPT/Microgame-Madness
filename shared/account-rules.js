@@ -114,7 +114,7 @@ const AccountRules = (() => {
       const value = raw[key];
       if (value === undefined || value === null) continue;
       requireValue(typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1000000000, `Invalid ${key}.`);
-      if (['rounds_completed','score','mistakes','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
+      if (['rounds_completed','score','mistakes','remaining','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
         requireValue(Number.isSafeInteger(value), `Invalid ${key}.`);
       clean[key] = value;
     }
@@ -140,6 +140,13 @@ const AccountRules = (() => {
       if (clean.won === true) requireValue(clean.geo_waves === 20, 'An arena victory requires 20 cleared waves.');
       if (clean.geo_five_star_count !== undefined && clean.geo_weapon_count !== undefined)
         requireValue(clean.geo_five_star_count <= clean.geo_weapon_count, 'Too many evolved weapons.');
+    }
+    if (run.mode === 'hangman') {
+      const maxAttempts = ({ easy: 10, medium: 7, hard: 5 })[run.difficulty];
+      if (clean.mistakes !== undefined) requireValue(clean.mistakes <= maxAttempts, 'Invalid mistakes.');
+      if (clean.remaining !== undefined) requireValue(clean.remaining <= maxAttempts, 'Invalid remaining.');
+      if (clean.mistakes !== undefined && clean.remaining !== undefined)
+        requireValue(clean.mistakes + clean.remaining <= maxAttempts, 'Attempts exceed difficulty limit.');
     }
     if (run.mode==='keyboard' && clean.rounds_completed!==undefined) requireValue(clean.score===clean.rounds_completed*(clean.rounds_completed+1)/2,'Score does not match completed rounds.');
     if (clean.score !== undefined) requireValue(scoreValid(run.mode, run.difficulty, clean.score), 'Invalid game score.');
@@ -301,7 +308,7 @@ const AccountRules = (() => {
         requireValue(integer(score,mode==='coindrop'?1000:mode==='tearesseract'?465:mode==='treasure'?1000000000:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
         if(mode==='coindrop')requireValue(won && (highestUnlockedWorld===undefined ? score===1 : integer(highestUnlockedWorld,1000)&&highestUnlockedWorld>=1&&score===highestUnlockedWorld&&integer(bankedCoins,1)), 'Invalid highest unlocked world.');
         if(mode==='nanolab')requireValue(score===(won?1:0),'Score does not match the result.');
-        if(mode==='treasure'){requireValue(level>=1,'A treasure round is required.');requireValue(won?(score===level||score===1):score===0,'Score does not match the result.');}
+        if(mode==='treasure'){requireValue(level>=1&&level<=44720,'A treasure round is required.');requireValue(won?(score===level||score===1):score===0,'Score does not match the result.');}
         if(mode==='tearesseract'){
           const clears=attacksCleared??score;
           requireValue(integer(clears,30)&&score===(attacksCleared===undefined?clears:clears*(clears+1)/2),'Score does not match cleared attacks.');

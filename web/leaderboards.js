@@ -23,7 +23,8 @@ const Leaderboards = (() => {
       && typeof entry.player === 'string' && entry.player.trim().length >= 1
       && entry.player.length <= 24 && !/[\x00-\x1f\x7f]/.test(entry.player)
       && Number.isSafeInteger(entry.score) && entry.score >= 0 && entry.score <= 1000000000
-      && (entry.mode !== 'hangman' || entry.score <= ({ easy: 10, medium: 7, hard: 5 })[entry.difficulty]);
+      && (entry.mode !== 'hangman' || entry.score <= ({ easy: 10, medium: 7, hard: 5 })[entry.difficulty])
+      && (entry.mode !== 'coindrop' || (entry.score >= 1 && entry.score <= 1000));
   }
   class Client {
     constructor(config = {}, { storage, fetch = globalThis.fetch, now = Date.now } = {}) {

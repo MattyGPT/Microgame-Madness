@@ -67,8 +67,24 @@ test('Coin Drop world scores retain personal best and count banked coins separat
 
 test('Coin Drop reports unlocked frontier rather than selected world, capped at 1000',()=>{
  const C=require('../coin-drop.js'),g=Object.create(C.Controller.prototype),results=[];
- g.identity='guest';g.onResult=(owner,mode,result)=>results.push(result);
- for(const cleared of [0,24,999,1000]){g.p={map:0,cleared};g.reportWorld();}
+ g.identity='guest';g.reportedWorlds=new Map();g.blocked=()=>false;g.onResult=(owner,mode,result)=>results.push(result);
+ for(const cleared of [0,24,999,1000]){g.p={map:0,cleared,drops:0};g.reportWorld();}
  assert.deepEqual(results.map(r=>r.score),[1,25,1000,1000]);
  assert.ok(results.every(r=>r.bankedCoins===0&&r.highestUnlockedWorld===r.score));
+ results.length=0;g.reportedWorlds.clear();g.labMode=false;
+ g.p={map:0,cleared:0,drops:0};g.syncWorld();assert.equal(results.length,0);
+ g.p={map:0,cleared:24,drops:1};g.syncWorld();g.syncWorld();assert.deepEqual(results.map(r=>r.score),[25]);
+ g.p={map:0,cleared:25,drops:2};g.syncWorld();assert.deepEqual(results.map(r=>r.score),[25,26]);
+});
+
+test('Treasure level cap, Hangman attempt validation, and Coin Drop leaderboard bounds are enforced',()=>{
+ assert.throws(()=>Rules.apply(Rules.initial(),operation('huge-treasure','treasure',44721,{level:44721})));
+ const okTreasure=Rules.apply(Rules.initial(),operation('max-treasure','treasure',44720,{level:44720}));
+ assert.equal(okTreasure.state.scores['treasure:standard'][0].score,44720*44721/2);
+ const start={id:'h-start',version:1,streamId:'device',runId:'h1',kind:'run.start',payload:{mode:'hangman',difficulty:'hard'}};
+ const state=Rules.apply(Rules.initial(),start).state;
+ assert.throws(()=>Rules.apply(state,{...start,id:'h-bad',kind:'run.finish',payload:{outcome:'win',snapshot:{mode:'hangman',difficulty:'hard',score:1,mistakes:4,remaining:100,over:true,won:true}}}));
+ assert.equal(Leaderboards.valid({mode:'coindrop',difficulty:'standard',score:0,player:'Player'}),false);
+ assert.equal(Leaderboards.valid({mode:'coindrop',difficulty:'standard',score:1001,player:'Player'}),false);
+ assert.equal(Leaderboards.valid({mode:'coindrop',difficulty:'standard',score:1000,player:'Player'}),true);
 });

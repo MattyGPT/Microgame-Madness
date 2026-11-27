@@ -224,6 +224,13 @@ test('profile recovery, password replacement and recovery rotation keep the same
   await expect(page.locator('#account-recovery-code')).not.toHaveValue('');
   await page.locator('#account-recovery-saved').click();
   expect(await page.evaluate(() => accountApp.controller.state().owner)).toBe(owner);
+  await page.getByText('Delete account', { exact: true }).click();
+  await page.locator('#account-delete-password').fill('Changed arcade password 44!');
+  await page.locator('#account-delete-confirm').fill('DELETE');
+  await page.locator('#account-delete').click();
+  await expect(page.locator('#account-message')).toContainText('Your account was deleted');
+  await expect(page.locator('#account-delete-password')).toHaveValue('');
+  expect(await page.evaluate(() => accountApp.controller.state().owner)).toBe('guest');
 });
 
 test('one-time recovery survives a failed first cloud snapshot and clears on another tab account change', async ({ page }) => {

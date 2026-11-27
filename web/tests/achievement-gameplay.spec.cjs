@@ -56,23 +56,23 @@ test("real Hangman wins award the requested medals once and persist across reloa
     }
     for (const letter of 'CAT') await page.getByRole('button', { name: `Guess ${letter}`, exact: true }).click();
     await expect(page.locator('#overlay-title')).toHaveText('You did it!');
-    if (round === 0) await expect(page.locator('#profile-score')).toHaveText('50');
-    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('210');
-    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('360');
+    if (round === 0) await expect(page.locator('#profile-score')).toHaveText('80');
+    if (round === 1) await expect(page.locator('#profile-score')).toHaveText('240');
+    if (round === 4) await expect(page.locator('#profile-score')).toHaveText('390');
     await page.locator('#overlay-action').click();
   }
-  await expect(page.locator('#profile-score')).toHaveText('570');
+  await expect(page.locator('#profile-score')).toHaveText('600');
   await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await page.locator('#achievement-filter').selectOption('earned');
-  for (const id of ['play_hangman', 'hangman_win', 'hangman_hard', 'hangman_5', 'hangman_10'])
+  for (const id of ['play_hangman', 'hangman_win', 'hangman_no_hands', 'hangman_hard', 'hangman_5', 'hangman_10'])
     await expect(page.locator(`[data-achievement="${id}"]`)).toContainText('Unlocked');
   await expect(page.locator('[data-achievement="hangman_10"]')).toContainText('Professional Prodigy');
   await page.locator('#achievements-panel').scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('achievement-collection.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.reload();
-  await expect(page.locator('#profile-score')).toHaveText('570');
+  await expect(page.locator('#profile-score')).toHaveText('600');
   await leaveFullscreen(page);
   await page.locator('#achievements-tab').click();
   await expect(page.locator('[data-achievement="hangman_25"]')).toContainText('10 / 25');
@@ -82,7 +82,7 @@ test("real Hangman wins award the requested medals once and persist across reloa
   await page.locator('#player').fill('New nickname');
   await page.locator('[data-difficulty="hard"]').click();
   await page.locator('#exit').click();
-  await expect(page.locator('#profile-score')).toHaveText('570');
+  await expect(page.locator('#profile-score')).toHaveText('600');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('microgame-madness.v1')).achievements.stats.hangmanWins)).toBe(10);
 });
 

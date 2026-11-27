@@ -407,15 +407,21 @@ test('expanded games use atomic score receipts and support nearby rankings',asyn
 });
 
 test('Coin Drop rankings use highest world rather than summed receipts',async t=>{
- const {db,role,apply}=await setup(t);
+ const {db,role,call,apply}=await setup(t);
+ await role('service_role');
+ await call('account_set_season',['world-season','World season',new Date(Date.now()-86400000).toISOString(),new Date(Date.now()+86400000).toISOString(),'1']);
  for(const [i,world] of [25,25,10,40].entries()){
   await apply(first,op(`world_${i}`,'arcade',{event:'side-result',mode:'coindrop',score:world,highestUnlockedWorld:world,bankedCoins:1,won:true}));
  }
  await role('authenticated',first);
  assert.equal((await db.query("select * from public.get_game_leaderboard('coindrop')")).rows[0].score,40);
+ await role('authenticated',second);
+ await assert.rejects(call('submit_leaderboard_run',['bad-world-0','coindrop','standard','Guest',0]),{code:'22023'});
+ await assert.rejects(call('submit_leaderboard_run',['bad-world-1001','coindrop','standard','Guest',1001]),{code:'22023'});
  await role('postgres');
  const lifetime=(await db.query("select score,total from leaderboard_private.scores where mode='coindrop'")).rows;
  assert.equal(Number(lifetime[0].total),40);
  const seasons=(await db.query("select score,total from accounts_private.season_scores where mode='coindrop'")).rows;
- for(const row of seasons){assert.equal(row.score,40);assert.equal(Number(row.total),40);}
+ assert.equal(seasons.length,1);
+ assert.equal(seasons[0].score,40);assert.equal(Number(seasons[0].total),40);
 });

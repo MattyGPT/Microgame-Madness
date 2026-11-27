@@ -108,6 +108,11 @@ async function accountService(page, { loseOneResultResponse = false } = {}) {
         return route.fulfill({ headers, json: { ...snapshot(), receipts } });
       }
       if (body.action === 'export') return route.fulfill({ headers, json: { version: 1, ...snapshot(), runs: [...service.runs.values()] } });
+      if (body.action === 'delete') {
+        if (body.password !== service.password) return route.fulfill({ status: 401, headers, json: { error: { code: 'invalid_credentials', message: 'Password is incorrect.' } } });
+        service.anonymous = true; service.handle = null; service.password = null;
+        return route.fulfill({ headers, json: { deleted: true } });
+      }
       return route.fulfill({ status: 400, headers, json: { error: { code: 'invalid', message: 'Unknown account command' } } });
     }
     if (url.pathname.endsWith('/get_account_seasons')) return route.fulfill({ headers, json: [] });

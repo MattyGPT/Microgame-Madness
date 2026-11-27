@@ -3,13 +3,13 @@
  const $=id=>document.getElementById(id), dialog=$('news-dialog');
  let config, moderator=false, localModerator=false, teamMember=false, posts=[], tab='posts', busy=false, observer;
 
- const timers=new Map();let feedCache=null, localLikeCache=new Set(), refreshGen=0, closingDialog=false;
+ const timers=new Map();let feedCache=null, localLikeCache=new Set(), refreshGen=0, permissionsGen=0, suppressCloseRefresh=false;
  let read=new Set(), readOwner='';
  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function postBody(body){
   const text=String(body||''),video=text.match(/^https:\/\/microgame-madness\.com\/media\/[a-z0-9-]+\.mp4$/m);
   if(!video)return `<p class="news-body">${esc(text)}</p>`;
-  const idx=text.indexOf(video[0]),before=text.slice(0,idx),after=text.slice(idx+video[0].length);
+  const idx=video.index,before=text.slice(0,idx),after=text.slice(idx+video[0].length);
   return `<p class="news-body">${esc(before.trim())}</p><figure class="news-video"><video controls playsinline preload="metadata" src="${esc(video[0])}" poster="${esc(video[0].replace('.mp4','.jpg'))}" aria-label="Gameplay preview"></video><figcaption>Gameplay sneak peek · <a href="${esc(video[0])}" target="_blank" rel="noopener">Open video ↗</a></figcaption></figure><p class="news-body">${esc(after.trim())}</p>`;
  }
  function session(){return typeof accountApp!=='undefined'?accountApp?.session:null;}
@@ -30,13 +30,23 @@
   return localAdmin(body);
  }
  async function permissions(){
-  const previous=moderator;
+  const gen=++permissionsGen, owner=key(), previous=moderator;
   if(['localhost','127.0.0.1'].includes(location.hostname)){
    try{localModerator=(await localAdmin({action:'status'})).moderator===true;}catch{localModerator=false;}
+   if(gen!==permissionsGen||owner!==key())return;
   }
   const user=signedInUser();
   if(!user){teamMember=false;}
-  else{try{teamMember=Boolean((await rpc('news_team')).moderator);}catch(err){if(err?.status===401||err?.status===403)teamMember=false;}}
+  else{
+   try{
+    const res=await rpc('news_team');
+    if(gen!==permissionsGen||owner!==key())return;
+    teamMember=Boolean(res.moderator);
+   }catch(err){
+    if(gen!==permissionsGen||owner!==key())return;
+    if(err?.status===401||err?.status===403)teamMember=false;
+   }
+  }
   moderator=localModerator||teamMember;
   $('news-publish').hidden=tab!=='posts'||!moderator;
   $('news-moderation').hidden=!moderator;
@@ -48,7 +58,7 @@
  let subscribed=null,feedIdentity=key();
  function watchIdentity(){
   const current=session();
-  if(current&&current!==subscribed){subscribed=current;current.subscribe(()=>{if(feedIdentity!==key()){if(popup.open)popup.close();feedIdentity=key();feedCache=null;posts=[];badge();refresh();}teamMember=false;moderator=localModerator;window.dispatchEvent(new CustomEvent('news-access',{detail:{allowed:moderator,identityChanged:true}}));permissions();});}
+  if(current&&current!==subscribed){subscribed=current;current.subscribe(()=>{const changed=feedIdentity!==key()||Boolean(current.snapshot()?.requiresSignIn);if(changed){if(popup.open){suppressCloseRefresh=true;popup.close();}feedIdentity=key();feedCache=null;posts=[];badge();teamMember=false;moderator=localModerator;window.dispatchEvent(new CustomEvent('news-access',{detail:{allowed:moderator,identityChanged:true}}));refresh();permissions();}});}
   if(!document.hidden)permissions();
  }
  function badge(){const news=posts.filter(p=>!p.seen&&!seen().has(p.id)).length,suggestions=(feedCache?.comments||[]).reduce((n,c)=>n+(Number(c.unread_count)||0),0),total=news+suggestions;
@@ -83,21 +93,21 @@
  let discussion=null,discussionRows=[],discussionBusy=false,replyTo=null,nextComment=0;
  const discussionDrafts=new Map();
  const discussionKey=()=>discussion?discussion.storageKey:'';
- async function discuss(action,target,body,parent){return localModerator?localAdmin({action:'discussion',operation:action,id:target,kind:discussion.kind,...(body===undefined?{}:{body}),parent}):rpc('news_discussion',{action,target,kind:discussion.kind,body:body??null,parent:parent||null});}
+ async function discuss(action,target,body,parent,kind=discussion?.kind){return localModerator?localAdmin({action:'discussion',operation:action,id:target,kind,...(body===undefined?{}:{body}),parent}):rpc('news_discussion',{action,target,kind,body:body??null,parent:parent||null});}
  function kindNotice(result){$('news-kind-art').innerHTML=art('classic');$('news-kind-message').textContent=`You will be temporarily banned from commenting for ${result.hours?'24 hours':'10 minutes'}. Please keep the arcade friendly. Five violations lead to a 24-hour commenting ban.`;$('news-kind').showModal();}
  function replyBanner(){const row=discussionRows.find(r=>r.id===replyTo);$('discussion-parent').innerHTML=row?`Replying to <strong>${esc(row.label)}</strong> <button type="button" id="discussion-cancel-reply">Cancel</button>`:'';if($('discussion-cancel-reply'))$('discussion-cancel-reply').onclick=()=>{replyTo=null;replyBanner();};}
- async function loadDiscussion(){const currentKey=discussionKey(),rows=await discuss('list',discussion.id);if(currentKey!==discussionKey()||!popup.open)return;discussionRows=rows;
+ async function loadDiscussion(){const active=discussion;if(!active)return;const currentKey=active.storageKey,rows=await discuss('list',active.id,undefined,undefined,active.kind);if(currentKey!==discussionKey()||!popup.open)return;discussionRows=rows;
   $('discussion-list').innerHTML=rows.map(r=>{const parent=rows.find(p=>p.id===r.parent);return `<article class="news-reply ${r.creator?(r.label==='Nate'?'news-reply-nate':'news-reply-aidan'):''} ${parent?'news-discussion-child':''}"><header><strong>${esc(r.label)} ${r.creator?'<span>★ CREATOR</span>':''}</strong><small>${esc(new Date(r.created_at).toLocaleString())}</small></header>${parent?`<small>↳ Replying to ${esc(parent.label)}</small>`:''}<p class="news-body">${esc(r.body)}</p><button type="button" data-comment-like="${esc(r.id)}" aria-pressed="${Boolean(r.liked)}">${r.liked?'♥':'♡'} ${Number(r.likes)||0}</button>${creatorLikes(r)} <button type="button" data-comment-reply="${esc(r.id)}">Reply</button>${r.can_delete?` <button type="button" data-comment-delete="${esc(r.id)}">Delete</button>`:''}</article>`;}).join('')||'<p class="news-empty">Start the conversation!</p>';replyBanner();
-  if(discussion.kind==='suggestion'&&signedInUser()&&!document.hidden){await rpc('news_discussion_seen',{target:discussion.id,seen_replies:rows.map(r=>r.id)});if(currentKey===discussionKey()&&popup.open){const c=feedCache?.comments?.find(c=>c.id===discussion.id);if(c)c.unread_count=0;badge();}}
+  if(active.kind==='suggestion'&&signedInUser()&&!document.hidden){await rpc('news_discussion_seen',{target:active.id,seen_replies:rows.map(r=>r.id)});if(currentKey===discussionKey()&&popup.open){const c=feedCache?.comments?.find(c=>c.id===active.id);if(c)c.unread_count=0;badge();}}
  }
  async function openDiscussion(id,kind){discussion={id,kind,storageKey:key()+kind+id};replyTo=null;discussionRows=[];$('discussion-list').textContent='Loading comments…';$('discussion-status').textContent='';$('discussion-body').value=discussionDrafts.get(discussionKey())||'';$('discussion-context').textContent=kind==='post'?(posts.find(p=>p.id===id)?.title||'News discussion'):'Suggestion discussion';replyBanner();dialog.querySelectorAll('video').forEach(v=>v.pause());popup.showModal();try{await loadDiscussion();}catch(e){$('discussion-status').textContent=e.message;}}
  $('discussion-close').onclick=()=>popup.close();
- popup.addEventListener('close',()=>{if(discussion)discussionDrafts.set(discussion.storageKey,$('discussion-body').value);discussion=null;if(!closingDialog&&dialog.open)refresh();});
+ popup.addEventListener('close',()=>{if(discussion)discussionDrafts.set(discussion.storageKey,$('discussion-body').value);discussion=null;const suppress=suppressCloseRefresh;suppressCloseRefresh=false;if(!suppress&&dialog.open)refresh();});
  $('discussion-body').oninput=()=>{if(discussion)discussionDrafts.set(discussion.storageKey,$('discussion-body').value);};
- $('discussion-list').onclick=async e=>{const b=e.target.closest('button');if(!b||discussionBusy)return;if(b.dataset.commentReply){replyTo=b.dataset.commentReply;replyBanner();$('discussion-body').focus();return;}discussionBusy=true;try{if(b.dataset.commentLike)await discuss('like',b.dataset.commentLike);else if(b.dataset.commentDelete){if(!await ArcadeDialogs.ask({title:'Delete this comment?',message:'This removes the comment for everyone. This cannot be undone.',acceptLabel:'Delete comment',danger:true}))return;await discuss('delete',b.dataset.commentDelete);}else return;await loadDiscussion();}catch(error){$('discussion-status').textContent=error.message;}finally{discussionBusy=false;}};
- $('discussion-form').onsubmit=async e=>{e.preventDefault();if(discussionBusy)return;if(!localModerator&&!signedInUser()){$('discussion-status').textContent='Sign in to join the conversation.';return;}if(Date.now()<nextComment){$('discussion-status').textContent='Please wait 3 seconds between comments.';return;}discussionBusy=true;const button=e.target.querySelector('[type=submit]');button.disabled=true;
-  try{const result=await discuss('create',discussion.id,$('discussion-body').value,replyTo);if(result.kind){kindNotice(result);return;}if(result.error)throw Error(result.error);nextComment=Date.now()+3000;discussionDrafts.delete(discussionKey());$('discussion-body').value='';replyTo=null;$('discussion-status').textContent='Comment posted.';await loadDiscussion();}
-  catch(error){$('discussion-status').textContent=error.message;}finally{discussionBusy=false;button.disabled=false;}
+ $('discussion-list').onclick=async e=>{const b=e.target.closest('button');const active=discussion;if(!b||discussionBusy||!active)return;if(b.dataset.commentReply){replyTo=b.dataset.commentReply;replyBanner();$('discussion-body').focus();return;}discussionBusy=true;try{if(b.dataset.commentLike)await discuss('like',b.dataset.commentLike,undefined,undefined,active.kind);else if(b.dataset.commentDelete){if(!await ArcadeDialogs.ask({title:'Delete this comment?',message:'This removes the comment for everyone. This cannot be undone.',acceptLabel:'Delete comment',danger:true}))return;if(discussion!==active)return;await discuss('delete',b.dataset.commentDelete,undefined,undefined,active.kind);}else return;if(discussion===active)await loadDiscussion();}catch(error){if(discussion===active)$('discussion-status').textContent=error.message;}finally{discussionBusy=false;}};
+ $('discussion-form').onsubmit=async e=>{e.preventDefault();const active=discussion;if(discussionBusy||!active)return;if(!localModerator&&!signedInUser()){$('discussion-status').textContent='Sign in to join the conversation.';return;}if(Date.now()<nextComment){$('discussion-status').textContent='Please wait 3 seconds between comments.';return;}discussionBusy=true;const button=e.target.querySelector('[type=submit]');button.disabled=true;
+  try{const result=await discuss('create',active.id,$('discussion-body').value,replyTo,active.kind);if(result.kind){kindNotice(result);return;}if(result.error)throw Error(result.error);nextComment=Date.now()+3000;discussionDrafts.delete(active.storageKey);if(discussion===active){$('discussion-body').value='';replyTo=null;$('discussion-status').textContent='Comment posted.';await loadDiscussion();}}
+  catch(error){if(discussion===active)$('discussion-status').textContent=error.message;}finally{discussionBusy=false;button.disabled=false;}
  };
  async function refresh(useCache=false){
   const gen=++refreshGen;
@@ -126,7 +136,7 @@
  }
  async function act(fn){if(busy)return;busy=true;try{await fn();}catch(e){$('news-status').textContent=e.message;}finally{busy=false;}}
  $('news-open').onclick=()=>{$('news-sort').value=globalThis.ArcadeSettings?.get('newsSort')||'newest';$('news-filter').value=globalThis.ArcadeSettings?.get('newsFilter')||'all';dialog.showModal();musicState();refresh();};
- $('news-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{closingDialog=true;if(popup.open)popup.close();closingDialog=false;stop();dialog.querySelectorAll('video').forEach(video=>video.pause());musicState();});
+ $('news-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>{if(popup.open){suppressCloseRefresh=true;popup.close();}stop();dialog.querySelectorAll('video').forEach(video=>video.pause());musicState();});
  for(const event of ['play','pause','ended','emptied'])dialog.addEventListener(event,e=>{if(e.target.tagName==='VIDEO'){if(event==='play')dialog.querySelectorAll('video').forEach(video=>{if(video!==e.target)video.pause();});musicState();}},true);
  document.addEventListener('visibilitychange',observe);
  $('news-refresh').onclick=()=>act(async()=>{const button=$('news-refresh');button.disabled=true;button.textContent='Refreshing…';try{await refresh();}finally{button.disabled=false;button.textContent='Refresh';}});

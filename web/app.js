@@ -1774,7 +1774,7 @@ async function loadGlobalScores() {
       portrait.innerHTML = CubieCustoms.thumbnail(cubie);
       name.classList.add("global-player-name");
       name.textContent = `${entry.player}${entry.is_you ? " (you)" : ""}`;
-      score.textContent = `${entry.score}${({pool:" wins",keyboard:" rounds",coindrop:" world",nanolab:" wins",treasure:" treasures",tearesseract:" attacks"})[mode] || " pts"}`;
+      score.textContent = mode === "coindrop" ? `World ${entry.score}` : `${entry.score}${({pool:" wins",nanolab:" wins"})[mode] || " pts"}`;
       row.classList.toggle("is-you", entry.is_you === true);
       row.append(rank, portrait, name, score);
       $("global-scores").append(row);
@@ -3481,7 +3481,10 @@ function setSoundEnabled(value) {
   $("sound").setAttribute("aria-pressed", String(soundOn));
   if (audioMaster && audioContext.state !== "closed") {
     if (audioMaster.gain.cancelAndHoldAtTime) audioMaster.gain.cancelAndHoldAtTime(audioContext.currentTime);
-    else audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
+    else {
+      audioMaster.gain.cancelScheduledValues(audioContext.currentTime);
+      audioMaster.gain.setValueAtTime(audioMaster.gain.value, audioContext.currentTime);
+    }
     audioMaster.gain.linearRampToValueAtTime(soundOn ? (globalThis.ArcadeSettings?.get("volume") ?? 100)/100 : 0, audioContext.currentTime + .02);
   }
   syncMusic();
@@ -4139,6 +4142,10 @@ let websiteTimeCheckpoint = performance.now();
 function saveWebsiteTime() {
   if (accountApp?.resetting) return;
   const now = performance.now();
+  if (accountApp?.blocked || (accountApp?.accountBound && !accountApp.signedIn)) {
+    websiteTimeCheckpoint = now;
+    return;
+  }
   // A timer/pagehide save must not replace a newer profile written by another
   // tab or an import with this page's older in-memory copy.
   try {
@@ -4577,8 +4584,10 @@ function showCrownCelebration() {
   }));
   function updateEquipButtons(){
     for(const button of dialog.querySelectorAll('.crown-celebration-equip')){
+      const pack=packs.find(p=>p.mode===button.dataset.mode);
       const wearing=['cubie','turtle','trail'].every(slot=>CrownPacks.equipped(slot,null)===`crown_${button.dataset.mode}_${slot}`);
       button.textContent=wearing?'Equipped ✓':'Equip pack';button.disabled=wearing;
+      if(pack)button.setAttribute('aria-label',wearing?`${pack.name} pack equipped`:`Equip ${pack.name} pack`);
     }
   }
   updateEquipButtons();
