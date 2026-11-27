@@ -56,8 +56,10 @@ const AccountRules = (() => {
   function scoreValid(mode, difficulty, score) {
     if (!integer(score)) return false;
     if (mode === 'hangman') return score <= ({ easy: 10, medium: 7, hard: 5 })[difficulty];
-    if (mode === 'pool' || mode === 'coindrop' || mode === 'nanolab' || mode === 'treasure') return score <= 1;
-    if (mode === 'tearesseract') return score <= 30;
+    if (mode === 'pool' || mode === 'nanolab') return score <= 1;
+    if (mode === 'coindrop') return score >= 1 && score <= 1000;
+    if (mode === 'treasure') return score <= 1000000000;
+    if (mode === 'tearesseract') return score <= 465;
     return true;
   }
   function pruneState(state) {

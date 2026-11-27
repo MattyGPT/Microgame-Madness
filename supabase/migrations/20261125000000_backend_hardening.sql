@@ -118,10 +118,10 @@ returns boolean language sql immutable set search_path = '' as $$
   select score is not null and score between 0 and 1000000000 and case game
     when 'hangman' then score <= (case difficulty when 'easy' then 10 when 'medium' then 7 when 'hard' then 5 else -1 end)
     when 'pool' then score <= 1
-    when 'coindrop' then score <= 1
+    when 'coindrop' then score between 1 and 1000
     when 'nanolab' then score <= 1
-    when 'treasure' then score <= 1
-    when 'tearesseract' then score <= 30
+    when 'treasure' then score <= 44720
+    when 'tearesseract' then score <= 465
     else true
   end;
 $$;
