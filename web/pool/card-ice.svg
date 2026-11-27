@@ -1,0 +1,25 @@
+<svg viewBox="0 0 80 80" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="penguin-card-ice" cx=".32" cy=".23" r=".8"><stop stop-color="#f2feff"/><stop offset=".23" stop-color="#c2ebf3"/><stop offset=".48" stop-color="#6caac2"/><stop offset=".72" stop-color="#286789"/><stop offset=".88" stop-color="#83d7ed"/><stop offset="1" stop-color="#defcff"/></radialGradient>
+    <radialGradient id="penguin-card-glow" cx=".68" cy=".8" r=".7"><stop stop-color="#ceffff" stop-opacity=".8"/><stop offset=".5" stop-color="#b7f1ff" stop-opacity=".12"/><stop offset="1" stop-color="#d7faff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="penguin-card-glint" x2=".6" y2="1"><stop stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="penguin-card-clip"><circle cx="40" cy="38" r="31"/></clipPath>
+    <filter id="penguin-card-frost"><feTurbulence baseFrequency=".16" numOctaves="3" seed="8"/><feColorMatrix type="saturate" values="0"/><feComposite in2="SourceGraphic" operator="in"/><feBlend in="SourceGraphic" mode="screen"/></filter>
+  </defs>
+  <ellipse cx="41" cy="72" rx="24" ry="3" fill="#071c2d" opacity=".35"/>
+  <circle cx="40" cy="38" r="31" fill="url(#penguin-card-ice)" stroke="#d2f7ff" stroke-width=".7"/>
+  <g clip-path="url(#penguin-card-clip)">
+    <path d="M12 36 31 18 43 32 63 17 52 45 68 57 42 63 29 48 15 59Z" fill="#d6ffff" opacity=".12"/>
+    <path d="m31 18 12 14-14 16m14-16 9 13-10 18" fill="none" stroke="#143f61" stroke-width="2" opacity=".3"/>
+    <circle cx="40" cy="38" r="30" fill="url(#penguin-card-glow)"/>
+    <path d="m17 18 13 7 5 10-7 12 9 12-2 12m-5-46 5-14m0 24 9-5 8 4 15-9m-39 22-15 3m24 9 17-6 12 7m-14-26 3 13-1 6" fill="none" stroke="#e2ffff" stroke-width=".65" opacity=".72"/>
+    <path d="m22 21 2 8 6 3m5 3 5 6-2 6m-10 0-3-7-7-3m36 16 7-9m-9-10 5-5m-20 30 6 3 2 8" fill="none" stroke="#fff" stroke-width=".3" opacity=".65"/>
+    <path d="M14 34Q18 12 39 10L31 20 21 40ZM48 64l16-16-4 13-13 8Z" fill="#e6ffff" opacity=".16" filter="url(#penguin-card-frost)"/>
+    <g fill="#e9ffff" opacity=".6"><circle cx="23" cy="33" r=".7"/><circle cx="26" cy="36" r=".4"/><circle cx="52" cy="22" r=".6"/><circle cx="57" cy="46" r=".8"/><circle cx="55" cy="49" r=".4"/><circle cx="27" cy="54" r=".6"/><circle cx="45" cy="59" r=".5"/></g>
+    <circle cx="40" cy="39" r="12" fill="#ddf6fc" fill-opacity=".78" stroke="#e8ffff" stroke-opacity=".7" stroke-width=".6"/>
+    <text x="40" y="46" font-family="sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#204e6b">8</text>
+    <ellipse cx="29" cy="19" rx="12" ry="5" transform="rotate(-32 29 19)" fill="url(#penguin-card-glint)"/>
+    <path d="M13 33A28 28 0 0 1 34 10" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".9"/>
+    <path d="M48 66a28 28 0 0 0 19-23" fill="none" stroke="#d8ffff" stroke-width="1.8" opacity=".75"/>
+  </g>
+</svg>

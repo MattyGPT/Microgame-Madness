@@ -53,7 +53,7 @@ const TreasureTrove=(()=>{
   class Game {
     constructor(root,{owner=()=> 'guest',blocked=()=>false,onResult=()=>{}}={}){
       this.root=root;this.owner=owner;this.blocked=blocked;this.onResult=onResult;this.visible=false;this.paused=false;this.round=null;this.frame=0;this.last=0;this.buttons=[];this.ownerKey=null;
-      root.innerHTML=`<div class="trove-heading"><div><p class="eyebrow">FOLLOW THE FORTUNE</p><h3>Treasure Trove</h3></div><div class="trove-record">Best streak <strong id="trove-best">0</strong></div></div><p class="trove-instructions">Watch the glowing gem, follow its chest through the shuffle, then choose where it ended up. Each round adds speed and new tricks.</p><div class="trove-hud"><span id="trove-round">Round 1</span><span id="trove-technique">Ready to sail?</span><button id="trove-pause" type="button" disabled>Pause</button></div><div class="trove-stage"><div class="trove-compass" aria-hidden="true">✧</div><div class="trove-chests"></div></div><div class="trove-progress" aria-hidden="true"><span></span></div><p id="trove-status" role="status" aria-live="polite">Start a voyage. Keep your eyes on the treasure.</p><button id="trove-next" type="button">Start voyage</button><p class="trove-help">Tap or click a chest · Tab + Enter also works · No guessing timer</p>`;
+      root.innerHTML=`<div class="trove-heading"><div><p class="eyebrow">FOLLOW THE FORTUNE</p><h3>Treasure Trove</h3></div><div class="trove-record">Best streak <strong id="trove-best">0</strong></div></div><p class="trove-instructions">Watch the glowing gem, follow its chest through the shuffle, then choose where it ended up. Each round adds speed and new tricks. Clear round 6 for 21 total points (1 + 2 + 3 + 4 + 5 + 6).</p><div class="trove-hud"><span id="trove-round">Round 1</span><span id="trove-technique">Ready to sail?</span><button id="trove-pause" type="button" disabled>Pause</button></div><div class="trove-stage"><div class="trove-compass" aria-hidden="true">✧</div><div class="trove-chests"></div></div><div class="trove-progress" aria-hidden="true"><span></span></div><p id="trove-status" role="status" aria-live="polite">Start a voyage. Keep your eyes on the treasure.</p><button id="trove-next" type="button">Start voyage</button><p class="trove-help">Tap or click a chest · Tab + Enter also works · No guessing timer</p>`;
       this.stage=root.querySelector('.trove-chests');this.next=root.querySelector('#trove-next');this.pause=root.querySelector('#trove-pause');
       this.next.onclick=()=>this.start(this.round?.phase==='won'?this.round.round+1:1);
       this.pause.onclick=()=>{this.paused=!this.paused;this.pause.textContent=this.paused?'Resume':'Pause';this.last=0;this.paint();};
@@ -71,7 +71,7 @@ const TreasureTrove=(()=>{
       for(let id=0;id<this.round.order.length;id++){const button=document.createElement('button');button.type='button';button.className='trove-chest';button.innerHTML=chest();button.onclick=()=>this.choose(this.round.order.indexOf(id));this.stage.append(button);this.buttons.push(button);}
       this.last=0;this.paint();
     }
-    choose(slot){if(!this.round||this.paused||this.blocked()||this.runOwner!==this.owner())return;const won=this.round.choose(slot);if(won===null)return;this.onResult(this.runOwner,{score:won?1:0,level:this.round.round,won});
+    choose(slot){if(!this.round||this.paused||this.blocked()||this.runOwner!==this.owner())return;const won=this.round.choose(slot);if(won===null)return;this.onResult(this.runOwner,{score:won?this.round.round:0,level:this.round.round,won});
       if(won)try{localStorage.setItem(this.storageKey(),String(Math.max(this.best(),this.round.round)));}catch{}
       this.root.querySelector('#trove-best').textContent=this.best();this.paint();this.next.focus({preventScroll:true});
     }
@@ -79,7 +79,7 @@ const TreasureTrove=(()=>{
       if(!document.hidden&&!this.paused){this.round?.advance(dt);this.paint();}}
     paint(){const game=this.round;if(!game)return;
       this.root.classList.toggle('trove-paused',this.paused);
-      this.root.querySelector('#trove-round').textContent=`Round ${game.round} · ${game.order.length} chests`;
+      this.root.querySelector('#trove-round').textContent=`Round ${game.round} · ${game.order.length} chests · ${(game.phase==='won'?game.round:game.round-1)*(game.phase==='won'?game.round+1:game.round)/2} points`;
       this.root.querySelector('#trove-technique').textContent=this.paused?'Paused':game.phase==='shuffle'?`${game.move.type} · ${game.step+1}/${game.settings.swaps}`:game.phase==='choose'?'Choose your chest':game.phase==='reveal'?'Remember the gem':'Treasure secured?';
       const copy=this.paused?'Paused. Resume when you are ready.':({reveal:'There’s the treasure! Follow this chest.',close:'Lids down. Watch closely.',shuffle:'Follow the chest—not the empty space.',settle:'The chests are coming to rest…',choose:'Which chest holds the gem?',won:'Treasure found! Ready for a harder round?',lost:`The glowing chest held the treasure. Your streak: ${game.round-1}.`})[game.phase];
       const status=this.root.querySelector('#trove-status');if(status.textContent!==copy)status.textContent=copy;

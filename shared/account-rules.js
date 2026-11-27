@@ -24,10 +24,10 @@ const AccountRules = (() => {
   const identifier = value => typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value)
     && value !== 'prototype' && !Object.hasOwn(Object.prototype, value);
   const streakKeys = ['bossCleanStreak', 'bossSovereignStreak', 'bossRunActive', 'bossSovereignRunActive'];
-  const numericSnapshot = ['score', 'mistakes', 'remaining', 'damage_taken', 'attacks_completed', 'counter_hits',
+  const numericSnapshot = ['rounds_completed', 'score', 'mistakes', 'remaining', 'damage_taken', 'attacks_completed', 'counter_hits',
     'shots_fired', 'fight_elapsed', 'healing_collected', 'near_misses', 'elapsed', 'lives', 'max_lives', 'hp', 'max_hp', 'geo_level', 'geo_kills', 'geo_waves', 'geo_rank', 'geo_weapon_count', 'geo_max_stars', 'geo_five_star_count', 'geo_relic_count'];
   const booleanSnapshot = ['over', 'won', 'shielded'];
-  const cumulative = ['damage_taken', 'attacks_completed', 'counter_hits', 'shots_fired', 'fight_elapsed',
+  const cumulative = ['rounds_completed', 'damage_taken', 'attacks_completed', 'counter_hits', 'shots_fired', 'fight_elapsed',
     'healing_collected', 'near_misses', 'elapsed', 'mistakes', 'geo_kills', 'geo_waves', 'geo_rank'];
   const secretNames = new Set(['dingdong','cube','cubie','boo','starlight','rocknroy','pixel','1up','codexisthebest','high score','gravitron']);
   const settingsKeys = new Set(['player','cubieCustom','turtleTrail','turtleCustom','soundOn','reducedMotion','leaderboard','publicProfile']);
@@ -114,7 +114,7 @@ const AccountRules = (() => {
       const value = raw[key];
       if (value === undefined || value === null) continue;
       requireValue(typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1000000000, `Invalid ${key}.`);
-      if (['score','mistakes','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
+      if (['rounds_completed','score','mistakes','attacks_completed','counter_hits','shots_fired','healing_collected','near_misses'].includes(key))
         requireValue(Number.isSafeInteger(value), `Invalid ${key}.`);
       clean[key] = value;
     }
@@ -141,6 +141,7 @@ const AccountRules = (() => {
       if (clean.geo_five_star_count !== undefined && clean.geo_weapon_count !== undefined)
         requireValue(clean.geo_five_star_count <= clean.geo_weapon_count, 'Too many evolved weapons.');
     }
+    if (run.mode==='keyboard' && clean.rounds_completed!==undefined) requireValue(clean.score===clean.rounds_completed*(clean.rounds_completed+1)/2,'Score does not match completed rounds.');
     if (clean.score !== undefined) requireValue(scoreValid(run.mode, run.difficulty, clean.score), 'Invalid game score.');
     for (const key of cumulative) if (clean[key] !== undefined && run.snapshot?.[key] !== undefined)
       requireValue(clean[key] >= run.snapshot[key], `The ${key} counter cannot move backward.`);
@@ -295,15 +296,20 @@ const AccountRules = (() => {
         addBest(state,'pool','standard',state.player,score);
         finishedRun={id:operation.id,mode:'pool',difficulty:'standard',outcome:payload.won?'win':'loss',score,startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};
       } else if(payload.event==='side-result') {
-        const {mode,score,level=0,won=false}=payload;
+        const {mode,score,level=0,won=false,attacksCleared,highestUnlockedWorld,bankedCoins}=payload;
         requireValue(achievements.sideGames.some(game=>game.mode===mode),'Unknown side game.');
-        requireValue(integer(score,mode==='tearesseract'?30:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
-        if(mode==='coindrop')requireValue(score===1&&won,'Only banked coins count.');
-        if(mode==='nanolab'||mode==='treasure')requireValue(score===(won?1:0),'Score does not match the result.');
-        if(mode==='treasure')requireValue(level>=1,'A treasure round is required.');
-        if(mode==='tearesseract'&&won)requireValue(score===30,'A victory requires all 30 attacks.');
-        tracker.sideResult(mode,{score,level,won});
-        addBest(state,mode,'standard',state.player,score);
+        requireValue(integer(score,mode==='coindrop'?1000:mode==='tearesseract'?465:mode==='treasure'?1000000000:1)&&integer(level)&&typeof won==='boolean','Invalid game result.');
+        if(mode==='coindrop')requireValue(won && (highestUnlockedWorld===undefined ? score===1 : integer(highestUnlockedWorld,1000)&&highestUnlockedWorld>=1&&score===highestUnlockedWorld&&integer(bankedCoins,1)), 'Invalid highest unlocked world.');
+        if(mode==='nanolab')requireValue(score===(won?1:0),'Score does not match the result.');
+        if(mode==='treasure'){requireValue(level>=1,'A treasure round is required.');requireValue(won?(score===level||score===1):score===0,'Score does not match the result.');}
+        if(mode==='tearesseract'){
+          const clears=attacksCleared??score;
+          requireValue(integer(clears,30)&&score===(attacksCleared===undefined?clears:clears*(clears+1)/2),'Score does not match cleared attacks.');
+          if(won)requireValue(clears===30,'A victory requires all 30 attacks.');
+        }
+        tracker.sideResult(mode,{score,level,won,attacksCleared,bankedCoins:mode==='coindrop'?(highestUnlockedWorld===undefined?1:bankedCoins):undefined});
+        // Treasure receipts are per-round increments; personal bests show the voyage total.
+        addBest(state,mode,'standard',state.player,mode==='treasure'&&won&&score===level?level*(level+1)/2:score);
         finishedRun={id:operation.id,mode,difficulty:'standard',outcome:won?'win':'loss',score,
           startedAt:occurredAt,finishedAt:occurredAt,duration:0,rulesVersion:1,eligible:score>0,
           provenance:'client-reported',timeSource,timeAdjusted:clockAdjusted};

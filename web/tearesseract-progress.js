@@ -28,12 +28,13 @@ const TearesseractProgress=(()=>{
     if(!initialized||!controller?.record||controller.state().importRequired)return null;
     return {id:crypto.randomUUID(),owner:controller.state().owner,generation:controller.generation};
   }
-  async function finish(run,score,won){
+  async function finish(run,attacksCleared,won){
+    const score=attacksCleared*(attacksCleared+1)/2;
     if(!run||run.saved||!controller||run.owner!==controller.state().owner||run.generation!==controller.generation)return;
     run.saved=true;let stored=false;
     try{
-      await controller.enqueue('arcade',{event:'side-result',mode:'tearesseract',score,won},{id:run.id});stored=true;
-      note(`${score} attacks cleared. Achievements and Cubies saved to your profile. Return to Arcade to view them.`);
+      await controller.enqueue('arcade',{event:'side-result',mode:'tearesseract',score,attacksCleared,won},{id:run.id});stored=true;
+      note(`${attacksCleared} attacks cleared · ${score} points. Achievements and Cubies saved to your profile. Return to Arcade to view them.`);
       if(run.owner!==controller.state().owner||run.generation!==controller.generation)return;
       const state=controller.state();
       if(state.owner!=='guest'){await controller.flush();return;}

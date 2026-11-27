@@ -26,3 +26,49 @@ test('completed Geomayhem expeditions are ranked, exits are not',()=>{
     const exit=Rules.apply(state,{...start,id:'exit',kind:'run.finish',payload:{outcome:'exit',snapshot:{score:20,over:false}}});assert.equal(exit.run.eligible,false);
   }
 });
+
+test('round-sum scoring credits treasure increments and Tearesseract totals without inflating achievements',()=>{
+ let state=Rules.initial(),total=0;
+ for(let level=1;level<=6;level++){
+  const result=Rules.apply(state,operation('treasure-'+level,'treasure',level,{level}));
+  total+=result.run.score;state=result.state;
+ }
+ assert.equal(total,21);assert.equal(state.achievements.stats.treasureBest,6);
+ assert.equal(state.scores['treasure:standard'][0].score,21);
+ const tea=Rules.apply(state,operation('tea-six','tearesseract',21,{attacksCleared:6,won:false}));
+ assert.equal(tea.run.score,21);assert.equal(tea.state.achievements.stats.teaAttacksBest,6);
+ assert.equal(tea.state.achievements.stats.teaWins,0);
+ const victory=Rules.apply(tea.state,operation('tea-win','tearesseract',465,{attacksCleared:30,won:true}));
+ assert.equal(victory.run.score,465);assert.equal(victory.state.achievements.stats.teaAttacksBest,30);
+ assert.throws(()=>Rules.apply(state,operation('bad-total','tearesseract',21,{attacksCleared:5,won:false})));
+ assert.throws(()=>Rules.apply(state,operation('bad-treasure','treasure',21,{level:6})));
+});
+
+test('Key Rush records triangular points while achievements count completed rounds',()=>{
+ const start={id:'start',version:1,streamId:'device',runId:'typing',kind:'run.start',payload:{mode:'keyboard',difficulty:'progressive'}};
+ const state=Rules.apply(Rules.initial(),start).state;
+ const finish={...start,id:'finish',kind:'run.finish',payload:{outcome:'loss',snapshot:{score:21,rounds_completed:6,over:true,won:false}}};
+ const result=Rules.apply(state,finish);
+ assert.equal(result.run.score,21);assert.equal(result.state.achievements.stats.typingBest,6);
+ assert.throws(()=>Rules.apply(state,{...finish,payload:{...finish.payload,snapshot:{...finish.payload.snapshot,score:6}}}));
+});
+
+test('Coin Drop world scores retain personal best and count banked coins separately',()=>{
+ let state=Rules.initial();
+ for(const [i,world,coins] of [[0,25,0],[1,25,1],[2,10,1],[3,1000,0]]){
+  const result=Rules.apply(state,operation(`world-${i}`,'coindrop',world,{highestUnlockedWorld:world,bankedCoins:coins}));
+  state=result.state;
+  assert.equal(result.run.score,world);
+  assert.equal(state.scores['coindrop:standard'][0].score,i===3?1000:25);
+ }
+ assert.equal(state.achievements.stats.coinBanked,2);
+ for(const world of [0,1001,2.5])assert.throws(()=>Rules.apply(state,operation('bad','coindrop',world,{highestUnlockedWorld:world,bankedCoins:0})));
+});
+
+test('Coin Drop reports unlocked frontier rather than selected world, capped at 1000',()=>{
+ const C=require('../coin-drop.js'),g=Object.create(C.Controller.prototype),results=[];
+ g.identity='guest';g.onResult=(owner,mode,result)=>results.push(result);
+ for(const cleared of [0,24,999,1000]){g.p={map:0,cleared};g.reportWorld();}
+ assert.deepEqual(results.map(r=>r.score),[1,25,1000,1000]);
+ assert.ok(results.every(r=>r.bankedCoins===0&&r.highestUnlockedWorld===r.score));
+});

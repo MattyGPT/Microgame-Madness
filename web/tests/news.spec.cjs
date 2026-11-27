@@ -86,3 +86,59 @@ test('tab badges separate news from suggestion replies and show creator names',a
  await page.goto('/');await expect(page.locator('#news-badge')).toHaveText('3');await page.locator('#news-open').click();await expect(page.locator('#news-posts-badge')).toHaveText('1');await expect(page.locator('#news-suggestions-badge')).toHaveText('2');await page.locator('#news-suggestions').click();await expect(page.locator('.news-creator-like')).toHaveText('★ Liked by 2 creators (Aidan, Nate)');
  const comments=page.locator('[data-discussion="suggestion"]');await expect(comments).toContainText('2 new');expect((await comments.boundingBox()).height).toBeGreaterThanOrEqual(46);await comments.click();await expect(page.locator('#discussion-list')).toContainText('Liked by 2 creators (Aidan, Nate)');
 });
+
+test('signed-in players can comment on news without moderator access',async({page})=>{
+ const replies=[];let token;
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('**/__news',r=>r.fulfill({status:404,json:{}}));
+ await page.route('https://news.test/**',r=>{
+  const body=r.request().postDataJSON();
+  if(r.request().url().endsWith('news_discussion')){
+   if(body.action==='create'){token=r.request().headers().authorization;replies.push({id:'player-reply',label:'PlayerOne',creator:false,body:body.body,created_at:'2026-11-23',likes:0,can_delete:true});}
+   return r.fulfill({json:body.action==='list'?replies:{}});
+  }
+  if(r.request().url().endsWith('news_team'))return r.fulfill({json:{moderator:false}});
+  return r.fulfill({json:{posts:[{id:'post',title:'Update',body:'Hello',created_at:'2026-11-23',likes:0}],comments:[]}});
+ });
+ await page.goto('/');await page.locator('#news-open').click();await page.locator('[data-discussion="post"]').click();
+ await page.locator('#discussion-body').fill('Thanks for the update!');await page.locator('#discussion-form [type=submit]').click();
+ await expect(page.locator('#discussion-status')).toContainText('Sign in');
+ await page.evaluate(()=>{accountApp={session:{snapshot:()=>({user:{id:'player-one',handle:'PlayerOne'}}),token:async()=>'player-token',subscribe:()=>{}}};});
+ await page.locator('#discussion-form [type=submit]').click();
+ await expect(page.locator('#discussion-list')).toContainText('Thanks for the update!');expect(token).toBe('Bearer player-token');
+ await expect(page.locator('#discussion-list')).not.toContainText('CREATOR');
+});
+
+test('creator access recovers when the local server becomes available and likes use local identity',async({page})=>{
+ let available=false,liked=false;
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('https://news.test/**',r=>r.fulfill({json:{posts:[{id:'post',title:'Update',body:'Hello',created_at:'2026-11-23',likes:liked?1:0,local_liked:liked}],comments:[]}}));
+ await page.route('**/__news',r=>{const b=r.request().postDataJSON();if(!available)return r.fulfill({status:404,json:{}});if(b.action==='postLike')liked=!liked;return r.fulfill({json:b.action==='status'?{moderator:true}:{}});});
+ await page.goto('/');await page.locator('#news-open').click();await expect(page.locator('#news-publish')).toBeHidden();available=true;
+ await expect(page.locator('#news-publish')).toBeVisible({timeout:15000});await expect(page.locator('#autumn-open')).toBeVisible();
+ const like=page.locator('[data-like="post"]');await like.click();await expect(like).toHaveAttribute('aria-pressed','true');await expect(like).toContainText('1');
+ await like.click();await expect(like).toHaveAttribute('aria-pressed','false');
+});
+
+test('transient news_team outage does not close Autumn Room or wipe unsent drafts',async({page})=>{
+ let teamOk=true;
+ await page.addInitScript(()=>localStorage.setItem('microgame-madness.welcome.v1','complete'));
+ await page.route('**/leaderboard-config.json',r=>r.fulfill({json:{url:'https://news.test',key:'public'}}));
+ await page.route('**/__news',r=>r.fulfill({status:404,json:{}}));
+ await page.route('https://news.test/**',r=>{
+  if(r.request().url().endsWith('news_team'))return teamOk?r.fulfill({json:{moderator:true}}):r.fulfill({status:503,json:{}});
+  if(r.request().url().endsWith('news_chat'))return r.fulfill({json:[{id:1,label:'Aidan',body:'Hi',created_at:'2026-11-23T12:00:00Z',mine:true}]});
+  return r.fulfill({json:{posts:[],comments:[]}});
+ });
+ await page.goto('/');
+ await page.evaluate(()=>{accountApp={session:{snapshot:()=>({user:{id:'mod-1',handle:'Aidan'}}),token:async()=>'mod-token',subscribe:()=>{}}};});
+ await expect(page.locator('#autumn-open')).toBeVisible({timeout:15000});
+ await page.locator('#autumn-open').click();
+ await page.locator('#autumn-message').fill('Unsent draft stays safe');
+ teamOk=false;
+ await page.waitForTimeout(10500);
+ await expect(page.locator('#autumn-room')).toBeVisible();
+ await expect(page.locator('#autumn-message')).toHaveValue('Unsent draft stays safe');
+});

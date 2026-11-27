@@ -35,6 +35,7 @@ const Achievements = (() => {
   add("sampler", "A Little of Everything", "silver", "Arcade", "Play all five original games.", "gamesPlayed", 5);
   add("hangman_win", "Good Game", "silver", "Hangman", "Win a Hangman game.", "hangmanWins");
   add("hangman_hard", "You've Got the Hang of It!!", "silver", "Hangman", "Win a hard Hangman game.", "hardWins");
+  add("hangman_no_hands", "Look Ma, No Hands!", "silver", "Hangman", "Win Hangman before either hand is drawn.", "noHandsWins");
   add("hangman_perfect", "Letter Perfect", "silver", "Hangman", "Win Hangman without a wrong guess.", "perfectWins");
   add("hangman_last_chance", "Down to the Wire", "gold", "Hangman", "Win Hangman with only one wrong guess remaining.", "lastChanceWins");
   add("hangman_5", "Word Wizard", "gold", "Hangman", "Win 5 Hangman games.", "hangmanWins", 5);
@@ -422,12 +423,12 @@ const Achievements = (() => {
     completeForge() {
       return this.update(stats => { stats.galacticForge = 1; });
     }
-    sideResult(mode,{score=0,level=0,won=false}={}) {
+    sideResult(mode,{score=0,level=0,won=false,attacksCleared=score,bankedCoins=score}={}) {
       return this.update(stats=>{
-        if(mode==='coindrop')stats.coinBanked+=score;
+        if(mode==='coindrop')stats.coinBanked+=bankedCoins;
         if(mode==='nanolab')stats.nanoWins+=score;
         if(mode==='treasure'&&won)stats.treasureBest=Math.max(stats.treasureBest,level);
-        if(mode==='tearesseract'){stats.teaAttacksBest=Math.max(stats.teaAttacksBest,score);if(won)stats.teaWins++;}
+        if(mode==='tearesseract'){stats.teaAttacksBest=Math.max(stats.teaAttacksBest,attacksCleared);if(won)stats.teaWins++;}
       });
     }
     completeGaster() {
@@ -542,7 +543,7 @@ const Achievements = (() => {
           stats.wrathCounterHits += counters;
           round.counterHits = Math.max(round.counterHits, count(s.counter_hits));
         }
-        if (s.mode === "keyboard" && s.difficulty === "progressive") stats.typingBest = Math.max(stats.typingBest, count(s.score));
+        if (s.mode === "keyboard" && s.difficulty === "progressive") stats.typingBest = Math.max(stats.typingBest, count(s.rounds_completed ?? s.score));
         if (s.mode === "dodge") {
           if (s.difficulty === "chaos") {
             stats.chaosBest = Math.max(stats.chaosBest, count(s.elapsed));
@@ -587,6 +588,7 @@ const Achievements = (() => {
         }
         if (s.mode === "hangman") {
           stats.hangmanWins++;
+          if (Number.isInteger(s.mistakes) && s.mistakes >= 0 && Number.isInteger(s.remaining) && s.remaining > 0 && Math.floor(s.mistakes * 6 / (s.mistakes + s.remaining)) < 3) stats.noHandsWins++;
           if (s.difficulty === "hard") stats.hardWins++;
           if (s.mistakes === 0) stats.perfectWins++;
           if (s.difficulty === "hard" && s.mistakes === 0) stats.hardPerfectWins++;

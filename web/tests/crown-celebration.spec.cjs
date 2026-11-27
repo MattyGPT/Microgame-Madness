@@ -13,11 +13,22 @@ test('current #1 players get all pack previews once; popup waits for gameplay an
   await expect(dialog.locator('.crown-celebration-pack')).toHaveCount(13);
   await expect(dialog.locator('figure')).toHaveCount(39);
   await expect(dialog).toContainText('Keep first place');
+  const equip=mode=>dialog.locator(`.crown-celebration-equip[data-mode="${mode}"]`);
+  await equip('hangman').click();
+  await expect(equip('hangman')).toHaveText('Equipped ✓');
+  await expect(equip('hangman')).toBeDisabled();
+  await equip('balloon').click();
+  await expect(equip('hangman')).toBeEnabled();
+  await expect(equip('balloon')).toBeDisabled();
+  await expect(dialog.locator('[role="status"]')).toContainText('Diamond Sky Balloon equipped');
+  expect(await page.evaluate(()=>['cubie','turtle','trail'].map(slot=>CrownPacks.equipped(slot,null)))).toEqual(['crown_balloon_cubie','crown_balloon_turtle','crown_balloon_trail']);
+
   await dialog.screenshot({path:info.outputPath('crown-packs-celebration.png')});
   await page.locator('#crown-celebration-close').click();await page.evaluate(()=>refreshCrowns());await expect(dialog).not.toBeVisible();
   await page.reload();await expect(page.locator('#runtime-status')).toContainText('All games ready',{timeout:30000});
   await page.evaluate(async()=>{const client=await leaderboardReady;client.configured=true;client.listGame=async mode=>[{rank:1,is_you:true}];await refreshCrowns();});
   await expect(page.locator('#crown-celebration')).not.toBeVisible();
+  expect(await page.evaluate(()=>CrownPacks.equipped('cubie',null))).toBe('crown_balloon_cubie');
   await page.evaluate(async()=>{const client=await leaderboardReady;client.listGame=async()=>[{rank:1,is_you:false}];await refreshCrowns();client.listGame=async mode=>[{rank:1,is_you:mode==='hangman'}];await refreshCrowns();});
   await expect(page.locator('#crown-celebration')).toBeVisible();
   await page.locator('#crown-celebration-view').click();await expect(page.locator('#customs-grid')).toBeVisible();

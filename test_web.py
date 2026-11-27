@@ -222,13 +222,14 @@ class BrowserAdapterTests(unittest.TestCase):
             now += 1
             for key in result["sequence"]:
                 result = self.session.dispatch({"action": "key", "key": key, "now": now})
-            self.assertEqual(result["score"], completed + 1)
+            self.assertEqual(result["score"], (completed + 1)*(completed + 2)//2)
+            self.assertEqual(result["rounds_completed"], completed + 1)
             self.assertEqual(result["difficulty"], "endurance")
         result = self.session.dispatch({"action": "key", "key": "!", "now": now})
         self.assertEqual(result["remaining"], 7.5)
         result = self.session.dispatch({"action": "tick", "now": now + 7.5})
         self.assertTrue(result["over"])
-        self.assertEqual(result["score"], 40)
+        self.assertEqual(result["score"], 820)
 
     def test_keyboard_progress_and_late_input(self):
         self.start("keyboard", "progressive")
@@ -464,6 +465,12 @@ class PackagingTests(unittest.TestCase):
                 self.assertEqual(files, expected)
                 self.assertTrue((output / "balloon-pop").exists())
                 self.assertIn('balloon-pop/index.html', (output / "index.html").read_text())
+                for slug in ("balloon-pop", "pool"):
+                    sub_html = (output / slug / "index.html").read_text()
+                    self.assertIn('href="../"', sub_html)
+                    self.assertNotIn('href="/"', sub_html)
+                    for asset in ("style.css", "model.js", "progress.js", "game.js", "../leaderboards.js", "../accounts/sync.js"):
+                        self.assertRegex(sub_html, rf'"{re.escape(asset)}\?v=[a-f0-9]{{12}}"')
                 for name in PYTHON_SOURCES:
                     self.assertEqual((output / "python" / name).read_bytes(), (Path(__file__).parent / name).read_bytes())
 

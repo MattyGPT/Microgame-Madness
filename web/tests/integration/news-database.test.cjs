@@ -156,7 +156,7 @@ test('Penguin Pool match receipts credit wins once and rank them publicly',async
  assert.equal(board.length,1);assert.equal(board[0].score,1);assert.equal(Number(board[0].rank),1);
  const balloon=rules.apply(result.state,{schema:1,id:'balloon-run',stream_id:'test',kind:'arcade',payload:{event:'balloon-result',difficulty:'impossible',score:125}},{now:Date.now()});
  const saveBalloon=()=>db.query('select public.account_commit($1,$2,$3,$4,$5,$6,$7,$8)',[who,'balloon-run','e'.repeat(64),1,balloon.state,balloon.result,balloon.run,'arcade']);await saveBalloon();await saveBalloon();
- assert.equal((await db.query("select * from public.get_game_leaderboard('balloon')")).rows[0].score,500);
+ assert.equal((await db.query("select * from public.get_game_leaderboard('balloon')")).rows[0].score,938);
 
 });
 test('suggestion notifications are private, acknowledge only displayed replies, and credit both creators',async t=>{
