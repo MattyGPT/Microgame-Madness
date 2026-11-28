@@ -178,3 +178,38 @@ test('suggestion notifications are private, acknowledge only displayed replies, 
  await login(author);assert.equal((await feed()).unread_count,1);await db.query('select public.news_discussion_seen($1,$2)',[suggestion,[reply]]);assert.equal((await feed()).unread_count,0);
  await db.exec("reset role;select set_config('request.jwt.claim.sub','',false);set role anon");assert.equal((await feed()).unread_count,0);await assert.rejects(db.query('select public.news_discussion_seen($1,$2)',[suggestion,[reply]]),{code:'42501'});
 });
+
+test('non-creator suggestion likes do not bump author profile revision and profanity filter avoids multi-word false positives',async t=>{
+ const db=new PGlite();t.after(()=>db.close());
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+ const dir=path.resolve(__dirname,'../../../supabase/migrations');for(const f of fs.readdirSync(dir).filter(f=>f.endsWith('.sql')).sort())await db.exec(fs.readFileSync(path.join(dir,f),'utf8'));
+ const author='00000000-0000-0000-0000-000000000081',fan='00000000-0000-0000-0000-000000000082',guest='00000000-0000-0000-0000-000000000083';
+ for(const [id,handle] of [[author,'ideaauthor'],[fan,'regularfan']]){
+  await db.query('insert into auth.users values($1)',[id]);
+  await db.query('insert into accounts_private.identities(owner,handle,provider_identifier,active) values($1,$2,$3,true)',[id,handle,id.replaceAll('-','').padEnd(64,'b')+'@accounts.invalid']);
+  await db.query("insert into accounts_private.profiles(owner,state) values($1,'{}')",[id]);
+ }
+ await db.query('insert into auth.users values($1)',[guest]);
+ const idea=(await db.query("insert into news_private.comments(owner,body) values($1,'More arenas please') returning id",[author])).rows[0].id;
+ const post=(await db.query("insert into news_private.posts(title,body) values('Update','Hello') returning id")).rows[0].id;
+ const revBefore=(await db.query('select revision from accounts_private.profiles where owner=$1',[author])).rows[0].revision;
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[fan]);await db.exec('set role authenticated');
+ await db.query('select public.news_suggestion_like($1)',[idea]);
+ await db.query('select public.news_suggestion_like($1)',[idea]);
+ await db.exec('reset role');
+ const revAfter=(await db.query('select revision from accounts_private.profiles where owner=$1',[author])).rows[0].revision;
+ assert.equal(revAfter,revBefore);
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[guest]);await db.exec('set role authenticated');
+ await assert.rejects(db.query("select public.news_action('like',$1,null)",[post]));
+ await db.exec('reset role');
+ for(const safe of ['I wish it had more arenas','Let us finish it together','This boss is a bit challenging','Can we crush it on hard?','Do not pass hole 8']){
+  assert.equal((await db.query('select news_private.unkind($1) bad',[safe])).rows[0].bad,false,safe);
+ }
+ for(const bad of ['f.u.c.k','f.u.c.k!','f u c k','f u u c k','fuck!','shit!','sh!t','sh!t!','shiiit','a$$hole','kill yourself','kill yourself!']){
+  assert.equal((await db.query('select news_private.unkind($1) bad',[bad])).rows[0].bad,true,bad);
+ }
+ // Deleted accounts cannot participate in discussions even before Auth deletion finishes.
+ await db.query('insert into accounts_private.deleted_accounts(owner) values($1)',[fan]);
+ await db.query("select set_config('request.jwt.claim.sub',$1,false)",[fan]);await db.exec('set role authenticated');
+ await assert.rejects(db.query("select public.news_discussion('create',$1,'After delete',null,'post')",[post]),{code:'42501'});
+});

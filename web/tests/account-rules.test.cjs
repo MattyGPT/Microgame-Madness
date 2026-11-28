@@ -386,3 +386,16 @@ test('Balloon Pop stores raw run points once; leaderboard applies difficulty wei
  const result=apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'impossible',score:250});assert.equal(result.run.mode,'balloon');assert.equal(result.run.difficulty,'impossible');assert.equal(result.run.score,250);assert.equal(result.run.eligible,true);
  assert.throws(()=>apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'fake',score:250}));assert.throws(()=>apply(Rules.initial(),'arcade',{event:'balloon-result',difficulty:'normal',score:-1}));
 });
+
+test('arcade-only modes cannot bypass score caps via run.start, and state.runs/timeIntervals stay bounded',()=>{
+ for(const [mode,difficulty] of [['pool','standard'],['coindrop','standard'],['nanolab','standard'],['treasure','standard'],['tearesseract','standard'],['balloon','normal']]){
+  assert.throws(()=>start(Rules.initial(),mode,difficulty),{code:'invalid'});
+ }
+ let state=Rules.initial();
+ for(let i=0;i<60;i++){
+  state=start(state,'hangman','easy',`r-${i}`);
+  state=complete(state,`r-${i}`,{score:1}).state;
+ }
+ assert.ok(Object.keys(state.runs).length<=50);
+ assert.throws(()=>apply(Rules.initial(),'arcade',{event:'time',start:now-100,end:now}),{code:'invalid'});
+});

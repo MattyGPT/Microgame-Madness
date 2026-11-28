@@ -158,3 +158,36 @@ test('anonymous sessions cannot initialize cloud account saves',async()=>{
  assert.equal((await request({action:'snapshot'})).status,403);
  assert.equal(calls.some(call=>call.url.endsWith('/account_read')),false);
 });
+
+test('run_conflict from account_commit records a per-operation rejection without aborting the batch',async()=>{
+ const {createHandler}=await import('../../supabase/functions/accounts/handler.mjs');
+ const receipts=new Map();let state=Rules.initial(),revision=0;
+ const handler=createHandler({url:'https://test.supabase.co',serviceKey:'private-service-key',rules:Rules,now:()=>now,allowedOrigins:['https://arcade.example'],fetch:async(url,req={})=>{
+  const body=req.body?JSON.parse(req.body):{};
+  if(url.endsWith('/auth/v1/user'))return json({id:owner,is_anonymous:false});
+  const name=url.split('/').at(-1);
+  if(name==='identity_session_active')return json(true);
+  if(name==='account_read')return json({state,revision,public_id:'public-id'});
+  if(name==='account_receipt')return json(receipts.get(body.p_operation_id)?.receipt||null);
+  if(name==='account_commit'){
+   if(body.p_operation_id==='conflict-op')return json({message:'run_conflict'},400);
+   state=body.p_state;revision++;
+   const r={id:body.p_operation_id,status:'applied',result:body.p_result,revision};
+   receipts.set(body.p_operation_id,{receipt:r});return json(r);
+  }
+  if(name==='account_reject'){
+   const r={id:body.p_operation_id,status:'rejected',error:body.p_error,revision};
+   receipts.set(body.p_operation_id,{receipt:r});return json(r);
+  }
+  throw new Error(name);
+ }});
+ const res=await handler(new Request('https://test.supabase.co/functions/v1/accounts',{
+  method:'POST',headers:{Authorization:`Bearer ${validToken}`,'Content-Type':'application/json',Origin:'https://arcade.example'},
+  body:JSON.stringify({action:'operations',operations:[{...operation('conflict-op','run.start',{mode:'hangman',difficulty:'easy'}),runId:'run-1'},operation('after-op','onboarding.complete')]})
+ }));
+ assert.equal(res.status,200);
+ const data=await res.json();
+ assert.equal(data.receipts[0].status,'rejected');
+ assert.equal(data.receipts[0].error.code,'run_conflict');
+ assert.equal(data.receipts[1].status,'applied');
+});

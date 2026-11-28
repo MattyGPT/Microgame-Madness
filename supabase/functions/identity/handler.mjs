@@ -36,19 +36,20 @@ export function createIdentityHandler({url,serviceKey,fetch:transport=globalThis
           // Auth may revoke the anonymous session when conversion assigns a password.
           // For a lost-response retry, current credentials independently prove the
           // reserved owner. Never use a decoded or invalid bearer as ownership proof.
-          const pending=await rpc('identity_lookup',{p_handle:handle});
-          if(!pending)throw genericCredentials();
           validatePassword(body.password);
+          const pending=await rpc('identity_lookup',{p_handle:handle});
+          if(!pending || pending.deleted)throw genericCredentials();
           session=await passwordLogin(pending,body.password);
           user=session.user;
         }
         identity=await rpc('identity_lookup',{p_owner:user.id});
+        if(identity?.deleted)throw fault('account_deleted','This account has been deleted.',410);
         if(!handle)await rate(request,action,user.id);
       }
       if(action==='login'){
         validatePassword(body.password);
         identity=await rpc('identity_lookup',{p_handle:handle});
-        if(!identity?.active)throw genericCredentials();
+        if(!identity?.active || identity.deleted)throw genericCredentials();
         session=await passwordLogin(identity,body.password);
         return respond({session:sessionProjection(session,identity.handle)});
       }
@@ -56,14 +57,26 @@ export function createIdentityHandler({url,serviceKey,fetch:transport=globalThis
         validatePassword(body.password);
         if(identity?.active){
           if(identity.handle!==handle)throw genericCredentials();
-          session=await passwordLogin(identity,body.password); // Lost-response retry must prove current password.
+          if(!session)session=await passwordLogin(identity,body.password); // Lost-response retry must prove current password.
         }else if(!user.is_anonymous && !identity)throw genericCredentials();
         code=randomSecret();mutation=crypto.randomUUID();
         identity=identity?.active
           ?await rpc('identity_mutation_begin',{p_owner:user.id,p_recovery_hash:null,p_new_recovery_hash:await sha256(code),p_mutation:mutation})
           :await rpc('identity_register_begin',{p_owner:user.id,p_handle:handle,p_identifier:`${randomSecret()}@accounts.invalid`,p_recovery_hash:await sha256(code),p_mutation:mutation});
-        await auth(`admin/users/${identity.owner}`,{method:'PUT',body:{email:identity.provider_identifier,email_confirm:true,password:body.password,app_metadata:{handle:identity.handle,mm_mutation:mutation}}});
-        if(!await rpc('identity_mutation_finish',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry account setup.',409);
+        let putStarted=false,putSucceeded=false;
+        try {
+          putStarted=true;
+          await auth(`admin/users/${identity.owner}`,{method:'PUT',body:{email:identity.provider_identifier,email_confirm:true,password:body.password,app_metadata:{handle:identity.handle,mm_mutation:mutation}}});
+          putSucceeded=true;
+          if(!await rpc('identity_mutation_finish',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry account setup.',409);
+        } catch(error) {
+          // Only abort on definitive pre-commit HTTP errors; never release the fence after an ambiguous timeout or post-PUT failure.
+          if(!putStarted || (!putSucceeded && Number.isInteger(error?.providerStatus) && error.providerStatus>=400)){
+            await rpc('identity_mutation_abort',{p_owner:identity.owner,p_mutation:mutation}).catch(()=>{});
+          }
+          throw error;
+        }
+        if(session?.access_token)await auth('logout?scope=local',{token:session.access_token}).catch(()=>{});
         session=await passwordLogin(identity,body.password);
         return respond({session:sessionProjection(session,identity.handle),recoveryCode:code});
       }
@@ -72,11 +85,11 @@ export function createIdentityHandler({url,serviceKey,fetch:transport=globalThis
         const input=String(body.recoveryCode || '').trim().toLowerCase().replace(/[ -]/g,'');
         if(!/^[0-9a-f]{64}$/.test(input))throw genericCredentials();
         identity=await rpc('identity_lookup',{p_handle:handle});
-        if(!identity?.active)throw genericCredentials();
+        if(!identity?.active || identity.deleted)throw genericCredentials();
         code=randomSecret();mutation=crypto.randomUUID();
         identity=await rpc('identity_mutation_begin',{p_owner:identity.owner,p_recovery_hash:await sha256(input),p_new_recovery_hash:await sha256(code),p_mutation:mutation});
       }else{
-        if(!identity?.active)throw genericCredentials();
+        if(!identity?.active || identity.deleted)throw genericCredentials();
         validatePassword(body.password);
         session=await passwordLogin(identity,body.password);
         if(action==='reauthenticate')return respond({session:sessionProjection(session,identity.handle)});
@@ -85,15 +98,28 @@ export function createIdentityHandler({url,serviceKey,fetch:transport=globalThis
         mutation=crypto.randomUUID();
         identity=await rpc('identity_mutation_begin',{p_owner:identity.owner,p_recovery_hash:null,p_new_recovery_hash:code?await sha256(code):null,p_mutation:mutation});
       }
-      if(action!=='rotate_recovery'){
-        // Fence every existing session before changing the password. A timeout cannot leave
-        // known old sessions authorized at the application gateway.
-        if(!await rpc('identity_revoke_sessions',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
-        await auth(`admin/users/${identity.owner}`,{method:'PUT',body:{password:body.newPassword,app_metadata:{handle:identity.handle,mm_mutation:mutation}}});
-        // Close the old-password login race between initial revocation and replacement.
-        if(!await rpc('identity_revoke_sessions',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
+      let putStarted=false,putSucceeded=false;
+      try {
+        if(action!=='rotate_recovery'){
+          // Fence every existing session before changing the password. A timeout cannot leave
+          // known old sessions authorized at the application gateway.
+          if(!await rpc('identity_revoke_sessions',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
+          putStarted=true;
+          await auth(`admin/users/${identity.owner}`,{method:'PUT',body:{password:body.newPassword,app_metadata:{handle:identity.handle,mm_mutation:mutation}}});
+          putSucceeded=true;
+          // Close the old-password login race between initial revocation and replacement.
+          if(!await rpc('identity_revoke_sessions',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
+        }
+        if(!await rpc('identity_mutation_finish',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
+      } catch(error) {
+        if(!putStarted || (!putSucceeded && Number.isInteger(error?.providerStatus) && error.providerStatus>=400)){
+          await rpc('identity_mutation_abort',{p_owner:identity.owner,p_mutation:mutation}).catch(()=>{});
+        } else if(action!=='rotate_recovery'){
+          // Ambiguous timeout or post-PUT failure: fence sessions and keep the mutation window active.
+          await rpc('identity_revoke_sessions',{p_owner:identity.owner,p_mutation:mutation}).catch(()=>{});
+        }
+        throw error;
       }
-      if(!await rpc('identity_mutation_finish',{p_owner:identity.owner,p_mutation:mutation}))throw fault('identity_busy','Please retry this account change.',409);
       session=action==='rotate_recovery'?session:await passwordLogin(identity,body.newPassword);
       return respond({session:sessionProjection(session,identity.handle),...(code?{recoveryCode:code}:{})});
     }catch(error){return respond({error:{code:error.code || 'unavailable',message:error.code?error.message:'Account service is temporarily unavailable. Try again shortly.'}},error.status || 503);}

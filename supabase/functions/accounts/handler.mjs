@@ -22,6 +22,8 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
       if (data?.message?.includes('account_deleted')) throw safeError('account_deleted', 'This account has been deleted.', 410);
       if (data?.message?.includes('rate_limited')) throw safeError('rate_limited', 'Too many updates. Please try again shortly.', 429);
       if (data?.message?.includes('submissions_restricted')) throw safeError('restricted', 'Account submissions are restricted.', 403);
+      if (data?.message?.includes('run_conflict')) throw safeError('run_conflict', 'This run ID was already submitted with a different result.', 409);
+      if (data?.message?.includes('invalid_score')) throw safeError('invalid', 'Invalid game score.', 400);
       throw safeError('unavailable', 'The account change could not be saved. Please retry.', 503);
     }
     return data;
@@ -56,8 +58,19 @@ export function createHandler({ url, serviceKey, rules, fetch: transport = globa
         if (rejected.status === 'revision_conflict') continue;
         return rejected;
       }
-      const receipt = await rpc('account_commit', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
-        p_expected_revision: current.revision, p_state: next.state, p_result: next.result, p_run: next.run || null, p_kind: operation.kind });
+      let receipt;
+      try {
+        receipt = await rpc('account_commit', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
+          p_expected_revision: current.revision, p_state: next.state, p_result: next.result, p_run: next.run || null, p_kind: operation.kind });
+      } catch (error) {
+        if (error.code === 'run_conflict' || error.code === 'invalid') {
+          const rejected = await rpc('account_reject', { p_owner: owner, p_operation_id: operation.id, p_digest: hash,
+            p_expected_revision: current.revision, p_error: { code: error.code, message: error.message } });
+          if (rejected.status === 'revision_conflict') continue;
+          return rejected;
+        }
+        throw error;
+      }
       if (receipt.status !== 'revision_conflict') return receipt;
     }
     throw safeError('busy', 'Your account changed on another device. Please retry this update.', 409);

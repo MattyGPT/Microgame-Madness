@@ -47,9 +47,35 @@ const AccountRules = (() => {
       preferences: { soundOn: true, reducedMotion: false }, privacy: { leaderboard: true, publicProfile: true },
       geomayhem: null, preferenceRevisions: {}, streams: {}, runs: {}, timeIntervals: [], baselineClosed: false };
   }
+  const arcadeOnlyModes = new Set(['pool', 'balloon', 'coindrop', 'nanolab', 'treasure', 'tearesseract']);
+  const MAX_FINISHED_RUNS = 50;
+  const MAX_STREAMS = 64;
+  const MAX_TIME_INTERVALS = 512;
+  const MAX_WEBSITE_SECONDS = 36000;
   function validMode(mode, difficulty) { return Object.hasOwn(modes, mode) && modes[mode].includes(difficulty); }
   function scoreValid(mode, difficulty, score) {
-    return integer(score) && (mode !== 'hangman' || score <= ({ easy: 10, medium: 7, hard: 5 })[difficulty]);
+    if (!integer(score)) return false;
+    if (mode === 'hangman') return score <= ({ easy: 10, medium: 7, hard: 5 })[difficulty];
+    if (mode === 'pool' || mode === 'nanolab') return score <= 1;
+    if (mode === 'coindrop') return score >= 1 && score <= 1000;
+    if (mode === 'treasure') return score <= 1000000000;
+    if (mode === 'tearesseract') return score <= 465;
+    return true;
+  }
+  function pruneState(state) {
+    const finished = Object.entries(state.runs || {}).filter(([, run]) => run?.finished);
+    if (finished.length > MAX_FINISHED_RUNS) {
+      finished.sort((a, b) => Date.parse(a[1].finishedAt || 0) - Date.parse(b[1].finishedAt || 0) || a[0].localeCompare(b[0]));
+      for (const [id] of finished.slice(0, finished.length - MAX_FINISHED_RUNS)) delete state.runs[id];
+    }
+    const streamKeys = Object.keys(state.streams || {});
+    if (streamKeys.length > MAX_STREAMS) {
+      for (const id of streamKeys) {
+        if (Object.keys(state.streams).length <= MAX_STREAMS) break;
+        const stream = state.streams[id];
+        if (!stream?.activeRun && streakKeys.every(key => !(stream?.[key] > 0))) delete state.streams[id];
+      }
+    }
   }
   function sanitizeLegacy(raw = {}, options = {}) {
     const value = object(raw) ? raw : {};
@@ -180,7 +206,7 @@ const AccountRules = (() => {
     state.scores[key] = entries;
   }
   function timeCredit(state, start, end) {
-    requireValue(Number.isSafeInteger(start) && Number.isSafeInteger(end) && start >= 0 && end > start && end - start <= 60000, 'Time intervals must contain at most sixty seconds.');
+    requireValue(Number.isSafeInteger(start) && Number.isSafeInteger(end) && start >= 0 && end - start >= 1000 && end - start <= 60000, 'Time intervals must be between one and sixty seconds.');
     const all = [...state.timeIntervals, [start, end]].sort((a,b) => a[0]-b[0]);
     const before = state.timeIntervals.reduce((sum, [a,b]) => sum+b-a, 0);
     const merged = [];
@@ -189,8 +215,17 @@ const AccountRules = (() => {
       if (last && a <= last[1]) last[1] = Math.max(last[1], b);
       else merged.push([a,b]);
     }
-    state.timeIntervals = merged;
-    return Math.max(0, Math.floor(merged.reduce((sum,[a,b]) => sum+b-a,0)/1000)-Math.floor(before/1000));
+    const after = merged.reduce((sum,[a,b]) => sum+b-a,0);
+    if (merged.length > MAX_TIME_INTERVALS) {
+      // Collapse oldest intervals into negative timestamp space so carried time never overlaps real timestamps (start >= 0).
+      const overflow = merged.length - MAX_TIME_INTERVALS + 1;
+      const collapsed = merged.slice(0, overflow).reduce((sum, [a, b]) => sum + b - a, 0);
+      const tail = merged.slice(overflow);
+      state.timeIntervals = [[-collapsed - 1, -1], ...tail];
+    } else {
+      state.timeIntervals = merged;
+    }
+    return Math.max(0, Math.floor(after/1000)-Math.floor(before/1000));
   }
   function apply(rawState, operation, context = {}) {
     validate(operation);
@@ -209,13 +244,18 @@ const AccountRules = (() => {
     const occurredAt = new Date(clockAdjusted ? Date.parse(now) : reported).toISOString();
     const timeSource = operation.occurredAt === undefined || clockAdjusted ? 'server-received' : 'client-reported';
     const result = { earned: [], cashUnits: 0 };
-    if (!Object.hasOwn(state.streams, streamId)) state.streams[streamId] = {};
+    if (!Object.hasOwn(state.streams, streamId)) {
+      if (Object.keys(state.streams).length >= MAX_STREAMS) pruneState(state);
+      if (operation.kind === 'run.start' && Object.keys(state.streams).length >= MAX_STREAMS)
+        fail('conflict', 'Too many active device streams.');
+      state.streams[streamId] = {};
+    }
     const stream = state.streams[streamId];
     const tracker = trackerFor(state, stream);
     const beforeUnits = state.shop.units;
     let finishedRun;
     if (operation.kind === 'run.start') {
-      requireValue(validMode(payload.mode, payload.difficulty), 'Unknown game or difficulty.');
+      requireValue(validMode(payload.mode, payload.difficulty) && !arcadeOnlyModes.has(payload.mode), 'Unknown game or difficulty.');
       const existing = Object.hasOwn(state.runs, runId) ? state.runs[runId] : null;
       if (existing) {
         if (existing.streamId !== streamId || existing.mode !== payload.mode || existing.difficulty !== payload.difficulty)
@@ -339,7 +379,8 @@ const AccountRules = (() => {
       else if (payload.event === 'gaster') tracker.completeGaster();
       else if (payload.event === 'time') {
         requireValue(Number.isSafeInteger(payload.end) && payload.end <= Date.parse(now)+300000, 'Time interval is ahead of the current clock.');
-        if (tracker.data.stats.websiteSeconds < 36000) tracker.spendTime(timeCredit(state, payload.start, payload.end));
+        if (tracker.data.stats.websiteSeconds < MAX_WEBSITE_SECONDS) tracker.spendTime(timeCredit(state, payload.start, payload.end));
+        if (tracker.data.stats.websiteSeconds >= MAX_WEBSITE_SECONDS) state.timeIntervals = [];
       } else if (payload.event === 'hint') state.cubieHintShown = true;
       else fail('invalid', 'Unknown arcade event.');
     } else if (operation.kind === 'purchase') {
@@ -407,6 +448,7 @@ const AccountRules = (() => {
       return { state, result };
     } else if (operation.kind === 'onboarding.complete') state.baselineClosed = true;
     saveTracker(state, stream, tracker, occurredAt, result);
+    pruneState(state);
     result.cashUnits = state.shop.units-beforeUnits;
     result.profilePoints = new achievements.Tracker(state.achievements).score;
     return { state, result, ...(finishedRun ? { run: finishedRun } : {}) };

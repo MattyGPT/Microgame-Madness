@@ -15,7 +15,7 @@ async function setup(t, { legacy = false, withoutCombined = false } = {}) {
   await db.exec(`create role anon; create role authenticated; create role service_role;
     create schema auth; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!(legacy || withoutCombined) || !f.includes('penguin_pool_rankings') && !f.includes('balloon_rankings') && !f.includes('balloon_multipliers') && !f.includes('coindrop_world_rankings')) && (!(legacy || withoutCombined) || !/_(news|local_creator_chat)/.test(f)) && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks')))).sort())
+  for (const filename of fs.readdirSync(path.resolve(__dirname,'../../supabase/migrations')).filter(f => f.endsWith('.sql') && (!(legacy || withoutCombined) || !f.includes('penguin_pool_rankings') && !f.includes('balloon_rankings') && !f.includes('balloon_multipliers') && !f.includes('coindrop_world_rankings') && !f.includes('backend_hardening')) && (!(legacy || withoutCombined) || !/_(news|local_creator_chat)/.test(f)) && (!withoutCombined || (!f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks'))) && (!legacy || (!f.includes('lifetime_leaderboards') && !f.includes('combined_leaderboards') && !f.includes('keyrush_endurance') && !f.includes('wrath_variants') && !f.includes('wrath_exclusive_attacks')))).sort())
     await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations',filename),'utf8'));
   await db.query('insert into auth.users values($1),($2)',[first,second]);
   const role = async (name, owner = '') => {
@@ -424,4 +424,30 @@ test('Coin Drop rankings use highest world rather than summed receipts',async t=
  const seasons=(await db.query("select score,total from accounts_private.season_scores where mode='coindrop'")).rows;
  assert.equal(seasons.length,1);
  assert.equal(seasons[0].score,40);assert.equal(Number(seasons[0].total),40);
+});
+
+test('per-mode score caps apply to guest RPCs and account_commit, and restricted accounts cannot write rejections',async t=>{
+  const {db,role,call,read,apply}=await setup(t);
+  await role('authenticated',first);
+  await assert.rejects(call('submit_leaderboard_run',['bad-pool','pool','standard','Cheater',2]),{code:'22023'});
+  await assert.rejects(call('submit_leaderboard_run',['bad-tea','tearesseract','standard','Cheater',466]),{code:'22023'});
+  await assert.rejects(call('submit_leaderboard_score',['coindrop','standard','Cheater',1001]),{code:'22023'});
+  await assert.rejects(call('submit_leaderboard_score',['coindrop','standard','Cheater',0]),{code:'22023'});
+  await assert.rejects(call('submit_leaderboard_run',['bad-treasure','treasure','standard','Cheater',44721]),{code:'22023'});
+  assert.equal(await call('submit_leaderboard_run',['ok-pool','pool','standard','Guest',1]),1);
+  assert.equal(await call('submit_leaderboard_run',['ok-tea','tearesseract','standard','Guest',465]),465);
+  assert.equal(await call('submit_leaderboard_score',['coindrop','standard','Guest',1000]),1000);
+  const state=await read(second);
+  await role('service_role');
+  await call('account_moderate',[second,true,'restricted']);
+  await assert.rejects(call('account_reject',[second,'denied-while-restricted','0'.repeat(64),state.revision,JSON.stringify({code:'invalid',message:'no'})]),{code:'42501'});
+  await call('account_moderate',[second,false,'restored']);
+  // Reusing an already-finalized run_id on run.start (e.g. after pruning state.runs) must be rejected with run_conflict.
+  await apply(second,op('s-once','run.start',{mode:'hangman',difficulty:'easy'},'done-run'));
+  await apply(second,op('f-once','run.finish',{snapshot:{over:true,won:true,score:5},outcome:'win'},'done-run'));
+  const cur=await read(second);
+  const pruned={...cur.state,runs:{}};
+  const restarted=Rules.apply(pruned,op('s-reuse','run.start',{mode:'hangman',difficulty:'easy'},'done-run'),{now:Date.now()});
+  await role('service_role');
+  await assert.rejects(call('account_commit',[second,'s-reuse','f'.repeat(64),cur.revision,JSON.stringify(restarted.state),JSON.stringify(restarted.result),null,'run.start']),/run_conflict/);
 });
